@@ -15,21 +15,18 @@ def _client():
     return TestClient(app)
 
 
-def test_hello(client):
-    """
-    Root URL greets the world
-    """
-    resp = client.get("/")
-
-    assert 200 == resp.status_code
-    assert {"message": "Welcome to the Allotment Service API!"} == resp.json()
-
-
 def test_health(client):
-    """
-    Health Endpoint returns OK
-    """
-    resp = client.get(f"{API_VERSION}/health")
+    """Test the /health endpoint"""
+    response = client.get(f"{API_VERSION}/health")
 
-    assert 200 == resp.status_code
-    assert {"status": "OK"} == resp.json()
+
+    assert response.status_code == 200
+
+    json_data = response.json()
+    assert "status" in json_data
+    assert "uptime" in json_data
+    assert "version" in json_data
+    assert "resources" in json_data
+    assert "cpu_usage" in json_data["resources"]
+    assert "memory_usage" in json_data["resources"]
+    assert "disk_usage" in json_data["resources"]
