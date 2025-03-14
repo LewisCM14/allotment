@@ -1,0 +1,88 @@
+## Project Setup
+
+### Operating System
+
+The project runs on Ubuntu and this setup guide assumes you have already installed this.
+
+!!! info "Useful Links for WSL"
+    - https://learn.microsoft.com/en-us/windows/wsl/install
+    - https://learn.microsoft.com/en-us/windows/wsl/setup/environment
+    - https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-vscode
+    - https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack
+
+### Database
+
+The project uses Postgres as its database and recommends pgAdmin4 as a management tool.
+
+1. Install Postgres 
+    ```
+    sudo apt-get install postgresql postgresql-contrib
+    ```
+    > You can confirm this has worked by running the below command
+    ```
+    sudo systemctl start postgresql
+    ```
+
+1. Create a User
+    ```
+    sudo -i -u postgres
+    psql
+    CREATE USER myuser WITH PASSWORD 'mypassword';
+    ALTER USER myuser WITH SUPERUSER;
+    CREATE DATABASE mydatabase;
+    ```
+
+1. Allow Remote Access
+    ```
+    sudo nano /etc/postgresql/*/main/pg_hba.conf
+    ```
+    _Then add the following line to the end of the file_
+    ```
+    host    all     myuser     0.0.0.0/0     md5
+    ```
+    _Then edit the Postgres conf_
+    ```
+    sudo nano /etc/postgresql/*/main/postgresql.conf
+    ```
+    _Alter the listen addresses to match the line below_
+    ```
+    listen_addresses = '*'
+    ```
+    > It is recommended you restart the server now - `sudo systemctl restart postgresql`
+
+1. Connect Postgres to pgAdmin
+    
+    _pdAdmin can be downloaded from here https://www.pgadmin.org/download/_
+
+    1. Within the **Default Workspace** page of pgAdmin right click on the **Servers** tab and choose the options to **Register > Server**
+    1. Enter a name for the server within the **General** tab
+        > Most Likely `allotment`
+    1. Then navigate to the **Connection** tab
+        - Set the **Host name/allotment** to `localhost`
+        - In the appropriate field set the username to the user created in the step above
+        - Enter the password for the user in the appropriate field
+            > It is recommended to toggle the **Save password?** option on here also
+        - Ensure the **Port** is correct, most likely port `5342`
+    1. Hitting the **Save** option should then connect you to the Postgres database provided you have it running within a terminal on your local machine.
+
+## Python Package Manager
+
+1. Install UV
+   
+    _Within a terminal run the below command to install UV_
+    ```
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    ```
+
+## Backend Setup
+
+1. Create the Backend virtual environment
+    
+    _From within the `backend` folder of the project run the command below to create the projects virtual environment_
+    ```
+    uv sync
+    ```
+    > This command will also install the required version of Python on your machine.
+
+1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
+    _The settings will then want configuring to point at your local Postgres database_

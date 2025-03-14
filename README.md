@@ -15,6 +15,16 @@ Formatting
 ruff format
 ```
 
+Start the PostgreSQL Server
+```
+sudo systemctl start postgresql
+```
+
+Open the PostgreSQL Shell
+```
+psql
+```
+
 ---
 
 ## Repository Layout
