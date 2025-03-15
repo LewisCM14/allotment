@@ -1,3 +1,0 @@
-"""
-Grow Guide Models
-"""

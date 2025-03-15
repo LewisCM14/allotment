@@ -1,12 +1,12 @@
 """
-Health Endpoint
+Health Endpoints
 """
 
 import time
 
 import psutil
 from fastapi import APIRouter, Depends
-from sqlalchemy import text, exc
+from sqlalchemy import exc, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.config import settings
