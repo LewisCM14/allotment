@@ -25,6 +25,11 @@ Open the PostgreSQL Shell
 psql
 ```
 
+Autogenerate Alembic Migration
+```
+alembic revision --autogenerate -m "REVISION MSG"
+```
+
 ---
 
 ## Repository Layout
