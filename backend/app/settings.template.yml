@@ -4,3 +4,9 @@ app:
 
 database:
   url: "postgresql+asyncpg://user:password@localhost:5432/dbname"
+
+jwt:
+  algorithm: "RS256"
+  access_token_expire_minutes: 60
+  private_key_path: "app/keys/private.pem"
+  public_key_path: "app/keys/public.pem"

@@ -86,3 +86,12 @@ The project uses Postgres as its database and recommends pgAdmin4 as a managemen
 
 1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
     _The settings will then want configuring to point at your local Postgres database_
+
+1. Generate the RSA Key Pair (For RS256)
+    ```
+    openssl genpkey -algorithm RSA -out app/keys/private.pem -pkeyopt rsa_keygen_bits:2048
+    openssl rsa -pubout -in app/keys/private.pem -out app/keys/public.pem
+    ```
+    > You may need to set permissions with the following commands:
+    > `chmod 600 app/keys/private.pem`
+    > `chmod 644 app/keys/public.pem`

@@ -14,8 +14,11 @@
 | Server | asyncpg | 0.30.0 | Database Driver |
 | Server | Alembic | 1.15.1 | Database Migrations |
 | Server | Pydantic | 2.10.6 | Typing |
-| Server | Pydantic | 2.8.1 | Settings Management |
+| Server | pydantic-settings | 2.8.1 | Settings Management |
 | Server | Authlib | 1.5.1 | Authentication | 
+| Server | psutil | 7.0.0 | Resource Monitoring | 
+| Server | bcrypt | 4.3.0 | Password Hashing | 
+| Server | email-validator | 2.2.0 | Email Validation | 
 | Server | fastapi.security | | Authentication |
 | Server | Pytest | 8.3.5 | Test Runner |
 | Server | Ruff | 0.9.10 | Formatting & Linting |

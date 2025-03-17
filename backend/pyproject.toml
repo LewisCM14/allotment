@@ -2,7 +2,20 @@
 name = "allotment-svc"
 version = "0"
 requires-python = "==3.13.*"
-dependencies = ["fastapi", "SQLAlchemy", "pydantic", "pydantic-settings", "Authlib", "psutil", "types-psutil", "types-pyyaml", "asyncpg", "alembic", "bcrypt"]
+dependencies = [
+    "fastapi", 
+    "SQLAlchemy", 
+    "pydantic", 
+    "pydantic-settings", 
+    "Authlib", 
+    "psutil", 
+    "types-psutil",
+    "types-pyyaml", 
+    "asyncpg", 
+    "alembic", 
+    "bcrypt",
+    "email-validator"
+]
 
 [dependency-groups]
 dev = ["fastapi[standard]", "pytest", "ruff", "mypy"]

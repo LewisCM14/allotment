@@ -15,6 +15,11 @@ Formatting
 ruff format
 ```
 
+Type Checking
+```
+mypy .
+```
+
 Start the PostgreSQL Server
 ```
 sudo systemctl start postgresql
