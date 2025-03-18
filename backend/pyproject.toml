@@ -11,6 +11,8 @@ dependencies = [
     "psutil", 
     "types-psutil",
     "types-pyyaml", 
+    "types-bcrypt", 
+    "types-python-jose",
     "asyncpg", 
     "alembic", 
     "bcrypt",

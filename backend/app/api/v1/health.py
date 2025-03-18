@@ -1,8 +1,12 @@
 """
 Health Endpoints
+- Provides system health information
+- Monitors database connectivity
+- Reports system resource usage
 """
 
 import time
+from typing import Dict, Union
 
 import psutil
 from fastapi import APIRouter, Depends
@@ -15,18 +19,17 @@ from app.api.core.database import get_db
 router = APIRouter()
 START_TIME = time.time()
 
+
 @router.get("/", tags=["Health"])
 async def health_check(
     db: AsyncSession = Depends(get_db),
-):
-    """Health check endpoint"""
-    
+) -> Dict[str, Union[str, float, Dict[str, float]]]:
+    """Health check endpoint."""
     uptime_seconds: float = round(time.time() - START_TIME, 2)
-    
+
     try:
-        result = await db.execute(text("SELECT 1"))
-        await result.scalar()
-        db_status = "healthy"
+        result = await db.scalar(text("SELECT 1"))
+        db_status = "healthy" if result == 1 else "unhealthy"
     except Exception as e:
         db_status = f"unhealthy: {str(e)}"
 

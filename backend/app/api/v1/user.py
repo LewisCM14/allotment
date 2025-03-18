@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.api.core.database import get_db
 from app.api.models import User
-from app.api.repositories.user import UserRepository
+from app.api.repositories import UserRepository
 from app.api.schemas import TokenResponse, UserCreate, UserLogin
 from app.api.v1.auth import authenticate_user, create_access_token
 

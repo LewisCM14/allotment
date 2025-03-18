@@ -6,7 +6,7 @@ Authentication Endpoints
 """
 
 from datetime import UTC, datetime, timedelta
-from typing import Optional
+from typing import Optional, cast
 
 import bcrypt
 from authlib.jose import JoseError, jwt
@@ -39,9 +39,8 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
         "exp": expire,
         "iat": datetime.now(UTC),
     }
-    return jwt.encode(
-        {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
-    ).decode("utf-8")
+    token = jwt.encode({"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY)
+    return cast(str, token.decode("utf-8"))
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:

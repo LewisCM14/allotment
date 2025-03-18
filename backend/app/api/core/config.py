@@ -4,7 +4,7 @@ Application Settings
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 import yaml
 from pydantic_settings import BaseSettings
@@ -45,12 +45,19 @@ class Settings(BaseSettings):
         )
 
 
-def load_yaml_config():
-    """Loads YAML configuration from settings.yml."""
+def load_yaml_config() -> Dict[str, Any]:
+    """Loads YAML configuration from settings.yml.
+
+    Returns:
+        Dict[str, Any]: Configuration dictionary from YAML or empty dict if file not found
+    """
     config_path = "app/settings.yml"
     if os.path.exists(config_path):
         with open(config_path, "r", encoding="utf-8") as file:
-            return yaml.safe_load(file)
+            config = yaml.safe_load(file)
+            if not isinstance(config, dict):
+                return {}
+            return config
     return {}
 
 

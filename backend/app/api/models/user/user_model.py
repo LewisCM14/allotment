@@ -6,13 +6,15 @@ This module defines the SQLAlchemy ORM models for:
 - UserAllotment: Stores user allotment details with dimensions and location
 """
 
+from __future__ import annotations
+
 import uuid
 from typing import Optional
 
 import bcrypt
-from sqlalchemy import CheckConstraint, Column, Float, ForeignKey, String, Text
+from sqlalchemy import CheckConstraint, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
 
@@ -22,19 +24,19 @@ class User(Base):
 
     __tablename__ = "user"
 
-    user_id: Mapped[uuid.UUID] = Column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    user_email: Mapped[str] = Column(
+    user_email: Mapped[str] = mapped_column(
         String(255), unique=True, nullable=False, index=True
     )
-    user_password_hash: Mapped[str] = Column(Text, nullable=False)
-    user_first_name: Mapped[str] = Column(String(50), nullable=False)
-    user_country_code: Mapped[str] = Column(String(2), nullable=False)
+    user_password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    user_first_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    user_country_code: Mapped[str] = mapped_column(String(2), nullable=False)
 
     allotment: Mapped[Optional["UserAllotment"]] = relationship(
         "UserAllotment",
@@ -82,22 +84,22 @@ class UserAllotment(Base):
 
     __tablename__ = "user_allotment"
 
-    user_allotment_id: Mapped[uuid.UUID] = Column(
+    user_allotment_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    user_id: Mapped[uuid.UUID] = Column(
+    user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("user.user_id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
     )
-    allotment_postal_zip_code: Mapped[str] = Column(String(7), nullable=False)
-    allotment_width_meters: Mapped[float] = Column(Float, nullable=False)
-    allotment_length_meters: Mapped[float] = Column(Float, nullable=False)
+    allotment_postal_zip_code: Mapped[str] = mapped_column(String(7), nullable=False)
+    allotment_width_meters: Mapped[float] = mapped_column(Float, nullable=False)
+    allotment_length_meters: Mapped[float] = mapped_column(Float, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="allotment")
 
