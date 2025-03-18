@@ -18,4 +18,11 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["fastapi[standard]", "pytest", "ruff", "mypy"]
+dev = [
+    "fastapi[standard]", 
+    "pytest", 
+    "ruff", 
+    "mypy",
+    "pytest-asyncio",
+    "httpx"
+]

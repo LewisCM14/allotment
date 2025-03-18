@@ -2,17 +2,7 @@
 Health API Tests
 """
 
-import pytest
-from fastapi.testclient import TestClient
-
-from app.main import app
-
 API_VERSION = "api/v1"
-
-
-@pytest.fixture(name="client")
-def _client():
-    return TestClient(app)
 
 
 def test_health(client):
