@@ -20,7 +20,12 @@ router = APIRouter()
 START_TIME = time.time()
 
 
-@router.get("/", tags=["Health"])
+@router.get(
+    "/",
+    tags=["Health"],
+    summary="Health check",
+    description="Returns system health information",
+)
 async def health_check(
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Union[str, float, Dict[str, float]]]:

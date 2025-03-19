@@ -11,7 +11,6 @@ dependencies = [
     "psutil", 
     "types-psutil",
     "types-pyyaml", 
-    "types-bcrypt", 
     "types-python-jose",
     "asyncpg", 
     "alembic", 
@@ -26,5 +25,6 @@ dev = [
     "ruff", 
     "mypy",
     "pytest-asyncio",
-    "httpx"
+    "httpx",
+    "aiosqlite"
 ]

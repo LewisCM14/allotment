@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 
-from app.api.v1 import health
+from app.api.v1 import health, user
 
 router = APIRouter()
-router.include_router(health.router, prefix="/health", tags=["Health"])
-router.include_router(health.router, prefix="/user", tags=["User"])
+
+router.include_router(health.router, prefix="/health")
+router.include_router(user.router, prefix="/user")
