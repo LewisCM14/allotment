@@ -1,6 +1,7 @@
 app:
   name: "name"
   version: "0.0.0"
+  log_file: "app/app.log"
 
 database:
   url: "postgresql+asyncpg://user:password@localhost:5432/dbname"

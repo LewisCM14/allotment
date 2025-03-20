@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     APP_NAME: str
     APP_VERSION: str
     DATABASE_URL: str
+    LOG_FILE: str
 
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
@@ -67,6 +68,7 @@ yaml_config = load_yaml_config()
 settings = Settings(
     APP_NAME=yaml_config.get("app", {}).get("name", "Allotment Service"),
     APP_VERSION=yaml_config.get("app", {}).get("version", "0.0.0"),
+    LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
     DATABASE_URL=yaml_config.get("database", {}).get("url"),
     JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm", "RS256"),
     ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(

@@ -15,7 +15,8 @@ dependencies = [
     "asyncpg", 
     "alembic", 
     "bcrypt",
-    "email-validator"
+    "email-validator",
+    "structlog",
 ]
 
 [dependency-groups]
