@@ -2,6 +2,8 @@
 Application Entrypoint
 """
 
+from typing import Dict
+
 import structlog
 from fastapi import FastAPI
 
@@ -25,7 +27,7 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 @app.get("/")
-def root():
+def root() -> Dict[str, str]:
     """Application Root"""
     logger.info("Root endpoint accessed")
     return {"message": "Welcome to the Allotment Service API!"}

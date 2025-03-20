@@ -86,6 +86,7 @@ The project uses Postgres as its database and recommends pgAdmin4 as a managemen
 
 1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
     _The settings will then want configuring to point at your local Postgres database_
+    > You can update the `name`, `version` and path for the `log_file` as desired.
 
 1. Generate the RSA Key Pair (For RS256)
     ```

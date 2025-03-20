@@ -6,10 +6,10 @@ Database Connection
 
 import logging
 import time
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator
 
 import structlog
-from sqlalchemy import event
+from sqlalchemy import Connection, event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -57,12 +57,26 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 @event.listens_for(engine.sync_engine, "before_cursor_execute")
-def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def before_cursor_execute(
+    conn: Connection,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
+) -> None:
     conn.info.setdefault("query_start_time", []).append(time.monotonic())
 
 
 @event.listens_for(engine.sync_engine, "after_cursor_execute")
-def after_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+def after_cursor_execute(
+    conn: Connection,
+    cursor: Any,
+    statement: str,
+    parameters: Any,
+    context: Any,
+    executemany: bool,
+) -> None:
     total = time.monotonic() - conn.info["query_start_time"].pop(-1)
     if total > 1.0:  # Log only slow queries (>1s)
         print(f"Slow Query: {statement} took {total:.2f}s")

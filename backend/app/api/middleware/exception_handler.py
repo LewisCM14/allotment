@@ -9,7 +9,7 @@ from fastapi.responses import JSONResponse
 logger = structlog.get_logger()
 
 
-async def async_exception_handler(request: Request, exc: Exception):
+async def async_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Logs async exceptions and returns a structured error response."""
     logger.error(
         "Unhandled Exception",
@@ -24,6 +24,6 @@ async def async_exception_handler(request: Request, exc: Exception):
     )
 
 
-def setup_exception_handler(app: FastAPI):
+def setup_exception_handler(app: FastAPI) -> None:
     """Registers the custom async exception handler."""
     app.add_exception_handler(Exception, async_exception_handler)

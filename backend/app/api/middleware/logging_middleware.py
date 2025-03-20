@@ -3,28 +3,34 @@ Logging Middleware
 """
 
 import time
+from typing import Awaitable, Callable, Optional
 
 import structlog
-from fastapi import Request
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
 
 logger = structlog.get_logger()
 
 
 class AsyncLoggingMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Logs incoming requests and outgoing responses."""
         start_time = time.monotonic()
+
+        # Ensure client IP is not None
+        client_ip: Optional[str] = request.client.host if request.client else "Unknown"
 
         logger.info(
             "Incoming request",
             method=request.method,
             url=str(request.url),
-            client_ip=request.client.host,
+            client_ip=client_ip,
         )
 
         try:
-            response = await call_next(request)
+            response: Response = await call_next(request)
         except Exception as exc:
             logger.error("Unhandled Exception", error=str(exc), exc_info=True)
             return Response("Internal Server Error", status_code=500)

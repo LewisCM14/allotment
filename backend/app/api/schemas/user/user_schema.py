@@ -6,7 +6,7 @@ User Schema
 import re
 from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from pydantic.types import StringConstraints
 
 
@@ -93,8 +93,8 @@ class UserCreate(BaseModel):
 
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "user_email": "user@example.com",
                 "user_password": "TestPass123!@",
@@ -102,6 +102,7 @@ class UserCreate(BaseModel):
                 "user_country_code": "GB",
             }
         }
+    )
 
 
 class UserLogin(BaseModel):
@@ -118,13 +119,14 @@ class UserLogin(BaseModel):
         examples=["TestPass123!@"],
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "user_email": "user@example.com",
                 "user_password": "TestPass123!@",
             }
         }
+    )
 
 
 class TokenResponse(BaseModel):
@@ -139,10 +141,11 @@ class TokenResponse(BaseModel):
         default="bearer", description="Token type", examples=["bearer"]
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "token_type": "bearer",
             }
         }
+    )
