@@ -5,6 +5,7 @@ User Endpoints
 - Returns JWT tokens for authenticated users
 """
 
+import structlog
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,6 +17,7 @@ from app.api.schemas import TokenResponse, UserCreate, UserLogin
 from app.api.v1.auth import create_access_token, verify_password
 
 router = APIRouter()
+logger = structlog.get_logger()
 
 
 @router.post(
@@ -46,10 +48,14 @@ async def create_user(
             - 500: Database error or user creation failed
     """
     try:
-        # Check for existing user
+        logger.info("Attempting user registration", email=user.user_email)
+
         query = select(User).where(User.user_email == user.user_email)
         result = await db.execute(query)
         if result.scalar_one_or_none():
+            logger.warning(
+                "Registration failed - email already exists", email=user.user_email
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered",
@@ -59,23 +65,38 @@ async def create_user(
         user_repo = UserRepository(db)
         new_user, access_token = await user_repo.create_user(user)
 
-        # Validate creation - add logging here
+        # Validate creation
         if not new_user or not new_user.user_id:
+            logger.error("User creation failed", email=user.user_email)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user",
             )
 
+        logger.info(
+            "User successfully registered",
+            user_id=str(new_user.user_id),
+            email=user.user_email,
+        )
         return TokenResponse(access_token=access_token)
 
     except HTTPException:
         raise
     except ValueError as e:
+        logger.error(
+            "Validation error during user registration",
+            error=str(e),
+            email=user.user_email,
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
     except Exception as e:
-        # Add logging here
+        logger.exception(
+            "Unexpected error during user registration",
+            error=str(e),
+            email=user.user_email,
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred",
@@ -107,11 +128,14 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)) -> TokenRes
             - 500: Database error
     """
     try:
+        logger.info("Login attempt", email=user.user_email)
+
         # Query user by email & check if exists
         query = select(User).where(User.user_email == user.user_email)
         result = await db.execute(query)
         db_user = result.scalar_one_or_none()
         if not db_user:
+            logger.warning("Login failed - user not found", email=user.user_email)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
@@ -120,6 +144,11 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)) -> TokenRes
 
         # Verify password separately to avoid timing attacks
         if not verify_password(user.user_password, db_user.user_password_hash):
+            logger.warning(
+                "Login failed - invalid password",
+                email=user.user_email,
+                user_id=str(db_user.user_id),
+            )
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password",
@@ -127,16 +156,24 @@ async def login(user: UserLogin, db: AsyncSession = Depends(get_db)) -> TokenRes
             )
 
         access_token = create_access_token(user_id=str(db_user.user_id))
+        logger.info(
+            "Login successful", email=user.user_email, user_id=str(db_user.user_id)
+        )
         return TokenResponse(access_token=access_token)
 
     except HTTPException:
         raise
     except ValueError as e:
+        logger.error(
+            "Validation error during login", error=str(e), email=user.user_email
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
     except Exception as e:
-        # Log unexpected errors here (add proper logging)
+        logger.exception(
+            "Unexpected error during login", error=str(e), email=user.user_email
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during authentication",

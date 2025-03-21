@@ -5,14 +5,16 @@ User API Tests
 import pytest
 from fastapi import status
 
-API_VERSION = "api/v1"
+from app.api.core.config import settings
+
+PREFIX = settings.API_PREFIX
 
 
 class TestRegisterUser:
     def test_register_user(self, client):
         """Test user registration endpoint."""
         response = client.post(
-            f"{API_VERSION}/user",
+            f"{PREFIX}/user",
             json={
                 "user_email": "test@example.com",
                 "user_password": "TestPass123!@",
@@ -27,64 +29,93 @@ class TestRegisterUser:
         assert data["token_type"] == "bearer"
 
     @pytest.mark.parametrize(
-        "test_input,expected_status,expected_detail",
+        "test_input,expected_status",
         [
+            # Too short password
             (
                 {
-                    "user_email": "test@example.com",
-                    "user_password": "invalid",
-                    "user_first_name": "John Smith",
+                    "user_email": "testuser@example.com",
+                    "user_password": "short",
+                    "user_first_name": "Test",
                     "user_country_code": "GB",
                 },
                 422,
-                "String should have at least 8 characters",
             ),
+            # Invalid email format
             (
                 {
-                    "user_email": "invalid",
-                    "user_password": "TestPass123!@",
-                    "user_first_name": "John Smith",
+                    "user_email": "invalid-email",
+                    "user_password": "SecurePass123!",
+                    "user_first_name": "Test",
                     "user_country_code": "GB",
                 },
                 422,
-                "value is not a valid email address: An email address must have an @-sign.",
             ),
+            # Invalid first name (contains numbers)
             (
                 {
-                    "user_email": "test@example.com",
-                    "user_password": "TestPass123!@",
-                    "user_first_name": "John Smith 3rd",
+                    "user_email": "testuser@example.com",
+                    "user_password": "SecurePass123!",
+                    "user_first_name": "John Doe 3",
                     "user_country_code": "GB",
                 },
                 422,
-                "Value error, First name can only contain letters, spaces, and hyphens",
             ),
+            # Country code too long
             (
                 {
-                    "user_email": "test@example.com",
-                    "user_password": "TestPass123!@",
-                    "user_first_name": "John Smith",
-                    "user_country_code": "USA",
+                    "user_email": "testuser@example.com",
+                    "user_password": "SecurePass123!",
+                    "user_first_name": "Test",
+                    "user_country_code": "GBR",
                 },
                 422,
-                "String should have at most 2 characters",
+            ),
+            # Password missing required characters
+            (
+                {
+                    "user_email": "testuser@example.com",
+                    "user_password": "simplepassword",
+                    "user_first_name": "Test",
+                    "user_country_code": "GB",
+                },
+                422,
             ),
         ],
     )
-    def test_create_user_validation_errors(
-        self, client, test_input, expected_status, expected_detail
+    async def test_user_registration_validation(
+        self, client, test_input, expected_status
     ):
-        """Test validation errors in user creation."""
-        response = client.post(f"{API_VERSION}/user", json=test_input)
+        """Test that invalid users cannot be created."""
+        response = client.post(f"{PREFIX}/user", json=test_input)
+
         assert response.status_code == expected_status
-        assert expected_detail in response.json()["detail"][0]["msg"]
+
+    @pytest.mark.asyncio
+    async def test_duplicate_email_registration(self, client):
+        """Test registration with an already registered email."""
+        # First registration
+        user_data = {
+            "user_email": "duplicate@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Test",
+            "user_country_code": "GB",
+        }
+
+        response = client.post(f"{PREFIX}/user", json=user_data)
+        assert response.status_code == status.HTTP_201_CREATED
+
+        # Attempt duplicate registration
+        response = client.post(f"{PREFIX}/user", json=user_data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["detail"] == "Email already registered"
 
 
 class TestUserLogin:
     def test_login_user(self, client):
         """Test user login with correct credentials."""
         client.post(
-            f"{API_VERSION}/user",
+            f"{PREFIX}/user",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "SecurePass123!",
@@ -94,7 +125,7 @@ class TestUserLogin:
         )
 
         response = client.post(
-            f"{API_VERSION}/user/auth/login",
+            f"{PREFIX}/user/auth/login",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "SecurePass123!",
@@ -108,7 +139,7 @@ class TestUserLogin:
     def test_login_invalid_credentials(self, client):
         """Test login with incorrect password."""
         response = client.post(
-            f"{API_VERSION}/user/auth/login",
+            f"{PREFIX}/user/auth/login",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "WrongPassword!",

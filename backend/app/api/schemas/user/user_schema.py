@@ -6,8 +6,11 @@ User Schema
 import re
 from typing import Annotated
 
+import structlog
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 from pydantic.types import StringConstraints
+
+logger = structlog.get_logger()
 
 
 class UserCreate(BaseModel):
@@ -36,8 +39,7 @@ class UserCreate(BaseModel):
     user_first_name: Annotated[
         str,
         StringConstraints(
-            min_length=2,
-            max_length=50,
+            min_length=2, max_length=50, pattern=r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$"
         ),
     ] = Field(
         description="First name with optional hyphen or space", examples=["John Smith"]
@@ -51,45 +53,79 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_first_name(cls, v: str) -> str:
         """Validate first name format."""
-        if len(v) < 2:
-            raise ValueError("First name must be at least 2 characters long")
-        if len(v) > 50:
-            raise ValueError("First name cannot be longer than 50 characters")
-        if not re.match(r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$", v):
-            raise ValueError("First name can only contain letters, spaces, and hyphens")
-        return v
+        try:
+            if len(v) < 2:
+                logger.warning("First name too short", value=v, length=len(v))
+                raise ValueError("First name must be at least 2 characters long")
+            if len(v) > 50:
+                logger.warning("First name too long", value=v, length=len(v))
+                raise ValueError("First name cannot be longer than 50 characters")
+            if not re.match(r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$", v):
+                logger.warning("Invalid first name format", value=v)
+                raise ValueError(
+                    "First name can only contain letters, spaces, and hyphens"
+                )
+            logger.debug("First name validation successful", value=v)
+            return v
+        except ValueError as e:
+            logger.error("First name validation failed", error=str(e), value=v)
+            raise
 
     @field_validator("user_country_code")
     @classmethod
     def validate_country_code(cls, v: str) -> str:
         """Validate country code format."""
-        if len(v) != 2:
-            raise ValueError("Country code must be exactly 2 characters")
-        return v.upper()
+        try:
+            if len(v) != 2:
+                logger.warning("Invalid country code length", value=v, length=len(v))
+                raise ValueError("Country code must be exactly 2 characters")
+            logger.debug("Country code validation successful", value=v.upper())
+            return v.upper()
+        except ValueError as e:
+            logger.error("Country code validation failed", error=str(e), value=v)
+            raise
 
     @field_validator("user_password")
     @classmethod
     def validate_password(cls, v: str) -> str:
         """Validate password complexity requirements."""
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least two uppercase letters")
-
+        # Count character types
         uppercase_count = sum(1 for c in v if c.isupper())
-        if uppercase_count < 2:
-            raise ValueError("Password must contain at least two uppercase letters")
+        lowercase_count = sum(1 for c in v if c.islower())
+        digit_count = sum(1 for c in v if c.isdigit())
+        special_chars = any(c in "!@#$&*" for c in v)
 
-        if not any(c in "!@#$&*" for c in v):
-            raise ValueError(
-                "Password must contain at least one special character (!@#$&*)"
+        logger.debug(
+            "Password validation",
+            uppercase_count=uppercase_count,
+            lowercase_count=lowercase_count,
+            digit_count=digit_count,
+            has_special=special_chars,
+        )
+
+        errors = []
+        if uppercase_count < 2:
+            errors.append("two uppercase letters")
+        if lowercase_count < 3:
+            errors.append("three lowercase letters")
+        if digit_count < 2:
+            errors.append("two digits")
+        if not special_chars:
+            errors.append("one special character (!@#$&*)")
+
+        if errors:
+            logger.warning(
+                "Password validation failed",
+                uppercase_count=uppercase_count,
+                lowercase_count=lowercase_count,
+                digit_count=digit_count,
+                has_special=special_chars,
             )
 
-        digit_count = sum(1 for c in v if c.isdigit())
-        if digit_count < 2:
-            raise ValueError("Password must contain at least two digits")
-
-        lowercase_count = sum(1 for c in v if c.islower())
-        if lowercase_count < 3:
-            raise ValueError("Password must contain at least three lowercase letters")
+            error_msg = (
+                f"Value error, Password must contain at least: {', '.join(errors)}"
+            )
+            raise ValueError(error_msg)
 
         return v
 

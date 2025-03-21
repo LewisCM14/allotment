@@ -2,12 +2,14 @@
 Health API Tests
 """
 
-API_VERSION = "api/v1"
+from app.api.core.config import settings
+
+PREFIX = settings.API_PREFIX
 
 
 def test_health(client):
     """Test the /health endpoint"""
-    response = client.get(f"{API_VERSION}/health")
+    response = client.get(f"{PREFIX}/health")
 
     assert response.status_code == 200
 

@@ -5,6 +5,7 @@ Logging Configuration
 import asyncio
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 from typing import Any, Mapping, MutableMapping, Tuple, Union
 
 import structlog
@@ -37,16 +38,28 @@ def append_to_file(log_entry: str) -> None:
 
 def configure_logging() -> None:
     """Configures structured logging for FastAPI with async file logging."""
+    file_handler = RotatingFileHandler(
+        settings.LOG_FILE,
+        maxBytes=10 * 1024 * 1024,  # 10MB
+        backupCount=5,
+    )
+
     logging.basicConfig(
         format="%(message)s",
         level=logging.INFO,
-        handlers=[logging.StreamHandler(sys.stdout)],
+        handlers=[logging.StreamHandler(sys.stdout), file_handler],
     )
 
     structlog.configure(
         processors=[
+            structlog.stdlib.filter_by_level,
             structlog.processors.TimeStamper(fmt="iso"),
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.processors.StackInfoRenderer(),
             sync_log_to_file,
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
             structlog.processors.JSONRenderer(),
         ],
         context_class=dict,

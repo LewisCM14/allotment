@@ -3,6 +3,7 @@ Auth module unit tests.
 """
 
 import bcrypt
+import pytest
 
 from app.api.v1.auth import (
     verify_password,
@@ -10,7 +11,8 @@ from app.api.v1.auth import (
 )
 
 
-def test_password_hashing():
+@pytest.mark.asyncio
+async def test_password_hashing():
     """Test that passwords are properly hashed and verified."""
     plain_password = "SecurePass123!"
     hashed_password = bcrypt.hashpw(
