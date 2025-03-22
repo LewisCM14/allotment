@@ -8,6 +8,7 @@ from typing import AsyncGenerator, Dict
 import structlog
 from fastapi import FastAPI
 
+from app.api.core.limiter import limiter
 from app.api.core.config import settings
 from app.api.middleware.exception_handler import setup_exception_handler
 from app.api.middleware.logging_middleware import AsyncLoggingMiddleware
@@ -44,6 +45,9 @@ app = FastAPI(
     description="API for managing allotments",
     lifespan=lifespan,
 )
+
+# Rate Limiter
+app.state.limiter = limiter
 
 # Logging Middleware
 logger.debug("Adding logging middleware")

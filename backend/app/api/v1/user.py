@@ -6,11 +6,12 @@ User Endpoints
 """
 
 import structlog
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.database import get_db
+from app.api.core.limiter import limiter
 from app.api.models import User
 from app.api.repositories import UserRepository
 from app.api.schemas import TokenResponse, UserCreate, UserLogin
@@ -28,8 +29,9 @@ logger = structlog.get_logger()
     summary="Register a new user",
     description="Creates a new user account and returns an access token",
 )
+@limiter.limit("5/minute")
 async def create_user(
-    user: UserCreate, db: AsyncSession = Depends(get_db)
+    request: Request, user: UserCreate, db: AsyncSession = Depends(get_db)
 ) -> TokenResponse:
     """
     Create a new user account.
@@ -110,7 +112,10 @@ async def create_user(
     summary="Login user",
     description="Authenticate user and return access token",
 )
-async def login(user: UserLogin, db: AsyncSession = Depends(get_db)) -> TokenResponse:
+@limiter.limit("5/minute")
+async def login(
+    request: Request, user: UserLogin, db: AsyncSession = Depends(get_db)
+) -> TokenResponse:
     """
     Authenticate user and generate access token.
 

@@ -40,7 +40,7 @@ def append_to_file(log_entry: str) -> None:
 def configure_logging() -> None:
     """Configures structured logging for FastAPI with async file logging."""
     handlers = [logging.StreamHandler(sys.stdout)]
-    
+
     if settings.LOG_TO_FILE is True:
         file_handler = RotatingFileHandler(
             settings.LOG_FILE,

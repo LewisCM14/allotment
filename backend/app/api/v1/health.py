@@ -10,10 +10,11 @@ from typing import Dict, Union
 
 import psutil
 import structlog
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.core.limiter import limiter
 from app.api.core.config import settings
 from app.api.core.database import get_db
 
@@ -29,7 +30,9 @@ START_TIME = time.time()
     summary="Health check",
     description="Returns system health information",
 )
+@limiter.limit("10/minute")
 async def health_check(
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> Dict[str, Union[str, float, Dict[str, float]]]:
     """Health check endpoint."""

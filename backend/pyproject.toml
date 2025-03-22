@@ -17,6 +17,7 @@ dependencies = [
     "bcrypt",
     "email-validator",
     "structlog",
+    "slowapi",
 ]
 
 [dependency-groups]

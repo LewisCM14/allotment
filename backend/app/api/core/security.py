@@ -1,3 +1,0 @@
-"""
-Auth Security (JWT Handling)
-"""
