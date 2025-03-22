@@ -19,7 +19,8 @@ def sync_log_to_file(
     event_dict: MutableMapping[str, Any],
 ) -> Union[Mapping[str, Any], str, bytes, bytearray, Tuple[Any, ...]]:
     """Sync wrapper to execute async logging function."""
-    asyncio.create_task(write_log_async(event_dict))
+    if settings.LOG_TO_FILE:
+        asyncio.create_task(write_log_async(event_dict))
     return event_dict
 
 
@@ -38,16 +39,20 @@ def append_to_file(log_entry: str) -> None:
 
 def configure_logging() -> None:
     """Configures structured logging for FastAPI with async file logging."""
-    file_handler = RotatingFileHandler(
-        settings.LOG_FILE,
-        maxBytes=10 * 1024 * 1024,  # 10MB
-        backupCount=5,
-    )
+    handlers = [logging.StreamHandler(sys.stdout)]
+    
+    if settings.LOG_TO_FILE is True:
+        file_handler = RotatingFileHandler(
+            settings.LOG_FILE,
+            maxBytes=10 * 1024 * 1024,  # 10MB
+            backupCount=5,
+        )
+        handlers.append(file_handler)
 
     logging.basicConfig(
         format="%(message)s",
         level=logging.INFO,
-        handlers=[logging.StreamHandler(sys.stdout), file_handler],
+        handlers=handlers,
     )
 
     structlog.configure(

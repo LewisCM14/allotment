@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     APP_VERSION: str
     API_PREFIX: str
     DATABASE_URL: str
+    LOG_TO_FILE: bool
     LOG_FILE: str
 
     JWT_ALGORITHM: str
@@ -107,6 +108,7 @@ settings = Settings(
     APP_VERSION=yaml_config.get("app", {}).get("version", "0.0.0"),
     API_PREFIX=yaml_config.get("app", {}).get("api_prefix", "/api/v1"),
     DATABASE_URL=yaml_config.get("database", {}).get("url"),
+    LOG_TO_FILE=yaml_config.get("app", {}).get("log_to_file", True), 
     LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
     JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm", "RS256"),
     ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
