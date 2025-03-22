@@ -27,7 +27,7 @@
 |||||
 | Client | TypeScript | 5.7.2 | Coding Language |
 | Client | NPM | 10.9.2 | Package Management |
-| Client | Node | 23.9.0 | JavaScript Runtime |
+| Client | Node | 22.14.0 | JavaScript Runtime |
 | Client | Vite | 6.2.0 | Build Tool |
 | Client | React | 19.0.0 | Frontend Framework |
 | Client | React Query | 5.69.0 | State Management (Local) |

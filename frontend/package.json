@@ -1,16 +1,19 @@
 {
-  "name": "allotment",
+  "name": "allotment-client",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "npx @biomejs/biome lint --write ./src",
+    "lint unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
+    "format": "npx @biomejs/biome format --write ./src",
     "preview": "vite preview"
   },
   "dependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@tailwindcss/vite": "^4.0.15",
     "@tanstack/react-query": "^5.69.0",
     "axios": "^1.8.4",
     "react": "^19.0.0",
