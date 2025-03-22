@@ -1,10 +1,11 @@
-import "./App.css";
+import { AuthProvider } from "./features/auth/AuthProvider";
+import AppRoutes from "./routes/AppRoutes";
 
 function App() {
 	return (
-		<>
-			<h1>Allotment</h1>
-		</>
+		<AuthProvider>
+			<AppRoutes />
+		</AuthProvider>
 	);
 }
 
