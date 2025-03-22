@@ -101,8 +101,12 @@ The project uses Postgres as its database and recommends pgAdmin4 as a managemen
 
 1. Install the Frontend dependencies
 
-    _From within the `frontned` folder of the project run the command to install the projects dependencies_
+    _From within the `frontend` folder of the project run the command to install the projects dependencies_
     ```
     npm i
     ```
     > This step assumes you have `Node` & `NPM` installed on your local machine.
+
+1. Copy the `.env.template` to the root of the `frontend` folder.
+    _Rename this file to `.env.local` and reconfigure port 8000 if desired._
+    > In production this file is renamed to `.env`.
