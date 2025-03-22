@@ -25,18 +25,20 @@
 | Server | Ruff | 0.9.10 | Formatting & Linting |
 | Server | MyPy | 1.15 | Type Checking |
 |||||
-| Client | TypeScript | | Coding Language |
-| Client | NPM | | Package Management |
-| Client | React | | Frontend Framework |
-| Client | React Query | | State Management (Local) |
+| Client | TypeScript | 5.7.2 | Coding Language |
+| Client | NPM | 10.9.2 | Package Management |
+| Client | Node | 23.9.0 | JavaScript Runtime |
+| Client | Vite | 6.2.0 | Build Tool |
+| Client | React | 19.0.0 | Frontend Framework |
+| Client | React Query | 5.69.0 | State Management (Local) |
 | Client | ContextAPI | | State Management (Global) |
-| Client | Tailwind | | CSS Library |
+| Client | Tailwind CSS | 4.0.15 | CSS Library |
 | Client | ShadCN | | UI Library |
-| Client | Axios | | API Communication |
-| Client | Workbox | | Service Workers |
-| Client | ZOD | | Form Validation | 
-| Client | React Hook Form | | Form Validation |
-| Client | Biome | | Formatting & Linting |
+| Client | Axios | 1.8.4 | API Communication |
+| Client | Workbox | 7.3.0 | Service Workers |
+| Client | ZOD | 3.24.2 | Form Validation | 
+| Client | React Hook Form | 7.54.2 | Form Validation |
+| Client | Biome | 1.9.4 | Formatting & Linting |
 | Client | MSW | | API Integration Testing |
 | Client | TSL | | Component Testing |
 | Client | Vitest | | Component Testing |

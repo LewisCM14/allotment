@@ -96,3 +96,13 @@ The project uses Postgres as its database and recommends pgAdmin4 as a managemen
     > You may need to set permissions with the following commands:
     > `chmod 600 app/keys/private.pem`
     > `chmod 644 app/keys/public.pem`
+
+## Frontend Setup
+
+1. Install the Frontend dependencies
+
+    _From within the `frontned` folder of the project run the command to install the projects dependencies_
+    ```
+    npm i
+    ```
+    > This step assumes you have `Node` & `NPM` installed on your local machine.
