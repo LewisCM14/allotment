@@ -1,8 +1,17 @@
 import axios from "axios";
 
+export interface ApiError {
+	detail: string;
+	status_code?: number;
+}
+
 const api = axios.create({
-	baseURL: import.meta.env.VITE_API_URL,
-	headers: { "Content-Type": "application/json" },
+	baseURL: `${import.meta.env.VITE_API_URL}`,
+	headers: {
+		"Content-Type": "application/json",
+		Accept: "application/json",
+	},
+	withCredentials: true,
 });
 
 api.interceptors.request.use(
