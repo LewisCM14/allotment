@@ -33,7 +33,7 @@
 | Client | React Query | 5.69.0 | State Management (Local) |
 | Client | ContextAPI | | State Management (Global) |
 | Client | Tailwind CSS | 4.0.15 | CSS Library |
-| Client | ShadCN | | UI Library |
+| Client | ShadCN | 2.4.0 | UI Library |
 | Client | Axios | 1.8.4 | API Communication |
 | Client | Workbox | 7.3.0 | Service Workers |
 | Client | ZOD | 3.24.2 | Form Validation | 
