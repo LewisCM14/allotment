@@ -1,6 +1,6 @@
 {
     "python.analysis.extraPaths": [
-        "./backend/src"
+        "./backend"
     ],
     "python.testing.pytestArgs": [
         "backend"

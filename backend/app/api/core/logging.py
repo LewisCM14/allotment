@@ -6,7 +6,7 @@ import asyncio
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
-from typing import Any, Mapping, MutableMapping, Tuple, Union
+from typing import Any, List, Mapping, MutableMapping, Tuple, Union
 
 import structlog
 
@@ -39,7 +39,9 @@ def append_to_file(log_entry: str) -> None:
 
 def configure_logging() -> None:
     """Configures structured logging for FastAPI with async file logging."""
-    handlers = [logging.StreamHandler(sys.stdout)]
+    handlers: List[Union[logging.StreamHandler, RotatingFileHandler]] = [
+        logging.StreamHandler(sys.stdout)
+    ]
 
     if settings.LOG_TO_FILE is True:
         file_handler = RotatingFileHandler(

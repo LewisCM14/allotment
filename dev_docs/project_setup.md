@@ -110,3 +110,6 @@ The project uses Postgres as its database and recommends pgAdmin4 as a managemen
 1. Copy the `.env.template` to the root of the `frontend` folder.
     _Rename this file to `.env.local` and reconfigure port 8000 if desired._
     > In production this file is renamed to `.env`.
+
+1. Ensure `CORS` configuration
+    _By default the backend is setup to accept the frontend running on port `5173`, ths can be configured differently if desired though._

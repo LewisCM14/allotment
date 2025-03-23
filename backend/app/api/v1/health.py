@@ -14,9 +14,9 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.limiter import limiter
 from app.api.core.config import settings
 from app.api.core.database import get_db
+from app.api.core.limiter import limiter
 
 logger = structlog.get_logger()
 
