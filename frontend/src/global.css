@@ -1,9 +1,13 @@
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
+
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+	--font-heading: 'Oswald', 'Georgia', sans-serif;
+	--font-body: 'Noto Sans', 'Verdana' sans-serif;
 	--radius: 0.625rem;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.129 0.042 264.695);
@@ -115,7 +119,17 @@
 		@apply border-border outline-ring/50;
 	}
 
+	h1,
+	h2,
+	h3,
+	h4,
+	h5,
+	h6 {
+		font-family: var(--font-heading);
+	}
+
 	body {
 		@apply bg-background text-foreground;
+		font-family: var(--font-body);
 	}
 }
