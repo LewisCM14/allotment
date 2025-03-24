@@ -24,6 +24,7 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str
 
+    LOG_LEVEL: str
     LOG_TO_FILE: bool
     LOG_FILE: str
 
@@ -111,6 +112,7 @@ try:
         APP_VERSION=yaml_config.get("app", {}).get("version", "0.0.0"),
         API_PREFIX=yaml_config.get("app", {}).get("api_prefix", "/api/v1"),
         DATABASE_URL=yaml_config.get("database", {}).get("url"),
+        LOG_LEVEL=yaml_config.get("app", {}).get("log_level", "INFO"),
         LOG_TO_FILE=yaml_config.get("app", {}).get("log_to_file", True),
         LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
         CORS_ORIGINS=yaml_config.get("app", {})

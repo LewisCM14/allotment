@@ -2,6 +2,7 @@ app:
   name: "name"
   version: "0.0.0"
   api_prefix: "/api/v1"
+  log_level: "INFO" 
   log_to_file: true
   log_file: "app/app.log"
   cors:

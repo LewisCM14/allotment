@@ -53,7 +53,7 @@ def configure_logging() -> None:
 
     logging.basicConfig(
         format="%(message)s",
-        level=logging.INFO,
+        level=getattr(logging, settings.LOG_LEVEL.upper()),
         handlers=handlers,
     )
 
