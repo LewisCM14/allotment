@@ -22,6 +22,9 @@ interface AuthProviderProps {
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
 	const [isAuthenticated, setIsAuthenticated] = useState(() => {
+		if (import.meta.env.DEV && import.meta.env.VITE_FORCE_AUTH === "true") {
+			return true;
+		}
 		return localStorage.getItem("token") !== null;
 	});
 
