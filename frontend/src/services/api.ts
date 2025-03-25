@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export interface ApiError {
+export interface IApiError {
 	detail: string;
 	status_code?: number;
 }

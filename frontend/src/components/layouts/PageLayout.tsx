@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-interface PageLayoutProps extends React.HTMLAttributes<HTMLDivElement> {
+interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
 	children: React.ReactNode;
 	variant?: "default";
 	centered?: boolean;
@@ -12,7 +12,7 @@ export function PageLayout({
 	centered = true,
 	className,
 	...props
-}: PageLayoutProps) {
+}: IPageLayout) {
 	const widthClasses = {
 		default: "w-[96%] md:w-[84%] lg:w-[66%]",
 	};

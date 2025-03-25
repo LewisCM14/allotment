@@ -1,11 +1,11 @@
 import axios from "axios";
-import api, { type ApiError } from "../../services/api";
+import api, { type IApiError } from "../../services/api";
 
-interface LoginResponse {
+interface ILoginResponse {
 	token: string;
 }
 
-interface LoginRequest {
+interface ILoginRequest {
 	user_email: string;
 	user_password: string;
 }
@@ -13,21 +13,21 @@ interface LoginRequest {
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<LoginResponse> => {
+): Promise<ILoginResponse> => {
 	try {
-		const requestData: LoginRequest = {
+		const requestData: ILoginRequest = {
 			user_email: email,
 			user_password: password,
 		};
 
-		const response = await api.post<LoginResponse>(
+		const response = await api.post<ILoginResponse>(
 			`${import.meta.env.VITE_API_VERSION}/user/auth/login`,
 			requestData,
 		);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			const apiError = error.response?.data as ApiError;
+			const apiError = error.response?.data as IApiError;
 			console.error("API Error:", {
 				status: error.response?.status,
 				data: apiError,

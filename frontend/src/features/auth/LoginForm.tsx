@@ -1,20 +1,20 @@
 import { PageLayout } from "@/components/layouts/PageLayout";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
+import { Label } from "@/components/ui/Label";
 import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
 import { AuthContext } from "../../context/AuthContext";
-import { loginUser } from "./authService";
+import { loginUser } from "./AuthService";
 
-interface LoginFormData {
+interface ILoginFormData {
 	email: string;
 	password: string;
 }
@@ -23,11 +23,11 @@ export function LoginForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
-	const { register, handleSubmit } = useForm<LoginFormData>();
+	const { register, handleSubmit } = useForm<ILoginFormData>();
 	const authContext = useContext(AuthContext);
 	const [error, setError] = useState<string>("");
 
-	const onSubmit = async (data: LoginFormData) => {
+	const onSubmit = async (data: ILoginFormData) => {
 		try {
 			setError("");
 			const { token } = await loginUser(data.email, data.password);

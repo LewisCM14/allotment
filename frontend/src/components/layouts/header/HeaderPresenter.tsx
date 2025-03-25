@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/Button";
 import type { INavLink } from "@/types/NavigationTypes";
 import { Menu } from "lucide-react";
 

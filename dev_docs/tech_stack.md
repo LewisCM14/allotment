@@ -33,6 +33,7 @@
 | Client | React Query | 5.69.0 | State Management (Local) |
 | Client | ContextAPI | | State Management (Global) |
 | Client | Tailwind CSS | 4.0.15 | CSS Library |
+| Client | Radix UI (React Switch) | 1.1.3 | UI Library |
 | Client | ShadCN | 2.4.0 | UI Library |
 | Client | Lucide-React | 0.483.0 | Icon Library | 
 | Client | Axios | 1.8.4 | API Communication |

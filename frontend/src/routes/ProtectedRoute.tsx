@@ -1,11 +1,11 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../features/auth/AuthProvider";
 
-interface ProtectedRouteProps {
+interface IProtectedRoute {
 	children: React.ReactNode;
 }
 
-const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+const ProtectedRoute = ({ children }: IProtectedRoute) => {
 	const { isAuthenticated } = useAuth();
 
 	if (!isAuthenticated) {
