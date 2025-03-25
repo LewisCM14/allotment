@@ -18,7 +18,7 @@ export function PageLayout({
 	};
 
 	return (
-		<main className="min-h-screen w-full flex items-center justify-center">
+		<main className="h-full w-full flex items-center justify-center">
 			<div
 				className={cn(
 					"mx-auto",
