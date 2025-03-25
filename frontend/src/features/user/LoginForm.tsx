@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
-import { AuthContext } from "../../context/AuthContext";
+import { AuthContext } from "../../store/auth/AuthContext";
 import { loginUser } from "./AuthService";
 
 interface ILoginFormData {

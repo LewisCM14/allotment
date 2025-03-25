@@ -1,8 +1,8 @@
 import Footer from "@/components/layouts/footer/FooterContainer";
 import Header from "@/components/layouts/header/HeaderContainer";
-import { ThemeProvider } from "./context/ThemeContext";
-import { AuthProvider } from "./features/auth/AuthProvider";
+import { AuthProvider } from "./features/user/AuthProvider";
 import AppRoutes from "./routes/AppRoutes";
+import { ThemeProvider } from "./store/theme/ThemeContext";
 
 function App() {
 	return (

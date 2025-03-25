@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/Button";
 import { ToggleSwitch } from "@/components/ui/ToggleSwitch";
-import { useTheme } from "@/context/ThemeContext";
+import { useTheme } from "@/store/theme/ThemeContext";
 import type { INavLink } from "@/types/NavigationTypes";
 import { User } from "lucide-react";
 

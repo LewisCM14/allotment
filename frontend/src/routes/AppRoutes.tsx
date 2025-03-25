@@ -1,5 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import { LoginForm } from "../features/auth/LoginForm";
+import { LoginForm } from "../features/user/LoginForm";
 // import NotFound from "../components/NotFound";
 // import ProtectedRoute from "./ProtectedRoute";
 
