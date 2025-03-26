@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../store/auth/AuthContext";
 import { loginUser } from "./UserService";
 
@@ -26,17 +27,20 @@ export function LoginForm({
 	const { register, handleSubmit } = useForm<ILoginFormData>();
 	const authContext = useContext(AuthContext);
 	const [error, setError] = useState<string>("");
+	const navigate = useNavigate();
 
 	const onSubmit = async (data: ILoginFormData) => {
 		try {
 			setError("");
 			const { token } = await loginUser(data.email, data.password);
 			authContext?.login(token);
+			navigate("/");
 		} catch (error) {
 			setError(error instanceof Error ? error.message : "Login failed");
 			console.error("Login failed", error);
 		}
 	};
+
 	return (
 		<PageLayout variant="default" className={className} {...props}>
 			<Card className="w-full">
@@ -57,6 +61,7 @@ export function LoginForm({
 									id="email"
 									type="email"
 									placeholder="m@example.com"
+									autoComplete="email"
 									required
 								/>
 							</div>
@@ -74,6 +79,7 @@ export function LoginForm({
 									{...register("password")}
 									id="password"
 									type="password"
+									autoComplete="current-password"
 									required
 								/>
 							</div>

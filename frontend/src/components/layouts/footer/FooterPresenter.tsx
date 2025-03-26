@@ -34,7 +34,7 @@ export function FooterPresenter({
 						<a
 							key={link.label}
 							href={link.href}
-							onClick={closeMenu}
+							onClick={link.onClick || closeMenu}
 							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10 hover:translate-x-1"
 						>
 							{link.label}
@@ -47,21 +47,19 @@ export function FooterPresenter({
 				<div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
 					<div className="w-1/3 flex items-center gap-4">
 						{isAuthenticated && (
-							<>
-								<Button
-									variant="ghost"
-									onClick={onMenuClick}
-									data-menu-button
-									className="hover:bg-accent/10"
-								>
-									<User size={24} />
-								</Button>
-								<ToggleSwitch
-									checked={theme === "dark"}
-									onCheckedChange={() => toggleTheme()}
-								/>
-							</>
+							<Button
+								variant="ghost"
+								onClick={onMenuClick}
+								data-menu-button
+								className="hover:bg-accent/10"
+							>
+								<User size={24} />
+							</Button>
 						)}
+						<ToggleSwitch
+							checked={theme === "dark"}
+							onCheckedChange={() => toggleTheme()}
+						/>
 					</div>
 
 					<div className="w-1/3 flex justify-center">

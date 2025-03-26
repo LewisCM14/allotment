@@ -1,22 +1,30 @@
 import Footer from "@/components/layouts/footer/FooterContainer";
 import Header from "@/components/layouts/header/HeaderContainer";
-import { AuthProvider } from "./features/user/AuthProvider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
-import { ThemeProvider } from "./store/theme/ThemeContext";
+import { AuthProvider } from "./store/auth/AuthProvider";
+import { ThemeProvider } from "./store/theme/ThemeProvider";
+
+const queryClient = new QueryClient();
 
 function App() {
 	return (
-		<AuthProvider>
-			<ThemeProvider>
-				<div className="h-screen flex flex-col">
-					<Header />
-					<div className="flex-1 mb-16">
-						<AppRoutes />
-					</div>
-					<Footer />
-				</div>
-			</ThemeProvider>
-		</AuthProvider>
+		<BrowserRouter>
+			<QueryClientProvider client={queryClient}>
+				<AuthProvider>
+					<ThemeProvider>
+						<div className="h-screen flex flex-col">
+							<Header />
+							<div className="flex-1 mb-16">
+								<AppRoutes />
+							</div>
+							<Footer />
+						</div>
+					</ThemeProvider>
+				</AuthProvider>
+			</QueryClientProvider>
+		</BrowserRouter>
 	);
 }
 

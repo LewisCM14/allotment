@@ -1,27 +1,28 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 import { LoginForm } from "../features/user/LoginForm";
+import ProtectedRoute from "./ProtectedRoute";
 // import NotFound from "../components/NotFound";
-// import ProtectedRoute from "./ProtectedRoute";
 
 const AppRoutes = () => {
 	return (
-		<BrowserRouter>
-			<Routes>
-				{/* Public routes */}
-				<Route path="/login" element={<LoginForm />} />
+		<Routes>
+			{/* Public routes */}
+			<Route path="/login" element={<LoginForm />} />
 
-				{/* Protected routes */}
-				{/* <Route element={}>
-                    <Route path="/" element={
-                        <ProtectedRoute>
-                        </ProtectedRoute>
-                    } />
-                </Route> */}
+			{/* Protected routes */}
+			<Route
+				path="/"
+				element={
+					<ProtectedRoute>
+						{/* Replace this with your home component */}
+						<div>Home Page</div>
+					</ProtectedRoute>
+				}
+			/>
 
-				{/* Handle undefined routes */}
-				{/* <Route path="*" element={<NotFound />} /> */}
-			</Routes>
-		</BrowserRouter>
+			{/* Undefined route */}
+			{/* <Route path="*" element={<NotFound />} /> */}
+		</Routes>
 	);
 };
 

@@ -1,4 +1,4 @@
-import { useAuth } from "@/features/user/AuthProvider";
+import { useAuth } from "@/store/auth/AuthContext";
 import type { INavLink } from "@/types/NavigationTypes";
 import { useCallback, useEffect, useState } from "react";
 import { HeaderPresenter } from "./HeaderPresenter";

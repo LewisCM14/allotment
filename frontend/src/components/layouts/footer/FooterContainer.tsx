@@ -1,19 +1,29 @@
-import { useAuth } from "@/features/user/AuthProvider";
+import { useLogout } from "@/hooks/useLogout";
+import { useAuth } from "@/store/auth/AuthContext";
 import type { INavLink } from "@/types/NavigationTypes";
 import { useCallback, useEffect, useState } from "react";
 import { FooterPresenter } from "./FooterPresenter";
 
-const navLinks: INavLink[] = [
-	{ href: "#", label: "Profile" },
-	{ href: "#", label: "Allotment" },
-	{ href: "#", label: "Preferences" },
-	// { href: "#", label: "Notifications" },
-	{ href: "#", label: "Sign Out" },
-];
-
 export default function Footer() {
 	const [isOpen, setIsOpen] = useState(false);
 	const { isAuthenticated } = useAuth();
+	const logout = useLogout();
+
+	const navLinks: INavLink[] = [
+		{ href: "#", label: "Profile" },
+		{ href: "#", label: "Allotment" },
+		{ href: "#", label: "Preferences" },
+		// { href: "#", label: "Notifications" },
+		{
+			href: "#",
+			label: "Sign Out",
+			onClick: (e) => {
+				e.preventDefault();
+				logout();
+				closeMenu();
+			},
+		},
+	];
 
 	const handleMenuClick = useCallback(() => {
 		setIsOpen((prev) => !prev);

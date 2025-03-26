@@ -1,34 +1,18 @@
-import { useQueryClient } from "@tanstack/react-query";
-import { createContext, type ReactNode, useState } from "react";
+import { createContext, useContext } from "react";
 
-interface AuthContextType {
+export interface IAuthContext {
 	token: string | null;
+	isAuthenticated: boolean;
 	login: (token: string) => void;
 	logout: () => void;
 }
 
-export const AuthContext = createContext<AuthContextType | null>(null);
+export const AuthContext = createContext<IAuthContext | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-	const [token, setToken] = useState<string | null>(
-		localStorage.getItem("token"),
-	);
-	const queryClient = useQueryClient();
-
-	const login = (token: string) => {
-		setToken(token);
-		localStorage.setItem("token", token);
-	};
-
-	const logout = () => {
-		setToken(null);
-		localStorage.removeItem("token");
-		queryClient.clear();
-	};
-
-	return (
-		<AuthContext.Provider value={{ token, login, logout }}>
-			{children}
-		</AuthContext.Provider>
-	);
-};
+export function useAuth() {
+	const context = useContext(AuthContext);
+	if (context === undefined) {
+		throw new Error("useAuth must be used within an AuthProvider");
+	}
+	return context;
+}

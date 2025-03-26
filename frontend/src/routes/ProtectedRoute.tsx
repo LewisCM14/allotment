@@ -1,5 +1,5 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "../features/user/AuthProvider";
+import { useAuth } from "../store/auth/AuthContext";
 
 interface IProtectedRoute {
 	children: React.ReactNode;
