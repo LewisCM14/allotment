@@ -10,10 +10,10 @@ export default function Footer() {
 	const logout = useLogout();
 
 	const navLinks: INavLink[] = [
-		{ href: "#", label: "Profile" },
-		{ href: "#", label: "Allotment" },
-		{ href: "#", label: "Preferences" },
-		// { href: "#", label: "Notifications" },
+		{ href: "/profile", label: "Profile" },
+		{ href: "/allotment", label: "Allotment" },
+		{ href: "/preferences", label: "Preferences" },
+		{ href: "/notifications", label: "Notifications" },
 		{
 			href: "#",
 			label: "Sign Out",

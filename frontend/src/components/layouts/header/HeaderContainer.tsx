@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { HeaderPresenter } from "./HeaderPresenter";
 
 const navLinks: INavLink[] = [
-	{ href: "#", label: "Grow Guides" },
-	{ href: "#", label: "Families" },
-	{ href: "#", label: "Public Guides" },
+	{ href: "/guides", label: "Grow Guides" },
+	{ href: "/families", label: "Families" },
+	{ href: "/public-guides", label: "Public Guides" },
 ];
 
 export default function Header() {

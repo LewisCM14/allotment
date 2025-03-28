@@ -1,9 +1,9 @@
+import NotFound from "@/components/NotFound";
 import RegisterForm from "@/features/user/RegisterForm";
 import { Route, Routes } from "react-router-dom";
 import { LoginForm } from "../features/user/LoginForm";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
-// import NotFound from "../components/NotFound";
 
 const AppRoutes = () => {
 	return (
@@ -37,8 +37,8 @@ const AppRoutes = () => {
 				}
 			/>
 
-			{/* Undefined route */}
-			{/* <Route path="*" element={<NotFound />} /> */}
+			{/* Undefined route - catches all other routes */}
+			<Route path="*" element={<NotFound />} />
 		</Routes>
 	);
 };
