@@ -6,7 +6,7 @@ app:
   log_to_file: true
   log_file: "app/app.log"
   cors:
-    origins: ["http://127.0.0.1:5173"]
+    origins: ["http://127.0.0.1:5173", "http://localhost:5173"]
     allow_credentials: true
     allow_methods: ["*"]
     allow_headers: ["*"]

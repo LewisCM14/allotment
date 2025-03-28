@@ -67,6 +67,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             )
             await db.rollback()
             logger.info("Database session rolled back", session_id=session_id)
+            raise
         finally:
             await db.close()
             logger.debug("Database session closed", session_id=session_id)

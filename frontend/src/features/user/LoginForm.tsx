@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useContext, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../store/auth/AuthContext";
 import { loginUser } from "./UserService";
 
@@ -32,8 +32,8 @@ export function LoginForm({
 	const onSubmit = async (data: ILoginFormData) => {
 		try {
 			setError("");
-			const { token } = await loginUser(data.email, data.password);
-			authContext?.login(token);
+			const { access_token } = await loginUser(data.email, data.password);
+			authContext?.login(access_token);
 			navigate("/");
 		} catch (error) {
 			setError(error instanceof Error ? error.message : "Login failed");
@@ -91,9 +91,9 @@ export function LoginForm({
 						</div>
 						<div className="mt-4 text-center text-sm">
 							Don&apos;t have an account?{" "}
-							{/* <a href="#" className="underline underline-offset-4">
-								Sign up
-							</a> */}
+							<Link to="/register" className="underline underline-offset-4">
+								Register
+							</Link>
 						</div>
 					</form>
 				</CardContent>

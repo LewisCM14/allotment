@@ -14,9 +14,9 @@ function App() {
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
 					<ThemeProvider>
-						<div className="h-screen flex flex-col">
+						<div className="flex flex-col h-screen">
 							<Header />
-							<div className="flex-1 mb-16">
+							<div className="flex-1 overflow-y-auto pt-16 pb-16">
 								<AppRoutes />
 							</div>
 							<Footer />

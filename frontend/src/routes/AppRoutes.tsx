@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import { LoginForm } from "../features/user/LoginForm";
 import ProtectedRoute from "./ProtectedRoute";
+import RegisterForm from "@/features/user/RegisterForm";
 // import NotFound from "../components/NotFound";
 
 const AppRoutes = () => {
@@ -8,6 +9,7 @@ const AppRoutes = () => {
 		<Routes>
 			{/* Public routes */}
 			<Route path="/login" element={<LoginForm />} />
+			<Route path="/register" element={<RegisterForm />} />
 
 			{/* Protected routes */}
 			<Route

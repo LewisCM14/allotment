@@ -1,9 +1,48 @@
 import axios from "axios";
-import api, { type IApiError } from "../../services/api";
+import api, { handleApiError } from "../../services/api";
 
-interface ILoginResponse {
-	token: string;
+interface IRegisterRequest {
+	user_email: string;
+	user_password: string;
+	user_first_name: string;
+	user_country_code: string;
 }
+
+interface IAuthResponse {
+	access_token: string;
+}
+
+export const registerUser = async (
+	email: string,
+	password: string,
+	firstName: string,
+	countryCode: string,
+): Promise<IAuthResponse> => {
+	try {
+		const requestData: IRegisterRequest = {
+			user_email: email,
+			user_password: password,
+			user_first_name: firstName,
+			user_country_code: countryCode,
+		};
+
+		const response = await api.post<IAuthResponse>(
+			`${import.meta.env.VITE_API_VERSION}/user`,
+			requestData,
+		);
+		return response.data;
+	} catch (error) {
+		if (
+			axios.isAxiosError(error) &&
+			(error.response?.status === 409 || error.response?.status === 400)
+		) {
+			throw new Error(
+				error.response?.data?.detail || "Email already registered",
+			);
+		}
+		return handleApiError(error, "Registration failed");
+	}
+};
 
 interface ILoginRequest {
 	user_email: string;
@@ -13,37 +52,19 @@ interface ILoginRequest {
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<ILoginResponse> => {
+): Promise<IAuthResponse> => {
 	try {
 		const requestData: ILoginRequest = {
 			user_email: email,
 			user_password: password,
 		};
 
-		const response = await api.post<ILoginResponse>(
+		const response = await api.post<IAuthResponse>(
 			`${import.meta.env.VITE_API_VERSION}/user/auth/login`,
 			requestData,
 		);
 		return response.data;
 	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			const apiError = error.response?.data as IApiError;
-			console.error("API Error:", {
-				status: error.response?.status,
-				data: apiError,
-				url: error.config?.url,
-			});
-
-			if (error.response?.status === 422) {
-				const validationErrors = apiError.detail;
-				const errorMessage = Array.isArray(validationErrors)
-					? validationErrors.map((err) => err.msg).join(", ")
-					: "Invalid input data";
-				throw new Error(errorMessage);
-			}
-
-			throw new Error(apiError?.detail || "Login failed");
-		}
-		throw error;
+		return handleApiError(error, "Login failed");
 	}
 };

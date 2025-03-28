@@ -32,8 +32,8 @@ class UserCreate(BaseModel):
             max_length=30,
         ),
     ] = Field(
-        description="Password must contain: 2 uppercase, 1 special char, 2 digits, 3 lowercase",
-        examples=["TestPass123!@"],
+        description="Password must contain at least: 1 uppercase letter, 1 number, and 1 special character",
+        examples=["TestPass1!"],
     )
 
     user_first_name: Annotated[
@@ -89,35 +89,31 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password(cls, v: str) -> str:
         """Validate password complexity requirements."""
-        # Count character types
+
         uppercase_count = sum(1 for c in v if c.isupper())
-        lowercase_count = sum(1 for c in v if c.islower())
         digit_count = sum(1 for c in v if c.isdigit())
-        special_chars = any(c in "!@#$&*" for c in v)
+        special_chars_set = "!@#$%^&*()-_=+[]{}|;:'\",.<>/?`~"
+        special_chars = any(c in special_chars_set for c in v)
 
         logger.debug(
             "Password validation",
             uppercase_count=uppercase_count,
-            lowercase_count=lowercase_count,
             digit_count=digit_count,
             has_special=special_chars,
         )
 
         errors = []
-        if uppercase_count < 2:
-            errors.append("two uppercase letters")
-        if lowercase_count < 3:
-            errors.append("three lowercase letters")
-        if digit_count < 2:
-            errors.append("two digits")
+        if uppercase_count < 1:
+            errors.append("one uppercase letter")
+        if digit_count < 1:
+            errors.append("one digit")
         if not special_chars:
-            errors.append("one special character (!@#$&*)")
+            errors.append(f"one special character ({special_chars_set})")
 
         if errors:
             logger.warning(
                 "Password validation failed",
                 uppercase_count=uppercase_count,
-                lowercase_count=lowercase_count,
                 digit_count=digit_count,
                 has_special=special_chars,
             )

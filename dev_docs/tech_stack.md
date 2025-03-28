@@ -30,8 +30,7 @@
 | Client | Node | 22.14.0 | JavaScript Runtime |
 | Client | Vite | 6.2.0 | Build Tool |
 | Client | React | 19.0.0 | Frontend Framework |
-| Client | React Query | 5.69.0 | State Management (Local) |
-| Client | ContextAPI | | State Management (Global) |
+| Client | React Query | 5.69.0 | State Management |
 | Client | Tailwind CSS | 4.0.15 | CSS Library |
 | Client | Radix UI (React Switch) | 1.1.3 | UI Library |
 | Client | ShadCN | 2.4.0 | UI Library |
@@ -40,6 +39,7 @@
 | Client | Workbox | 7.3.0 | Service Workers |
 | Client | ZOD | 3.24.2 | Form Validation | 
 | Client | React Hook Form | 7.54.2 | Form Validation |
+| Client | Countries List | 3.1.1 | Country Code Library |
 | Client | Biome | 1.9.4 | Formatting & Linting |
 | Client | MSW | | API Integration Testing |
 | Client | TSL | | Component Testing |
