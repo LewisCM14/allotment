@@ -41,3 +41,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# dev
+
+blueprint.md

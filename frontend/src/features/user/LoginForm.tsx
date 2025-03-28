@@ -9,7 +9,8 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { useContext, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { useCallback, useContext, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../store/auth/AuthContext";
@@ -28,6 +29,11 @@ export function LoginForm({
 	const authContext = useContext(AuthContext);
 	const [error, setError] = useState<string>("");
 	const navigate = useNavigate();
+
+	const [showPassword, setShowPassword] = useState(false);
+	const togglePasswordVisibility = useCallback(() => {
+		setShowPassword((prev) => !prev);
+	}, []);
 
 	const onSubmit = async (data: ILoginFormData) => {
 		try {
@@ -69,19 +75,37 @@ export function LoginForm({
 								<div className="flex items-center">
 									<Label htmlFor="password">Password</Label>
 									{/* <a
-										href="#"
-										className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-									>
-										Forgot your password?
-									</a> */}
+            href="#"
+            className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+        >
+            Forgot your password?
+        </a> */}
 								</div>
-								<Input
-									{...register("password")}
-									id="password"
-									type="password"
-									autoComplete="current-password"
-									required
-								/>
+								<div className="relative">
+									<Input
+										{...register("password")}
+										id="password"
+										type={showPassword ? "text" : "password"}
+										autoComplete="current-password"
+										required
+									/>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="absolute right-0 top-0 h-full px-3"
+										onClick={togglePasswordVisibility}
+										aria-label={
+											showPassword ? "Hide password" : "Show password"
+										}
+									>
+										{showPassword ? (
+											<EyeOff className="h-4 w-4" />
+										) : (
+											<Eye className="h-4 w-4" />
+										)}
+									</Button>
+								</div>
 							</div>
 							<div className="flex flex-col gap-3">
 								<Button type="submit" className="w-full">
