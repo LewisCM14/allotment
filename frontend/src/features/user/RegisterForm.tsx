@@ -7,26 +7,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/Card";
+import CountrySelector from "@/components/ui/CountrySelector";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-
-import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-} from "@/components/ui/Command";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "@/components/ui/Popover";
-import { getCountryOptions } from "@/lib/countries";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Check, ChevronsUpDown, Eye, EyeOff } from "lucide-react";
-import { useContext, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
+import { Eye, EyeOff } from "lucide-react";
+import { useCallback, useContext, useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../store/auth/AuthContext";
 import { type RegisterFormData, registerSchema } from "./RegisterSchema";
@@ -43,13 +30,21 @@ export default function RegisterForm({
 		formState: { errors, isSubmitting },
 	} = useForm<RegisterFormData>({
 		resolver: zodResolver(registerSchema),
+		mode: "onBlur",
 	});
 	const [error, setError] = useState<string>("");
-	const [showPassword, setShowPassword] = useState(false);
-	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const authContext = useContext(AuthContext);
 	const navigate = useNavigate();
-	const countryOptions = getCountryOptions();
+
+	const [showPassword, setShowPassword] = useState(false);
+	const togglePasswordVisibility = useCallback(() => {
+		setShowPassword((prev) => !prev);
+	}, []);
+
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+	const toggleConfirmPasswordVisibility = useCallback(() => {
+		setShowConfirmPassword((prev) => !prev);
+	}, []);
 
 	const onSubmit = async (data: RegisterFormData) => {
 		try {
@@ -109,7 +104,7 @@ export default function RegisterForm({
 										variant="ghost"
 										size="icon"
 										className="absolute right-0 top-0 h-full px-3"
-										onClick={() => setShowPassword(!showPassword)}
+										onClick={togglePasswordVisibility}
 										aria-label={
 											showPassword ? "Hide password" : "Show password"
 										}
@@ -143,7 +138,7 @@ export default function RegisterForm({
 										variant="ghost"
 										size="icon"
 										className="absolute right-0 top-0 h-full px-3"
-										onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+										onClick={toggleConfirmPasswordVisibility}
 										aria-label={
 											showConfirmPassword ? "Hide password" : "Show password"
 										}
@@ -179,67 +174,10 @@ export default function RegisterForm({
 
 							{/* Country Code Field */}
 							<div className="grid gap-3">
-								<Label htmlFor="country_code">Country</Label>
-								<Controller
+								<CountrySelector
 									control={control}
-									name="country_code"
-									render={({ field }) => {
-										const [open, setOpen] = useState(false);
-
-										return (
-											<Popover open={open} onOpenChange={setOpen}>
-												<PopoverTrigger asChild>
-													<Button // biome-ignore lint/a11y/useSemanticElements: This is a valid ARIA pattern for a custom combobox
-														variant="outline"
-														role="combobox"
-														aria-expanded={open}
-														aria-haspopup="listbox"
-														className="w-full justify-between"
-													>
-														{field.value
-															? countryOptions.find(
-																	(country) => country.value === field.value,
-																)?.label
-															: "Select country..."}
-														<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-													</Button>
-												</PopoverTrigger>
-												<PopoverContent className="w-full p-0">
-													<Command>
-														<CommandInput placeholder="Search country..." />
-														<CommandEmpty>No country found.</CommandEmpty>
-														<CommandGroup className="max-h-64 overflow-y-auto">
-															{countryOptions.map((country) => (
-																<CommandItem
-																	key={country.value}
-																	value={country.value}
-																	onSelect={(currentValue) => {
-																		field.onChange(currentValue);
-																		setOpen(false);
-																	}}
-																>
-																	<Check
-																		className={`mr-2 h-4 w-4 ${
-																			field.value === country.value
-																				? "opacity-100"
-																				: "opacity-0"
-																		}`}
-																	/>
-																	{country.label}
-																</CommandItem>
-															))}
-														</CommandGroup>
-													</Command>
-												</PopoverContent>
-											</Popover>
-										);
-									}}
+									error={errors.country_code}
 								/>
-								{errors.country_code && (
-									<p className="text-sm text-red-500">
-										{errors.country_code.message}
-									</p>
-								)}
 							</div>
 
 							<div className="flex flex-col gap-3">
