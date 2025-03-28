@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { AuthContext } from "./AuthContext";
 
 interface IAuthProvider {
@@ -17,15 +17,25 @@ export function AuthProvider({ children }: IAuthProvider) {
 		return localStorage.getItem("token") !== null;
 	});
 
+	const [hasLoggedOut, setHasLoggedOut] = useState(false);
+
+	useEffect(() => {
+		if (hasLoggedOut) {
+			setIsAuthenticated(false);
+		}
+	}, [hasLoggedOut]);
+
 	const login = (token: string) => {
 		setToken(token);
 		setIsAuthenticated(true);
+		setHasLoggedOut(false);
 		localStorage.setItem("token", token);
 	};
 
 	const logout = () => {
 		setToken(null);
 		setIsAuthenticated(false);
+		setHasLoggedOut(true);
 		localStorage.removeItem("token");
 	};
 
