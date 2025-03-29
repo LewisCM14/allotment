@@ -181,20 +181,23 @@ def create_refresh_token(user_id: str) -> str:
         str: Encoded JWT refresh token
     """
     try:
-        expires_delta = timedelta(days=7)
+        expires_delta = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         expire = datetime.now(UTC) + expires_delta
         payload = {
             "sub": user_id,
             "exp": expire,
             "iat": datetime.now(UTC),
-            "type": "refresh",  # Mark as refresh token
-            "jti": str(uuid.uuid4()),  # Add a unique token ID
+            "type": "refresh",
+            "jti": str(uuid.uuid4()),
         }
         token = jwt.encode(
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
         )
         logger.info(
-            "Refresh token created", user_id=user_id, expires_at=expire.isoformat()
+            "Refresh token created", 
+            user_id=user_id, 
+            expires_at=expire.isoformat(),
+            expires_in_days=settings.REFRESH_TOKEN_EXPIRE_DAYS
         )
         return cast(str, token.decode("utf-8"))
     except Exception as e:

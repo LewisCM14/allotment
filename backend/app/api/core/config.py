@@ -35,6 +35,7 @@ class Settings(BaseSettings):
 
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
+    REFRESH_TOKEN_EXPIRE_DAYS: int
     PRIVATE_KEY_PATH: str
     PUBLIC_KEY_PATH: str
     PRIVATE_KEY: bytes | None = None
@@ -130,6 +131,9 @@ try:
         JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm", "RS256"),
         ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
             "access_token_expire_minutes", 60
+        ),
+        REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(  # Add this block
+            "refresh_token_expire_days", 7
         ),
         PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
             "private_key_path", "private.pem"
