@@ -52,7 +52,23 @@ async def setup_db():
         await conn.run_sync(Base.metadata.drop_all)
 
 
-@pytest.fixture(scope="module", name="client")
+@pytest.fixture(name="client")
 def _client():
-    """Creates a FastAPI test client."""
-    return TestClient(app)
+    """Create a fresh test client for each test."""
+    from app.main import app
+
+    with TestClient(app) as client:
+        yield client
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limits():
+    """Disable rate limits for tests."""
+    from app.api.core.limiter import limiter
+
+    original_enabled = limiter.enabled
+    limiter.enabled = False
+
+    yield
+
+    limiter.enabled = original_enabled

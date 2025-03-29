@@ -1,10 +1,17 @@
 import { createContext, useContext } from "react";
 
+export interface TokenPair {
+	access_token: string;
+	refresh_token: string;
+}
+
 export interface IAuthContext {
-	token: string | null;
+	accessToken: string | null;
+	refreshToken: string | null;
 	isAuthenticated: boolean;
-	login: (token: string) => void;
+	login: (tokenPair: TokenPair) => void;
 	logout: () => void;
+	refreshAccessToken: () => Promise<boolean>;
 }
 
 export const AuthContext = createContext<IAuthContext | undefined>(undefined);

@@ -1,3 +1,8 @@
-from app.api.schemas.user.user_schema import TokenResponse, UserCreate, UserLogin
+from app.api.schemas.user.user_schema import (
+    RefreshRequest,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+)
 
-__all__ = ["TokenResponse", "UserCreate", "UserLogin"]
+__all__ = ["TokenResponse", "UserCreate", "UserLogin", "RefreshRequest"]

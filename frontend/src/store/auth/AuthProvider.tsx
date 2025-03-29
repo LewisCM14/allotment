@@ -1,20 +1,25 @@
+import api from "@/services/api";
 import { type ReactNode, useEffect, useState } from "react";
-import { AuthContext } from "./AuthContext";
+import { AuthContext, type TokenPair } from "./AuthContext";
 
 interface IAuthProvider {
 	children: ReactNode;
 }
 
 export function AuthProvider({ children }: IAuthProvider) {
-	const [token, setToken] = useState<string | null>(() => {
-		return localStorage.getItem("token");
+	const [accessToken, setAccessToken] = useState<string | null>(() => {
+		return localStorage.getItem("access_token");
+	});
+
+	const [refreshToken, setRefreshToken] = useState<string | null>(() => {
+		return localStorage.getItem("refresh_token");
 	});
 
 	const [isAuthenticated, setIsAuthenticated] = useState(() => {
 		if (import.meta.env.DEV && import.meta.env.VITE_FORCE_AUTH === "true") {
 			return true;
 		}
-		return localStorage.getItem("token") !== null;
+		return localStorage.getItem("access_token") !== null;
 	});
 
 	const [hasLoggedOut, setHasLoggedOut] = useState(false);
@@ -25,22 +30,58 @@ export function AuthProvider({ children }: IAuthProvider) {
 		}
 	}, [hasLoggedOut]);
 
-	const login = (token: string) => {
-		setToken(token);
+	const login = (tokenPair: TokenPair) => {
+		setAccessToken(tokenPair.access_token);
+		setRefreshToken(tokenPair.refresh_token);
 		setIsAuthenticated(true);
 		setHasLoggedOut(false);
-		localStorage.setItem("token", token);
+		localStorage.setItem("access_token", tokenPair.access_token);
+		localStorage.setItem("refresh_token", tokenPair.refresh_token);
+	};
+
+	const refreshAccessToken = async (): Promise<boolean> => {
+		try {
+			if (!refreshToken) {
+				return false;
+			}
+
+			const response = await api.post<TokenPair>(
+				`${import.meta.env.VITE_API_VERSION}/user/auth/refresh`,
+				{ refresh_token: refreshToken },
+			);
+
+			setAccessToken(response.data.access_token);
+			setRefreshToken(response.data.refresh_token);
+			localStorage.setItem("access_token", response.data.access_token);
+			localStorage.setItem("refresh_token", response.data.refresh_token);
+
+			return true;
+		} catch (error) {
+			logout();
+			return false;
+		}
 	};
 
 	const logout = () => {
-		setToken(null);
+		setAccessToken(null);
+		setRefreshToken(null);
 		setIsAuthenticated(false);
 		setHasLoggedOut(true);
-		localStorage.removeItem("token");
+		localStorage.removeItem("access_token");
+		localStorage.removeItem("refresh_token");
 	};
 
 	return (
-		<AuthContext.Provider value={{ token, isAuthenticated, login, logout }}>
+		<AuthContext.Provider
+			value={{
+				accessToken,
+				refreshToken,
+				isAuthenticated,
+				login,
+				logout,
+				refreshAccessToken,
+			}}
+		>
 			{children}
 		</AuthContext.Provider>
 	);

@@ -12,10 +12,10 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../store/auth/AuthContext";
+import { useAuth } from "../../store/auth/AuthContext";
 import { type RegisterFormData, registerSchema } from "./RegisterSchema";
 import { registerUser } from "./UserService";
 
@@ -33,7 +33,7 @@ export default function RegisterForm({
 		mode: "onBlur",
 	});
 	const [error, setError] = useState<string>("");
-	const authContext = useContext(AuthContext);
+	const { login } = useAuth();
 	const navigate = useNavigate();
 
 	const [showPassword, setShowPassword] = useState(false);
@@ -49,13 +49,13 @@ export default function RegisterForm({
 	const onSubmit = async (data: RegisterFormData) => {
 		try {
 			setError("");
-			const { access_token } = await registerUser(
+			const tokenPair = await registerUser(
 				data.email,
 				data.password,
 				data.first_name,
 				data.country_code,
 			);
-			authContext?.login(access_token);
+			login(tokenPair);
 			navigate("/");
 		} catch (error) {
 			setError(error instanceof Error ? error.message : "Registration failed");

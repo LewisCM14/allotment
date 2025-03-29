@@ -10,10 +10,10 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Eye, EyeOff } from "lucide-react";
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../store/auth/AuthContext";
+import { useAuth } from "../../store/auth/AuthContext";
 import { loginUser } from "./UserService";
 
 interface ILoginFormData {
@@ -26,7 +26,7 @@ export function LoginForm({
 	...props
 }: React.ComponentProps<"div">) {
 	const { register, handleSubmit } = useForm<ILoginFormData>();
-	const authContext = useContext(AuthContext);
+	const { login } = useAuth();
 	const [error, setError] = useState<string>("");
 	const navigate = useNavigate();
 
@@ -38,8 +38,8 @@ export function LoginForm({
 	const onSubmit = async (data: ILoginFormData) => {
 		try {
 			setError("");
-			const { access_token } = await loginUser(data.email, data.password);
-			authContext?.login(access_token);
+			const tokenPair = await loginUser(data.email, data.password);
+			login(tokenPair);
 			navigate("/");
 		} catch (error) {
 			setError(error instanceof Error ? error.message : "Login failed");
@@ -74,12 +74,6 @@ export function LoginForm({
 							<div className="grid gap-3">
 								<div className="flex items-center">
 									<Label htmlFor="password">Password</Label>
-									{/* <a
-            href="#"
-            className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-        >
-            Forgot your password?
-        </a> */}
 								</div>
 								<div className="relative">
 									<Input

@@ -5,17 +5,21 @@ User Endpoints
 - Returns JWT tokens for authenticated users
 """
 
+import uuid
+
 import structlog
+from authlib.jose import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.models import User
 from app.api.repositories import UserRepository
-from app.api.schemas import TokenResponse, UserCreate, UserLogin
-from app.api.v1.auth import create_access_token, verify_password
+from app.api.schemas import RefreshRequest, TokenResponse, UserCreate, UserLogin
+from app.api.v1.auth import create_access_token, create_refresh_token, verify_password
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -80,7 +84,8 @@ async def create_user(
             user_id=str(new_user.user_id),
             email=user.user_email,
         )
-        return TokenResponse(access_token=access_token)
+        refresh_token = create_refresh_token(user_id=str(new_user.user_id))
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     except HTTPException:
         raise
@@ -161,10 +166,12 @@ async def login(
             )
 
         access_token = create_access_token(user_id=str(db_user.user_id))
+        refresh_token = create_refresh_token(user_id=str(db_user.user_id))
+
         logger.info(
             "Login successful", email=user.user_email, user_id=str(db_user.user_id)
         )
-        return TokenResponse(access_token=access_token)
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
 
     except HTTPException:
         raise
@@ -182,4 +189,81 @@ async def login(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during authentication",
+        ) from e
+
+
+@router.post(
+    "/auth/refresh",
+    tags=["User"],
+    response_model=TokenResponse,
+    summary="Refresh access token",
+    description="Generate new access and refresh tokens using an existing refresh token",
+)
+@limiter.limit("10/minute")
+async def refresh_token(
+    request: Request, refresh_data: RefreshRequest, db: AsyncSession = Depends(get_db)
+) -> TokenResponse:
+    try:
+        try:
+            payload = jwt.decode(refresh_data.refresh_token, settings.PUBLIC_KEY)
+        except Exception as jwt_error:
+            logger.error("Invalid token format", error=str(jwt_error))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        if payload.get("type") != "refresh":
+            logger.warning("Invalid token type for refresh")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token type",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        user_id = payload.get("sub")
+        if not user_id:
+            logger.warning("Missing subject in refresh token")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        try:
+            uuid_user_id = uuid.UUID(user_id)
+        except ValueError:
+            logger.error("Invalid UUID format in token", user_id=user_id)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID format",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        query = select(User).where(User.user_id == uuid_user_id)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            logger.warning("User from refresh token not found", user_id=user_id)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        access_token = create_access_token(user_id=str(user.user_id))
+        new_refresh_token = create_refresh_token(user_id=str(user.user_id))
+
+        logger.info("Tokens refreshed successfully", user_id=user_id)
+        return TokenResponse(access_token=access_token, refresh_token=new_refresh_token)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Unexpected error during token refresh", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during token refresh",
         ) from e

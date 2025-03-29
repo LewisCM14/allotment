@@ -169,6 +169,11 @@ class TokenResponse(BaseModel):
         examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
     )
 
+    refresh_token: str = Field(
+        description="JWT refresh token for obtaining new access tokens",
+        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+    )
+
     token_type: str = Field(
         default="bearer", description="Token type", examples=["bearer"]
     )
@@ -177,7 +182,25 @@ class TokenResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "token_type": "bearer",
+            }
+        }
+    )
+
+
+class RefreshRequest(BaseModel):
+    """Schema for token refresh request."""
+
+    refresh_token: str = Field(
+        description="JWT refresh token to exchange for a new access token",
+        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
             }
         }
     )

@@ -5,13 +5,14 @@ Authentication Endpoints
 - Protected route dependencies
 """
 
+import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Optional, cast
 
 import bcrypt
 import structlog
 from authlib.jose import JoseError, jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -22,25 +23,32 @@ from app.api.models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 logger = structlog.get_logger()
 
+router = APIRouter()
+
 
 def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-    """Generate JWT using Authlib with RS256 signing.
+    """Generate JWT access token for authenticated user.
 
     Args:
         user_id: The user's ID to encode in the token
-        expires_delta: Optional custom expiration time
+        expires_delta: Optional token expiry override
 
     Returns:
-        str: Encoded JWT token
+        str: Encoded JWT access token
     """
     try:
-        expire = datetime.now(UTC) + (
-            expires_delta or timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-        )
+        if expires_delta:
+            expire = datetime.now(UTC) + expires_delta
+        else:
+            expire = datetime.now(UTC) + timedelta(
+                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+            )
+
         payload = {
             "sub": user_id,
             "exp": expire,
             "iat": datetime.now(UTC),
+            "jti": str(uuid.uuid4()),  # Add a unique token ID
         }
         token = jwt.encode(
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
@@ -161,3 +169,34 @@ def get_current_user(
 
     logger.debug("Token validated successfully", user_id=user_id)
     return user
+
+
+def create_refresh_token(user_id: str) -> str:
+    """Generate JWT refresh token with longer expiration.
+
+    Args:
+        user_id: The user's ID to encode in the token
+
+    Returns:
+        str: Encoded JWT refresh token
+    """
+    try:
+        expires_delta = timedelta(days=7)
+        expire = datetime.now(UTC) + expires_delta
+        payload = {
+            "sub": user_id,
+            "exp": expire,
+            "iat": datetime.now(UTC),
+            "type": "refresh",  # Mark as refresh token
+            "jti": str(uuid.uuid4()),  # Add a unique token ID
+        }
+        token = jwt.encode(
+            {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
+        )
+        logger.info(
+            "Refresh token created", user_id=user_id, expires_at=expire.isoformat()
+        )
+        return cast(str, token.decode("utf-8"))
+    except Exception as e:
+        logger.error("Failed to create refresh token", user_id=user_id, error=str(e))
+        raise

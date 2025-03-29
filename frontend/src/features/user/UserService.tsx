@@ -1,3 +1,4 @@
+import type { TokenPair } from "@/store/auth/AuthContext";
 import axios from "axios";
 import api, { handleApiError } from "../../services/api";
 
@@ -8,16 +9,12 @@ interface IRegisterRequest {
 	user_country_code: string;
 }
 
-interface IAuthResponse {
-	access_token: string;
-}
-
 export const registerUser = async (
 	email: string,
 	password: string,
 	firstName: string,
 	countryCode: string,
-): Promise<IAuthResponse> => {
+): Promise<TokenPair> => {
 	try {
 		const requestData: IRegisterRequest = {
 			user_email: email,
@@ -26,7 +23,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<IAuthResponse>(
+		const response = await api.post<TokenPair>(
 			`${import.meta.env.VITE_API_VERSION}/user`,
 			requestData,
 		);
@@ -52,14 +49,14 @@ interface ILoginRequest {
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<IAuthResponse> => {
+): Promise<TokenPair> => {
 	try {
 		const requestData: ILoginRequest = {
 			user_email: email,
 			user_password: password,
 		};
 
-		const response = await api.post<IAuthResponse>(
+		const response = await api.post<TokenPair>(
 			`${import.meta.env.VITE_API_VERSION}/user/auth/login`,
 			requestData,
 		);

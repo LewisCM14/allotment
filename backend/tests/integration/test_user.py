@@ -148,3 +148,72 @@ class TestUserLogin:
 
         assert response.status_code == 401
         assert response.json()["detail"] == "Invalid email or password"
+
+
+class TestTokenRefresh:
+    def test_refresh_token(self, client):
+        """Test refreshing access token with valid refresh token."""
+        register_response = client.post(
+            f"{PREFIX}/user",
+            json={
+                "user_email": "refresh@example.com",
+                "user_password": "SecurePass123!",
+                "user_first_name": "Refresh",
+                "user_country_code": "GB",
+            },
+        )
+
+        assert register_response.status_code == status.HTTP_201_CREATED
+        tokens = register_response.json()
+        refresh_token = tokens["refresh_token"]
+
+        # 2. Use the refresh token to get a new access token
+        refresh_response = client.post(
+            f"{PREFIX}/user/auth/refresh",
+            json={"refresh_token": refresh_token},
+        )
+
+        assert refresh_response.status_code == status.HTTP_200_OK
+        new_tokens = refresh_response.json()
+        assert "access_token" in new_tokens
+        assert "refresh_token" in new_tokens
+        assert new_tokens["token_type"] == "bearer"
+
+        # 4. Verify tokens are different (token rotation)
+        assert new_tokens["access_token"] != tokens["access_token"]
+        assert new_tokens["refresh_token"] != tokens["refresh_token"]
+
+    def test_refresh_with_invalid_token(self, client):
+        """Test refreshing with an invalid refresh token."""
+        invalid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
+
+        response = client.post(
+            f"{PREFIX}/user/auth/refresh",
+            json={"refresh_token": invalid_token},
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Invalid or expired refresh token" in response.json()["detail"]
+
+    def test_refresh_with_access_token(self, client):
+        """Test refreshing with an access token instead of refresh token."""
+        register_response = client.post(
+            f"{PREFIX}/user",
+            json={
+                "user_email": "wrong_token@example.com",
+                "user_password": "SecurePass123!",
+                "user_first_name": "Wrong",
+                "user_country_code": "GB",
+            },
+        )
+
+        tokens = register_response.json()
+        access_token = tokens["access_token"]
+
+        response = client.post(
+            f"{PREFIX}/user/auth/refresh",
+            json={"refresh_token": access_token},
+        )
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Invalid token type" in response.json()["detail"]
