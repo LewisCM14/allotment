@@ -11,9 +11,9 @@ from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.core.auth import create_access_token
 from app.api.models import User
 from app.api.schemas.user.user_schema import UserCreate
-from app.api.v1.auth import create_access_token
 
 logger = structlog.get_logger()
 

@@ -13,13 +13,13 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.core.auth import create_access_token, create_refresh_token, verify_password
 from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.models import User
 from app.api.repositories import UserRepository
 from app.api.schemas import RefreshRequest, TokenResponse, UserCreate, UserLogin
-from app.api.v1.auth import create_access_token, create_refresh_token, verify_password
 
 router = APIRouter()
 logger = structlog.get_logger()

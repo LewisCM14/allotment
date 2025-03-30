@@ -9,7 +9,6 @@ const PublicRoute = ({ children }: IPublicRoute) => {
 	const { isAuthenticated } = useAuth();
 
 	if (isAuthenticated) {
-		console.log("Redirecting to home because user is authenticated");
 		return <Navigate to="/" replace />;
 	}
 

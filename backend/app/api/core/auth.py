@@ -1,8 +1,8 @@
 """
-Authentication Endpoints
-- Handles JWT token generation and validation
-- User authentication and password verification
-- Protected route dependencies
+Authentication Utilities
+- JWT token generation and validation
+- Password verification
+- Authentication helpers
 """
 
 import uuid
@@ -12,7 +12,7 @@ from typing import Optional, cast
 import bcrypt
 import structlog
 from authlib.jose import JoseError, jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -22,8 +22,6 @@ from app.api.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 logger = structlog.get_logger()
-
-router = APIRouter()
 
 
 def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
@@ -194,10 +192,10 @@ def create_refresh_token(user_id: str) -> str:
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
         )
         logger.info(
-            "Refresh token created", 
-            user_id=user_id, 
+            "Refresh token created",
+            user_id=user_id,
             expires_at=expire.isoformat(),
-            expires_in_days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+            expires_in_days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
         )
         return cast(str, token.decode("utf-8"))
     except Exception as e:

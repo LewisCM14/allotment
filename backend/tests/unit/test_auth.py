@@ -5,7 +5,7 @@ Auth module unit tests.
 import bcrypt
 import pytest
 
-from app.api.v1.auth import (
+from app.api.core.auth import (
     verify_password,
     # create_access_token
 )
