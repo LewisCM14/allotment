@@ -37,6 +37,7 @@
 | Client | Lucide-React | 0.483.0 | Icon Library | 
 | Client | Axios | 1.8.4 | API Communication |
 | Client | Workbox | 7.3.0 | Service Workers |
+| Client | IDB | 8.0.2 | Client Side Storage (PWA Support) |
 | Client | ZOD | 3.24.2 | Form Validation | 
 | Client | React Hook Form | 7.54.2 | Form Validation |
 | Client | Countries List | 3.1.1 | Country Code Library |

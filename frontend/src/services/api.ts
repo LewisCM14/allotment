@@ -69,8 +69,18 @@ const api = axios.create({
 	withCredentials: true,
 });
 
+const checkOnlineStatus = (): boolean => {
+	return navigator.onLine;
+};
+
 api.interceptors.request.use(
 	(config) => {
+		if (!checkOnlineStatus()) {
+			return Promise.reject(
+				new Error("You are offline. Please check your connection."),
+			);
+		}
+
 		const token = localStorage.getItem("access_token");
 		if (token) config.headers.Authorization = `Bearer ${token}`;
 		return config;

@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth/AuthContext";
@@ -36,6 +36,20 @@ export default function RegisterForm({
 	const [error, setError] = useState<string>("");
 	const { login } = useAuth();
 	const navigate = useNavigate();
+	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+	useEffect(() => {
+		const handleOnline = () => setIsOffline(false);
+		const handleOffline = () => setIsOffline(true);
+
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+		};
+	}, []);
 
 	const [showPassword, setShowPassword] = useState(false);
 	const togglePasswordVisibility = useCallback(() => {
@@ -50,13 +64,21 @@ export default function RegisterForm({
 	const onSubmit = async (data: RegisterFormData) => {
 		try {
 			setError("");
+
+			if (isOffline) {
+				setError(
+					"You are offline. Please connect to the internet to register.",
+				);
+				return;
+			}
+
 			const tokenPair = await registerUser(
 				data.email,
 				data.password,
 				data.first_name,
 				data.country_code,
 			);
-			login(tokenPair);
+			await login(tokenPair);
 			navigate("/");
 		} catch (error) {
 			setError(AUTH_ERRORS.format(error));
@@ -74,6 +96,16 @@ export default function RegisterForm({
 				<CardContent>
 					<form onSubmit={handleSubmit(onSubmit)}>
 						{error && <FormError message={error} className="mb-4" />}
+
+						{isOffline && (
+							<div className="p-3 mb-4 text-amber-800 bg-amber-50 rounded border border-amber-200">
+								<p>
+									You are currently offline. Registration requires an internet
+									connection.
+								</p>
+							</div>
+						)}
+
 						<div className="flex flex-col gap-6">
 							{/* Email Field */}
 							<div className="grid gap-3">
@@ -184,10 +216,14 @@ export default function RegisterForm({
 							<div className="flex flex-col gap-3">
 								<Button
 									type="submit"
-									disabled={isSubmitting}
+									disabled={isSubmitting || isOffline}
 									className="w-full"
 								>
-									{isSubmitting ? "Registering..." : "Register"}
+									{isSubmitting
+										? "Registering..."
+										: isOffline
+											? "Offline"
+											: "Register"}
 								</Button>
 							</div>
 						</div>

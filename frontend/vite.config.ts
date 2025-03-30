@@ -10,8 +10,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: "auto",
+      includeAssets: ['offline.html', 'icon.png'],
       manifest: {
-        name: "Allotment Planner",
+        name: "Allotment",
         short_name: "Allotment",
         start_url: "/",
         display: "standalone",
@@ -20,9 +22,51 @@ export default defineConfig({
         icons: [{ src: "/icon.png", sizes: "512x512", type: "image/png" }],
       },
       workbox: {
-        runtimeCaching: [{ urlPattern: "/*", handler: "CacheFirst" }],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/api'),
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24, // 1 day
+              },
+            },
+          },
+          {
+            urlPattern: /\.(png|jpg|jpeg|svg|gif|ico)$/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images-cache',
+              expiration: {
+                maxEntries: 60,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+          {
+            urlPattern: /\.(js|css)$/,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'static-resources',
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts/,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fonts-cache',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
+              },
+            },
+          },
+        ],
       },
-    }),
+    })
   ],
   resolve: {
     alias: {

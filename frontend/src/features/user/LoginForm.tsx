@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth/AuthContext";
@@ -35,6 +35,20 @@ export function LoginForm({
 	const { login } = useAuth();
 	const [error, setError] = useState<string>("");
 	const navigate = useNavigate();
+	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+
+	useEffect(() => {
+		const handleOnline = () => setIsOffline(false);
+		const handleOffline = () => setIsOffline(true);
+
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+		};
+	}, []);
 
 	const [showPassword, setShowPassword] = useState(false);
 	const togglePasswordVisibility = useCallback(() => {
@@ -44,8 +58,14 @@ export function LoginForm({
 	const onSubmit = async (data: LoginFormData) => {
 		try {
 			setError("");
+
+			if (isOffline) {
+				setError("You are offline. Please connect to the internet to login.");
+				return;
+			}
+
 			const tokenPair = await loginUser(data.email, data.password);
-			login(tokenPair);
+			await login(tokenPair);
 			navigate("/");
 		} catch (error) {
 			setError(AUTH_ERRORS.format(error));
@@ -65,6 +85,16 @@ export function LoginForm({
 				<CardContent>
 					<form onSubmit={handleSubmit(onSubmit)}>
 						{error && <FormError message={error} className="mb-4" />}
+
+						{isOffline && (
+							<div className="p-3 mb-4 text-amber-800 bg-amber-50 rounded border border-amber-200">
+								<p>
+									You are currently offline. Login requires an internet
+									connection.
+								</p>
+							</div>
+						)}
+
 						<div className="flex flex-col gap-6">
 							<div className="grid gap-3">
 								<Label htmlFor="email">Email</Label>
@@ -116,10 +146,14 @@ export function LoginForm({
 							<div className="flex flex-col gap-3">
 								<Button
 									type="submit"
-									disabled={isSubmitting}
+									disabled={isSubmitting || isOffline}
 									className="w-full"
 								>
-									{isSubmitting ? "Logging in..." : "Login"}
+									{isSubmitting
+										? "Logging in..."
+										: isOffline
+											? "Offline"
+											: "Login"}
 								</Button>
 							</div>
 						</div>
