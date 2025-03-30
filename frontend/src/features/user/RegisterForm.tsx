@@ -1,3 +1,4 @@
+import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
 import { Button } from "@/components/ui/Button";
 import {
@@ -17,7 +18,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth/AuthContext";
 import { type RegisterFormData, registerSchema } from "./RegisterSchema";
-import { registerUser } from "./UserService";
+import { AUTH_ERRORS, registerUser } from "./UserService";
 
 export default function RegisterForm({
 	className,
@@ -58,7 +59,7 @@ export default function RegisterForm({
 			login(tokenPair);
 			navigate("/");
 		} catch (error) {
-			setError(error instanceof Error ? error.message : "Registration failed");
+			setError(AUTH_ERRORS.format(error));
 			console.error("Registration failed", error);
 		}
 	};
@@ -72,7 +73,7 @@ export default function RegisterForm({
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit(onSubmit)}>
-						{error && <div className="mb-4 text-sm text-red-500">{error}</div>}
+						{error && <FormError message={error} className="mb-4" />}
 						<div className="flex flex-col gap-6">
 							{/* Email Field */}
 							<div className="grid gap-3">

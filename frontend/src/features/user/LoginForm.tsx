@@ -1,3 +1,4 @@
+import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
 import { Button } from "@/components/ui/Button";
 import {
@@ -17,7 +18,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../store/auth/AuthContext";
 import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
-import { loginUser } from "./UserService";
+import { AUTH_ERRORS, loginUser } from "./UserService";
 
 export function LoginForm({
 	className,
@@ -47,7 +48,7 @@ export function LoginForm({
 			login(tokenPair);
 			navigate("/");
 		} catch (error) {
-			setError(error instanceof Error ? error.message : "Login failed");
+			setError(AUTH_ERRORS.format(error));
 			console.error("Login failed", error);
 		}
 	};
@@ -63,7 +64,7 @@ export function LoginForm({
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit(onSubmit)}>
-						{error && <div className="mb-4 text-sm text-red-500">{error}</div>}
+						{error && <FormError message={error} className="mb-4" />}
 						<div className="flex flex-col gap-6">
 							<div className="grid gap-3">
 								<Label htmlFor="email">Email</Label>

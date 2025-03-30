@@ -1,10 +1,40 @@
+import { formatApiDetail } from "@/lib/errorUtils";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
 export interface IApiError {
-	detail: string;
+	detail: string | Array<{ msg: string; loc: string[] }>;
 	status_code?: number;
 }
+
+const ERROR_MESSAGES = {
+	401: "Invalid credentials. Please check your email and password.",
+	403: "You don't have permission to perform this action.",
+	404: "The requested resource was not found.",
+	500: "Server error. Please try again later.",
+};
+
+const getErrorMessageByStatus = (
+	status: number,
+	apiError?: IApiError,
+	defaultMessage = "Operation failed",
+): string => {
+	if (status in ERROR_MESSAGES) {
+		return ERROR_MESSAGES[status as keyof typeof ERROR_MESSAGES];
+	}
+
+	if (status === 422 && apiError?.detail) {
+		return formatApiDetail(apiError.detail);
+	}
+
+	if (status === 409) {
+		return apiError?.detail
+			? formatApiDetail(apiError.detail)
+			: "A conflict occurred. This resource may already exist.";
+	}
+
+	return apiError?.detail ? formatApiDetail(apiError.detail) : defaultMessage;
+};
 
 export const handleApiError = (
 	error: unknown,
@@ -12,21 +42,20 @@ export const handleApiError = (
 ): never => {
 	if (axios.isAxiosError(error)) {
 		const apiError = error.response?.data as IApiError;
+		const status = error.response?.status || 0;
+
 		console.error("API Error:", {
-			status: error.response?.status,
+			status,
 			data: apiError,
 			url: error.config?.url,
 		});
 
-		if (error.response?.status === 422) {
-			const validationErrors = apiError.detail;
-			const errorMessage = Array.isArray(validationErrors)
-				? validationErrors.map((err) => err.msg).join(", ")
-				: "Invalid input data";
-			throw new Error(errorMessage);
-		}
-
-		throw new Error(apiError?.detail || defaultMessage);
+		const errorMessage = getErrorMessageByStatus(
+			status,
+			apiError,
+			defaultMessage,
+		);
+		throw new Error(errorMessage);
 	}
 	throw error;
 };
