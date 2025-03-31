@@ -178,12 +178,17 @@ class TokenResponse(BaseModel):
         default="bearer", description="Token type", examples=["bearer"]
     )
 
+    user_first_name: str | None = Field(
+        default=None, description="User's first name", examples=["John"]
+    )
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "token_type": "bearer",
+                "user_first_name": "John",
             }
         }
     )

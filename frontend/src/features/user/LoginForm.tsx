@@ -10,12 +10,12 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { useAuth } from "@/store/auth/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../store/auth/AuthContext";
 import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
 import { AUTH_ERRORS, loginUser } from "./UserService";
@@ -64,8 +64,8 @@ export function LoginForm({
 				return;
 			}
 
-			const tokenPair = await loginUser(data.email, data.password);
-			await login(tokenPair);
+			const response = await loginUser(data.email, data.password);
+			await login(response.tokens, response.firstName);
 			navigate("/");
 		} catch (error) {
 			setError(AUTH_ERRORS.format(error));

@@ -78,7 +78,7 @@ export default function RegisterForm({
 				data.first_name,
 				data.country_code,
 			);
-			await login(tokenPair);
+			await login(tokenPair, data.first_name);
 			navigate("/");
 		} catch (error) {
 			setError(AUTH_ERRORS.format(error));

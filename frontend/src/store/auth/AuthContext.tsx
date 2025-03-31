@@ -9,7 +9,8 @@ export interface IAuthContext {
 	accessToken: string | null;
 	refreshToken: string | null;
 	isAuthenticated: boolean;
-	login: (tokenPair: TokenPair) => Promise<void>;
+	firstName: string | null;
+	login: (tokenPair: TokenPair, firstName?: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshAccessToken: () => Promise<boolean>;
 }

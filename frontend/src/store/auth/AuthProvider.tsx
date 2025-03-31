@@ -1,5 +1,6 @@
 import api from "@/services/api";
 import { type ReactNode, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { AuthContext, type TokenPair } from "./AuthContext";
 import {
 	clearAuthFromIndexedDB,
@@ -15,6 +16,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 	const [accessToken, setAccessToken] = useState<string | null>(null);
 	const [refreshToken, setRefreshToken] = useState<string | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
+	const [firstName, setFirstName] = useState<string | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [hasLoggedOut, setHasLoggedOut] = useState(false);
 
@@ -22,11 +24,15 @@ export function AuthProvider({ children }: IAuthProvider) {
 		const loadAuthState = async () => {
 			const localAccessToken = localStorage.getItem("access_token");
 			const localRefreshToken = localStorage.getItem("refresh_token");
+			const localFirstName = localStorage.getItem("first_name");
 
 			if (localAccessToken && localRefreshToken) {
 				setAccessToken(localAccessToken);
 				setRefreshToken(localRefreshToken);
 				setIsAuthenticated(true);
+				if (localFirstName) {
+					setFirstName(localFirstName);
+				}
 			} else {
 				const indexedDBAuth = await loadAuthFromIndexedDB();
 
@@ -34,9 +40,15 @@ export function AuthProvider({ children }: IAuthProvider) {
 					setAccessToken(indexedDBAuth.access_token);
 					setRefreshToken(indexedDBAuth.refresh_token);
 					setIsAuthenticated(indexedDBAuth.isAuthenticated);
+					if (indexedDBAuth.firstName) {
+						setFirstName(indexedDBAuth.firstName);
+					}
 
 					localStorage.setItem("access_token", indexedDBAuth.access_token);
 					localStorage.setItem("refresh_token", indexedDBAuth.refresh_token);
+					if (indexedDBAuth.firstName) {
+						localStorage.setItem("first_name", indexedDBAuth.firstName);
+					}
 				}
 			}
 
@@ -56,7 +68,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 		}
 	}, [hasLoggedOut]);
 
-	const login = async (tokenPair: TokenPair) => {
+	const login = async (tokenPair: TokenPair, userFirstName?: string) => {
 		setAccessToken(tokenPair.access_token);
 		setRefreshToken(tokenPair.refresh_token);
 		setIsAuthenticated(true);
@@ -65,7 +77,25 @@ export function AuthProvider({ children }: IAuthProvider) {
 		localStorage.setItem("access_token", tokenPair.access_token);
 		localStorage.setItem("refresh_token", tokenPair.refresh_token);
 
-		await saveAuthToIndexedDB(tokenPair);
+		if (userFirstName) {
+			setFirstName(userFirstName);
+			localStorage.setItem("first_name", userFirstName);
+			await saveAuthToIndexedDB({
+				...tokenPair,
+				firstName: userFirstName,
+				isAuthenticated: true,
+			});
+
+			toast.success(`Welcome, ${userFirstName}!`, {
+				description: "You've successfully logged in",
+				duration: 3000,
+			});
+		} else {
+			await saveAuthToIndexedDB({
+				...tokenPair,
+				isAuthenticated: true,
+			});
+		}
 	};
 
 	const refreshAccessToken = async (): Promise<boolean> => {
@@ -85,7 +115,11 @@ export function AuthProvider({ children }: IAuthProvider) {
 			localStorage.setItem("access_token", response.data.access_token);
 			localStorage.setItem("refresh_token", response.data.refresh_token);
 
-			await saveAuthToIndexedDB(response.data);
+			await saveAuthToIndexedDB({
+				...response.data,
+				firstName,
+				isAuthenticated: true,
+			});
 
 			return true;
 		} catch (error) {
@@ -95,13 +129,24 @@ export function AuthProvider({ children }: IAuthProvider) {
 	};
 
 	const logout = async () => {
+		const currentFirstName = firstName;
+
+		if (currentFirstName) {
+			toast.success(`Goodbye, ${currentFirstName}`, {
+				description: "You've been successfully logged out",
+				duration: 3000,
+			});
+		}
+
 		setAccessToken(null);
 		setRefreshToken(null);
+		setFirstName(null);
 		setIsAuthenticated(false);
 		setHasLoggedOut(true);
 
 		localStorage.removeItem("access_token");
 		localStorage.removeItem("refresh_token");
+		localStorage.removeItem("first_name");
 
 		await clearAuthFromIndexedDB();
 	};
@@ -116,6 +161,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 				accessToken,
 				refreshToken,
 				isAuthenticated,
+				firstName,
 				login,
 				logout,
 				refreshAccessToken,

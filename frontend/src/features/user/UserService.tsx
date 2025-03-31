@@ -67,21 +67,43 @@ interface ILoginRequest {
 	user_password: string;
 }
 
+interface ILoginResponse {
+	access_token: string;
+	refresh_token: string;
+	token_type: string;
+	user_first_name?: string;
+}
+
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<TokenPair> => {
+): Promise<{ tokens: TokenPair; firstName: string }> => {
 	try {
 		const requestData: ILoginRequest = {
 			user_email: email,
 			user_password: password,
 		};
 
-		const response = await api.post<TokenPair>(
+		const response = await api.post<ILoginResponse>(
 			`${import.meta.env.VITE_API_VERSION}/user/auth/login`,
 			requestData,
 		);
-		return response.data;
+
+		const { access_token, refresh_token, user_first_name } = response.data;
+
+		let firstName = user_first_name;
+		if (!firstName) {
+			const emailName = email.split("@")[0].split(".")[0];
+			firstName = emailName.charAt(0).toUpperCase() + emailName.slice(1);
+		}
+
+		return {
+			tokens: {
+				access_token,
+				refresh_token,
+			},
+			firstName,
+		};
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
 			if (error.response?.status === 401) {

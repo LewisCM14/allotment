@@ -1,5 +1,6 @@
 import Footer from "@/components/layouts/footer/FooterContainer";
 import Header from "@/components/layouts/header/HeaderContainer";
+import { Toaster } from "@/components/ui/Sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
@@ -21,6 +22,7 @@ function App() {
 							</div>
 							<Footer />
 						</div>
+						<Toaster />
 					</ThemeProvider>
 				</AuthProvider>
 			</QueryClientProvider>

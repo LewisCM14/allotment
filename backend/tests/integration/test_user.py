@@ -135,6 +135,10 @@ class TestUserLogin:
         assert response.status_code == 200
         data = response.json()
         assert "access_token" in data
+        assert "refresh_token" in data
+        assert "token_type" in data
+        assert "user_first_name" in data
+        assert data["user_first_name"] == "Test"
 
     def test_login_invalid_credentials(self, client):
         """Test login with incorrect password."""

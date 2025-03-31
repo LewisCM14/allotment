@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { toast } from "sonner";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./global.css";
@@ -11,7 +12,10 @@ const updateSW = registerSW({
 		}
 	},
 	onOfflineReady() {
-		console.log("App ready to work offline");
+		toast.success("App ready to work offline", {
+			description: "You can use the app even without an internet connection",
+			duration: 3000,
+		});
 	},
 });
 
