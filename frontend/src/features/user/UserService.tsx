@@ -21,7 +21,7 @@ export const AUTH_ERRORS = {
 	format: formatError,
 };
 
-interface IRegisterRequest {
+export interface IRegisterRequest {
 	user_email: string;
 	user_password: string;
 	user_first_name: string;
@@ -62,12 +62,12 @@ export const registerUser = async (
 	}
 };
 
-interface ILoginRequest {
+export interface ILoginRequest {
 	user_email: string;
 	user_password: string;
 }
 
-interface ILoginResponse {
+export interface ILoginResponse {
 	access_token: string;
 	refresh_token: string;
 	token_type: string;
@@ -90,6 +90,9 @@ export const loginUser = async (
 		);
 
 		const { access_token, refresh_token, user_first_name } = response.data;
+
+		localStorage.setItem("access_token", access_token);
+		localStorage.setItem("refresh_token", refresh_token);
 
 		let firstName = user_first_name;
 		if (!firstName) {

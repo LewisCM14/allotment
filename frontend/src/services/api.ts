@@ -1,4 +1,4 @@
-import { formatApiDetail } from "@/lib/errorUtils";
+import { AUTH_ERRORS } from "@/features/user/UserService";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
@@ -7,57 +7,34 @@ export interface IApiError {
 	status_code?: number;
 }
 
-const ERROR_MESSAGES = {
-	401: "Invalid credentials. Please check your email and password.",
-	403: "You don't have permission to perform this action.",
-	404: "The requested resource was not found.",
-	500: "Server error. Please try again later.",
-};
-
-const getErrorMessageByStatus = (
-	status: number,
-	apiError?: IApiError,
-	defaultMessage = "Operation failed",
-): string => {
-	if (status in ERROR_MESSAGES) {
-		return ERROR_MESSAGES[status as keyof typeof ERROR_MESSAGES];
-	}
-
-	if (status === 422 && apiError?.detail) {
-		return formatApiDetail(apiError.detail);
-	}
-
-	if (status === 409) {
-		return apiError?.detail
-			? formatApiDetail(apiError.detail)
-			: "A conflict occurred. This resource may already exist.";
-	}
-
-	return apiError?.detail ? formatApiDetail(apiError.detail) : defaultMessage;
-};
-
 export const handleApiError = (
 	error: unknown,
-	defaultMessage = "Operation failed",
+	defaultMessage: string,
 ): never => {
 	if (axios.isAxiosError(error)) {
-		const apiError = error.response?.data as IApiError;
-		const status = error.response?.status || 0;
+		if (!error.response) {
+			throw new Error(AUTH_ERRORS.NETWORK_ERROR);
+		}
 
-		console.error("API Error:", {
-			status,
-			data: apiError,
-			url: error.config?.url,
-		});
+		if (error.response.status === 401) {
+			throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
+		}
 
-		const errorMessage = getErrorMessageByStatus(
-			status,
-			apiError,
-			defaultMessage,
-		);
-		throw new Error(errorMessage);
+		if (error.response.status === 500) {
+			throw new Error(AUTH_ERRORS.SERVER_ERROR);
+		}
+
+		const errorDetail = error.response?.data?.detail;
+		if (errorDetail) {
+			throw new Error(
+				typeof errorDetail === "string"
+					? errorDetail
+					: JSON.stringify(errorDetail),
+			);
+		}
 	}
-	throw error;
+
+	throw new Error(defaultMessage);
 };
 
 const api = axios.create({
@@ -113,6 +90,10 @@ const processQueue = (error: AxiosError | null, token: string | null) => {
 
 	failedQueue = [];
 };
+
+export interface IRefreshRequest {
+	refresh_token: string;
+}
 
 const refreshAccessToken = async (): Promise<string | null> => {
 	const refreshToken = localStorage.getItem("refresh_token");
