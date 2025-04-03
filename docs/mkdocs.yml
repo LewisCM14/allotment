@@ -1,0 +1,80 @@
+site_name: Allotment Documentation
+site_description: Developer documentation for the Allotment web application.
+site_author: Lewis Martin
+site_url: https://lewiscm14.github.io/allotment/
+nav:
+    - Home: index.md
+    - High Level Requirements: overview.md
+    - Database Layer: database.md
+    - Server Side: server_side.md
+    - Authentication: authentication.md
+    - Client Side: client_side.md
+    - Deployment: deployment.md
+    - Implementation: implementation.md
+    - Tech Stack: tech_stack.md
+    - Project Setup: project_setup.md
+    - Contributing: contributing.md
+theme:
+    name: material
+    font:
+        text: oswald
+        code: noto sans
+    features:
+        - navigation.footer
+    palette:
+        - scheme: slate
+          primary: green
+          accent: blue grey
+          toggle:
+              icon: material/weather-sunny
+              name: Dark Mode
+
+        - scheme: white
+          primary: green
+          accent: grey
+          toggle:
+              icon: material/weather-night
+              name: Light Mode
+markdown_extensions:
+    - admonition
+    - pymdownx.details
+    - pymdownx.superfences
+    - pymdownx.tabbed:
+          alternate_style: true
+    - attr_list
+    - pymdownx.emoji:
+          emoji_index: !!python/name:material.extensions.emoji.twemoji
+          emoji_generator: !!python/name:material.extensions.emoji.to_svg
+    - md_in_html
+    - pymdownx.blocks.caption
+    - def_list
+    - pymdownx.tasklist:
+          custom_checkbox: true
+    - pymdownx.highlight:
+          anchor_linenums: true
+          line_spans: __span
+          pygments_lang_class: true
+    - pymdownx.inlinehilite
+    - pymdownx.snippets
+    - pymdownx.superfences
+copyright: Copyright &copy; 2025 Lewis Martin
+extra:
+  generator: false
+plugins:
+    - glightbox:
+          touchNavigation: true
+          loop: false
+          effect: zoom
+          slide_effect: slide
+          width: 100%
+          height: auto
+          zoomable: true
+          draggable: true
+          skip_classes:
+              - custom-skip-class-name
+          auto_caption: false
+          caption_position: bottom
+          background: white
+          shadow: true
+          manual: false
+    - search

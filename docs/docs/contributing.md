@@ -34,3 +34,13 @@ Autogenerate Alembic Migration
 ```
 alembic revision --autogenerate -m "REVISION MSG"
 ```
+
+Run the Frontend
+```
+npm run dev
+```
+
+Run the MKDocs Server
+```
+mkdocs serve --dev-addr 0.0.0.0:8080
+```

@@ -44,4 +44,4 @@ dist-ssr
 
 # dev
 
-blueprint.md
+dev/*
