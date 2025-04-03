@@ -1,5 +1,7 @@
 ## Useful Commands
 
+_working progress_
+
 Launch the Service (In Development Mode)
 ```
 fastapi dev
