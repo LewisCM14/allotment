@@ -1,0 +1,1610 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Developer documentation for the Allotment web application.">
+      
+      
+        <meta name="author" content="Lewis Martin">
+      
+      
+        <link rel="canonical" href="https://lewiscm14.github.io/allotment/client_side/">
+      
+      
+        <link rel="prev" href="../authentication/">
+      
+      
+        <link rel="next" href="../deployment/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Client Side - Allotment Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=oswald:300,300i,400,400i,700,700i%7Cnoto+sans:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"oswald";--md-code-font:"noto sans"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+   <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }
+    .gscrollbar-fixer { padding-right: 15px; }
+    .gdesc-inner { font-size: 0.75rem; }
+    body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+    body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#client-side-requirements" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Allotment Documentation" class="md-header__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Allotment Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Client Side
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey"  aria-label="Dark Mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark Mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="white" data-md-color-primary="green" data-md-color-accent="grey"  aria-label="Light Mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light Mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Allotment Documentation" class="md-nav__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Allotment Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    High Level Requirements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Layer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server_side/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Server Side
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authentication
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Client Side
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Client Side
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interfaces Required
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interfaces Required">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-account-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Account Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#family-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Family Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToDo Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side ADR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Design
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Client Side Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#components" class="md-nav__link">
+    <span class="md-ellipsis">
+      Components
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Communication
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-side-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Authentication
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#folder-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Folder Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typography" class="md-nav__link">
+    <span class="md-ellipsis">
+      Typography
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#color-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      Color Scheme
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Implementation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech_stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tech Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interfaces-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interfaces Required
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interfaces Required">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-account-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Account Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#family-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Family Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo-interfaces" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToDo Interfaces
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side ADR
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-side-design" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Design
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Client Side Design">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#components" class="md-nav__link">
+    <span class="md-ellipsis">
+      Components
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#api-communication" class="md-nav__link">
+    <span class="md-ellipsis">
+      API Communication
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#client-side-authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Side Authentication
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#folder-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Folder Structure
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typography" class="md-nav__link">
+    <span class="md-ellipsis">
+      Typography
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#color-scheme" class="md-nav__link">
+    <span class="md-ellipsis">
+      Color Scheme
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Client Side</h1>
+
+<h2 id="client-side-requirements">Client Side Requirements</h2>
+<p>The aim with the client side of the application, like the database and server side layers is to support the applications overall modular design by not being tightly coupled to the other architecture layers, whilst still enforcing data consistency and integrity. </p>
+<p>All while delivering a progressive web application experience to many concurrent end users by supporting offline capabilities in an accessible mobile first application with a simple yet effective user interface.</p>
+<p><u><strong>Requirements:</strong></u></p>
+<ul>
+<li>
+<p>Please refer to the <a href="../overview/">High Level Requirements</a>.</p>
+</li>
+<li>
+<p>Must integrate with a RESTful API written using the FastAPI framework.</p>
+</li>
+<li>Must be able to handle JWTs for user authentication provided from the sever side via fastapi.security and Authlib.</li>
+<li>Must be able to facilitate the creation of a Progressive Web App.<ul>
+<li>The developer is familiar with JavaScript/TypeScript based frameworks like React and Vue but open to other technologies.</li>
+<li>The developer is able to produce their own custom components or make use of component libraries like Mui, Tailwind and Bootstrap. But any library used must be free for commercial use.</li>
+</ul>
+</li>
+<li>Must be able to provide type safety and complete form validation for data consistency and integrity across the application.</li>
+<li>Must be able to provide offline capabilities and caching in order to accommodate users with allotments in low signal areas.</li>
+<li>The only required global state is authentication state, everything else can be handled with simple UI state.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>There is currently no suspected need for heavy data synchronization between the front and backend.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Future Improvement</p>
+<p>Whilst the need for real time updates via push notifications is beyond the scope of a minimal viable product. The ability to deliver upon this is desired long term in order to create a feature rich application.</p>
+</div>
+<p><u><strong>Testing Considerations</strong>:</u></p>
+<ul>
+<li>Integration tests against the API are to be prioritized as these provide the most benefit in ensuring the modular architecture pieces together. </li>
+<li>In the instance custom components are created the testing of these should be prioritized over components built using the supporting tech stack.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Testing the happy pathway is to be prioritized and deemed sufficient unless a bug is discovered that steers the application away from intended functionality. In this instance a test confirming the bug is no longer present is to be written first before a resolution is implemented, following Test Driven Development (TDD) principles and allowing for an automated check that the ensures the application does not regress in the future.</p>
+</div>
+<hr />
+<h2 id="interfaces-required">Interfaces Required</h2>
+<p><em>High level interface functionality accompanied by low fidelity designs.</em></p>
+<p><a class="glightbox" href="../wireframe.svg" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="Wireframes" loading="lazy" src="../wireframe.svg" /></a></p>
+<h3 id="user-account-interfaces">User Account Interfaces</h3>
+<p><u><em><strong>High Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:6"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">User Registration Interface</label><label for="__tabbed_1_2">User Login Interface</label><label for="__tabbed_1_3">User Owned Grow Guide Interface</label><label for="__tabbed_1_4">User Allotment Interface</label><label for="__tabbed_1_5">User Preference Interface</label><label for="__tabbed_1_6">User Logout Interface</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to register an account within the application using an email address and password.<ul>
+<li>Users must also provide a first name and country code.</li>
+<li>Emails must be unique and singing up with an existing one should trigger the password reset flow.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to sign into the application via email and password<ul>
+<li>Ability for users to request a password reset.</li>
+<li>Ability for users to trigger the registration window if they do not have an account.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>A interface to list a users currently owned grow guides with a flow for activating/deactivating a guide. As well as a flow for deleting a guide that will also require an "are you sure" style confirmation. </li>
+<li>The individual items in the list are to be navigation items that lead to a dedicated interface for displaying the grow guide.</li>
+<li>The interface will also require a flow for creating a new grow guide.</li>
+<li>The interface will also require a toggle that provides users the ability to make a guide public or private.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to create an associated allotment by providing the following information: postal code, width and length.<ul>
+<li>Initially this interface will just be populated with placeholder text until a user submits the required information to create an associated allotment.</li>
+</ul>
+</li>
+<li>Ability for users to update the following information for their allotment: postal code, width and length.</li>
+</ul>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>Further interfaces relating to a users allotment will be required when implementing the functionality to provide planting recommendations.</p>
+</details>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to nominate a day for for giving each type of feed.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to sign out the application</li>
+</ul>
+</div>
+</div>
+</div>
+<p><u><em><strong>Medium Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:2"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">User Profile Interface</label><label for="__tabbed_2_2">User Password Reset Interface</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to update their: first name, email address, password and country code.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Ability for users to enter a new password, after having coming from the magic link provided via email to their registered address.</li>
+</ul>
+</div>
+</div>
+</div>
+<p><u><em><strong>Low Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:1"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">User Notification Interface</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>The ability for users to control: type, method and frequency of notifications they receive. </li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Please Note</p>
+<p>This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required to provide this functionality. </p>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="family-interfaces">Family Interfaces</h3>
+<p><u><em><strong>Medium Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:2"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Botanical Group List Interface</label><label for="__tabbed_4_2">Family Information Interface</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>A interface that lists the different botanical groups available within the application. Where each group is a dropdown that can be select to expand/collapse. When expanded it displays the families within that group below a recommend rotate years info section.<ul>
+<li>Each heading within the dropdown is to be a navigation link to a page informing on that family in detail.</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>A interface that displays the surrounding information for a specific family of fruit or vegetables. <ul>
+<li>The first section of information includes the families: Botanical Group, Recommended Rotation Years, Companion &amp; Antagonist families.</li>
+<li>The second section of information includes the common pests that effect the family and their treatment and prevention methods.</li>
+<li>The third section of information includes the common disease that effect the family and their: symptoms, treatment and prevention methods.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="grow-guide-interfaces">Grow Guide Interfaces</h3>
+<p><u><em><strong>High Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:1"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Grow Guide</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>A interface that presents the user with a overview of a specific varieties grow guide. This interface is to double up as the form for creating/editing the grow guide also.<ul>
+<li>For guides a user own there is to be a button that unlocks the guide for editing.<ul>
+<li>This mode will require a method of ensuring users pass validation per field of the form and a method of handling submissions failures in a friendly way.</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<p><u><em><strong>Low Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:1"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">Public Grow Guides</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>A interfaces that lists all the publicly available grow guides for users to browse and use. As initial offering this screen should organize the available grow guides into botanical groups that are alphabetically sorted and the guides within each group are to be alphabetized again.</li>
+</ul>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>Long term this interface will want comprehensive search and filter functionality. PostgreSQL's tsvector will likely form part of this solution.</p>
+</details>
+</div>
+</div>
+</div>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>When implemented, user interfaces for generating and viewing planting recommendations will also be required.</p>
+</details>
+<hr />
+<h3 id="todo-interfaces">ToDo Interfaces</h3>
+<p><u><em><strong>High Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="7:1"><input checked="checked" id="__tabbed_7_1" name="__tabbed_7" type="radio" /><div class="tabbed-labels"><label for="__tabbed_7_1">Weekly ToDo</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>
+<p>The interface that is to be considered the home page. This view will display, based on a users active varieties, their weekly tasks and where appropriate these weekly tasks are to be broken down into there specific days.</p>
+<ul>
+<li>
+<p><strong>Weekly Tasks:</strong></p>
+<ul>
+<li>What varieties can be sown.</li>
+<li>What varieties can be transplanted.</li>
+<li>What varieties can be harvested.</li>
+<li>What varieties need to be pruned.</li>
+<li>What varieties can be dug up and composted.<ul>
+<li>This task will be based of when a variety has reached the end of its harvest period and lifecycle.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>Daily Tasks:</strong></p>
+<ul>
+<li>What varieties need to be fed this week on what day.<ul>
+<li>Varieties that are to be fed, need to be grouped by feed type and this feed type highlighted.</li>
+</ul>
+</li>
+<li>What varieties need to be watered this week on what day.
+    ???+ tip "Future Improvement"
+        Long term this task be dictated via a live weather feed based on the users allotment postal/zip code.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>
+<p>Each user is to be able to select a desired week in order to view the past or future, with the default load week to be the present week.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<p><u><em><strong>Low Priority</strong></em></u></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="8:1"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Monthly ToDo</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>This view will display a high level overview based on a users active varieties, their monthly tasks, grouped by season.<ul>
+<li>These tasks are to include:<ul>
+<li>What varieties can be sown.</li>
+<li>What varieties can be transplanted.</li>
+<li>What varieties can be harvested.</li>
+<li>What varieties need to be pruned.</li>
+<li>What varieties can be dug up and composted.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Each user is to be able to select a month in order to view the past or future, with the default load month to be the present.</li>
+</ul>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="client-side-adr">Client Side ADR</h2>
+<p>There are several aspects to consider when deciding on the appropriate technologies to meet the client side requirements of the application. On top of adhering to the modular architecture principles, just as the rest of the application, with a solution that runs on Linux based operation systems using packages and libraries that are free for commercial use, that integrate with a FastAPI RESTful API that uses JWT for authentication, all whilst delivering a progressive web application experience to many concurrent users the individual layers of the client side must also be considered in isolation.</p>
+<div class="admonition success">
+<p class="admonition-title">Outcome</p>
+<p><em><strong>Framework:</strong></em></p>
+<ul>
+<li>React with TypeScript<ul>
+<li>React is a well suited framework for developing progressive web applications that allows for a component based architecture, with several state management options, that aligns well with the applications modular design. The frameworks strong support of TypeScript also allows for the enforcement of good data integrity.</li>
+<li>React hooks like useAuth and useContext also work well with the Authlib &amp; JWT authentication flow proposed in the server side solution.</li>
+</ul>
+</li>
+</ul>
+<p><em><strong>UI Library:</strong></em></p>
+<ul>
+<li>Tailwind CSS &amp; ShadCN<ul>
+<li>Tailwind provides utility first CSS, keeping styling modular and scalable. Its pairing with ShadCN allows for the provision of accessible, modern UI components.</li>
+</ul>
+</li>
+</ul>
+<p><em><strong>State Management:</strong></em></p>
+<ul>
+<li>React Query &amp; Context API<ul>
+<li>As the application will mostly fetch and cache data and there is no requirement for heavy real-time collaboration React Query is sufficient to provide caching for offline mode and the Context API will manage small, app wide states, like authentication.</li>
+</ul>
+</li>
+</ul>
+<p><em><strong>API Communication:</strong></em></p>
+<ul>
+<li>Fetch with Axios<ul>
+<li>Axios provides good error handling with automatic request/response transformation and built in request cancellation. Making it worth the complexity trade off when compared to the native Fetch API.</li>
+</ul>
+</li>
+</ul>
+<p><em><strong>PWA Support:</strong></em></p>
+<ul>
+<li>Workbox &amp; IndexedDB<ul>
+<li>Workbox will generate a service worker for caching API responses in the client side IndexedDB (IDB). With support for background sync.</li>
+</ul>
+</li>
+</ul>
+<p><em><strong>Form Handling:</strong></em></p>
+<ul>
+<li>React Hook Form &amp; Zod<ul>
+<li>The application requires robust form validation for user-generated content. React Hook will reduce re-renders and improve performance, integrating well with TypeScript. Zod will provide a schema based validation that works with well with React Hook Form.</li>
+</ul>
+</li>
+</ul>
+</div>
+<details class="abstract">
+<summary><strong>Alternatives</strong></summary>
+<p><em><strong>Framework:</strong></em></p>
+<ol>
+<li>
+<p>Vue3 with TypeScript</p>
+<ul>
+<li>A close second option. Whilst Vue offers simpler state management when compared to React and a cleaner two-way binding for forms, plus arguably better built in support for PWA's. It is a smaller eco system that is less performant for large scale applications.</li>
+</ul>
+</li>
+<li>
+<p>SvelteKit</p>
+<ul>
+<li>Svelte kit offers great performance as it compiles to vanilla JS, offering minimal runtime overhead. It also has build in support for PWAs. However, it is a immature framework with a weaker ecosystem when compared to React &amp; Vue. This is potentially a strong option if the application develops a requirement to have an extremely small runtime overhead in order to vertically scale.</li>
+</ul>
+</li>
+</ol>
+<p><em><strong>UI Library:</strong></em></p>
+<ol>
+<li>MUI (Material UI)<ul>
+<li>MUI is a feature rich component library created by Google that provides a polished UI out the box. However, it is extremely heavyweight and less customable compared to Tailwind &amp; ShadCN.</li>
+</ul>
+</li>
+</ol>
+<p><em><strong>State Management:</strong></em></p>
+<ol>
+<li>Redux<ul>
+<li>Redux is a global state management tool that scales well with strong developer tooling. The overhead is larger when compared to React Query &amp; Context API. It is also not ideal for caching. As the application does not require extensive global state management but does require extensive caching it is not a strong choice.</li>
+</ul>
+</li>
+</ol>
+<p><em><strong>API Communication:</strong></em></p>
+<ol>
+<li>GraphQL (Apollo Client)<ul>
+<li>Not a realistic choice as the server side of the application is optimized for a REST API. In the event the application migrates to a GraphQL API this would provide efficient data fetching by reducing over/under fetching issues seen in REST APIs.</li>
+</ul>
+</li>
+</ol>
+<p><em><strong>PWA Support:</strong></em></p>
+<ol>
+<li>Service Workers without Workbox<ul>
+<li>Whilst this would provide full control and remove a dependency it would increase the probability of errors.</li>
+</ul>
+</li>
+</ol>
+<p><em><strong>Form Handling:</strong></em></p>
+<ol>
+<li>Yup<ul>
+<li>Whilst Yup is a potential alternative to Zod it is less TypeScript friendly and not as flexible.</li>
+</ul>
+</li>
+</ol>
+</details>
+<hr />
+<h2 id="client-side-design">Client Side Design</h2>
+<h3 id="components">Components</h3>
+<div class="admonition example">
+<p class="admonition-title">Container-Presenter Pattern</p>
+<p>In order to keep the components listed below clean and separate logic from presentation, the container presenter pattern is to be utilized. Allowing for a "smart" container component to handle state, API calls and business logic with a "dumb" presenter component created in order to display data. This pattern also prevents re-renders when only the UI changes, improving performance.</p>
+<ol>
+<li>Header</li>
+<li>Footer</li>
+<li>Dropdown Component</li>
+<li>Option Slider</li>
+<li>Vertical Accordion </li>
+<li>Information Card</li>
+<li>Action Table</li>
+<li>Confirmation Modal</li>
+<li>Toggle</li>
+</ol>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Factory Pattern</p>
+<p><strong>Form Component</strong></p>
+<ul>
+<li>In order to ensure form validation is correct, inline with the applications data integrity principles, a reusable validation schema (Factory) is to be defined in a separate file. Within the form component itself this schema is to be utilized via Zod and React Hook Form in order to ensure consistent and reusable logic with minimal re-renders.</li>
+</ul>
+</div>
+<hr />
+<h3 id="api-communication">API Communication</h3>
+<div class="admonition example">
+<p class="admonition-title">Repository Pattern</p>
+<p>In order to separate API logic from UI, allowing for cleaner components, easier endpoint switching and the reduction of redundant calls. API logic is to be stored in its own separate service, within these services Axios is to be used to handle data retrieval from the server. React Query is to then be implemented when retrieving data through the service in order to cache queries.</p>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Cache-Aside Pattern</p>
+<p>In order to provide offline capabilities within the application Workbox is to be used to cache API responses on top of React Query. Improving performance and allowing for a progressive web application.</p>
+</div>
+<hr />
+<h3 id="client-side-authentication">Client Side Authentication</h3>
+<div class="admonition example">
+<p class="admonition-title">Observer &amp; Provider Pattern</p>
+<p>As user authentication is the only required global state ContextAPI is to be used in order to setup a auth provider. React Query can then observe this provider in order to update application state.</p>
+</div>
+<hr />
+<h3 id="folder-structure">Folder Structure</h3>
+<div class="admonition example">
+<p class="admonition-title">Feature-Based Folder Structure</p>
+<p>Due to the application having clearly defined interfaces that can be grouped into features, a feature based folder structure makes sense, allowing related logic to be kept together.</p>
+<div class="language-text highlight"><span class="filename">Vite & React Application</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/frontend
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    /public
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        - Static assets that are served directly, i.e. a Favicon.
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    /src
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        /assets
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            - Resources that are imported directly into the code, i.e. a logo.
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        /components
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            /layouts
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                - Contains components that dictate page layouts.
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            /ui
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                - Contains UI components to use as interface building blocks.
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        /features
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            /user
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                - LoginForm.tsx
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                - LoginSchema.ts
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                - RegisterForm.tsx
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                - RegisterSchema.ts
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                - UserService.test.ts
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                - UserService.tsx
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /hooks
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - useLogout.tsx
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        /lib
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            - utils.ts
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        /mocks
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            - handlers.ts
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            - server.ts
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        /routes
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>            - AppRoutes.tsx
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>            - ProtectedRoutes.tsx
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        /services
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>            - api.test.ts
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>            - api.ts
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        /store
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>            /auth
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                - AuthContext.tsx
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>                - authDB.ts
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>                - AuthProvider.tsx
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>            /theme
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>                - ThemeContext.tsx
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>                - ThemeProvider.tsx
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        /types
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>            - Common interfaces &amp; types, i.e. NavigationTypes.ts
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>        - App.tsx
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>        - global.css
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        - main.tsc
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        - ServiceWorker.ts
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        - setupTests.ts
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>        - vite-env.d.ts
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    - .env
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    - components.json
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    - index.html
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    - package-lock.json
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    - package.json
+</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    - tsconfig.app.json
+</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    - tsconfig.json
+</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    - tsconfig.node.json
+</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    - vite.config.ts
+</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    - vitest.config.ts
+</span></code></pre></div>
+</div>
+<hr />
+<h3 id="typography">Typography</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="9:2"><input checked="checked" id="__tabbed_9_1" name="__tabbed_9" type="radio" /><input id="__tabbed_9_2" name="__tabbed_9" type="radio" /><div class="tabbed-labels"><label for="__tabbed_9_1">Primary</label><label for="__tabbed_9_2">Fallback</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>Primary Heading</strong></p>
+<ul>
+<li>Oswald</li>
+</ul>
+<p><strong>Primary Text</strong></p>
+<ul>
+<li>Noto Sans</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Fallback Heading</strong></p>
+<ul>
+<li>Georgia</li>
+</ul>
+<p><strong>Fallback Text</strong></p>
+<ul>
+<li>Verdana</li>
+</ul>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="color-scheme">Color Scheme</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="10:3"><input checked="checked" id="__tabbed_10_1" name="__tabbed_10" type="radio" /><input id="__tabbed_10_2" name="__tabbed_10" type="radio" /><input id="__tabbed_10_3" name="__tabbed_10" type="radio" /><div class="tabbed-labels"><label for="__tabbed_10_1">Dark Mode</label><label for="__tabbed_10_2">Light Mode</label><label for="__tabbed_10_3">Interactions</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>Primary Text/Outline</strong> - <em>White</em></p>
+<ul>
+<li>hex #ffffff</li>
+<li>oklch(100% 0 0)</li>
+<li>
+<p>rgb(255 255 255)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--foreground,
+--card-foreground,
+--secondary-foreground,
+--sidebar-foreground,
+--popover-foreground,
+--accent-foreground,
+--sidebar-accent-foreground,
+--muted-foreground,
+--primary foreground,
+--sidebar-primary-foreground,
+--border,
+--sidebar-border,</p>
+</details>
+</li>
+</ul>
+<p><strong>Primary Dark</strong> - <em>Dark Green</em></p>
+<ul>
+<li>hex #3c4a3e</li>
+<li>oklch(39.29% 0.0269 149.09)</li>
+<li>
+<p>rgb(60 74 62)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--background</p>
+</details>
+</li>
+</ul>
+<p><strong>Secondary Dark</strong> - <em>Black</em></p>
+<ul>
+<li>hex #000000</li>
+<li>oklch(0% 0 0)</li>
+<li>
+<p>rgb(0 0 0)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--card,
+--secondary,
+--sidebar,</p>
+</details>
+</li>
+</ul>
+<p><strong>Tertiary Dark</strong> - <em>Grey</em></p>
+<ul>
+<li>hex #9fafa1</li>
+<li>oklch(73.74% 0.0267 148.96)</li>
+<li>
+<p>rgb(159 175 161)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--popover,
+--accent,
+--sidebar-accent,</p>
+</details>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Primary Text/Outline</strong> - <em>Black</em></p>
+<ul>
+<li>hex #000000</li>
+<li>oklch(0% 0 0)</li>
+<li>
+<p>rgb(0 0 0)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--foreground,
+--card-foreground,
+--secondary-foreground,
+--sidebar-foreground,
+--popover-foreground,
+--accent-foreground,
+--sidebar-accent-foreground,
+--muted-foreground,
+--primary foreground,
+--sidebar-primary-foreground,
+--border,
+--sidebar-border,</p>
+</details>
+</li>
+</ul>
+<p><strong>Primary Light</strong> - <em>Off White</em></p>
+<ul>
+<li>hex #f0f2e6</li>
+<li>oklch(95.63% 0.016 114.38)</li>
+<li>
+<p>rgb(240 242 230)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--background</p>
+</details>
+</li>
+</ul>
+<p><strong>Secondary Light</strong> - <em>White</em></p>
+<ul>
+<li>hex #ffffff</li>
+<li>oklch(100% 0 0)</li>
+<li>
+<p>rgb(255 255 255)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--card,
+--secondary,
+--sidebar,</p>
+</details>
+</li>
+</ul>
+<p><strong>Tertiary Light</strong> - <em>Sand</em></p>
+<ul>
+<li>hex #81885a</li>
+<li>oklch(60.91% 0.0657 115.43)</li>
+<li>
+<p>rgb(129 136 90)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--popover,
+--accent,
+--sidebar-accent,</p>
+</details>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Primary Active</strong> - <em>Green</em></p>
+<ul>
+<li>hex #007333</li>
+<li>oklch(48.56% 0.133153 150.185)</li>
+<li>
+<p>rgb(0 115 51)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--primary,
+--sidebar-primary,</p>
+</details>
+</li>
+</ul>
+<p><strong>Positive Action</strong> - <em>Light Green</em></p>
+<ul>
+<li>hex #007a4e</li>
+<li>oklch(51.11% 0.116394 159.5934)</li>
+<li>
+<p>rgb(0 122 78)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--input,
+--ring,
+--sidebar-ring,</p>
+</details>
+</li>
+</ul>
+<p><strong>Neutral Action</strong> - <em>Blue</em></p>
+<ul>
+<li>hex #0076bb</li>
+<li>oklch(54.7% 0.1381 245.15)</li>
+<li>
+<p>rgb(0 118 187)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--muted</p>
+</details>
+</li>
+</ul>
+<p><strong>Negative Action</strong> - <em>Red</em></p>
+<ul>
+<li>hex #ba2c37</li>
+<li>oklch(52.2% 0.1777 22.14)</li>
+<li>
+<p>rgb(186 44 55)</p>
+<details class="example">
+<summary>Tailwind Variables</summary>
+<p>--destructive</p>
+</details>
+</li>
+</ul>
+</div>
+</div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../authentication/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Authentication">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Authentication
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../deployment/" class="md-footer__link md-footer__link--next" aria-label="Next: Deployment">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Deployment
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Lewis Martin
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.footer"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(() => { lightbox.reload() });
+</script></body>
+</html>

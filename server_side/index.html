@@ -1,0 +1,1459 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Developer documentation for the Allotment web application.">
+      
+      
+        <meta name="author" content="Lewis Martin">
+      
+      
+        <link rel="canonical" href="https://lewiscm14.github.io/allotment/server_side/">
+      
+      
+        <link rel="prev" href="../database/">
+      
+      
+        <link rel="next" href="../authentication/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Server Side - Allotment Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=oswald:300,300i,400,400i,700,700i%7Cnoto+sans:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"oswald";--md-code-font:"noto sans"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+   <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }
+    .gscrollbar-fixer { padding-right: 15px; }
+    .gdesc-inner { font-size: 0.75rem; }
+    body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+    body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#server-side-requirements" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Allotment Documentation" class="md-header__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Allotment Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Server Side
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey"  aria-label="Dark Mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark Mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="white" data-md-color-primary="green" data-md-color-accent="grey"  aria-label="Light Mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light Mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Allotment Documentation" class="md-nav__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Allotment Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    High Level Requirements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Layer
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Server Side
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Server Side
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Routes Required
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routes Required">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disease-pest-family-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disease, Pest &amp; Family Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToDo Routes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-data-integrity-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      General Data Integrity Rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Server Side Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Patterns
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repository Pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-of-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit of Work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#factory-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Factory Pattern
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create &amp; Update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Read &amp; Delete
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#folder-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Folder Structure
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side ADR
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authentication
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../client_side/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Client Side
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Implementation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech_stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tech Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      Routes Required
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routes Required">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#user-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      User Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disease-pest-family-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disease, Pest &amp; Family Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide-tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide Tables
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#todo-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      ToDo Routes
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-data-integrity-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      General Data Integrity Rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side Architecture
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Server Side Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#design-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Design Patterns
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design Patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#repository-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Repository Pattern
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#unit-of-work" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unit of Work
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#factory-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Factory Pattern
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#workflow" class="md-nav__link">
+    <span class="md-ellipsis">
+      Workflow
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Workflow">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#create-update" class="md-nav__link">
+    <span class="md-ellipsis">
+      Create &amp; Update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#read-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Read &amp; Delete
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#folder-structure" class="md-nav__link">
+    <span class="md-ellipsis">
+      Folder Structure
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#server-side-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Server Side ADR
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Server Side</h1>
+
+<h2 id="server-side-requirements">Server Side Requirements</h2>
+<p>The aim with the server side layer of the application, much like the database and client layers, is to support the applications overall modular design by not being tightly coupled to its neighbors, whilst still enforcing data consistency and integrity. </p>
+<p>All while delivering a fast and seamless "request - response" experience to many concurrent end users who are performing CRUD operations that require relatively simple business logic but complex queries with multiple joins.</p>
+<p><u><strong>Requirements</strong>:</u></p>
+<ul>
+<li>
+<p>Please refer to the <a href="../overview/">High Level Requirements</a>.</p>
+</li>
+<li>
+<p>Must integrate with PostgreSQL.</p>
+</li>
+<li>Must support typing so to harmonize with the robust relation database schema proposed.</li>
+<li>Must be able to integrate with a user authentication system.</li>
+<li>Must integrate with a user interface that facilities user creation and Create, Read, Update &amp; Delete (CRUD) actions en masse.<ul>
+<li>Will need to integrate with a modern front end framework in order to deliver a progressive web app (PWA).</li>
+</ul>
+</li>
+<li>Must adhere to the Representational State Transfer (REST) architectural design principles.</li>
+<li>Must be able to accommodate server side caching in order to support offline capabilities as allotments can be in areas of poor signal.</li>
+<li>Must be able to support push notifications and automated email in order to implement a feature rich application.<ul>
+<li>Must be able to support batch processing in order to send these notifications.</li>
+</ul>
+</li>
+</ul>
+<p><u><strong>Testing Considerations</strong>:</u></p>
+<ul>
+<li>Unit tests that confirm the Server Side solution enforces the stipulated data consistency will be required such that the architectural goal of modularity can be realized.</li>
+<li>Integration tests against the PostgreSQL database would also be beneficial.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Testing the happy pathway is to be prioritized and deemed sufficient unless a bug is discovered that steers the application away from intended functionality. In this instance a test confirming the bug is no longer present is to be written first before a resolution is implemented, following Test Driven Development (TDD) principles and allowing for an automated check that the ensures the application does not regress in the future.</p>
+</div>
+<hr />
+<h2 id="routes-required">Routes Required</h2>
+<h3 id="user-tables">User Tables</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">User</label><label for="__tabbed_1_2">User Allotment</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.</p>
+</div>
+<div class="tabbed-block">
+<p>Ability for users to create an associated allotment. The details required for this allotment include a zip or postal code along with a width and length measurement. These fields must be editable by the associated user and thus must also be readable.</p>
+</div>
+</div>
+</div>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>The ability for users to be able to trigger a cascading delete of all their related data would also be desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.</p>
+</details>
+<hr />
+<h3 id="disease-pest-family-tables">Disease, Pest &amp; Family Tables</h3>
+<p>Ability to read from the following tables found within the database:</p>
+<ol>
+<li>Intervention</li>
+<li>Pest Treatment</li>
+<li>Pest Prevention</li>
+<li>Disease Treatment</li>
+<li>Disease Prevention</li>
+<li>Pest</li>
+<li>Disease</li>
+<li>Symptom</li>
+<li>Family Pest</li>
+<li>Family Disease</li>
+<li>Disease Symptom</li>
+<li>Family</li>
+<li>Botanical Group</li>
+<li>Antagonist Family</li>
+<li>Companion Family </li>
+</ol>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling. </p>
+</details>
+<hr />
+<h3 id="grow-guide-tables">Grow Guide Tables</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:5"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Grow Guides</label><label for="__tabbed_2_2">Activate Guide</label><label for="__tabbed_2_3">Publish Guide</label><label for="__tabbed_2_4">Feed Day's</label><label for="__tabbed_2_5">Supporting Tables</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>The Variety table is the main table users will interact with and the data within it forms the backbone off the application. It will utilize the applications authentication solution to allow users to perform complete CRUD operations on the data contained within it. Only a authenticated Users who's ID matches the owner column of a pre exiting row can alter any data within that row. The complexities of this table that the server side service would need to accommodate include:</p>
+<ol>
+<li>If either one of the following pairs exists the other must also:<ol>
+<li>Transplant Week Start &amp; Transplant Week End</li>
+<li>Prune Week Start &amp; Prune Week End</li>
+</ol>
+</li>
+<li>The same logic, in that if a single one exists so must the rest, applies to the following group of columns:<ol>
+<li>Feed ID - Feed Week Start - Feed Frequency</li>
+</ol>
+</li>
+<li>When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.</li>
+</ol>
+</div>
+<div class="tabbed-block">
+<p>Users will require the ability to set the grow guides they own to active and/or inactive. This action will require a route that can read, create and delete entries from the User Active Varieties junction table.</p>
+</div>
+<div class="tabbed-block">
+<p>Users will also require the ability to make guides they own public/private.
+    - The ability for users to copy public guides will also be required.</p>
+</div>
+<div class="tabbed-block">
+<p>Users will require the ability to alter the day they give a nominated feed type. This will require a read and update route that manipulates entries in the User Feed Day table.</p>
+</div>
+<div class="tabbed-block">
+<p>Ability to read from the following tables found within the database:</p>
+<ol>
+<li>Lifecycle</li>
+<li>Week</li>
+<li>Month</li>
+<li>Day</li>
+<li>Planting Conditions</li>
+<li>Feed</li>
+<li>Frequency</li>
+<li>Country Season</li>
+<li>Season</li>
+</ol>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling.</p>
+</details>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="todo-routes">ToDo Routes</h3>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>The main use case for the application is that users can create and follow grow guides and based upon these guides, have the application produce a todo list of activities they must undertake. These todo lists are split into levels.</p>
+</div>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Weekly &amp; Daily</label><label for="__tabbed_3_2">Monthly &amp; Seasonal</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>A route will be required that uses the Weeks table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of weekly tasks.</p>
+<p>The Day table is then joined in order to provide users with a list of daily todos across a specific week.</p>
+</div>
+<div class="tabbed-block">
+<p>A route will be required that uses the Month table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of monthly tasks.</p>
+<p>This level can then be referenced against the Season and Country Season tables in order to provide a list of seasonal tasks.</p>
+</div>
+</div>
+</div>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>These todos, whilst surfaced in the application for users to interact with, will also eventually be able to be sent out as a notification via Email or Push Notifications.</p>
+</details>
+<hr />
+<h2 id="general-data-integrity-rules">General Data Integrity Rules</h2>
+<p>A method for ensuring no special characters, aside from hyphens and a single space are used, as well as all characters are lower case will be required. That is to be applied to most text based columns, aside from those designated to store notes.</p>
+<div class="admonition danger">
+<p class="admonition-title">Please Note</p>
+<p>Notes columns are not idea in relational databases and it is to be an ongoing effort to look at the content users are storing within these columns in an effort to provide a more efficient solution.</p>
+</div>
+<hr />
+<h2 id="server-side-architecture">Server Side Architecture</h2>
+<h3 id="design-patterns">Design Patterns</h3>
+<h4 id="repository-pattern">Repository Pattern</h4>
+<p><u><strong>Purpose</strong></u></p>
+<p>Encapsulate data access logic via SQL queries or ORM logic and provide abstraction over database queries by hiding implementation details from the service layer.</p>
+<p><u><strong>Boundary</strong></u></p>
+<p>Operates at the Database Layer, Interacting only with the database and should not contain business logic or handle transactions.</p>
+<p><u><strong>Design</strong></u></p>
+<p>A Repository class is created for each aggregate or related table group.</p>
+<div class="admonition example">
+<p class="admonition-title"><em>Required Repositories include:</em></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:4"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">User</label><label for="__tabbed_4_2">Family</label><label for="__tabbed_4_3">Disease &amp; Pests</label><label for="__tabbed_4_4">Grow Guide</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>User Repository</strong> </p>
+<ul>
+<li>To encapsulate the: User, User Allotment, User Feed Day and User Active Varieties tables.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Family Repository</strong></p>
+<ul>
+<li>To encapsulate the: Family, Botanical Group, Family Antagonist &amp; Family Companion tables.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Pest Repository</strong></p>
+<ul>
+<li>To encapsulate the: Pest, Pest Treatment, Pest Prevention and Family Pest tables.</li>
+</ul>
+<p><strong>Disease Repository</strong></p>
+<ul>
+<li>To encapsulate the: Disease, Disease Treatment, Disease Prevention, Symptom, Disease Symptom and Family Disease tables.</li>
+</ul>
+<p><strong>Intervention Repository</strong></p>
+<ul>
+<li>To encapsulate the Intervention table.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Variety Repository</strong></p>
+<ul>
+<li>To encapsulate the: Variety, Variety Water Day, Planting Conditions, Feed, Lifecycle and Frequency tables.</li>
+</ul>
+<p><strong>Seasonal Repository</strong></p>
+<ul>
+<li>To encapsulate the Country Season and Season tables.</li>
+</ul>
+<p><strong>Day Repository</strong></p>
+<ul>
+<li>To encapsulate the Day table.</li>
+</ul>
+<p><strong>Week Repository</strong></p>
+<ul>
+<li>To encapsulate the Week table.</li>
+</ul>
+<p><strong>Month Repository</strong></p>
+<ul>
+<li>To encapsulate the Month table.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h4 id="unit-of-work">Unit of Work</h4>
+<p><u><strong>Purpose</strong></u></p>
+<p>Groups multiple repository operations into a single transaction, ensuring atomicity and consistency when committing or rolling back operations.</p>
+<p><u><strong>Boundary</strong></u></p>
+<p>Only interacts with Repositories at the Service Layer.</p>
+<p><u><strong>Design</strong></u></p>
+<p>Unit of Work classes are created to manage transactions and ensure multiple database operations occur as a single unit.</p>
+<div class="admonition example">
+<p class="admonition-title"><em>Required classes include:</em></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:1"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Grow Guide</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>User Weekly ToDo</strong></p>
+<ul>
+<li>Used to group the: Day, Week, Variety and User repositories when providing users their weekly tasks.</li>
+</ul>
+<p><strong>User Monthly ToDo</strong></p>
+<ul>
+<li>Used to group the: Month, Variety, User and Seasonal repositories when providing users their monthly tasks.</li>
+</ul>
+<p><strong>Family Page</strong></p>
+<ul>
+<li>Used to group the: Family, Disease, Pest and Intervention repositories in order to populate a specific families information page.</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h4 id="factory-pattern">Factory Pattern</h4>
+<p><u><strong>Purpose</strong></u></p>
+<p>Apply any business rules or validations before persistence, ensuring the persistence of invalid objects by repositories is prevented.</p>
+<p><u><strong>Boundary</strong></u></p>
+<p>Prepares objects at the Domain Layer before they are passed to the Repositories or Unit of Work classes.</p>
+<p><u><strong>Design</strong></u></p>
+<p>The Factory pattern is used to simplify the creation of complex domain objects with all required fields validated and constraints applied.</p>
+<div class="admonition example">
+<p class="admonition-title"><em>The required Factories include:</em></p>
+<div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">User</label><label for="__tabbed_6_2">Grow Guide</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<ul>
+<li>
+<p>User Factory</p>
+</li>
+<li>
+<p>User Allotment Factory</p>
+</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<ul>
+<li>Variety Factory</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="workflow">Workflow</h3>
+<h4 id="create-update">Create &amp; Update</h4>
+<div class="admonition example">
+<p class="admonition-title">Example</p>
+<ol>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>Invokes a <strong>Factory</strong> located at the <strong>Domain Layer</strong> for object validation.</li>
+</ul>
+</li>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>Starts a <strong>Unit of Work</strong> to handle the transaction. Passing it the validated object.</li>
+<li>This <strong>Unit of Work</strong> handles the interactions between the validated object and relevant <strong>Repositories</strong>.</li>
+</ul>
+</li>
+<li>
+<p>Database Layer</p>
+<ul>
+<li>The relevant <strong>Repository</strong> class's execute database operations.</li>
+</ul>
+</li>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>The <strong>Unit of Work</strong> class finalizes the integration between object and repository(s). committing successful transactions or rolling back failures.</li>
+</ul>
+</li>
+</ol>
+</div>
+<h4 id="read-delete">Read &amp; Delete</h4>
+<div class="admonition example">
+<p class="admonition-title">Complex Example</p>
+<ol>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>Starts a <strong>Unit of Work</strong> to handle the operation. This <strong>Unit of Work</strong> handles the interactions between the relevant <strong>Repositories</strong>.</li>
+</ul>
+</li>
+<li>
+<p>Database Layer</p>
+<ul>
+<li>The relevant <strong>Repository</strong> class's execute database operations.</li>
+</ul>
+</li>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>The <strong>Unit of Work</strong> class finalizes the integration between relevant repositories. returning or removing the requested data.</li>
+</ul>
+</li>
+</ol>
+</div>
+<div class="admonition example">
+<p class="admonition-title">Simple Example</p>
+<ol>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>Invokes the required <strong>Repository</strong> class.</li>
+</ul>
+</li>
+<li>
+<p>Database Layer</p>
+<ul>
+<li>The <strong>Repository</strong> class executes database operations.</li>
+</ul>
+</li>
+<li>
+<p>Service Layer</p>
+<ul>
+<li>The requested data is returned or removed.</li>
+</ul>
+</li>
+</ol>
+</div>
+<hr />
+<h3 id="folder-structure">Folder Structure</h3>
+<div class="admonition example">
+<p class="admonition-title">Pattern-Based Folder Structure</p>
+<p>Due to the server-side being a FastAPI application that has a well defined architecture that makes use of specified design patterns the following folder structure makes sense, allowing related logic to be kept together.</p>
+<div class="language-text highlight"><span class="filename">FastAPI & Python Application</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/app
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    /api
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        /core
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>            - auth.py
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>            - config.py
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            - database.py
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>            - limiter.py
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            - logging.py
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        /middleware
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            - exception_handler.py
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            - logging_middleware.py
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        /models
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            - Contains the Database Models.
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        /repositories
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            - Encapsulate data access logic via SQL/ORM logic abstracting it into &quot;Repositories&quot;.
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        /schemas
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            - Contains the &quot;Factories&quot; or schemas that apply business rules and/or validation before persistence.
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        /services
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            - Contains the &quot;Units Of Work&quot; for grouping multiple repository operations into a single transaction.
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /v1
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - Contains the API Endpoints.
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    /keys
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        - private.pem
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        - public.pem
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    - main.py
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    - settings.yaml
+</span></code></pre></div>
+</div>
+<hr />
+<h2 id="server-side-adr">Server Side ADR</h2>
+<p>Decision record for the server side technologies selected to support the project. When selecting the intended technologies it is important to remember the project requires a modular, scalable and maintainable architecture to support a progressive web app. The server side must run on Linux based operating systems using technologies that are free for commercial use and can integrate with a PostgreSQL database via a RESTful API with support for user authentication. The technologies must also handle many concurrent users that require a high-read workload, caching is also required to support this as well as background tasks.</p>
+<div class="admonition success">
+<p class="admonition-title"><strong>Outcome</strong></p>
+<ul>
+<li>
+<p><strong>Python &amp; FastAPI</strong></p>
+<ul>
+<li>
+<p>Python is well suited for Domain-Drive-Design (DDD) and can be written to provide strong typing support. The team are also familiar with the language already.</p>
+</li>
+<li>
+<p>FastAPI is a high performance asynchronous framework, that automatically generates API documentation and can handle many concurrent users and provides strong typing support via Pydantic. SQLAlchemy, Authlib and Redis can be used to handle PostgreSQL and 2 &amp; multiple methods of user authentication as well as caching support. Celery can also be used to support background tasks. However it does not provide an out the box admin panel, this is not a strict requirement currently though.</p>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<details class="abstract">
+<summary><strong>Alternatives</strong></summary>
+<ol>
+<li>
+<p>TypeScript &amp; NextJS</p>
+<ul>
+<li>
+<p>TypeScript is an extremely type safe language that the team do have experience with already and its use would allow them to use the same programming language on the Client &amp; Server sides. However the ecosystem is less mature for PostgreSQL integration than when compared to the Python ecosystem</p>
+</li>
+<li>
+<p>NextJS is a highly modular and scalable framework that offers TypeORM for support in writing database queries that would adhere to the Repository Pattern. As well as integrating with Redis for caching and BullMQ for background tasks. Passport.js could also be used to provide authentication/authorization support.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Python &amp; Django</p>
+<ul>
+<li>
+<p>Python is well suited for Domain-Drive-Design (DDD) and can be written to provide strong typing support. The team are also familiar with the language already.</p>
+</li>
+<li>
+<p>Django is a mature, synchronous by default framework, that is extremely secure and comes with its own ORM that is relatively simple to use when compared to SQLAlchemy as well as an out the box admin panel. However it is more suited to monolithic applications and will be less performant when compared to FastAPI in supporting many concurrent users.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>Go &amp; Fiber / Gin</p>
+<ul>
+<li>
+<p>Go is an extremely fast concurrent language that is compiled. Offering low memory usage ideally suited for microservices ran on cloud infrastructure. However Go does not allow for exceptions and all error handling is done manually.</p>
+</li>
+<li>
+<p>Fiber is a lightweight framework and Gin is a popular and flexible framework. Both will integrate with Redis for caching support and PGX driver for PostgreSQL integration. However the support for ORM's and OAuth2 compliant authentication is low maturity when compared to the other options.</p>
+</li>
+</ul>
+</li>
+</ol>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../database/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Database Layer">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Database Layer
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../authentication/" class="md-footer__link md-footer__link--next" aria-label="Next: Authentication">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Authentication
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Lewis Martin
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.footer"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(() => { lightbox.reload() });
+</script></body>
+</html>

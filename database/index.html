@@ -1,0 +1,1077 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Developer documentation for the Allotment web application.">
+      
+      
+        <meta name="author" content="Lewis Martin">
+      
+      
+        <link rel="canonical" href="https://lewiscm14.github.io/allotment/database/">
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="../server_side/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.11">
+    
+    
+      
+        <title>Database Layer - Allotment Documentation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.4af4bdda.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=oswald:300,300i,400,400i,700,700i%7Cnoto+sans:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"oswald";--md-code-font:"noto sans"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+   <link href="../assets/stylesheets/glightbox.min.css" rel="stylesheet"/><style>
+    html.glightbox-open { overflow: initial; height: 100%; }
+    .gslide-title { margin-top: 0px; user-select: text; }
+    .gslide-desc { color: #666; user-select: text; }
+    .gslide-image img { background: white; }
+    .gscrollbar-fixer { padding-right: 15px; }
+    .gdesc-inner { font-size: 0.75rem; }
+    body[data-md-color-scheme="slate"] .gdesc-inner { background: var(--md-default-bg-color);}
+    body[data-md-color-scheme="slate"] .gslide-title { color: var(--md-default-fg-color);}
+    body[data-md-color-scheme="slate"] .gslide-desc { color: var(--md-default-fg-color);}</style> <script src="../assets/javascripts/glightbox.min.js"></script></head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#database-requirements" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Allotment Documentation" class="md-header__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Allotment Documentation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Database Layer
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="blue-grey"  aria-label="Dark Mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Dark Mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="white" data-md-color-primary="green" data-md-color-accent="grey"  aria-label="Light Mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Light Mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Allotment Documentation" class="md-nav__button md-logo" aria-label="Allotment Documentation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Allotment Documentation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    High Level Requirements
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Database Layer
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Database Layer
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#database-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disease-pests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disease &amp; Pests
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#family" class="md-nav__link">
+    <span class="md-ellipsis">
+      Family
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user" class="md-nav__link">
+    <span class="md-ellipsis">
+      User
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database ADR
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../server_side/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Server Side
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Authentication
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../client_side/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Client Side
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Deployment
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../implementation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Implementation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tech_stack/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Tech Stack
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../project_setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Project Setup
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#database-requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tables" class="md-nav__link">
+    <span class="md-ellipsis">
+      Tables
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tables">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#disease-pests" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disease &amp; Pests
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#family" class="md-nav__link">
+    <span class="md-ellipsis">
+      Family
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#user" class="md-nav__link">
+    <span class="md-ellipsis">
+      User
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#grow-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      Grow Guide
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#database-adr" class="md-nav__link">
+    <span class="md-ellipsis">
+      Database ADR
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>Database Layer</h1>
+
+<h2 id="database-requirements">Database Requirements</h2>
+<p>The aim for the database layer of the application is to enforce data consistency and integrity as granular as possible. Whilst offering scalability in terms of ease of integration of new features, as well as scalability in terms of user base growth.</p>
+<p>The solution must also allow for modularity in the applications architecture such that new database technologies can be dropped in/out with minimal disruption to the other layers. </p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>This is important as a goal of the project is to deliver the ability to learn new technologies by using them to replace components of the application following the original design laid out in this document as a blueprint.</p>
+</div>
+<p><u><strong>Requirements:</strong></u></p>
+<ul>
+<li>Please refer to the <a href="../overview/">High Level Requirements</a>.</li>
+</ul>
+<hr />
+<h2 id="tables">Tables</h2>
+<p><a class="glightbox" href="../erd.svg" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="Database Diagram" loading="lazy" src="../erd.svg" /></a></p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p><em>Unless stated otherwise below, all <code>VARCHAR</code> fields will require a constraint that ensures no special characters are used aside from hyphens and a single space. As well as all characters are stored in lowercase.</em></p>
+</div>
+<h3 id="disease-pests">Disease &amp; Pests</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:11"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><input id="__tabbed_1_7" name="__tabbed_1" type="radio" /><input id="__tabbed_1_8" name="__tabbed_1" type="radio" /><input id="__tabbed_1_9" name="__tabbed_1" type="radio" /><input id="__tabbed_1_10" name="__tabbed_1" type="radio" /><input id="__tabbed_1_11" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Pest</label><label for="__tabbed_1_2">Disease</label><label for="__tabbed_1_3">Symptom</label><label for="__tabbed_1_4">Intervention</label><label for="__tabbed_1_5">Pest Treatment</label><label for="__tabbed_1_6">Pest Prevention</label><label for="__tabbed_1_7">Disease Treatment</label><label for="__tabbed_1_8">Disease Prevention</label><label for="__tabbed_1_9">Disease Symptom</label><label for="__tabbed_1_10">Family Pest</label><label for="__tabbed_1_11">Family Disease</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Holds the various types of pests.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>Holds the various types of diseases.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>Holds the various types of symptoms different diseases can exhibit.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The symptom field will not require the default <code>VARCHAR</code> constraint applied.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>Holds methods of intervention used to treat or prevent the various disease and pests.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what intervention methods are used to treat each type of pest.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what intervention methods are used to prevent each type of pest.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what intervention methods are used to treat each type of disease.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what intervention methods are used to prevent each type of disease.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what symptoms different types of diseases exhibit.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what pests effect each family.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what diseases effect each family.</p>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="family">Family</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="2:4"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Botanical Group</label><label for="__tabbed_2_2">Family</label><label for="__tabbed_2_3">Antagonist Family</label><label for="__tabbed_2_4">Companion Family</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Holds the name and if applicable, the maximum years before crop rotation is required, for the different botanical groups, i.e. Nightshade, Brassicas etc.</p>
+</div>
+<div class="tabbed-block">
+<p>Holds the common name for varieties of fruit and vegetables, i.e. Tomatoes, Broccoli etc. Linking to the Botanical Group table via ID.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what families <strong>should not</strong> be planted near each other. </p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what families <strong>should be</strong> planted near each other. </p>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="user">User</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="3:4"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><input id="__tabbed_3_3" name="__tabbed_3" type="radio" /><input id="__tabbed_3_4" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">User</label><label for="__tabbed_3_2">User Allotment</label><label for="__tabbed_3_3">User Active Varieties</label><label for="__tabbed_3_4">User Feed Day</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Holds the minimum amount of unique user information required to provide the applications functionality.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The user email &amp; password fields will not require the default <code>VARCHAR</code> constraint applied.</li>
+<li>The User First Name field will need the <code>VARCHAR</code> constraint applied with an additional rule, preventing the used of numbers also.</li>
+<li>When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables will be required for data consistency.</li>
+</ul>
+</div>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<ul>
+<li>Long term the Country Code will be used in conjunction with the User Allotment table to provide live weather information to users.</li>
+</ul>
+</details>
+</div>
+<div class="tabbed-block">
+<p>Holds the minimum amount of information, about a specific users allotment, linked to the User table via user ID, required to provide the applications functionality. This table enforces the rule that each user can only have one allotment.</p>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<ul>
+<li>Allotment Postal / Zip code will be required to provide live weather information to users.</li>
+<li>Information about the users allotments width &amp; length will be required to provide planting recommendations to users.</li>
+<li>When the functionality for providing planting recommendations is implemented, users with multiple allotments will have to total the measurements to get recommendations across there entire area.</li>
+</ul>
+</details>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for storing what grow guides users are currently following.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>There is currently no method of preventing users from following multiple guides for same specific variety of plant, it is down to users themselves to monitor this.</li>
+<li>A trigger will be required at the database layer that when users activate varieties the User Feed Day table is checked to ensure they have a nominated day for the guides applicable feed. If there is no nominated day a default is to be added that can then be updated later on within the Users Preferences page later on. This ensures data consistency at both the database and backend layers.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for storing what day each unique users gives each type of plant food.</p>
+</div>
+</div>
+</div>
+<hr />
+<h3 id="grow-guide">Grow Guide</h3>
+<div class="tabbed-set tabbed-alternate" data-tabs="4:11"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><input id="__tabbed_4_5" name="__tabbed_4" type="radio" /><input id="__tabbed_4_6" name="__tabbed_4" type="radio" /><input id="__tabbed_4_7" name="__tabbed_4" type="radio" /><input id="__tabbed_4_8" name="__tabbed_4" type="radio" /><input id="__tabbed_4_9" name="__tabbed_4" type="radio" /><input id="__tabbed_4_10" name="__tabbed_4" type="radio" /><input id="__tabbed_4_11" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Variety</label><label for="__tabbed_4_2">Lifecycle</label><label for="__tabbed_4_3">Planting Conditions</label><label for="__tabbed_4_4">Feed</label><label for="__tabbed_4_5">Variety Water Day</label><label for="__tabbed_4_6">Frequency</label><label for="__tabbed_4_7">Day</label><label for="__tabbed_4_8">Week</label><label for="__tabbed_4_9">Month</label><label for="__tabbed_4_10">Season</label><label for="__tabbed_4_11">Country Season</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>The predominate table end users interact with. Storing the grow guides. The application works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be linked to specific days as well as months &amp; seasons referred to.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+<li>The first constraint this table will require, is that any time even a single column is altered the last updated column is set to the current datetime.</li>
+<li>The next constraint this table will require is that if either one of the following pairs exists the other must also:<ol>
+<li>Transplant Week Start &amp; Transplant Week End</li>
+<li>Prune Week Start &amp; Prune Week End</li>
+</ol>
+</li>
+<li>The same logic, in that if a single one exists so must the rest, applies to the following group of columns:<ol>
+<li>Feed ID - Feed Week Start - Feed Frequency</li>
+</ol>
+</li>
+<li>The final constraint this table needs, is one that ensures the combination of Owner ID &amp; Variety Name is unique.</li>
+<li>When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>A reference table for the possible lifecycle's available when creating grow guides i.e. Perennial, Annual etc.</p>
+</div>
+<div class="tabbed-block">
+<p>A reference table for the possible planting conditions available when creating grow guides i.e. Sunny, Sheltered etc.</p>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<ul>
+<li>Further table(s) will be required to allow for users to detail what portions of their allotment meet these conditions to provide more accurate planting recommendations.</li>
+</ul>
+</details>
+</div>
+<div class="tabbed-block">
+<p>A reference table for the possible plant feeds available when creating grow guides i.e. Bone Meal, Tomato Feed etc.</p>
+</div>
+<div class="tabbed-block">
+<p>A junction table that uses a composite primary key for linking what day each variety detailed within a unique grow guide should be watered on.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>A trigger will be required at the database layer that ensures the amount of days nominated within this table, for a specific variety per week, is equal to that of the integer value stored in the column titled frequency days per year found in the Frequency table, that is linked within the Variety table via ID. To do this the amount of days in the Variety Water Day table will need to be multiplied by 52.</li>
+</ul>
+</div>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<ul>
+<li>This entire table will be dropped once live weather information is provided to users. In favour of using the Water Frequency columns on the Variety table to recommend to users when to water crops based on the weather in their Postal \ Zip code.</li>
+</ul>
+</details>
+</div>
+<div class="tabbed-block">
+<p>A table that holds different frequency units available for use when creating grow guides. i.e. a frequency of Weekly that means the activity would be performed 52 days across this year.</p>
+<details class="tip" open="open">
+<summary>Future Improvement</summary>
+<p>This table will replace the Variety Water Day table as the predominate table for detailing watering activities when live weather monitoring is functional. Allowing for use cases like a certain variety needs watering every three days. The weather can then be monitored and if there has been no rainfall at the users allotment location within the last three days they will be prompted to water that variety.</p>
+</details>
+</div>
+<div class="tabbed-block">
+<p>A reference table for the seven days of the week available when creating grow guides. Also provides a clear entry point when collecting specific information for daily tasks to provide to end users.</p>
+</div>
+<div class="tabbed-block">
+<p>A table that holds the 52 weeks of the year and their corresponding start and end dates in the format of <code>01/01, 07/01</code> etc. The month each unique week starts in is also stored to allow for easy collection of month specific activities.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>A check constraint will be required  to ensure the start &amp; end date columns meet this format.</li>
+<li>There will be one week that has a potential 8 days within it in order to handle leap years.</li>
+</ul>
+</div>
+</div>
+<div class="tabbed-block">
+<p>A reference table for the twelve possible months for use when creating grow guides. Also provides a clear entry point for collecting month specific information to provide to end users.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The application predominantly works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be distributed across the seven available days. Due to this the Month table links to the Week table via ID.</p>
+</div>
+</div>
+<div class="tabbed-block">
+<p>A reference table linked to the Country Seasons table via ID that stores the possible seasons available, i.e. Summer, Spring.</p>
+</div>
+<div class="tabbed-block">
+<p>A table that stores the start and end date for each season per unique country. These dates can then be referenced against the Week and User table for detailing seasonal activity to end users.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul>
+<li>The first check constraint this table will require is one to ensure the start &amp; end date columns meet the following format <code>01/01, 07/01</code>, as per the Week table.</li>
+<li>The next check constraint required is one that ensures for each unique country added, all four corresponding seasons are added at the same time.<ul>
+<li>It is up to database admins to ensure the start &amp; end dates for these seasons are correct due to the large variation between countries, but infrequent requirement of data being added.</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<hr />
+<h2 id="database-adr">Database ADR</h2>
+<p>Decision record for the underlying database technology selected to support the project. When selecting the intended technology it is important to remember the proposed schema is heavily relational and the project has a requirement to run on Linux based systems with the desire to have the option to scale in support of 2.5 million unique users. The technology must also be free for commercial use.</p>
+<div class="admonition success">
+<p class="admonition-title"><strong>Outcome</strong></p>
+<ul>
+<li><strong>PostgreSQL</strong><ul>
+<li>A relational database technology that is ACID compliant with a rich ecosystem. Meeting all the project requirements and offering extensible features like JSONB and support for complex relationships.</li>
+</ul>
+</li>
+</ul>
+</div>
+<details class="abstract">
+<summary><strong>Alternatives</strong></summary>
+<ol>
+<li>
+<p>MySQL</p>
+<ul>
+<li>The second runner. Again a relational database technology with a broad ecosystem that suits applications with moderate complexity and offers a slightly lower barrier to entry that PostgreSQL and arguably more suited to type of web application being proposed within the project. However, there are potential barriers for commercial use.</li>
+</ul>
+</li>
+<li>
+<p>MongoDB</p>
+<ul>
+<li>A NoSQL database. As the projects data will be structured and not hierarchical, where ideally the schema does not change frequently, this is not suitable solution. The most likely database candidate for learning document based databases when the tertiary goal of having the project provide a template for learning new technologies is realized.</li>
+</ul>
+</li>
+<li>
+<p>CockroachDB</p>
+<ul>
+<li>A distributed SQL database that combines scalability of NoSQL with the consistency and relational capabilities of PostgreSQL. A strong candidate if PostgreSQL becomes a blocker to project scalability.</li>
+</ul>
+</li>
+</ol>
+</details>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../overview/" class="md-footer__link md-footer__link--prev" aria-label="Previous: High Level Requirements">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                High Level Requirements
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../server_side/" class="md-footer__link md-footer__link--next" aria-label="Next: Server Side">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Server Side
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright &copy; 2025 Lewis Martin
+    </div>
+  
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.footer"], "search": "../assets/javascripts/workers/search.f8cc74c7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c8b220af.min.js"></script>
+      
+    
+  <script id="init-glightbox">const lightbox = GLightbox({"touchNavigation": true, "loop": false, "zoomable": true, "draggable": true, "openEffect": "zoom", "closeEffect": "zoom", "slideEffect": "slide"});
+document$.subscribe(() => { lightbox.reload() });
+</script></body>
+</html>
