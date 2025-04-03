@@ -19,17 +19,20 @@ jobs:
         uv --version  # Verify UV installation
 
     - name: Install dependencies with UV
+      working-directory: docs
       run: |
         uv sync  # Install dependencies defined in your UV configuration file
 
     - name: Verify MkDocs configuration
+      working-directory: docs
       run: mkdocs --version && mkdocs serve --strict --no-livereload --watch-theme --watch-theme
 
     - name: Build MKDocs site
+      working-directory: docs
       run: mkdocs build --strict
 
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: site
+        publish_dir: docs/site
