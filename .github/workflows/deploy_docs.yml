@@ -1,4 +1,4 @@
-name: Deploy MKDocs with UV to GitHub Pages
+name: Deploy MKDocs with UV to GitHub Pages.
 
 on:
   push:
