@@ -16,7 +16,6 @@ jobs:
     - name: Install UV
       run: |
         curl -LsSf https://astral.sh/uv/install.sh | sh
-        uv --version  # Verify UV installation
 
     - name: Install dependencies with UV
       working-directory: docs
