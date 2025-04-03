@@ -42,9 +42,9 @@
 | Client | React Hook Form | 7.54.2 | Form Validation |
 | Client | Countries List | 3.1.1 | Country Code Library |
 | Client | Biome | 1.9.4 | Formatting & Linting |
-| Client | MSW | | API Integration Testing |
+| Client | MSW | 2.7.3 | API Integration Testing |
 | Client | TSL | | Component Testing |
-| Client | Vitest | | Component Testing |
+| Client | Vitest | 3.1.1 | Component Testing |
 |||||
 | Deployment | Docker | | Containerization |
 | Deployment | Fly.io | | Hosting |

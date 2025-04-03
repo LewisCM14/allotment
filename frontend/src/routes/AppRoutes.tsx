@@ -1,45 +1,58 @@
-import NotFound from "@/components/NotFound";
-import RegisterForm from "@/features/user/RegisterForm";
+import { Progress } from "@/components/ui/Progress";
+import React, { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
-import { LoginForm } from "../features/user/LoginForm";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
+const LoginForm = React.lazy(() => import("../features/user/LoginForm"));
+const RegisterForm = React.lazy(() => import("../features/user/RegisterForm"));
+const NotFound = React.lazy(() => import("../components/NotFound"));
+// const HomePage = React.lazy(() => import("../features/home/HomePage"));
+
 const AppRoutes = () => {
 	return (
-		<Routes>
-			{/* Public routes - only for non-authenticated users */}
-			<Route
-				path="/login"
-				element={
-					<PublicRoute>
-						<LoginForm />
-					</PublicRoute>
-				}
-			/>
-			<Route
-				path="/register"
-				element={
-					<PublicRoute>
-						<RegisterForm />
-					</PublicRoute>
-				}
-			/>
+		<Suspense fallback={<Progress value={100} className="w-full" />}>
+			<Routes>
+				{/* Public routes - only for non-authenticated users */}
+				<Route
+					path="/login"
+					element={
+						<PublicRoute>
+							<LoginForm />
+						</PublicRoute>
+					}
+				/>
+				<Route
+					path="/register"
+					element={
+						<PublicRoute>
+							<RegisterForm />
+						</PublicRoute>
+					}
+				/>
 
-			{/* Protected routes - only for authenticated users */}
-			<Route
-				path="/"
-				element={
-					<ProtectedRoute>
-						{/* Replace this with your home component */}
-						<div>Home Page</div>
-					</ProtectedRoute>
-				}
-			/>
+				{/* Protected routes - only for authenticated users */}
+				<Route
+					path="/"
+					element={
+						<ProtectedRoute>
+							{/* Replace this with your home component */}
+							<div>Home Page</div>
+						</ProtectedRoute>
+					}
+				/>
 
-			{/* Undefined route - catches all other routes */}
-			<Route path="*" element={<NotFound />} />
-		</Routes>
+				{/* Undefined route - catches all other routes */}
+				<Route
+					path="*"
+					element={
+						<Suspense fallback={<div>Loading Not Found...</div>}>
+							<NotFound />
+						</Suspense>
+					}
+				/>
+			</Routes>
+		</Suspense>
 	);
 };
 
