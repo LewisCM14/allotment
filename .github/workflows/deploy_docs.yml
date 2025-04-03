@@ -15,12 +15,12 @@ jobs:
 
     - name: Install UV
       run: |
-        curl -fsSL https://uv.pm/install.sh | sh
+        curl -LsSf https://astral.sh/uv/install.sh | sh
         uv --version  # Verify UV installation
 
     - name: Install dependencies with UV
       run: |
-        uv install  # Install dependencies defined in your UV configuration file
+        uv sync  # Install dependencies defined in your UV configuration file
 
     - name: Verify MkDocs configuration
       run: mkdocs --version && mkdocs serve --strict --no-livereload --watch-theme --watch-theme
