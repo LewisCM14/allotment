@@ -665,12 +665,25 @@
 </ul>
 </li>
 <li>
-<p><strong>User Registration &amp; Login</strong></p>
+<p><strong>User Registration &amp; Login</strong> &amp; <strong>User Logout Interface</strong></p>
 <ul>
 <li>A login form is to be created, requiring the implementation of Axios for API queries along with an authentication context using the ContextAPI and the storing of JWT tokens using React Query. A registration form is to also be created, requiring ZOD and React Hook Form for validation.<ul>
 <li>MSW can be utilized now for API integration testing.</li>
 <li>Initial setup of Workbox for offline capabilities can also be setup now.</li>
+<li>A hook for logging out users on the frontend should also be implemented at this point as it offers the ability to manually test the registration flow and authentication state of the UI.</li>
 </ul>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>User Password Reset Interface</strong></p>
+<ul>
+<li>
+<p>As the skeleton of the application offers little in terms of user functionality a password reset method should be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Gmail SMTP will be sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.</p>
+</div>
 </li>
 </ul>
 </li>
@@ -750,12 +763,6 @@
 </li>
 <li>
 <p><strong>Weekly ToDo</strong></p>
-</li>
-<li>
-<p><strong>User Logout Interface</strong></p>
-</li>
-<li>
-<p><strong>User Password Reset Interface</strong></p>
 </li>
 <li>
 <p><strong>User Profile Interface</strong></p>
