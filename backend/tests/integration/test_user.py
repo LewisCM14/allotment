@@ -221,3 +221,32 @@ class TestTokenRefresh:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid token type" in response.json()["detail"]
+
+
+class TestVerifyEmail:
+    @pytest.mark.asyncio
+    async def test_verify_email(self, client):
+        """Test verifying a user's email."""
+        user_data = {
+            "user_email": "verify@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Verify",
+            "user_country_code": "GB",
+        }
+        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        assert register_response.status_code == status.HTTP_201_CREATED
+        user_id = register_response.json()["user_id"]
+
+        verify_response = client.post(f"{PREFIX}/user/verify-email?user_id={user_id}")
+        assert verify_response.status_code == status.HTTP_200_OK
+        assert verify_response.json()["message"] == "Email verified successfully"
+
+    @pytest.mark.asyncio
+    async def test_verify_email_invalid_user(self, client):
+        """Test verifying an email for a non-existent user."""
+        invalid_user_id = "00000000-0000-0000-0000-000000000000"
+        verify_response = client.post(
+            f"{PREFIX}/user/verify-email?user_id={invalid_user_id}"
+        )
+        assert verify_response.status_code == status.HTTP_404_NOT_FOUND
+        assert verify_response.json()["detail"] == "User not found"

@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import bcrypt
 import structlog
-from sqlalchemy import CheckConstraint, Float, ForeignKey, String, Text
+from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,9 @@ class User(Base):
     user_password_hash: Mapped[str] = mapped_column(Text, nullable=False)
     user_first_name: Mapped[str] = mapped_column(String(50), nullable=False)
     user_country_code: Mapped[str] = mapped_column(String(2), nullable=False)
+    is_email_verified: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
 
     allotment: Mapped[Optional["UserAllotment"]] = relationship(
         "UserAllotment",

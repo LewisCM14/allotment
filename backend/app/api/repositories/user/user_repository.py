@@ -4,6 +4,7 @@ User Repository
 """
 
 from typing import Tuple
+from uuid import UUID
 
 import bcrypt
 import structlog
@@ -63,6 +64,7 @@ class UserRepository:
             new_user.user_password_hash = hashed_password
             new_user.user_first_name = user_data.user_first_name
             new_user.user_country_code = user_data.user_country_code
+            new_user.is_email_verified = False
 
             try:
                 self.db.add(new_user)
@@ -122,4 +124,45 @@ class UserRepository:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="An unexpected error occurred",
+            )
+
+    async def verify_email(self, user_id: str) -> None:
+        """Mark a user's email as verified.
+
+        Args:
+            user_id: The ID of the user to update
+
+        Raises:
+            HTTPException: If the user is not found or the update fails
+        """
+        logger.info("Attempting to verify email", user_id=user_id)
+        try:
+            user_uuid = UUID(user_id)
+
+            user = await self.db.get(User, user_uuid)
+            if not user:
+                logger.warning("User not found", user_id=user_id)
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found",
+                )
+            user.is_email_verified = True
+            await self.db.commit()
+            logger.info("Email verified successfully", user_id=user_id)
+        except ValueError:
+            logger.error("Invalid user_id format", user_id=user_id)
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid user ID format",
+            )
+        except SQLAlchemyError as e:
+            await self.db.rollback()
+            logger.error(
+                "Database error during email verification",
+                user_id=user_id,
+                error=str(e),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to verify email",
             )

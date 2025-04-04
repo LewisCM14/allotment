@@ -182,6 +182,17 @@ class TokenResponse(BaseModel):
         default=None, description="User's first name", examples=["John"]
     )
 
+    is_email_verified: bool = Field(
+        default=False,
+        description="Indicates if the user's email is verified",
+        examples=[True, False],
+    )
+
+    user_id: str = Field(
+        description="The unique ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"],
+    )
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -189,6 +200,8 @@ class TokenResponse(BaseModel):
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "token_type": "bearer",
                 "user_first_name": "John",
+                "is_email_verified": True,
+                "user_id": "123e4567-e89b-12d3-a456-426614174000",
             }
         }
     )

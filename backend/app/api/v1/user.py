@@ -85,7 +85,13 @@ async def create_user(
             email=user.user_email,
         )
         refresh_token = create_refresh_token(user_id=str(new_user.user_id))
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_first_name=new_user.user_first_name,
+            is_email_verified=new_user.is_email_verified,
+            user_id=str(new_user.user_id),
+        )
 
     except HTTPException:
         raise
@@ -176,8 +182,9 @@ async def login(
             refresh_token=refresh_token,
             token_type="bearer",
             user_first_name=db_user.user_first_name,
+            is_email_verified=db_user.is_email_verified,
+            user_id=str(db_user.user_id),
         )
-
     except HTTPException:
         raise
     except ValueError as e:
@@ -208,6 +215,22 @@ async def login(
 async def refresh_token(
     request: Request, refresh_data: RefreshRequest, db: AsyncSession = Depends(get_db)
 ) -> TokenResponse:
+    """
+    Refresh access and refresh tokens.
+
+    Args:
+        request: The incoming HTTP request
+        refresh_data: The refresh token data
+        db: Database session
+
+    Returns:
+        TokenResponse: New access and refresh tokens
+
+    Raises:
+        HTTPException:
+            - 401: Invalid or expired refresh token
+            - 500: Database error
+    """
     try:
         try:
             payload = jwt.decode(refresh_data.refresh_token, settings.PUBLIC_KEY)
@@ -262,7 +285,14 @@ async def refresh_token(
         new_refresh_token = create_refresh_token(user_id=str(user.user_id))
 
         logger.info("Tokens refreshed successfully", user_id=user_id)
-        return TokenResponse(access_token=access_token, refresh_token=new_refresh_token)
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=new_refresh_token,
+            token_type="bearer",
+            user_first_name=user.user_first_name,
+            is_email_verified=user.is_email_verified,
+            user_id=str(user.user_id),
+        )
 
     except HTTPException:
         raise
@@ -272,3 +302,41 @@ async def refresh_token(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during token refresh",
         ) from e
+
+
+@router.post(
+    "/verify-email",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Verify user email",
+    description="Marks a user's email as verified",
+)
+@limiter.limit("5/minute")
+async def verify_email(
+    request: Request,
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    """
+    Verify a user's email.
+
+    Args:
+        request: The incoming HTTP request
+        user_id: The ID of the user to verify
+        db: Database session
+
+    Returns:
+        dict: Success message
+    """
+    try:
+        user_repo = UserRepository(db)
+        await user_repo.verify_email(user_id)
+        return {"message": "Email verified successfully"}
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        logger.exception("Unexpected error during email verification", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during email verification",
+        )
