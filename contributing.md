@@ -107,6 +107,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     ```
     
     > This command will also install the required version of Python on your machine.
+    > As a sanity check you can activate the virtual env by running the following command from inside the `backend` folder - `source .venv/bin/activate`
 
 1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
     

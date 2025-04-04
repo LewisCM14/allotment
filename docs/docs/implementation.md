@@ -38,7 +38,7 @@ The application is to be implemented following the Walking Skeleton approach, al
     - A React application is to be initialized with TypeScript & Vite using React Router to create an initial dashboard, allowing for the introduction of Tailwind CSS and ShadCN UI components.
         - Biome can be integrated at this point
 
-1. **User Registration & Login** & **User Logout Interface**
+1. **User Registration & Login** + **User Logout Interface**
     - A login form is to be created, requiring the implementation of Axios for API queries along with an authentication context using the ContextAPI and the storing of JWT tokens using React Query. A registration form is to also be created, requiring ZOD and React Hook Form for validation.
         - MSW can be utilized now for API integration testing.
         - Initial setup of Workbox for offline capabilities can also be setup now.
