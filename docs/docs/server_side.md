@@ -35,6 +35,9 @@ All while delivering a fast and seamless "request - response" experience to many
 === "User"
     Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.
 
+    !!! info
+        This will also require the supporting routes like: login/logout, password reset and email confirmation.
+
 === "User Allotment"
     Ability for users to create an associated allotment. The details required for this allotment include a zip or postal code along with a width and length measurement. These fields must be editable by the associated user and thus must also be readable.
 

@@ -38,10 +38,17 @@ The application is to be implemented following the Walking Skeleton approach, al
     - A React application is to be initialized with TypeScript & Vite using React Router to create an initial dashboard, allowing for the introduction of Tailwind CSS and ShadCN UI components.
         - Biome can be integrated at this point
 
-1. **User Registration & Login**
+1. **User Registration & Login** & **User Logout Interface**
     - A login form is to be created, requiring the implementation of Axios for API queries along with an authentication context using the ContextAPI and the storing of JWT tokens using React Query. A registration form is to also be created, requiring ZOD and React Hook Form for validation.
         - MSW can be utilized now for API integration testing.
         - Initial setup of Workbox for offline capabilities can also be setup now.
+        - A hook for logging out users on the frontend should also be implemented at this point as it offers the ability to manually test the registration flow and authentication state of the UI.
+
+1. **User Password Reset Interface**
+    - As the skeleton of the application offers little in terms of user functionality a password reset method should be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.
+
+        !!! info
+            Gmail SMTP will be sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
 
 1. **Containerization**
     - Both the front & backend are to be containerized using Docker. With a `docker-compose.yml` configured for local development.
@@ -93,10 +100,6 @@ The application is to be implemented following the Walking Skeleton approach, al
         Will require the implementation of the User Active Varieties table.
 
 1. **Weekly ToDo**
-
-1. **User Logout Interface**
-
-1. **User Password Reset Interface**
 
 1. **User Profile Interface**
 
