@@ -21,8 +21,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     sudo apt-get install postgresql postgresql-contrib
     ```
     
-    !!! info
-        You can confirm this has worked by running the below command
+    > You can confirm this has worked by running the following command
         ```
         sudo systemctl start postgresql
         ```
