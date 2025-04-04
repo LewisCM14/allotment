@@ -21,10 +21,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     sudo apt-get install postgresql postgresql-contrib
     ```
     
-    > You can confirm this has worked by running the following command
-        ```
-        sudo systemctl start postgresql
-        ```
+    > You can confirm this has worked by running the following command - `sudo systemctl start postgresql`
 
 1. Create a User
     ```
@@ -151,7 +148,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     
     - _Rename this file to `.env.local` and reconfigure port 8000 if desired._
 
-    > In production this file is renamed to `.env`.
+        > In production this file is renamed to `.env`.
 
 1. Ensure `CORS` configuration
     
