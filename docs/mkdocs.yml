@@ -12,8 +12,6 @@ nav:
     - Deployment: deployment.md
     - Implementation: implementation.md
     - Tech Stack: tech_stack.md
-    - Project Setup: project_setup.md
-    - Contributing: contributing.md
 theme:
     name: material
     font:
