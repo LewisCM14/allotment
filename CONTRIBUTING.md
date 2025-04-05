@@ -227,4 +227,4 @@ _Design documentation must be updated alongside code changes, the local MKDocs s
 mkdocs serve --dev-addr 0.0.0.0:8080
 ```
 
-> Where appropriate the `contributing.md` must also be updated.
+> Where appropriate the `CONTRIBUTING.md` must also be updated.

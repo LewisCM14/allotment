@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from typing import Optional
 
 from app.api.core.auth import create_access_token, create_refresh_token, verify_password
 from app.api.core.config import settings
@@ -399,4 +400,38 @@ async def verify_email_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to verify email",
+        )
+
+
+@router.post(
+    "/test-email",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Test email configuration",
+    description="Send a test email to verify SMTP configuration is working",
+)
+async def test_email_config(
+    email: Optional[EmailStr] = None, db: AsyncSession = Depends(get_db)
+) -> dict[str, str]:
+    """
+    Send a test email to verify SMTP configuration.
+
+    Args:
+        email: Optional recipient email (defaults to sender if not provided)
+        db: Database session
+
+    Returns:
+        dict: Success message
+    """
+    try:
+        from app.api.services.email_service import send_test_email
+
+        recipient = email if email else settings.MAIL_USERNAME
+
+        return await send_test_email(recipient)
+    except Exception as e:
+        logger.exception("Error sending test email", error="REDACTED")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send test email: {str(e)}",
         )
