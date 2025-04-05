@@ -8,8 +8,9 @@ User Endpoints
 import uuid
 
 import structlog
-from authlib.jose import jwt
+from authlib.jose import JoseError, jwt
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -18,8 +19,10 @@ from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.models import User
-from app.api.repositories import UserRepository
-from app.api.schemas import RefreshRequest, TokenResponse, UserCreate, UserLogin
+from app.api.repositories.user.user_repository import UserRepository
+from app.api.schemas import TokenResponse, UserLogin
+from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
+from app.api.services.user.email_service import send_verification_email
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -189,14 +192,14 @@ async def login(
         raise
     except ValueError as e:
         logger.error(
-            "Validation error during login", error=str(e), email=user.user_email
+            "Validation error during login", error="REDACTED", email=user.user_email
         )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(e)
         )
     except Exception as e:
         logger.exception(
-            "Unexpected error during login", error=str(e), email=user.user_email
+            "Unexpected error during login", error="REDACTED", email=user.user_email
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -305,38 +308,95 @@ async def refresh_token(
 
 
 @router.post(
-    "/verify-email",
+    "/send-verification-email",
     tags=["User"],
     status_code=status.HTTP_200_OK,
-    summary="Verify user email",
-    description="Marks a user's email as verified",
+    summary="Send email verification link",
+    description="Sends an email verification link to the user",
 )
-@limiter.limit("5/minute")
-async def verify_email(
-    request: Request,
-    user_id: str,
-    db: AsyncSession = Depends(get_db),
+async def request_verification_email(
+    user_email: EmailStr, db: AsyncSession = Depends(get_db)
 ) -> dict[str, str]:
     """
-    Verify a user's email.
+    Send an email verification link to the user.
 
     Args:
-        request: The incoming HTTP request
-        user_id: The ID of the user to verify
+        user_email: The user's email address
         db: Database session
 
     Returns:
         dict: Success message
     """
     try:
-        user_repo = UserRepository(db)
-        await user_repo.verify_email(user_id)
-        return {"message": "Email verified successfully"}
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        logger.exception("Unexpected error during email verification", error=str(e))
+        query = select(User).where(User.user_email == user_email)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        return await send_verification_email(
+            user_email=user_email, user_id=str(user.user_id)
+        )
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error sending verification email", error="REDACTED")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred during email verification",
+            detail="Failed to send verification email",
+        )
+
+
+@router.get(
+    "/verify-email",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Verify email using token",
+    description="Verifies the user's email using the provided token",
+)
+async def verify_email_token(
+    token: str, db: AsyncSession = Depends(get_db)
+) -> dict[str, str]:
+    """
+    Verify the user's email using the token.
+
+    Args:
+        token: The JWT token from the verification link
+        db: Database session
+
+    Returns:
+        dict: Success message
+    """
+    try:
+        try:
+            payload = jwt.decode(token, settings.PUBLIC_KEY)
+            user_id = payload.get("sub")
+        except JoseError:
+            logger.debug(
+                "Token is not a valid JWT, trying as user_id", token_preview=token[:10]
+            )
+            user_id = token
+
+        if not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid token",
+            )
+
+        # Verify email in the database
+        user_repo = UserRepository(db)
+        await user_repo.verify_email(user_id)
+
+        return {"message": "Email verified successfully"}
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception("Error verifying email", error="REDACTED")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to verify email",
         )

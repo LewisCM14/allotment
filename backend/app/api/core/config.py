@@ -8,6 +8,7 @@ from typing import Any, Dict, List
 
 import structlog
 import yaml
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings
 
 logger = structlog.get_logger()
@@ -23,6 +24,10 @@ class Settings(BaseSettings):
     API_PREFIX: str
 
     DATABASE_URL: str
+    FRONTEND_URL: str
+
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: SecretStr
 
     LOG_LEVEL: str
     LOG_TO_FILE: bool
@@ -60,8 +65,8 @@ class Settings(BaseSettings):
                 private_key_path=self.PRIVATE_KEY_PATH,
                 public_key_path=self.PUBLIC_KEY_PATH,
             )
-        except FileNotFoundError as e:
-            logger.error("Failed to load key files", error=str(e))
+        except FileNotFoundError:
+            logger.error("Failed to load key files", error="REDACTED")
             raise
 
     def _load_key(self, path: str) -> bytes:
@@ -71,8 +76,8 @@ class Settings(BaseSettings):
                 with open(path, "rb") as key_file:
                     logger.debug("Loading key file", path=path)
                     return key_file.read()
-            except IOError as e:
-                logger.error("Error reading key file", path=path, error=str(e))
+            except IOError:
+                logger.error("Error reading key file", path=path, error="REDACTED")
                 raise
         error_msg = f"Key file {path} not found. Ensure correct path in settings.yml"
         logger.error("Key file not found", path=path)
@@ -100,8 +105,8 @@ def load_yaml_config() -> Dict[str, Any]:
                 return {}
             logger.info("Configuration loaded successfully")
             return config
-    except (yaml.YAMLError, IOError) as e:
-        logger.error("Error loading configuration", path=config_path, error=str(e))
+    except (yaml.YAMLError, IOError):
+        logger.error("Error loading configuration", path=config_path, error="REDACTED")
         return {}
 
 
@@ -113,6 +118,9 @@ try:
         APP_VERSION=yaml_config.get("app", {}).get("version", "0.0.0"),
         API_PREFIX=yaml_config.get("app", {}).get("api_prefix", "/api/v1"),
         DATABASE_URL=yaml_config.get("database", {}).get("url"),
+        FRONTEND_URL=yaml_config.get("frontend", {}).get("url"),
+        MAIL_USERNAME=yaml_config.get("mail", {}).get("username"),
+        MAIL_PASSWORD=SecretStr(yaml_config.get("mail", {}).get("password")),
         LOG_LEVEL=yaml_config.get("app", {}).get("log_level", "INFO"),
         LOG_TO_FILE=yaml_config.get("app", {}).get("log_to_file", True),
         LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
@@ -132,7 +140,7 @@ try:
         ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
             "access_token_expire_minutes", 60
         ),
-        REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(  # Add this block
+        REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(
             "refresh_token_expire_days", 7
         ),
         PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
@@ -148,6 +156,6 @@ try:
     )
 except Exception as e:
     logger.error(
-        "Settings initialization failed", error=str(e), error_type=type(e).__name__
+        "Settings initialization failed", error="REDACTED", error_type=type(e).__name__
     )
     raise

@@ -10,6 +10,7 @@
 | Server | Python | 3.13 | Coding Language |
 | Server | UV | 0.6.3 | Package Management |
 | Server | FastAPI | 0.115 | Backend Framework |
+| Server | FastAPI-mail | 1.4.2 | SMPTP Support |
 | Server | SQLAlchemy | 2.0.38 | ORM |
 | Server | asyncpg | 0.30.0 | Database Driver |
 | Server | Alembic | 1.15.1 | Database Migrations |

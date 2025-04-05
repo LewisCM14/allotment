@@ -237,7 +237,7 @@ class TestVerifyEmail:
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
-        verify_response = client.post(f"{PREFIX}/user/verify-email?user_id={user_id}")
+        verify_response = client.get(f"{PREFIX}/user/verify-email?token={user_id}")
         assert verify_response.status_code == status.HTTP_200_OK
         assert verify_response.json()["message"] == "Email verified successfully"
 
@@ -245,8 +245,8 @@ class TestVerifyEmail:
     async def test_verify_email_invalid_user(self, client):
         """Test verifying an email for a non-existent user."""
         invalid_user_id = "00000000-0000-0000-0000-000000000000"
-        verify_response = client.post(
-            f"{PREFIX}/user/verify-email?user_id={invalid_user_id}"
+        verify_response = client.get(
+            f"{PREFIX}/user/verify-email?token={invalid_user_id}"
         )
         assert verify_response.status_code == status.HTTP_404_NOT_FOUND
         assert verify_response.json()["detail"] == "User not found"

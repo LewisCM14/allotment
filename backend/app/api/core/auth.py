@@ -78,8 +78,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             "Password verification attempt", result="success" if result else "failed"
         )
         return result
-    except Exception as e:
-        logger.error("Password verification error", error=str(e))
+    except Exception:
+        logger.error("Password verification error", error="REDACTED")
         return False
 
 
