@@ -10,9 +10,33 @@ from app.api.core.config import settings
 PREFIX = settings.API_PREFIX
 
 
+def mock_email_service(mocker, email_service_path: str, success: bool = True):
+    """
+    Helper function to mock email-sending services.
+
+    Args:
+        mocker: The pytest-mock mocker object.
+        email_service_path: The import path of the email service to mock.
+        success: Whether the mock should simulate a successful email send.
+
+    Returns:
+        The mocked email service.
+    """
+    mock_send = mocker.patch(email_service_path)
+    if success:
+        mock_send.return_value = {"message": "Verification email sent successfully"}
+    else:
+        mock_send.side_effect = Exception("SMTP connection failed")
+    return mock_send
+
+
 class TestRegisterUser:
-    def test_register_user(self, client):
+    def test_register_user(self, client, mocker):
         """Test user registration endpoint."""
+        mock_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
         response = client.post(
             f"{PREFIX}/user",
             json={
@@ -27,6 +51,7 @@ class TestRegisterUser:
         data = response.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
+        mock_email.assert_called_once()
 
     @pytest.mark.parametrize(
         "test_input,expected_status",
@@ -92,8 +117,12 @@ class TestRegisterUser:
         assert response.status_code == expected_status
 
     @pytest.mark.asyncio
-    async def test_duplicate_email_registration(self, client):
+    async def test_duplicate_email_registration(self, client, mocker):
         """Test registration with an already registered email."""
+        mock_email = mock_email_service(  # noqa: F841
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
         # First registration
         user_data = {
             "user_email": "duplicate@example.com",
@@ -115,12 +144,9 @@ class TestRegisterUser:
     async def test_verification_email_sent_on_registration(
         self, client, mocker, email_service_available
     ):
-        mock_send = mocker.patch("app.api.v1.user.send_verification_email")
-
-        if email_service_available:
-            mock_send.return_value = {"message": "Verification email sent successfully"}
-        else:
-            mock_send.side_effect = Exception("SMTP connection failed")
+        mock_send = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email", success=email_service_available
+        )
 
         user_data = {
             "user_email": f"verification-test-{email_service_available}@example.com",
@@ -147,8 +173,12 @@ class TestRegisterUser:
 
 
 class TestUserLogin:
-    def test_login_user(self, client):
+    def test_login_user(self, client, mocker):
         """Test user login with correct credentials."""
+        mock_email = mock_email_service(  # noqa: F841
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
         client.post(
             f"{PREFIX}/user",
             json={
@@ -190,8 +220,12 @@ class TestUserLogin:
 
 
 class TestTokenRefresh:
-    def test_refresh_token(self, client):
+    def test_refresh_token(self, client, mocker):
         """Test refreshing access token with valid refresh token."""
+        mock_email = mock_email_service(  # noqa: F841
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
         register_response = client.post(
             f"{PREFIX}/user",
             json={
@@ -234,8 +268,12 @@ class TestTokenRefresh:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid or expired refresh token" in response.json()["detail"]
 
-    def test_refresh_with_access_token(self, client):
+    def test_refresh_with_access_token(self, client, mocker):
         """Test refreshing with an access token instead of refresh token."""
+        mock_email = mock_email_service(  # noqa: F841
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
         register_response = client.post(
             f"{PREFIX}/user",
             json={
@@ -260,8 +298,12 @@ class TestTokenRefresh:
 
 class TestVerifyEmail:
     @pytest.mark.asyncio
-    async def test_verify_email(self, client):
+    async def test_verify_email(self, client, mocker):
         """Test verifying a user's email."""
+        mock_send_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
         user_data = {
             "user_email": "verify@example.com",
             "user_password": "SecurePass123!",
@@ -276,12 +318,72 @@ class TestVerifyEmail:
         assert verify_response.status_code == status.HTTP_200_OK
         assert verify_response.json()["message"] == "Email verified successfully"
 
+        # Assert that the mock was called with the right parameters during registration only
+        # (not during verification)
+        mock_send_email.assert_called_once_with(
+            user_email=user_data["user_email"], user_id=user_id
+        )
+
     @pytest.mark.asyncio
-    async def test_verify_email_invalid_user(self, client):
+    async def test_verify_email_invalid_user(self, client, mocker):
         """Test verifying an email for a non-existent user."""
+        mock_send_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
         invalid_user_id = "00000000-0000-0000-0000-000000000000"
         verify_response = client.get(
             f"{PREFIX}/user/verify-email?token={invalid_user_id}"
         )
         assert verify_response.status_code == status.HTTP_404_NOT_FOUND
         assert verify_response.json()["detail"] == "User not found"
+
+        mock_send_email.assert_not_called()
+
+
+class TestEmailConfig:
+    def test_test_email_endpoint(self, client, mocker):
+        """Test the email configuration test endpoint."""
+        mock_send_test = mock_email_service(
+            mocker, "app.api.v1.user.send_test_email"
+        )
+        
+        test_email = "test@example.com"
+        response = client.post(f"{PREFIX}/user/test-email?email={test_email}")
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert "message" in response.json()
+        
+        mock_send_test.assert_called_once()
+        
+    def test_send_verification_email_endpoint(self, client, mocker):
+        """Test the endpoint to send verification email."""
+        user_data = {
+            "user_email": "verification@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Verify",
+            "user_country_code": "GB",
+        }
+        
+        mock_register_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        assert register_response.status_code == status.HTTP_201_CREATED
+        
+        mock_register_email.reset_mock()
+        
+        mock_verify_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+        
+        response = client.post(
+            f"{PREFIX}/user/send-verification-email?user_email={user_data['user_email']}"
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert "message" in response.json()
+        
+        mock_verify_email.assert_called_once()
+        call_args = mock_verify_email.call_args[1]
+        assert call_args["user_email"] == user_data["user_email"]
