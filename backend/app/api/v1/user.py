@@ -6,6 +6,7 @@ User Endpoints
 """
 
 import uuid
+from typing import Optional
 
 import structlog
 from authlib.jose import JoseError, jwt
@@ -13,7 +14,6 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
 
 from app.api.core.auth import create_access_token, create_refresh_token, verify_password
 from app.api.core.config import settings
@@ -23,7 +23,7 @@ from app.api.models import User
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas import TokenResponse, UserLogin
 from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
-from app.api.services.user.email_service import send_verification_email
+from app.api.services.user.email_service import send_test_email, send_verification_email
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -424,8 +424,6 @@ async def test_email_config(
         dict: Success message
     """
     try:
-        from app.api.services.email_service import send_test_email
-
         recipient = email if email else settings.MAIL_USERNAME
 
         return await send_test_email(recipient)

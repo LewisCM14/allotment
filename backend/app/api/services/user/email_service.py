@@ -92,3 +92,52 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send verification email",
         )
+
+
+async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
+    """
+    Send a test email to verify SMTP configuration.
+
+    Args:
+        recipient_email: The recipient's email address
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If email sending fails
+    """
+    try:
+        message = MessageSchema(
+            subject="Test Email - Allotment Service",
+            recipients=[recipient_email],
+            body=f"""
+            Hello,
+            
+            This is a test email from your Allotment Service application.
+            
+            If you received this email, your email configuration is working correctly!
+            
+            Configuration details:
+            - SMTP Server: smtp.gmail.com
+            - Port: 587
+            - Username: {settings.MAIL_USERNAME}
+            - TLS: Enabled
+            
+            Best regards,
+            Allotment Service
+            """,
+            subtype=MessageType.plain,
+        )
+
+        await mail_client.send_message(message)
+        logger.info("Test email sent successfully", recipient=recipient_email)
+        return {"message": f"Test email sent successfully to {recipient_email}"}
+    except Exception as e:
+        logger.exception(
+            "Failed to send test email", error="REDACTED", recipient=recipient_email
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to send test email: {str(e)}",
+        )
