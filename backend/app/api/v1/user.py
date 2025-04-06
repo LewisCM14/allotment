@@ -71,16 +71,31 @@ async def create_user(
                 detail="Email already registered",
             )
 
-        # Create user
         user_repo = UserRepository(db)
         new_user, access_token = await user_repo.create_user(user)
 
-        # Validate creation
         if not new_user or not new_user.user_id:
             logger.error("User creation failed", email=user.user_email)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user",
+            )
+
+        try:
+            await send_verification_email(
+                user_email=user.user_email, user_id=str(new_user.user_id)
+            )
+            logger.info(
+                "Verification email sent during registration",
+                user_id=str(new_user.user_id),
+                email=user.user_email,
+            )
+        except Exception as email_error:
+            logger.error(
+                "Failed to send verification email during registration",
+                error=str(email_error),
+                user_id=str(new_user.user_id),
+                email=user.user_email,
             )
 
         logger.info(

@@ -110,6 +110,45 @@ class TestRegisterUser:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["detail"] == "Email already registered"
 
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "email_service_available", [True, False]
+    )
+    async def test_verification_email_sent_on_registration(
+        self, client, mocker, email_service_available
+    ):
+        mock_send = mocker.patch(
+            "app.api.v1.user.send_verification_email"
+        )
+        
+        if email_service_available:
+            mock_send.return_value = {"message": "Verification email sent successfully"}
+        else:
+            mock_send.side_effect = Exception("SMTP connection failed")
+        
+        user_data = {
+            "user_email": f"verification-test-{email_service_available}@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Test",
+            "user_country_code": "GB",
+        }
+        
+        response = client.post(f"{PREFIX}/user", json=user_data)
+        assert response.status_code == status.HTTP_201_CREATED
+        
+        user_id = response.json().get("user_id")
+        assert user_id is not None
+        
+        mock_send.assert_called_once()
+        
+        if email_service_available:
+            call_args = mock_send.call_args[1]
+            assert call_args["user_email"] == user_data["user_email"]
+            assert call_args["user_id"] == user_id
+            assert response.json().get("is_email_verified") is False
+        else:
+            assert response.json().get("is_email_verified") is False
+
 
 class TestUserLogin:
     def test_login_user(self, client):

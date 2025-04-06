@@ -3,6 +3,15 @@ revision = 1
 requires-python = "==3.13.*"
 
 [[package]]
+name = "aiosmtplib"
+version = "3.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/2a/812517f8350cd317aad2ba1ce25dfc213c6f1f2e62e1cbf662b4bdc51d34/aiosmtplib-3.0.2.tar.gz", hash = "sha256:08fd840f9dbc23258025dca229e8a8f04d2ccf3ecb1319585615bfc7933f7f47", size = 59941 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/87/35/441faea7a11159795881a6ec869454f40269e4e3806dced935a35d83a412/aiosmtplib-3.0.2-py3-none-any.whl", hash = "sha256:8783059603a34834c7c90ca51103c3aa129d5922003b5ce98dbaa6d4440f10fc", size = 27111 },
+]
+
+[[package]]
 name = "aiosqlite"
 version = "0.21.0"
 source = { registry = "https://pypi.org/simple" }
@@ -33,62 +42,68 @@ name = "allotment-svc"
 version = "0"
 source = { virtual = "." }
 dependencies = [
-    { name = "alembic" },
     { name = "asyncpg" },
     { name = "authlib" },
     { name = "bcrypt" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "fastapi-mail" },
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "slowapi" },
     { name = "sqlalchemy" },
     { name = "structlog" },
-    { name = "types-psutil" },
-    { name = "types-python-jose" },
-    { name = "types-pyyaml" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "aiosqlite" },
+    { name = "alembic" },
     { name = "fastapi", extra = ["standard"] },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-mock" },
     { name = "ruff" },
+    { name = "types-psutil" },
+    { name = "types-python-jose" },
+    { name = "types-pyyaml" },
+    { name = "typing-extensions" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "alembic" },
     { name = "asyncpg" },
     { name = "authlib" },
     { name = "bcrypt" },
     { name = "email-validator" },
     { name = "fastapi" },
+    { name = "fastapi-mail" },
     { name = "psutil" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "slowapi" },
     { name = "sqlalchemy" },
     { name = "structlog" },
-    { name = "types-psutil" },
-    { name = "types-python-jose" },
-    { name = "types-pyyaml" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
     { name = "aiosqlite" },
+    { name = "alembic" },
     { name = "fastapi", extras = ["standard"] },
     { name = "httpx" },
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-mock" },
     { name = "ruff" },
+    { name = "types-psutil" },
+    { name = "types-python-jose" },
+    { name = "types-pyyaml" },
+    { name = "typing-extensions" },
 ]
 
 [[package]]
@@ -189,6 +204,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/40/f2/71b4ed65ce38982ecdda0ff20c3ad1b15e71949c78b2c053df53629ce940/bcrypt-4.3.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:79e70b8342a33b52b55d93b3a59223a844962bef479f6a0ea318ebbcadf71505", size = 363128 },
     { url = "https://files.pythonhosted.org/packages/11/99/12f6a58eca6dea4be992d6c681b7ec9410a1d9f5cf368c61437e31daa879/bcrypt-4.3.0-cp39-abi3-win32.whl", hash = "sha256:b4d4e57f0a63fd0b358eb765063ff661328f69a04494427265950c71b992a39a", size = 160598 },
     { url = "https://files.pythonhosted.org/packages/a9/cf/45fb5261ece3e6b9817d3d82b2f343a505fd58674a92577923bc500bd1aa/bcrypt-4.3.0-cp39-abi3-win_amd64.whl", hash = "sha256:e53e074b120f2877a35cc6c736b8eb161377caae8925c17688bd46ba56daaa5b", size = 152799 },
+]
+
+[[package]]
+name = "blinker"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/21/28/9b3f50ce0e048515135495f198351908d99540d69bfdc8c1d15b73dc55ce/blinker-1.9.0.tar.gz", hash = "sha256:b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf", size = 22460 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/10/cb/f2ad4230dc2eb1a74edf38f1a38b9b52277f75bef262d8908e60d957e13c/blinker-1.9.0-py3-none-any.whl", hash = "sha256:ba0efaa9080b619ff2f3459d1d500c57bddea4a6b424b60a91141db6fd2f08bc", size = 8458 },
 ]
 
 [[package]]
@@ -353,6 +377,24 @@ wheels = [
 [package.optional-dependencies]
 standard = [
     { name = "uvicorn", extra = ["standard"] },
+]
+
+[[package]]
+name = "fastapi-mail"
+version = "1.4.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiosmtplib" },
+    { name = "blinker" },
+    { name = "email-validator" },
+    { name = "jinja2" },
+    { name = "pydantic" },
+    { name = "pydantic-settings" },
+    { name = "starlette" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b5/2b/a743bd324d640201c3ce2dcea4acb143058926ed3e7bfbea08304075b5c5/fastapi_mail-1.4.2.tar.gz", hash = "sha256:04bde1005c624f42dfc0a9c1e313fcc544499fdd6b3531e606c500d80ac2ffcb", size = 13353 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/ee/5d154eb4621d6a037e139a32bc1244ba8cb78a7aca9d438b56e24552203c/fastapi_mail-1.4.2-py3-none-any.whl", hash = "sha256:3525cf342ff91f6bcb3298570d1783498082e586957f668ee4164a0aab6ec743", size = 14748 },
 ]
 
 [[package]]
@@ -692,6 +734,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/f2/a8/ecbc8ede70921dd2f544ab1cadd3ff3bf842af27f87bbdea774c7baa1d38/pytest_asyncio-0.25.3.tar.gz", hash = "sha256:fc1da2cf9f125ada7e710b4ddad05518d4cee187ae9412e9ac9271003497f07a", size = 54239 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/67/17/3493c5624e48fd97156ebaec380dcaafee9506d7e2c46218ceebbb57d7de/pytest_asyncio-0.25.3-py3-none-any.whl", hash = "sha256:9e89518e0f9bd08928f97a3482fdc4e244df17529460bc038291ccaf8f85c7c3", size = 19467 },
+]
+
+[[package]]
+name = "pytest-mock"
+version = "3.14.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c6/90/a955c3ab35ccd41ad4de556596fa86685bf4fc5ffcc62d22d856cfd4e29a/pytest-mock-3.14.0.tar.gz", hash = "sha256:2719255a1efeceadbc056d6bf3df3d1c5015530fb40cf347c0f9afac88410bd0", size = 32814 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f2/3b/b26f90f74e2986a82df6e7ac7e319b8ea7ccece1caec9f8ab6104dc70603/pytest_mock-3.14.0-py3-none-any.whl", hash = "sha256:0b72c38033392a5f4621342fe11e9219ac11ec9d375f8e2a0c164539e0d70f6f", size = 9863 },
 ]
 
 [[package]]
