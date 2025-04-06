@@ -388,30 +388,42 @@ async def verify_email_token(
         dict: Success message
     """
     try:
+        user_id = None
         try:
             payload = jwt.decode(token, settings.PUBLIC_KEY)
             user_id = payload.get("sub")
-        except JoseError:
-            logger.debug(
-                "Token is not a valid JWT, trying as user_id", token_preview=token[:10]
+            logger.info("Successfully decoded JWT token", user_id=user_id)
+        except JoseError as e:
+            logger.warning(
+                "Failed to decode JWT token, trying as direct user_id", 
+                error=str(e), 
+                token_preview=token[:10]
             )
             user_id = token
 
         if not user_id:
+            logger.error("No user_id found in token")
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token",
+                detail="Invalid token - no user ID found",
             )
 
-        # Verify email in the database
-        user_repo = UserRepository(db)
-        await user_repo.verify_email(user_id)
+        try:
+            user_repo = UserRepository(db)
+            await user_repo.verify_email(user_id)
+            logger.info("Email verified successfully", user_id=user_id)
+        except Exception as e:
+            logger.error("Failed to update user verification status", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update user verification status",
+            )
 
         return {"message": "Email verified successfully"}
     except HTTPException:
         raise
-    except Exception:
-        logger.exception("Error verifying email", error="REDACTED")
+    except Exception as e:
+        logger.exception("Error verifying email", error=str(e))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to verify email",

@@ -5,7 +5,7 @@ Email Service
 - Centralizes email configuration
 """
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import structlog
 from fastapi import HTTPException, status
@@ -29,6 +29,8 @@ email_conf = ConnectionConfig(
 )
 
 mail_client = FastMail(email_conf)
+
+current_year = datetime.now().year
 
 
 async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[str, str]:
@@ -55,23 +57,25 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
         verification_link = f"{settings.FRONTEND_URL}/verify-email?token={token}"
 
         message = MessageSchema(
-            subject="Verify Your Email - Allotment Service",
+            subject="Email Verification Required - Allotment Service",
             recipients=[user_email],
-            body=f"""
-            Hello,
-            
-            Thank you for registering for a Allotment account!
-            
-            Please verify your email by clicking the link below:
-            
+            body=f"""Dear Allotment Member,
+
+            Thank you for creating an account. We're excited to have you join our community of gardening enthusiasts.
+
+            To complete your registration and access all features, please verify your email address by clicking the link below:
+
             {verification_link}
-            
-            This link will expire in 1 hour.
-            
-            If you did not register for an account, please ignore this email.
-            
+
+            This verification link will expire in 1 hour for security purposes. If you don't complete the verification within this timeframe, you'll need to request a new verification email.
+
+            If you did not create an account with Allotment Service, please disregard this email or contact our support team.
+
             Best regards,
             The Allotment Team
+
+            ------------------------------
+            This is an automated message. Please do not reply directly to this email.
             """,
             subtype=MessageType.plain,
         )
@@ -113,17 +117,16 @@ async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
             recipients=[recipient_email],
             body=f"""
             Hello,
-            
+
             This is a test email from your Allotment Service application.
-            
             If you received this email, your email configuration is working correctly!
-            
+
             Configuration details:
             - SMTP Server: smtp.gmail.com
             - Port: 587
             - Username: {settings.MAIL_USERNAME}
             - TLS: Enabled
-            
+
             Best regards,
             Allotment Service
             """,

@@ -116,3 +116,50 @@ export const loginUser = async (
 		return handleApiError(error, AUTH_ERRORS.UNKNOWN_ERROR);
 	}
 };
+
+export const verifyEmail = async (
+	token: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.get<{ message: string }>(
+			`${import.meta.env.VITE_API_VERSION}/user/verify-email`,
+			{ params: { token } },
+		);
+		return response.data;
+	} catch (error) {
+		if (axios.isAxiosError(error)) {
+			if (error.response?.status === 400) {
+				throw new Error(
+					error.response.data?.detail || "Invalid verification token",
+				);
+			}
+			if (error.response?.status === 404) {
+				throw new Error("Verification token not found");
+			}
+			if (error.response?.status === 410) {
+				throw new Error("Verification token has expired");
+			}
+		}
+		return handleApiError(error, "Failed to verify email");
+	}
+};
+
+export const requestVerificationEmail = async (
+	email: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			`${import.meta.env.VITE_API_VERSION}/user/send-verification-email`,
+			null,
+			{ params: { user_email: email } },
+		);
+		return response.data;
+	} catch (error) {
+		if (axios.isAxiosError(error)) {
+			if (error.response?.status === 404) {
+				throw new Error("Email address not found");
+			}
+		}
+		return handleApiError(error, "Failed to send verification email");
+	}
+};
