@@ -395,9 +395,9 @@ async def verify_email_token(
             logger.info("Successfully decoded JWT token", user_id=user_id)
         except JoseError as e:
             logger.warning(
-                "Failed to decode JWT token, trying as direct user_id", 
-                error=str(e), 
-                token_preview=token[:10]
+                "Failed to decode JWT token, trying as direct user_id",
+                error=str(e),
+                token_preview=token[:10],
             )
             user_id = token
 
@@ -413,6 +413,14 @@ async def verify_email_token(
             await user_repo.verify_email(user_id)
             logger.info("Email verified successfully", user_id=user_id)
         except Exception as e:
+            if "User not found" in str(e):
+                logger.warning(
+                    "User not found during email verification", user_id=user_id
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="User not found",
+                )
             logger.error("Failed to update user verification status", error=str(e))
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

@@ -5,7 +5,7 @@ Email Service
 - Centralizes email configuration
 """
 
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
 import structlog
 from fastapi import HTTPException, status
