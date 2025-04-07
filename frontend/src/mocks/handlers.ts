@@ -79,4 +79,64 @@ export const handlers = [
 			});
 		},
 	),
+
+	// Mock the requestVerificationEmail endpoint
+	http.post(
+		`${API_URL}${API_VERSION}/user/send-verification-email`,
+		async ({ request }) => {
+			const url = new URL(request.url);
+			const email = url.searchParams.get("user_email");
+
+			if (email === "test@example.com") {
+				return HttpResponse.json({ message: "Verification email sent" });
+			}
+
+			if (email === "nonexistent@example.com") {
+				return new HttpResponse(
+					JSON.stringify({ detail: "Email address not found" }),
+					{
+						status: 404,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+
+			return new HttpResponse(null, { status: 400 });
+		},
+	),
+
+	// Mock the Verify Email endpoint
+	http.get(
+		`${API_URL}${API_VERSION}/user/verify-email`,
+		async ({ request }) => {
+			const url = new URL(request.url);
+			const token = url.searchParams.get("token");
+
+			if (token === "valid-token") {
+				return HttpResponse.json({ message: "Email verified successfully" });
+			}
+
+			if (token === "invalid-token") {
+				return new HttpResponse(
+					JSON.stringify({ detail: "Invalid verification token" }),
+					{
+						status: 400,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+
+			if (token === "expired-token") {
+				return new HttpResponse(
+					JSON.stringify({ detail: "Verification token has expired" }),
+					{
+						status: 410,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+
+			return new HttpResponse(null, { status: 400 });
+		},
+	),
 ];

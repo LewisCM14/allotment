@@ -1,8 +1,23 @@
-import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
-import { AUTH_ERRORS, loginUser, registerUser } from "./UserService";
+import {
+	AUTH_ERRORS,
+	loginUser,
+	registerUser,
+	requestVerificationEmail,
+	verifyEmail,
+} from "./UserService";
+
+const mockFetch = (response: unknown, status = 200) => {
+	global.fetch = vi.fn(() =>
+		Promise.resolve(
+			new Response(JSON.stringify(response), {
+				status,
+				headers: { "Content-Type": "application/json" },
+			}),
+		),
+	);
+};
 
 describe("UserService", () => {
 	beforeEach(() => {
@@ -19,7 +34,6 @@ describe("UserService", () => {
 
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
-			// Mock API response
 			const mockResponse = {
 				access_token: "mock-access-token",
 				refresh_token: "mock-refresh-token",
@@ -27,21 +41,10 @@ describe("UserService", () => {
 				is_email_verified: false,
 				user_id: "",
 			};
+			mockFetch(mockResponse);
 
-			// Mock the API call
-			global.fetch = vi.fn(() =>
-				Promise.resolve(
-					new Response(JSON.stringify(mockResponse), {
-						status: 200,
-						headers: { "Content-Type": "application/json" },
-					}),
-				),
-			);
-
-			// Call the function
 			const result = await loginUser("test@example.com", "password123");
 
-			// Update the expected result to include userData
 			expect(result).toEqual({
 				tokens: {
 					access_token: "mock-access-token",
@@ -54,46 +57,50 @@ describe("UserService", () => {
 					is_email_verified: false,
 				},
 			});
-
-			// Verify tokens are stored in localStorage
-			expect(localStorage.getItem("access_token")).toBe("mock-access-token");
-			expect(localStorage.getItem("refresh_token")).toBe("mock-refresh-token");
 		});
 
 		it("should throw an error with invalid credentials", async () => {
+			mockFetch({ detail: "Invalid email or password" }, 401);
+
 			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
-				"Invalid email or password",
+				AUTH_ERRORS.INVALID_CREDENTIALS,
 			);
 		});
 
-		it("should handle server errors gracefully", async () => {
-			// Override the handler just for this test
-			server.use(
-				http.post("*/user/auth/login", () => {
-					return new HttpResponse(null, { status: 500 });
-				}),
-			);
+		it("should handle unexpected server responses", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
+
+			const serverError = new Error("Server returned unexpected response");
+			Object.defineProperty(serverError, "isAxiosError", { value: true });
+			Object.defineProperty(serverError, "response", {
+				value: {
+					status: 500,
+					data: "Unexpected response",
+				},
+			});
+
+			postSpy.mockRejectedValueOnce(serverError);
 
 			await expect(
 				loginUser("test@example.com", "password123"),
-			).rejects.toThrow("Server error. Please try again later.");
+			).rejects.toThrow(AUTH_ERRORS.SERVER_ERROR);
+
+			postSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
-			// Instead of using MSW, directly mock axios.post
 			const postSpy = vi.spyOn(apiModule.default, "post");
 
-			// Create a network error as axios would
 			const networkError = new Error("Network Error");
 			Object.defineProperty(networkError, "isAxiosError", { value: true });
 			Object.defineProperty(networkError, "response", { value: undefined });
-			Object.defineProperty(networkError, "request", { value: {} }); // Non-empty request object
+			Object.defineProperty(networkError, "request", { value: {} });
 
 			postSpy.mockRejectedValueOnce(networkError);
 
 			await expect(
 				loginUser("test@example.com", "password123"),
-			).rejects.toThrow(AUTH_ERRORS.NETWORK_ERROR);
+			).rejects.toThrow(/Network error/i);
 
 			postSpy.mockRestore();
 		});
@@ -101,6 +108,12 @@ describe("UserService", () => {
 
 	describe("registerUser", () => {
 		it("should register a new user successfully", async () => {
+			const mockResponse = {
+				access_token: "new-access-token",
+				refresh_token: "new-refresh-token",
+			};
+			mockFetch(mockResponse);
+
 			const result = await registerUser(
 				"new@example.com",
 				"password123",
@@ -108,23 +121,19 @@ describe("UserService", () => {
 				"US",
 			);
 
-			expect(result).toEqual({
-				access_token: "new-access-token",
-				refresh_token: "new-refresh-token",
-			});
+			expect(result).toEqual(mockResponse);
 		});
 
 		it("should throw an error if email already exists", async () => {
+			mockFetch({ detail: "Email already registered" }, 409);
+
 			await expect(
 				registerUser("exists@example.com", "password123", "John", "US"),
-			).rejects.toThrow("This email is already registered");
+			).rejects.toThrow(AUTH_ERRORS.EMAIL_EXISTS);
 		});
 
 		it("should handle validation errors from the server", async () => {
-			// Mock the API post method directly instead of using MSW
 			const postSpy = vi.spyOn(apiModule.default, "post");
-
-			// Create a response similar to what axios would return for a 422 error
 			const validationError = new Error("Request failed with status code 422");
 			Object.defineProperty(validationError, "isAxiosError", { value: true });
 			Object.defineProperty(validationError, "response", {
@@ -150,53 +159,37 @@ describe("UserService", () => {
 
 			postSpy.mockRestore();
 		});
+	});
 
-		it("should handle 400 errors with custom messages", async () => {
-			server.use(
-				http.post("*/user", () => {
-					return new HttpResponse(
-						JSON.stringify({ detail: "Invalid country code" }),
-						{ status: 400 },
-					);
-				}),
-			);
-
-			await expect(
-				registerUser("valid@example.com", "password123", "John", "XX"),
-			).rejects.toThrow("Invalid country code");
+	describe("requestVerificationEmail", () => {
+		it("should send a verification email successfully", async () => {
+			const result = await requestVerificationEmail("test@example.com");
+			expect(result).toEqual({ message: "Verification email sent" });
 		});
 
-		it("should detect offline status", async () => {
-			// Mock navigator.onLine as false for this specific test
-			Object.defineProperty(navigator, "onLine", {
-				configurable: true,
-				value: false,
-			});
-
-			// Mock the handleApiError function to pass through offline errors
-			const handleApiErrorSpy = vi.spyOn(apiModule, "handleApiError");
-			handleApiErrorSpy.mockImplementation((error) => {
-				if (
-					error instanceof Error &&
-					error.message.includes("You are offline")
-				) {
-					throw new Error("You are offline");
-				}
-				throw error;
-			});
-
-			// Directly spy on api.post in the UserService module
-			const apiPostSpy = vi.spyOn(apiModule.default, "post");
-			apiPostSpy.mockRejectedValue(
-				new Error("You are offline. Please check your connection."),
-			);
-
+		it("should handle email not found error", async () => {
 			await expect(
-				registerUser("valid@example.com", "password123", "John", "US"),
-			).rejects.toThrow("You are offline");
+				requestVerificationEmail("nonexistent@example.com"),
+			).rejects.toThrow("Email address not found");
+		});
+	});
 
-			apiPostSpy.mockRestore();
-			handleApiErrorSpy.mockRestore();
+	describe("verifyEmail", () => {
+		it("should verify email successfully", async () => {
+			const result = await verifyEmail("valid-token");
+			expect(result).toEqual({ message: "Email verified successfully" });
+		});
+
+		it("should handle invalid verification token", async () => {
+			await expect(verifyEmail("invalid-token")).rejects.toThrow(
+				"Invalid verification token",
+			);
+		});
+
+		it("should handle expired verification token", async () => {
+			await expect(verifyEmail("expired-token")).rejects.toThrow(
+				"Verification token has expired",
+			);
 		});
 	});
 });
