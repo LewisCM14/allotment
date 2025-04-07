@@ -9,9 +9,7 @@ const RegisterForm = React.lazy(() => import("../features/user/RegisterForm"));
 const EmailVerificationPage = React.lazy(
 	() => import("../features/user/EmailVerification"),
 );
-// const RequestVerificationPage = React.lazy(
-// 	() => import("../features/user/RequestVerificationPage"),
-// );
+const UserProfile = React.lazy(() => import("../features/user/UserProfile"));
 const NotFound = React.lazy(() => import("../components/NotFound"));
 // const HomePage = React.lazy(() => import("../features/home/HomePage"));
 
@@ -36,18 +34,24 @@ const AppRoutes = () => {
 						</PublicRoute>
 					}
 				/>
-				<Route path="/verify-email" element={<EmailVerificationPage />} />
 
 				{/* Protected routes - only for authenticated users */}
-				{/* <Route
-					path="/request-verification"
+				<Route
+					path="/verify-email"
 					element={
 						<ProtectedRoute>
-							<RequestVerificationPage />
+							<EmailVerificationPage />
 						</ProtectedRoute>
 					}
-				/> */}
-
+				/>
+				<Route
+					path="/profile"
+					element={
+						<ProtectedRoute>
+							<UserProfile />
+						</ProtectedRoute>
+					}
+				/>
 				<Route
 					path="/"
 					element={

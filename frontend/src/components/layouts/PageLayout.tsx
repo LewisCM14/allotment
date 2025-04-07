@@ -1,3 +1,4 @@
+import { widthClasses } from "@/components/layouts/layoutConfig";
 import { cn } from "@/lib/utils";
 
 interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
@@ -13,10 +14,6 @@ export function PageLayout({
 	className,
 	...props
 }: IPageLayout) {
-	const widthClasses = {
-		default: "w-[96%] md:w-[84%] lg:w-[66%]",
-	};
-
 	return (
 		<main className="h-full w-full flex items-center justify-center">
 			<div

@@ -54,25 +54,25 @@ export default function EmailVerificationPage() {
 
 	return (
 		<PageLayout variant="default">
-			<Card className="w-full max-w-md mx-auto">
+			<Card className="w-full">
 				<CardHeader>
-					<CardTitle>Email Verification</CardTitle>
+					<CardTitle className="text-2xl">Email Verification</CardTitle>
 				</CardHeader>
 				<CardContent className="flex flex-col items-center text-center">
 					{verifying && (
 						<div className="flex flex-col items-center py-8 gap-4">
 							<Loader2 className="h-12 w-12 text-primary animate-spin" />
-							<p>Verifying your email address...</p>
+							<p className="text-foreground">Verifying your email address...</p>
 						</div>
 					)}
 
 					{!verifying && success && (
 						<div className="flex flex-col items-center py-8 gap-4">
-							<CheckCircle className="h-16 w-16 text-green-500" />
-							<h2 className="text-2xl font-semibold text-green-700">
+							<CheckCircle className="h-16 w-16 text-primary" />
+							<h2 className="text-2xl font-semibold text-primary-foreground dark:text-primary">
 								Email Verified!
 							</h2>
-							<p className="text-gray-600">
+							<p className="text-muted-foreground">
 								Your email address has been successfully verified. You can now
 								enjoy full access to all features.
 							</p>
@@ -84,20 +84,18 @@ export default function EmailVerificationPage() {
 
 					{!verifying && !success && (
 						<div className="flex flex-col items-center py-8 gap-4">
-							<XCircle className="h-16 w-16 text-red-500" />
-							<h2 className="text-2xl font-semibold text-red-700">
+							<XCircle className="h-16 w-16 text-destructive" />
+							<h2 className="text-2xl font-semibold text-destructive dark:text-destructive">
 								Verification Failed
 							</h2>
 							{error && <FormError message={error} />}
-							<p className="text-gray-600 mt-2">
+							<p className="text-muted-foreground mt-2">
 								We couldn't verify your email address. The verification link may
 								have expired or is invalid.
 							</p>
 							<div className="flex flex-col gap-2 mt-4 w-full">
 								<Button asChild>
-									<Link to="/request-verification">
-										Request New Verification Link
-									</Link>
+									<Link to="/profile">Request New Verification Link</Link>
 								</Button>
 								<Button variant="outline" asChild>
 									<Link to="/">Return to Home</Link>

@@ -1,7 +1,8 @@
+import type { UserData } from "@/features/user/UserService";
 import api from "@/services/api";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AuthContext, type TokenPair } from "./AuthContext";
+import { AuthContext, type IUser, type TokenPair } from "./AuthContext";
 import {
 	clearAuthFromIndexedDB,
 	loadAuthFromIndexedDB,
@@ -17,6 +18,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 	const [refreshToken, setRefreshToken] = useState<string | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
 	const [firstName, setFirstName] = useState<string | null>(null);
+	const [user, setUser] = useState<IUser | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [hasLoggedOut, setHasLoggedOut] = useState(false);
 
@@ -25,6 +27,9 @@ export function AuthProvider({ children }: IAuthProvider) {
 			const localAccessToken = localStorage.getItem("access_token");
 			const localRefreshToken = localStorage.getItem("refresh_token");
 			const localFirstName = localStorage.getItem("first_name");
+			const localEmail = localStorage.getItem("user_email");
+			const localUserId = localStorage.getItem("user_id");
+			const localEmailVerified = localStorage.getItem("is_email_verified");
 
 			if (localAccessToken && localRefreshToken) {
 				setAccessToken(localAccessToken);
@@ -32,6 +37,15 @@ export function AuthProvider({ children }: IAuthProvider) {
 				setIsAuthenticated(true);
 				if (localFirstName) {
 					setFirstName(localFirstName);
+				}
+
+				if (localEmail && localFirstName) {
+					setUser({
+						user_id: localUserId || "",
+						user_first_name: localFirstName,
+						user_email: localEmail,
+						isEmailVerified: localEmailVerified === "true",
+					});
 				}
 			} else {
 				const indexedDBAuth = await loadAuthFromIndexedDB();
@@ -68,7 +82,11 @@ export function AuthProvider({ children }: IAuthProvider) {
 		}
 	}, [hasLoggedOut]);
 
-	const login = async (tokenPair: TokenPair, userFirstName?: string) => {
+	const login = async (
+		tokenPair: TokenPair,
+		userFirstName?: string,
+		userData?: UserData,
+	) => {
 		setAccessToken(tokenPair.access_token);
 		setRefreshToken(tokenPair.refresh_token);
 		setIsAuthenticated(true);
@@ -80,6 +98,23 @@ export function AuthProvider({ children }: IAuthProvider) {
 		if (userFirstName) {
 			setFirstName(userFirstName);
 			localStorage.setItem("first_name", userFirstName);
+			if (userData) {
+				const userObj: IUser = {
+					user_id: userData.user_id || "",
+					user_first_name: userFirstName,
+					user_email: userData.user_email || "",
+					isEmailVerified: userData.is_email_verified || false,
+				};
+				setUser(userObj);
+
+				localStorage.setItem("user_email", userObj.user_email);
+				localStorage.setItem("user_id", userObj.user_id);
+				localStorage.setItem(
+					"is_email_verified",
+					String(userObj.isEmailVerified),
+				);
+			}
+
 			await saveAuthToIndexedDB({
 				...tokenPair,
 				firstName: userFirstName,
@@ -141,12 +176,16 @@ export function AuthProvider({ children }: IAuthProvider) {
 		setAccessToken(null);
 		setRefreshToken(null);
 		setFirstName(null);
+		setUser(null);
 		setIsAuthenticated(false);
 		setHasLoggedOut(true);
 
 		localStorage.removeItem("access_token");
 		localStorage.removeItem("refresh_token");
 		localStorage.removeItem("first_name");
+		localStorage.removeItem("user_email");
+		localStorage.removeItem("user_id");
+		localStorage.removeItem("is_email_verified");
 
 		await clearAuthFromIndexedDB();
 	};
@@ -162,6 +201,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 				refreshToken,
 				isAuthenticated,
 				firstName,
+				user,
 				login,
 				logout,
 				refreshAccessToken,

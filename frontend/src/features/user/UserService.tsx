@@ -72,12 +72,20 @@ export interface ILoginResponse {
 	refresh_token: string;
 	token_type: string;
 	user_first_name?: string;
+	is_email_verified?: boolean;
+	user_id?: string;
+}
+
+export interface UserData {
+	user_id: string;
+	user_email: string;
+	is_email_verified: boolean;
 }
 
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<{ tokens: TokenPair; firstName: string }> => {
+): Promise<{ tokens: TokenPair; firstName: string; userData: UserData }> => {
 	try {
 		const requestData: ILoginRequest = {
 			user_email: email,
@@ -89,7 +97,13 @@ export const loginUser = async (
 			requestData,
 		);
 
-		const { access_token, refresh_token, user_first_name } = response.data;
+		const {
+			access_token,
+			refresh_token,
+			user_first_name,
+			is_email_verified,
+			user_id,
+		} = response.data;
 
 		localStorage.setItem("access_token", access_token);
 		localStorage.setItem("refresh_token", refresh_token);
@@ -106,6 +120,11 @@ export const loginUser = async (
 				refresh_token,
 			},
 			firstName,
+			userData: {
+				user_email: email,
+				user_id: user_id || "",
+				is_email_verified: is_email_verified || false,
+			},
 		};
 	} catch (error) {
 		if (axios.isAxiosError(error)) {

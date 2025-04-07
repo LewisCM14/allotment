@@ -61,12 +61,19 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 				return;
 			}
 
-			const response = await loginUser(data.email, data.password);
-			await login(response.tokens, response.firstName);
+			const result = await loginUser(data.email, data.password);
+
+			const userData = {
+				user_id: result.userData.user_id || "",
+				user_email: result.userData.user_email,
+				is_email_verified: result.userData.is_email_verified || false,
+			};
+
+			await login(result.tokens, result.firstName, userData);
 			navigate("/");
-		} catch (error) {
-			setError(AUTH_ERRORS.format(error));
-			console.error("Login failed", error);
+		} catch (err) {
+			setError(AUTH_ERRORS.format(err));
+			console.error("Login failed", err);
 		}
 	};
 

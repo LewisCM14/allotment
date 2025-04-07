@@ -19,14 +19,40 @@ describe("UserService", () => {
 
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
+			// Mock API response
+			const mockResponse = {
+				access_token: "mock-access-token",
+				refresh_token: "mock-refresh-token",
+				user_first_name: "Test",
+				is_email_verified: false,
+				user_id: "",
+			};
+
+			// Mock the API call
+			global.fetch = vi.fn(() =>
+				Promise.resolve(
+					new Response(JSON.stringify(mockResponse), {
+						status: 200,
+						headers: { "Content-Type": "application/json" },
+					}),
+				),
+			);
+
+			// Call the function
 			const result = await loginUser("test@example.com", "password123");
 
+			// Update the expected result to include userData
 			expect(result).toEqual({
 				tokens: {
 					access_token: "mock-access-token",
 					refresh_token: "mock-refresh-token",
 				},
 				firstName: "Test",
+				userData: {
+					user_email: "test@example.com",
+					user_id: "",
+					is_email_verified: false,
+				},
 			});
 
 			// Verify tokens are stored in localStorage

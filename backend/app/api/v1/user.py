@@ -468,3 +468,45 @@ async def test_email_config(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send test email: {str(e)}",
         )
+
+
+@router.get(
+    "/verification-status",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Check email verification status",
+    description="Returns the current email verification status for a user",
+)
+async def check_verification_status(
+    user_email: EmailStr, db: AsyncSession = Depends(get_db)
+) -> dict:
+    """
+    Check if a user's email is verified.
+
+    Args:
+        user_email: The user's email address
+        db: Database session
+
+    Returns:
+        dict: Contains verification status
+    """
+    try:
+        query = select(User).where(User.user_email == user_email)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found",
+            )
+
+        return {"is_email_verified": user.is_email_verified, "user_id": str(user.user_id)}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error checking verification status", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check verification status",
+        )
