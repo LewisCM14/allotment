@@ -1,5 +1,7 @@
 # Project Setup
 
+---
+
 ## Table of Contents
 - [Project Setup](#project-setup)
     - [Operating System](#operating-system)
@@ -17,7 +19,7 @@
 
 ## Operating System
 
-The project runs on Ubuntu and this setup guide assumes you have already installed this.
+_The project runs on Ubuntu and this setup guide assumes you have already installed this._
 
 - Useful links for WSL
     - <a href="https://learn.microsoft.com/en-us/windows/wsl/install" target="_blank" rel="noopener noreferrer">Install WSL</a>
@@ -180,6 +182,8 @@ ___
 
 # Contributing
 
+---
+
 ## Backend
 
 _The following commands must be ran and issues resolved prior to raising pull requests_
@@ -203,6 +207,7 @@ Tests
 ```
 pytest
 ```
+--- 
 
 ## Frontend
 
@@ -226,6 +231,8 @@ Testing
 npm run test
 ```
 
+---
+
 ## Database Migrations
 
 _Database migrations and managed with Alembic and can be ran from inside the backed virtual env with the following commands._
@@ -234,6 +241,8 @@ Autogenerate Alembic Migration
 ```
 alembic revision --autogenerate -m <REVISION MSG>
 ```
+
+---
 
 ## Documentation
 
