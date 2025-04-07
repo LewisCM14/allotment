@@ -1,5 +1,20 @@
 # Project Setup
 
+## Table of Contents
+- [Project Setup](#project-setup)
+    - [Operating System](#operating-system)
+    - [Database](#database)
+    - [Python Package Manager](#python-package-manager)
+    - [Backend Setup](#backend-setup)
+    - [Frontend Setup](#frontend-setup)
+- [Contributing](#contributing)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+    - [Database Migrations](#database-migrations)
+    - [Documentation](#documentation)
+
+---
+
 ## Operating System
 
 The project runs on Ubuntu and this setup guide assumes you have already installed this.
@@ -222,9 +237,15 @@ alembic revision --autogenerate -m <REVISION MSG>
 
 ## Documentation
 
-_Design documentation must be updated alongside code changes, the local MKDocs server can be launched with the following command._
+_Design documentation must be updated alongside code changes, to preview changes a local MKDocs server can be launched with the following command._
 ```
 mkdocs serve --dev-addr 0.0.0.0:8080
 ```
+> This will require running the following commands from the root of the `docs` folder.
+```
+uv sync
+source .venv/bin/activate
+```
+**Where appropriate the `CONTRIBUTING.md` must also be updated.**
 
-> Where appropriate the `CONTRIBUTING.md` must also be updated.
+___
