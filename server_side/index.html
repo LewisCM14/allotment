@@ -496,17 +496,17 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#read-delete" class="md-nav__link">
     <span class="md-ellipsis">
       Read &amp; Delete
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -815,17 +815,17 @@
   
 </li>
         
+      </ul>
+    </nav>
+  
+</li>
+        
           <li class="md-nav__item">
   <a href="#read-delete" class="md-nav__link">
     <span class="md-ellipsis">
       Read &amp; Delete
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -1101,20 +1101,42 @@
 <p>Unit of Work classes are created to manage transactions and ensure multiple database operations occur as a single unit.</p>
 <div class="admonition example">
 <p class="admonition-title"><em>Required classes include:</em></p>
-<div class="tabbed-set tabbed-alternate" data-tabs="5:1"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">Grow Guide</label></div>
+<div class="tabbed-set tabbed-alternate" data-tabs="5:4"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><input id="__tabbed_5_4" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">User Management</label><label for="__tabbed_5_2">Grow Guide Management</label><label for="__tabbed_5_3">ToDo Management</label><label for="__tabbed_5_4">Family Information</label></div>
 <div class="tabbed-content">
+<div class="tabbed-block">
+<p><strong>User</strong></p>
+<ul>
+<li>For handling the creation of users.</li>
+</ul>
+<p><strong>User Allotment</strong></p>
+<ul>
+<li>For creating and managing user allotments.</li>
+</ul>
+</div>
+<div class="tabbed-block">
+<p><strong>Grow Guide</strong></p>
+<ul>
+<li>For CRUD operations on grow guides.</li>
+</ul>
+<p><strong>Guide Publishing</strong></p>
+<ul>
+<li>For handling public/private status and copying guides.</li>
+</ul>
+</div>
 <div class="tabbed-block">
 <p><strong>User Weekly ToDo</strong></p>
 <ul>
-<li>Used to group the: Day, Week, Variety and User repositories when providing users their weekly tasks.</li>
+<li>For weekly tasks (coordinating Day, Week, Variety, and User repositories).</li>
 </ul>
 <p><strong>User Monthly ToDo</strong></p>
 <ul>
-<li>Used to group the: Month, Variety, User and Seasonal repositories when providing users their monthly tasks.</li>
+<li>For monthly tasks (coordinating Month, Variety, User, and Seasonal repositories).</li>
 </ul>
+</div>
+<div class="tabbed-block">
 <p><strong>Family Page</strong></p>
 <ul>
-<li>Used to group the: Family, Disease, Pest and Intervention repositories in order to populate a specific families information page.</li>
+<li>For family information pages (coordinating Family, Disease, Pest, and Intervention repositories).</li>
 </ul>
 </div>
 </div>
@@ -1149,83 +1171,103 @@
 </div>
 </div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>Data input for the remaining tables is handled via a database admin currently Factories are not required until an admin panel is introduced in to the application.</p>
+</div>
 </div>
 <hr />
 <h3 id="workflow">Workflow</h3>
+<p><em>The server-side architecture is designed to enforce clear boundaries between layers, ensuring modularity, scalability, and maintainability. Each layer has a distinct purpose and interacts with others in a controlled manner.</em></p>
 <h4 id="create-update">Create &amp; Update</h4>
 <div class="admonition example">
 <p class="admonition-title">Example</p>
 <ol>
 <li>
-<p>Service Layer</p>
+<p>API Layer (Endpoints):</p>
 <ul>
-<li>Invokes a <strong>Factory</strong> located at the <strong>Domain Layer</strong> for object validation.</li>
+<li>Receives the request and validates input using Pydantic schemas.</li>
+<li>Delegates the business logic to the <strong>Service Layer</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Service Layer</p>
+<p>Service Layer (Unit of Work):</p>
 <ul>
-<li>Starts a <strong>Unit of Work</strong> to handle the transaction. Passing it the validated object.</li>
-<li>This <strong>Unit of Work</strong> handles the interactions between the validated object and relevant <strong>Repositories</strong>.</li>
+<li>Starts a <strong>Unit of Work</strong> to manage the transaction.</li>
+<li>Invokes the <strong>Domain Layer</strong> (e.g., Factories) to validate and prepare domain objects.</li>
+<li>Coordinates operations across multiple <strong>Repositories</strong> via the <strong>Unit of Work</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Database Layer</p>
+<p>Domain Layer (Factories):</p>
 <ul>
-<li>The relevant <strong>Repository</strong> class's execute database operations.</li>
+<li>Applies business rules and validations to ensure only valid objects are passed to the <strong>Repository Layer</strong>.</li>
+<li>Returns validated domain objects to the <strong>Service Layer</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Service Layer</p>
+<p>Repository Layer:</p>
 <ul>
-<li>The <strong>Unit of Work</strong> class finalizes the integration between object and repository(s). committing successful transactions or rolling back failures.</li>
+<li>Encapsulates database access logic.</li>
+<li>Executes SQL queries or ORM operations to persist the validated objects.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Does not handle transactions or business logic.</p>
+</div>
+</li>
+<li>
+<p>Service Layer (Unit of Work):</p>
+<ul>
+<li>Finalizes the transaction by committing or rolling back changes.</li>
+<li>Returns the result to the <strong>API Layer</strong>.</li>
+</ul>
+</li>
+<li>
+<p>API Layer:</p>
+<ul>
+<li>Constructs the response and sends it back to the client.</li>
 </ul>
 </li>
 </ol>
 </div>
-<h4 id="read-delete">Read &amp; Delete</h4>
+<hr />
+<h3 id="read-delete">Read &amp; Delete</h3>
 <div class="admonition example">
-<p class="admonition-title">Complex Example</p>
+<p class="admonition-title">Example Workflow</p>
 <ol>
 <li>
-<p>Service Layer</p>
+<p>API Layer (FastAPI Endpoints):</p>
 <ul>
-<li>Starts a <strong>Unit of Work</strong> to handle the operation. This <strong>Unit of Work</strong> handles the interactions between the relevant <strong>Repositories</strong>.</li>
+<li>Receives the request and validates input using Pydantic schemas.</li>
+<li>Delegates the business logic to the <strong>Service Layer</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Database Layer</p>
+<p>Service Layer (Unit of Work):</p>
 <ul>
-<li>The relevant <strong>Repository</strong> class's execute database operations.</li>
+<li>Starts a <strong>Unit of Work</strong> to manage the operation.</li>
+<li>Invokes the <strong>Repository Layer</strong> to fetch or delete data.</li>
 </ul>
 </li>
 <li>
-<p>Service Layer</p>
+<p>Repository Layer:</p>
 <ul>
-<li>The <strong>Unit of Work</strong> class finalizes the integration between relevant repositories. returning or removing the requested data.</li>
-</ul>
-</li>
-</ol>
-</div>
-<div class="admonition example">
-<p class="admonition-title">Simple Example</p>
-<ol>
-<li>
-<p>Service Layer</p>
-<ul>
-<li>Invokes the required <strong>Repository</strong> class.</li>
+<li>Executes SQL queries or ORM operations to retrieve or delete data.</li>
+<li>Returns the result to the <strong>Service Layer</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Database Layer</p>
+<p>Service Layer (Unit of Work):</p>
 <ul>
-<li>The <strong>Repository</strong> class executes database operations.</li>
+<li>Finalizes the operation by committing or rolling back changes (if applicable).</li>
+<li>Returns the result to the <strong>API Layer</strong>.</li>
 </ul>
 </li>
 <li>
-<p>Service Layer</p>
+<p>API Layer:</p>
 <ul>
-<li>The requested data is returned or removed.</li>
+<li>Constructs the response and sends it back to the client.</li>
 </ul>
 </li>
 </ol>
@@ -1243,24 +1285,27 @@
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            - database.py
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>            - limiter.py
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            - logging.py
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        /middleware
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            - exception_handler.py
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            - logging_middleware.py
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        /models
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            - Contains the Database Models.
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        /repositories
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            - Encapsulate data access logic via SQL/ORM logic abstracting it into &quot;Repositories&quot;.
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        /schemas
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            - Contains the &quot;Factories&quot; or schemas that apply business rules and/or validation before persistence.
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        /services
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            - Contains the &quot;Units Of Work&quot; for grouping multiple repository operations into a single transaction.
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /v1
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - Contains the API Endpoints.
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    /keys
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        - private.pem
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        - public.pem
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    - main.py
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>    - settings.yaml
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        /factories
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            - Contains the &quot;Factories&quot; that apply business rules and/or validation before persistence
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        /middleware
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            - exception_handler.py
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            - logging_middleware.py
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        /models
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>            - Contains the Database Models.
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        /repositories
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>            - Encapsulate data access logic via SQL/ORM logic abstracting it into &quot;Repositories&quot;.
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        /schemas
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            - Contains Schemas for request &amp; response serialization.
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /services
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - Contains the &quot;Units Of Work&quot; for grouping multiple repository operations into a single transaction.
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>            - Contains any general purpose utilities i.e. the email service.
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>        /v1
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>            - Contains the API Endpoints.
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>    /keys
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>        - private.pem
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        - public.pem
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    - main.py
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>    - settings.yaml
 </span></code></pre></div>
 </div>
 <hr />
