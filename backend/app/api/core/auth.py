@@ -71,15 +71,11 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: True if password matches, False otherwise
     """
     try:
-        result = bcrypt.checkpw(
+        return bcrypt.checkpw(
             plain_password.encode("utf-8"), hashed_password.encode("utf-8")
         )
-        logger.debug(
-            "Password verification attempt", result="success" if result else "failed"
-        )
-        return result
     except Exception:
-        logger.error("Password verification error", error="REDACTED")
+        logger.error("Password verification error")
         return False
 
 
@@ -95,30 +91,24 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         Optional[User]: User object if authenticated, None otherwise
     """
     try:
-        logger.info("User authentication attempt", email=email)
+        logger.info("User authentication attempt")
         user = db.query(User).filter(User.user_email == email).first()
 
         if not user:
-            logger.warning("Authentication failed - user not found", email=email)
+            # Use generic log message to prevent user enumeration
+            logger.warning("Authentication failed")
             return None
 
         if verify_password(password, user.user_password_hash):
-            logger.info(
-                "User authenticated successfully",
-                user_id=str(user.user_id),
-                email=email,
-            )
+            logger.info("User authenticated successfully", user_id=str(user.user_id))
             return user
 
-        logger.warning(
-            "Authentication failed - invalid password",
-            email=email,
-            user_id=str(user.user_id),
-        )
+        # Use generic log message to prevent user enumeration
+        logger.warning("Authentication failed", user_id=str(user.user_id))
         return None
 
     except Exception as e:
-        logger.error("Authentication error", email=email, error=str(e))
+        logger.error("Authentication error", error=str(e))
         return None
 
 

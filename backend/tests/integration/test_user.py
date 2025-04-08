@@ -36,7 +36,7 @@ class TestRegisterUser:
         mock_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         response = client.post(
             f"{PREFIX}/user",
             json={
@@ -122,7 +122,7 @@ class TestRegisterUser:
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         # First registration
         user_data = {
             "user_email": "duplicate@example.com",
@@ -145,7 +145,9 @@ class TestRegisterUser:
         self, client, mocker, email_service_available
     ):
         mock_send = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email", success=email_service_available
+            mocker,
+            "app.api.v1.user.send_verification_email",
+            success=email_service_available,
         )
 
         user_data = {
@@ -178,7 +180,7 @@ class TestUserLogin:
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         client.post(
             f"{PREFIX}/user",
             json={
@@ -225,7 +227,7 @@ class TestTokenRefresh:
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         register_response = client.post(
             f"{PREFIX}/user",
             json={
@@ -273,7 +275,7 @@ class TestTokenRefresh:
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         register_response = client.post(
             f"{PREFIX}/user",
             json={
@@ -341,21 +343,7 @@ class TestVerifyEmail:
         mock_send_email.assert_not_called()
 
 
-class TestEmailConfig:
-    def test_test_email_endpoint(self, client, mocker):
-        """Test the email configuration test endpoint."""
-        mock_send_test = mock_email_service(
-            mocker, "app.api.v1.user.send_test_email"
-        )
-        
-        test_email = "test@example.com"
-        response = client.post(f"{PREFIX}/user/test-email?email={test_email}")
-        
-        assert response.status_code == status.HTTP_200_OK
-        assert "message" in response.json()
-        
-        mock_send_test.assert_called_once()
-        
+class TestRequestVerificationEmail:
     def test_send_verification_email_endpoint(self, client, mocker):
         """Test the endpoint to send verification email."""
         user_data = {
@@ -364,26 +352,26 @@ class TestEmailConfig:
             "user_first_name": "Verify",
             "user_country_code": "GB",
         }
-        
+
         mock_register_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
         register_response = client.post(f"{PREFIX}/user", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
-        
+
         mock_register_email.reset_mock()
-        
+
         mock_verify_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-        
+
         response = client.post(
             f"{PREFIX}/user/send-verification-email?user_email={user_data['user_email']}"
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert "message" in response.json()
-        
+
         mock_verify_email.assert_called_once()
         call_args = mock_verify_email.call_args[1]
         assert call_args["user_email"] == user_data["user_email"]

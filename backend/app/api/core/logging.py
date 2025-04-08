@@ -5,12 +5,15 @@ Logging Configuration
 import asyncio
 import logging
 import sys
+import time
+from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
-from typing import Any, List, Mapping, MutableMapping, Tuple, Union
+from typing import Any, Generator, List, Mapping, MutableMapping, Tuple, Union
 
 import structlog
 
 from app.api.core.config import settings
+from app.api.middleware.logging_middleware import request_id_ctx_var
 
 
 def sync_log_to_file(
@@ -35,6 +38,39 @@ def append_to_file(log_entry: str) -> None:
     """Blocking file write function."""
     with open(settings.LOG_FILE, "a") as log_file:
         log_file.write(log_entry)
+
+
+@contextmanager
+def log_timing(operation: str, **context: Any) -> Generator[None, None, None]:
+    """Context manager to log timing information for operations.
+
+    Args:
+        operation: Name of the operation being timed
+        context: Additional context variables to include in log entries
+
+    Yields:
+        None
+
+    Example:
+        ```python
+        with log_timing("database_query", query_type="select", table="users"):
+            result = db.execute(query)
+        ```
+    """
+    start_time = time.monotonic()
+    request_id = request_id_ctx_var.get()
+
+    log_context = {"request_id": request_id, "operation": operation, **context}
+    logger = structlog.get_logger()
+    logger.debug(f"Starting {operation}", **log_context)
+
+    try:
+        yield
+    finally:
+        process_time = time.monotonic() - start_time
+        logger.debug(
+            f"Completed {operation}", process_time=f"{process_time:.3f}s", **log_context
+        )
 
 
 def configure_logging() -> None:

@@ -3,18 +3,19 @@ User Repository
 - Encapsulates database operations for User model
 """
 
-from typing import Tuple
 from uuid import UUID
 
-import bcrypt
 import structlog
 from fastapi import HTTPException, status
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import create_access_token
+from app.api.core.logging import log_timing
+from app.api.middleware.logging_middleware import (
+    request_id_ctx_var,
+    sanitize_error_message,
+)
 from app.api.models import User
-from app.api.schemas.user.user_schema import UserCreate
 
 logger = structlog.get_logger()
 
@@ -24,141 +25,95 @@ class UserRepository:
 
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
+        self.request_id = request_id_ctx_var.get()
 
-    async def create_user(self, user_data: UserCreate) -> Tuple[User, str]:
-        """Create a new user.
+    async def create_user(self, user: User) -> User:
+        """Persist a new user."""
+        log_context = {
+            "user_id": str(user.user_id),
+            "email": user.user_email,
+            "request_id": self.request_id,
+            "operation": "create_user",
+        }
 
-        Args:
-            user_data: Validated user data
-
-        Returns:
-            Tuple[User, str]: Created user and access token
-
-        Raises:
-            HTTPException:
-                - 409: Email already exists
-                - 500: Database error
-        """
-        logger.info(
-            "Attempting to create new user",
-            email=user_data.user_email,
-            country_code=user_data.user_country_code,
-        )
         try:
-            try:
-                hashed_password = bcrypt.hashpw(
-                    user_data.user_password.encode("utf-8"), bcrypt.gensalt()
-                ).decode("utf-8")
-            except (TypeError, ValueError):
-                logger.error("Password hashing failed", error="REDACTED")
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error processing password",
-                )
-
-            # Create user instance
-            new_user = User()
-            new_user.user_email = user_data.user_email
-            new_user.user_password_hash = hashed_password
-            new_user.user_first_name = user_data.user_first_name
-            new_user.user_country_code = user_data.user_country_code
-            new_user.is_email_verified = False
-
-            try:
-                self.db.add(new_user)
-                await self.db.commit()
-                await self.db.refresh(new_user)
-                logger.info(
-                    "User created successfully",
-                    user_id=str(new_user.user_id),
-                    email=new_user.user_email,
-                )
-            except IntegrityError as e:
-                await self.db.rollback()
-                logger.warning(
-                    "Email already exists", email=user_data.user_email, error=str(e)
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Email already registered",
-                )
-            except SQLAlchemyError as e:
-                await self.db.rollback()
-                logger.error(
-                    "Database error during user creation",
-                    error=str(e),
-                    error_type=type(e).__name__,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user",
-                )
-
-            try:
-                access_token = create_access_token(user_id=str(new_user.user_id))
-                logger.info("Access token generated", user_id=str(new_user.user_id))
-            except Exception as e:
-                logger.error(
-                    "Token generation failed",
-                    user_id=str(new_user.user_id),
-                    error=str(e),
-                    error_type=type(e).__name__,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Error generating access token",
-                )
-            return new_user, access_token
-
-        except HTTPException:
-            raise
+            with log_timing("db_create_user", **log_context):
+                self.db.add(user)
+                logger.debug("User added to session", **log_context)
+                return user
         except Exception as e:
+            sanitized_error = sanitize_error_message(str(e))
             logger.error(
-                "Unexpected error during user creation",
-                error=str(e),
+                "Failed to create user",
+                error=sanitized_error,
                 error_type=type(e).__name__,
-                exc_info=True,
+                **log_context,
             )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="An unexpected error occurred",
-            )
+            raise
 
-    async def verify_email(self, user_id: str) -> None:
+    async def verify_email(self, user_id: str) -> User:
         """Mark a user's email as verified.
 
         Args:
             user_id: The ID of the user to update
 
+        Returns:
+            User: Updated user
+
         Raises:
             HTTPException: If the user is not found or the update fails
         """
-        logger.info("Attempting to verify email", user_id=user_id)
-        try:
-            user_uuid = UUID(user_id)
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "verify_email",
+        }
 
-            user = await self.db.get(User, user_uuid)
-            if not user:
-                logger.warning("User not found", user_id=user_id)
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
+        logger.debug("Attempting to verify email", **log_context)
+
+        try:
+            with log_timing("db_verify_email", **log_context):
+                user_uuid = UUID(user_id)
+                user = await self.db.get(User, user_uuid)
+
+                if not user:
+                    logger.warning(
+                        "User not found for email verification", **log_context
+                    )
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="User not found",
+                    )
+
+                log_context["email"] = user.user_email
+
+                user.is_email_verified = True
+                logger.info(
+                    "Email verification successful",
+                    previous_status=False,
+                    new_status=True,
+                    **log_context,
                 )
-            user.is_email_verified = True
-            await self.db.commit()
-            logger.info("Email verified successfully", user_id=user_id)
+                return user
+
         except ValueError:
-            logger.error("Invalid user_id format", user_id=user_id)
+            logger.warning(
+                "Invalid user_id format for email verification",
+                input_value=user_id,
+                **log_context,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid user ID format",
             )
+
         except SQLAlchemyError as e:
-            await self.db.rollback()
+            sanitized_error = sanitize_error_message(str(e))
             logger.error(
                 "Database error during email verification",
-                user_id=user_id,
-                error=str(e),
+                error=sanitized_error,
+                error_type=type(e).__name__,
+                **log_context,
             )
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

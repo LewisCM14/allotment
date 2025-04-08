@@ -1,9 +1,7 @@
 """
-Models the User & User Allotment Tables
-
-This module defines the SQLAlchemy ORM models for:
-- User: Stores user account information
-- UserAllotment: Stores user allotment details with dimensions and location
+User Models
+- Defines SQLAlchemy ORM models for the User and UserAllotment tables.
+- Includes utility methods for password hashing and verification.
 """
 
 from __future__ import annotations
@@ -18,6 +16,10 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
+from app.api.middleware.logging_middleware import (
+    request_id_ctx_var,
+    sanitize_error_message,
+)
 
 logger = structlog.get_logger()
 
@@ -57,21 +59,26 @@ class User(Base):
         Args:
             password: The plain text password to hash
         """
+        log_context = {
+            "user_id": str(self.user_id) if self.user_id else "new_user",
+            "email": self.user_email,
+            "request_id": request_id_ctx_var.get(),
+        }
+
         try:
             self.user_password_hash = bcrypt.hashpw(
                 password.encode("utf-8"), bcrypt.gensalt()
             ).decode("utf-8")
-            logger.info(
-                "Password set successfully",
-                user_id=str(self.user_id),
-                user_email=self.user_email,
+            logger.debug(
+                "Password hashed successfully", action="set_password", **log_context
             )
         except Exception as e:
+            sanitized_error = sanitize_error_message(str(e))
             logger.error(
-                "Failed to set password",
-                user_id=str(self.user_id),
-                user_email=self.user_email,
-                error=str(e),
+                "Failed to hash password",
+                error=sanitized_error,
+                error_type=type(e).__name__,
+                **log_context,
             )
             raise
 
@@ -84,23 +91,28 @@ class User(Base):
         Returns:
             bool: True if password matches, False otherwise
         """
+        log_context = {
+            "user_id": str(self.user_id),
+            "request_id": request_id_ctx_var.get(),
+        }
+
         try:
-            is_valid = bcrypt.checkpw(
+            result = bcrypt.checkpw(
                 password.encode("utf-8"), self.user_password_hash.encode("utf-8")
             )
-            logger.info(
-                "Password verification attempt",
-                user_id=str(self.user_id),
-                user_email=self.user_email,
-                success=is_valid,
+            logger.debug(
+                "Password verification performed",
+                action="check_password",
+                **log_context,
             )
-            return is_valid
+            return result
         except Exception as e:
+            sanitized_error = sanitize_error_message(str(e))
             logger.error(
                 "Password verification error",
-                user_id=str(self.user_id),
-                user_email=self.user_email,
-                error=str(e),
+                error=sanitized_error,
+                error_type=type(e).__name__,
+                **log_context,
             )
             raise
 
@@ -156,10 +168,20 @@ class UserAllotment(Base):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        log_context = {
+            "user_id": str(self.user_id),
+            "allotment_id": str(self.user_allotment_id),
+            "postal_code": self.allotment_postal_zip_code,
+            "width": self.allotment_width_meters,
+            "length": self.allotment_length_meters,
+            "request_id": request_id_ctx_var.get(),
+        }
+
         logger.info(
             "UserAllotment created",
-            user_id=str(self.user_id),
-            allotment_id=str(self.user_allotment_id),
-            postal_code=self.allotment_postal_zip_code,
-            dimensions=f"{self.allotment_width_meters}x{self.allotment_length_meters}",
+            action="allotment_creation",
+            area_sqm=round(
+                self.allotment_width_meters * self.allotment_length_meters, 2
+            ),
+            **log_context,
         )

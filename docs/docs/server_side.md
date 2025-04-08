@@ -230,19 +230,41 @@ Unit of Work classes are created to manage transactions and ensure multiple data
 
 !!! example "_Required classes include:_"
     
-    === "Grow Guide"
+    === "User Management"
+
+        **User**
+        
+        - For handling the creation of users.
+
+        **User Allotment**
+
+        - For creating and managing user allotments.
+
+    === "Grow Guide Management"
+
+        **Grow Guide**
+
+        - For CRUD operations on grow guides.
+    
+        **Guide Publishing**
+
+        -  For handling public/private status and copying guides.
+    
+    === "ToDo Management"   
 
         **User Weekly ToDo**
-        
-        - Used to group the: Day, Week, Variety and User repositories when providing users their weekly tasks.
+    
+        - For weekly tasks (coordinating Day, Week, Variety, and User repositories).
         
         **User Monthly ToDo**
         
-        - Used to group the: Month, Variety, User and Seasonal repositories when providing users their monthly tasks.
-        
+        - For monthly tasks (coordinating Month, Variety, User, and Seasonal repositories).
+
+    === "Family Information"
+
         **Family Page**
             
-        - Used to group the: Family, Disease, Pest and Intervention repositories in order to populate a specific families information page.
+        - For family information pages (coordinating Family, Disease, Pest, and Intervention repositories).
 
 ---
 
@@ -272,50 +294,70 @@ The Factory pattern is used to simplify the creation of complex domain objects w
         
         - Variety Factory
 
+    !!! note "Please Note"
+        Data input for the remaining tables is handled via a database admin currently Factories are not required until an admin panel is introduced in to the application.
 ---
 
 ### Workflow
+
+_The server-side architecture is designed to enforce clear boundaries between layers, ensuring modularity, scalability, and maintainability. Each layer has a distinct purpose and interacts with others in a controlled manner._
+
 
 #### Create & Update
 
 !!! example "Example"
 
-    1. Service Layer
-        - Invokes a **Factory** located at the **Domain Layer** for object validation.
+    1. API Layer (Endpoints):
+        - Receives the request and validates input using Pydantic schemas.
+        - Delegates the business logic to the **Service Layer**.
 
-    1. Service Layer
-        - Starts a **Unit of Work** to handle the transaction. Passing it the validated object.
-        - This **Unit of Work** handles the interactions between the validated object and relevant **Repositories**.
+    1. Service Layer (Unit of Work):
+        - Starts a **Unit of Work** to manage the transaction.
+        - Invokes the **Domain Layer** (e.g., Factories) to validate and prepare domain objects.
+        - Coordinates operations across multiple **Repositories** via the **Unit of Work**.
 
-    1. Database Layer
-        - The relevant **Repository** class's execute database operations.
+    1. Domain Layer (Factories):
+        - Applies business rules and validations to ensure only valid objects are passed to the **Repository Layer**.
+        - Returns validated domain objects to the **Service Layer**.
 
-    1. Service Layer
-        - The **Unit of Work** class finalizes the integration between object and repository(s). committing successful transactions or rolling back failures.
+    1. Repository Layer:
+        - Encapsulates database access logic.
+        - Executes SQL queries or ORM operations to persist the validated objects.
+        
+        !!! info
+            Does not handle transactions or business logic.
 
-#### Read & Delete
+    1. Service Layer (Unit of Work):
+        - Finalizes the transaction by committing or rolling back changes.
+        - Returns the result to the **API Layer**.
 
-!!! example "Complex Example"
+    1. API Layer:
+        - Constructs the response and sends it back to the client.
 
-    1. Service Layer
-        - Starts a **Unit of Work** to handle the operation. This **Unit of Work** handles the interactions between the relevant **Repositories**.
+---
 
-    1. Database Layer
-        - The relevant **Repository** class's execute database operations.
+### Read & Delete
 
-    1. Service Layer
-        - The **Unit of Work** class finalizes the integration between relevant repositories. returning or removing the requested data.
+!!! example "Example Workflow"
 
-!!! example "Simple Example"
+    1. API Layer (FastAPI Endpoints):
+        - Receives the request and validates input using Pydantic schemas.
+        - Delegates the business logic to the **Service Layer**.
 
-    1. Service Layer
-        - Invokes the required **Repository** class.
+    1. Service Layer (Unit of Work):
+        - Starts a **Unit of Work** to manage the operation.
+        - Invokes the **Repository Layer** to fetch or delete data.
 
-    1. Database Layer
-        - The **Repository** class executes database operations.
+    1. Repository Layer:
+        - Executes SQL queries or ORM operations to retrieve or delete data.
+        - Returns the result to the **Service Layer**.
 
-    1. Service Layer
-        - The requested data is returned or removed.
+    1. Service Layer (Unit of Work):
+        - Finalizes the operation by committing or rolling back changes (if applicable).
+        - Returns the result to the **API Layer**.
+
+    1. API Layer:
+        - Constructs the response and sends it back to the client.
 
 ---
 
@@ -334,6 +376,8 @@ The Factory pattern is used to simplify the creation of complex domain objects w
                 - database.py
                 - limiter.py
                 - logging.py
+            /factories
+                - Contains the "Factories" that apply business rules and/or validation before persistence
             /middleware
                 - exception_handler.py
                 - logging_middleware.py
@@ -342,9 +386,10 @@ The Factory pattern is used to simplify the creation of complex domain objects w
             /repositories
                 - Encapsulate data access logic via SQL/ORM logic abstracting it into "Repositories".
             /schemas
-                - Contains the "Factories" or schemas that apply business rules and/or validation before persistence.
+                - Contains Schemas for request & response serialization.
             /services
                 - Contains the "Units Of Work" for grouping multiple repository operations into a single transaction.
+                - Contains any general purpose utilities i.e. the email service.
             /v1
                 - Contains the API Endpoints.
         /keys
