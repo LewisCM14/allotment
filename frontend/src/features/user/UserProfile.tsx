@@ -22,7 +22,7 @@ export default function UserProfile() {
 	const { user, firstName } = useAuth();
 	const [isEmailVerified, setIsEmailVerified] = useState(
 		user?.isEmailVerified ||
-			localStorage.getItem("is_email_verified") === "true",
+		localStorage.getItem("is_email_verified") === "true",
 	);
 
 	const checkVerificationStatus = useCallback(async () => {

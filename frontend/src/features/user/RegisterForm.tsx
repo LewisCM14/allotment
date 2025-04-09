@@ -1,5 +1,6 @@
 import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
+import { widthClasses } from "@/components/layouts/layoutConfig";
 import { Button } from "@/components/ui/Button";
 import {
 	Card,
@@ -11,6 +12,7 @@ import {
 import CountrySelector from "@/components/ui/CountrySelector";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -87,7 +89,7 @@ export default function RegisterForm({
 	};
 
 	return (
-		<PageLayout variant="default" className={className} {...props}>
+		<PageLayout variant="default">
 			<Card className="w-full">
 				<CardHeader>
 					<CardTitle>Register</CardTitle>

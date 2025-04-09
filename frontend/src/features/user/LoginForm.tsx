@@ -78,7 +78,7 @@ function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
 	};
 
 	return (
-		<PageLayout variant="default" className={className} {...props}>
+		<PageLayout variant="default">
 			<Card className="w-full">
 				<CardHeader>
 					<CardTitle>Login</CardTitle>
