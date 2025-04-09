@@ -7,7 +7,7 @@ Base Schema
 from typing import Any, Dict
 
 import structlog
-from pydantic import BaseModel, root_validator
+from pydantic import BaseModel, model_validator
 
 from app.api.middleware.logging_middleware import SENSITIVE_FIELDS
 
@@ -44,8 +44,8 @@ class SecureBaseModel(BaseModel):
         return data
 
     @classmethod
-    @root_validator(pre=True)
-    def log_validation_attempt(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    def validate_fields(cls, values):
         """Log validation attempts without exposing sensitive data."""
         safe_values = {
             k: ("[REDACTED]" if any(s in k.lower() for s in SENSITIVE_FIELDS) else v)

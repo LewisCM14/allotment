@@ -4,7 +4,7 @@ User Schemas
 - These schemas are used for request validation and response serialization.
 """
 
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, ConfigDict
 
 from app.api.schemas.base_schema import SecureBaseModel
 
@@ -39,8 +39,8 @@ class UserCreate(SecureBaseModel):
         examples=["GB"],
     )
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "user_email": "user@example.com",
                 "user_password": "SecurePass123!",
@@ -48,6 +48,7 @@ class UserCreate(SecureBaseModel):
                 "user_country_code": "GB",
             }
         }
+    )
 
 
 class UserLogin(SecureBaseModel):
@@ -66,13 +67,14 @@ class UserLogin(SecureBaseModel):
         examples=["SecurePass123!"],
     )
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "user_email": "user@example.com",
                 "user_password": "SecurePass123!",
             }
         }
+    )
 
 
 class TokenResponse(SecureBaseModel):
@@ -109,8 +111,8 @@ class TokenResponse(SecureBaseModel):
         examples=["123e4567-e89b-12d3-a456-426614174000"],
     )
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
@@ -120,6 +122,7 @@ class TokenResponse(SecureBaseModel):
                 "user_id": "123e4567-e89b-12d3-a456-426614174000",
             }
         }
+    )
 
 
 class RefreshRequest(SecureBaseModel):
@@ -131,9 +134,10 @@ class RefreshRequest(SecureBaseModel):
         examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
     )
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
             }
         }
+    )
