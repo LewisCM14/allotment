@@ -60,7 +60,7 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
     }
 
     try:
-        with log_timing("email_verification", **log_context):
+        with log_timing("email_verification", request_id=log_context["request_id"]):
             # Generate JWT token valid for 1 hour
             token = create_access_token(
                 user_id=user_id,
@@ -139,7 +139,7 @@ async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
     }
 
     try:
-        with log_timing("email_test", **log_context):
+        with log_timing("email_test", request_id=log_context["request_id"]):
             message = MessageSchema(
                 subject="Test Email - Allotment Service",
                 recipients=[recipient_email],

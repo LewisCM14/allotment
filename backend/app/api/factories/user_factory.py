@@ -45,10 +45,11 @@ class UserFactory:
             "first_name": user_data.user_first_name,
             "country_code": user_data.user_country_code,
             "request_id": request_id_ctx_var.get(),
+            "operation": "user_creation",
         }
 
         try:
-            with log_timing("user_creation", **safe_context):
+            with log_timing("user_creation", request_id=safe_context["request_id"]):
                 logger.debug("Validating user data", **safe_context)
 
                 UserFactory.validate_first_name(user_data.user_first_name)

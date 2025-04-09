@@ -6,7 +6,7 @@ import pytest
 from fastapi import status
 
 from app.api.core.config import settings
-from tests.integration.conftest import mock_email_service
+from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
 

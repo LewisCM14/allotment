@@ -37,7 +37,7 @@ class UserRepository:
         }
 
         try:
-            with log_timing("db_create_user", **log_context):
+            with log_timing("db_create_user", request_id=log_context["request_id"]):
                 self.db.add(user)
                 logger.debug("User added to session", **log_context)
                 return user
@@ -72,7 +72,7 @@ class UserRepository:
         logger.debug("Attempting to verify email", **log_context)
 
         try:
-            with log_timing("db_verify_email", **log_context):
+            with log_timing("db_verify_email", request_id=log_context["request_id"]):
                 user_uuid = UUID(user_id)
                 user = await self.db.get(User, user_uuid)
 

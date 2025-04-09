@@ -68,7 +68,7 @@ async def create_user(
     try:
         logger.info("Attempting user registration", **log_context)
 
-        with log_timing("check_existing_user", **log_context):
+        with log_timing("check_existing_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user.user_email)
             result = await db.execute(query)
             if result.scalar_one_or_none():
@@ -80,7 +80,7 @@ async def create_user(
                     detail="Email already registered",
                 )
 
-        with log_timing("create_user_account", **log_context):
+        with log_timing("create_user_account", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
                 new_user = await uow.create_user(user)
 
@@ -93,7 +93,7 @@ async def create_user(
             log_context["user_id"] = str(new_user.user_id)
 
         try:
-            with log_timing("send_verification_email", **log_context):
+            with log_timing("send_verification_email", request_id=log_context["request_id"]):
                 await send_verification_email(
                     user_email=user.user_email, user_id=str(new_user.user_id)
                 )
@@ -109,7 +109,7 @@ async def create_user(
                 **log_context,
             )
 
-        with log_timing("generate_tokens", **log_context):
+        with log_timing("generate_tokens", request_id=log_context["request_id"]):
             refresh_token = create_refresh_token(user_id=str(new_user.user_id))
             access_token = create_access_token(user_id=str(new_user.user_id))
             logger.debug("Tokens generated successfully", **log_context)
@@ -184,8 +184,8 @@ async def login(
 
     try:
         logger.info("Login attempt", **log_context)
-
-        with log_timing("user_authentication", **log_context):
+        
+        with log_timing("user_authentication", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user.user_email)
             result = await db.execute(query)
             db_user = result.scalar_one_or_none()
@@ -214,7 +214,7 @@ async def login(
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
-        with log_timing("generate_tokens", **log_context):
+        with log_timing("generate_tokens", request_id=log_context["request_id"]):
             access_token = create_access_token(user_id=str(db_user.user_id))
             refresh_token = create_refresh_token(user_id=str(db_user.user_id))
             logger.debug("Tokens generated successfully", **log_context)
@@ -291,7 +291,7 @@ async def refresh_token(
     try:
         logger.debug("Token refresh requested", **log_context)
 
-        with log_timing("validate_refresh_token", **log_context):
+        with log_timing("validate_refresh_token", request_id=log_context["request_id"]):
             try:
                 payload = jwt.decode(refresh_data.refresh_token, settings.PUBLIC_KEY)
                 logger.debug("Token decoded successfully", **log_context)
@@ -343,7 +343,7 @@ async def refresh_token(
                     headers={"WWW-Authenticate": "Bearer"},
                 )
 
-        with log_timing("fetch_user", **log_context):
+        with log_timing("fetch_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_id == uuid_user_id)
             result = await db.execute(query)
             user = result.scalar_one_or_none()
@@ -358,7 +358,7 @@ async def refresh_token(
 
             log_context["email"] = user.user_email
 
-        with log_timing("generate_tokens", **log_context):
+        with log_timing("generate_tokens", request_id=log_context["request_id"]):
             access_token = create_access_token(user_id=str(user.user_id))
             new_refresh_token = create_refresh_token(user_id=str(user.user_id))
             logger.debug("New tokens generated successfully", **log_context)
@@ -372,7 +372,6 @@ async def refresh_token(
             is_email_verified=user.is_email_verified,
             user_id=str(user.user_id),
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -418,7 +417,7 @@ async def request_verification_email(
     try:
         logger.debug("Verification email requested", **log_context)
 
-        with log_timing("find_user", **log_context):
+        with log_timing("find_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user_email)
             result = await db.execute(query)
             user = result.scalar_one_or_none()
@@ -432,7 +431,7 @@ async def request_verification_email(
 
             log_context["user_id"] = str(user.user_id)
 
-        with log_timing("send_email", **log_context):
+        with log_timing("send_email", request_id=log_context["request_id"]):
             response = await send_verification_email(
                 user_email=user_email, user_id=str(user.user_id)
             )
@@ -485,7 +484,7 @@ async def verify_email_token(
         logger.debug("Processing email verification", **log_context)
 
         user_id = None
-        with log_timing("decode_token", **log_context):
+        with log_timing("decode_token", request_id=log_context["request_id"]):
             try:
                 payload = jwt.decode(token, settings.PUBLIC_KEY)
                 user_id = payload.get("sub")
@@ -508,7 +507,7 @@ async def verify_email_token(
 
         log_context["user_id"] = user_id
 
-        with log_timing("verify_email", **log_context):
+        with log_timing("verify_email", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
                 user = await uow.verify_email(user_id)
                 if user and user.user_email:
@@ -562,7 +561,7 @@ async def check_verification_status(
     try:
         logger.debug("Checking email verification status", **log_context)
 
-        with log_timing("fetch_user", **log_context):
+        with log_timing("fetch_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user_email)
             result = await db.execute(query)
             user = result.scalar_one_or_none()
