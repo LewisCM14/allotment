@@ -93,7 +93,9 @@ async def create_user(
             log_context["user_id"] = str(new_user.user_id)
 
         try:
-            with log_timing("send_verification_email", request_id=log_context["request_id"]):
+            with log_timing(
+                "send_verification_email", request_id=log_context["request_id"]
+            ):
                 await send_verification_email(
                     user_email=user.user_email, user_id=str(new_user.user_id)
                 )
@@ -184,7 +186,7 @@ async def login(
 
     try:
         logger.info("Login attempt", **log_context)
-        
+
         with log_timing("user_authentication", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user.user_email)
             result = await db.execute(query)

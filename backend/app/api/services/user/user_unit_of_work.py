@@ -89,7 +89,9 @@ class UserUnitOfWork:
         logger.debug("Creating user via unit of work", **safe_context)
 
         try:
-            with log_timing("create_user_transaction", request_id=safe_context["request_id"]):
+            with log_timing(
+                "create_user_transaction", request_id=safe_context["request_id"]
+            ):
                 user = UserFactory.create_user(user_data)
                 self.db.add(user)
 
@@ -119,7 +121,9 @@ class UserUnitOfWork:
         logger.debug("Verifying email via unit of work", **log_context)
 
         try:
-            with log_timing("verify_email_transaction", request_id=log_context["request_id"]):
+            with log_timing(
+                "verify_email_transaction", request_id=log_context["request_id"]
+            ):
                 user = await self.user_repo.verify_email(user_id)
 
                 log_context["email"] = user.user_email

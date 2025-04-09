@@ -2,8 +2,12 @@
 Testing Configuration
 """
 
+import asyncio
+import os
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -13,13 +17,17 @@ from sqlalchemy.ext.asyncio import (
 from app.api.core.database import Base, get_db
 from app.main import app
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:?cache=shared"
+# Use a file-based SQLite database to ensures database is shared between connections
+TEST_DB_FILE = "test_db.sqlite3"
+TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
 
-# Create async engine
+# Remove test database file if it exists
+if os.path.exists(TEST_DB_FILE):
+    os.unlink(TEST_DB_FILE)
+
 engine = create_async_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=None,  
 )
 
 # Create async session factory
@@ -30,46 +38,79 @@ TestingSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
+# Global variable to store the session across requests
+_db_session = None
+
 
 async def override_get_db():
     """Override database dependency for testing."""
-    async with TestingSessionLocal() as session:
-        yield session
+    global _db_session
+    if _db_session is None:
+        _db_session = TestingSessionLocal()
+
+    try:
+        yield _db_session
+    except Exception:
+        await _db_session.rollback()
+        raise
 
 
 # Apply database override
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture(scope="session")
+def event_loop_policy():
+    """Return the event loop policy to use in the test session."""
+    return asyncio.get_event_loop_policy()
+
+
 @pytest.fixture(scope="session", autouse=True)
-async def create_tables():
-    """Create all tables once at the beginning of test session."""
+async def setup_test_db():
+    """Create tables once at session start."""
     async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+
+        result = await conn.execute(
+            text("SELECT name FROM sqlite_master WHERE type='table'")
+        )
+        tables = result.scalars().all()
+        print(f"Created tables: {tables}")
+
     yield
+
+    # Clean up at the end of all tests
+    global _db_session
+    if _db_session is not None:
+        await _db_session.close()
+        _db_session = None
+
+    # Close and remove the test database
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
+    await engine.dispose()
 
-@pytest.fixture(autouse=True)
+    if os.path.exists(TEST_DB_FILE):
+        os.unlink(TEST_DB_FILE)
+
+
+@pytest.fixture(scope="function", autouse=True)
 async def clear_tables():
-    """Clear table data between tests but don't drop/recreate schema."""
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(table.delete())
-    
+    """Clear table data between tests."""
     yield
-    
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(table.delete())
+
+    global _db_session
+    if _db_session is not None:
+        async with engine.begin() as conn:
+            for table in reversed(Base.metadata.sorted_tables):
+                await conn.execute(table.delete())
 
 
 @pytest.fixture(name="client")
-def _client():
-    """Create a fresh test client for each test."""
-    from app.main import app
-
+def client_fixture():
+    """Create a test client."""
     with TestClient(app) as client:
         yield client
 
