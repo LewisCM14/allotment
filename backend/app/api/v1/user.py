@@ -1,7 +1,6 @@
 """
 User Endpoints
 - Provides API endpoints for user-related operations.
-- Includes endpoints for testing email configuration and checking verification status.
 """
 
 import uuid

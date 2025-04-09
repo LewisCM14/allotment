@@ -6,28 +6,9 @@ import pytest
 from fastapi import status
 
 from app.api.core.config import settings
+from tests.integration.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
-
-
-def mock_email_service(mocker, email_service_path: str, success: bool = True):
-    """
-    Helper function to mock email-sending services.
-
-    Args:
-        mocker: The pytest-mock mocker object.
-        email_service_path: The import path of the email service to mock.
-        success: Whether the mock should simulate a successful email send.
-
-    Returns:
-        The mocked email service.
-    """
-    mock_send = mocker.patch(email_service_path)
-    if success:
-        mock_send.return_value = {"message": "Verification email sent successfully"}
-    else:
-        mock_send.side_effect = Exception("SMTP connection failed")
-    return mock_send
 
 
 class TestRegisterUser:
@@ -123,7 +104,6 @@ class TestRegisterUser:
             mocker, "app.api.v1.user.send_verification_email"
         )
 
-        # First registration
         user_data = {
             "user_email": "duplicate@example.com",
             "user_password": "SecurePass123!",
@@ -375,3 +355,73 @@ class TestRequestVerificationEmail:
         mock_verify_email.assert_called_once()
         call_args = mock_verify_email.call_args[1]
         assert call_args["user_email"] == user_data["user_email"]
+
+
+class TestEmailVerificationStatus:
+    @pytest.mark.asyncio
+    async def test_check_verification_status_unverified(self, client, mocker):
+        """Test checking verification status for an unverified user."""
+        mock_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
+        user_data = {
+            "user_email": "status_check@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Status",
+            "user_country_code": "GB",
+        }
+        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        assert register_response.status_code == status.HTTP_201_CREATED
+        assert register_response.json().get("is_email_verified") is False
+        response = client.get(
+            f"{PREFIX}/user/verification-status?user_email={user_data['user_email']}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "is_email_verified" in data
+        assert data["is_email_verified"] is False
+        assert "user_id" in data
+        assert data["user_id"] == register_response.json()["user_id"]
+
+        mock_email.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_check_verification_status_verified(self, client, mocker):
+        """Test checking verification status for a verified user."""
+        mock_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
+        user_data = {
+            "user_email": "verified_status@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "Verified",
+            "user_country_code": "GB",
+        }
+        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        assert register_response.status_code == status.HTTP_201_CREATED
+        user_id = register_response.json()["user_id"]
+
+        verify_response = client.get(f"{PREFIX}/user/verify-email?token={user_id}")
+        assert verify_response.status_code == status.HTTP_200_OK
+
+        response = client.get(
+            f"{PREFIX}/user/verification-status?user_email={user_data['user_email']}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["is_email_verified"] is True
+        assert data["user_id"] == user_id
+
+    @pytest.mark.asyncio
+    async def test_check_verification_status_nonexistent_user(self, client):
+        """Test checking verification status for a non-existent user."""
+        response = client.get(
+            f"{PREFIX}/user/verification-status?user_email=nonexistent@example.com"
+        )
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"] == "User not found"
