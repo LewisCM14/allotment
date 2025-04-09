@@ -4,7 +4,7 @@ Base Schema
 - Includes security features for safe logging
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Mapping  # Import Mapping for type annotations
 
 import structlog
 from pydantic import BaseModel, model_validator
@@ -45,7 +45,7 @@ class SecureBaseModel(BaseModel):
 
     @classmethod
     @model_validator(mode="before")
-    def validate_fields(cls, values):
+    def validate_fields(cls, values: Mapping[str, Any]) -> Dict[str, Any]:
         """Log validation attempts without exposing sensitive data."""
         safe_values = {
             k: ("[REDACTED]" if any(s in k.lower() for s in SENSITIVE_FIELDS) else v)
@@ -60,4 +60,4 @@ class SecureBaseModel(BaseModel):
             fields=list(values.keys()),
             safe_values=safe_values,
         )
-        return values
+        return dict(values)

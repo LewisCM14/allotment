@@ -4,7 +4,7 @@ User Schemas
 - These schemas are used for request validation and response serialization.
 """
 
-from pydantic import EmailStr, Field, ConfigDict
+from pydantic import ConfigDict, EmailStr, Field
 
 from app.api.schemas.base_schema import SecureBaseModel
 
