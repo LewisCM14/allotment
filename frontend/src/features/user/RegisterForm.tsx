@@ -1,6 +1,5 @@
 import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
-import { widthClasses } from "@/components/layouts/layoutConfig";
 import { Button } from "@/components/ui/Button";
 import {
 	Card,
@@ -12,7 +11,6 @@ import {
 import CountrySelector from "@/components/ui/CountrySelector";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { cn } from "@/lib/utils";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -22,10 +20,7 @@ import { useAuth } from "../../store/auth/AuthContext";
 import { type RegisterFormData, registerSchema } from "./RegisterSchema";
 import { AUTH_ERRORS, registerUser } from "./UserService";
 
-export default function RegisterForm({
-	className,
-	...props
-}: React.ComponentProps<"div">) {
+export default function RegisterForm(_: React.ComponentProps<"div">) {
 	const {
 		register,
 		handleSubmit,

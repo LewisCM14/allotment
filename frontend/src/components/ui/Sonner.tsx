@@ -35,7 +35,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 					"--normal-border": "var(--border)",
 					"--z-index": "100",
 					"--width": config.width,
-					bottom: screenSize === "mobile" ? "calc(4rem + 20px)" : "20px",
+					bottom: "calc(4rem + 20px)",
 				} as React.CSSProperties
 			}
 			{...props}

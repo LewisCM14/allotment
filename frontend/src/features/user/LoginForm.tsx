@@ -20,7 +20,7 @@ import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
 import { AUTH_ERRORS, loginUser } from "./UserService";
 
-function LoginForm({ className, ...props }: React.ComponentProps<"div">) {
+function LoginForm(_: React.ComponentProps<"div">) {
 	const {
 		register,
 		handleSubmit,
