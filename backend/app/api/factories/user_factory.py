@@ -20,18 +20,27 @@ from app.api.schemas.user.user_schema import UserCreate
 logger = structlog.get_logger()
 
 
-class ValidationError(ValueError):
-    """Custom exception for user validation errors."""
-
-    def __init__(self, message: str, field: str = "unknown") -> None:
-        """Initialize validation error with message and field.
-
-        Args:
-            message: Error message
-            field: The field that failed validation
-        """
-        super().__init__(message)
+class ValidationError(Exception):
+    """Exception for validation errors with HTTP status details."""
+    
+    def __init__(self, message: str, field: str, status_code: int = 422):
+        self.message = message
         self.field = field
+        self.status_code = status_code
+        # Format message for better display in error responses and include status code
+        self.detail = f"{message} (field: {field}, status_code: {status_code})"
+        super().__init__(self.detail)
+    
+    def __str__(self):
+        return self.detail
+    
+    def to_dict(self):
+        """Convert the error to a JSON-serializable dict."""
+        return {
+            "detail": self.message,
+            "field": self.field,
+            "status_code": self.status_code
+        }
 
 
 class UserFactory:

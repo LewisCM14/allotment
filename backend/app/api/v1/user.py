@@ -6,8 +6,8 @@ User Endpoints
 import uuid
 
 import structlog
-from authlib.jose import JoseError, jwt
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from authlib.jose import jwt
+from fastapi import APIRouter, Depends, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,6 +26,17 @@ from app.api.schemas import TokenResponse, UserLogin
 from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
 from app.api.services.email_service import send_verification_email
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
+from app.api.middleware.exception_handler import (
+    InvalidTokenError,
+    EmailAlreadyRegisteredError,
+    AuthenticationError,
+    BusinessLogicError
+)
+from app.api.core.error_handler import (
+    translate_token_exceptions, 
+    safe_operation,
+    validate_user_exists
+)
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -54,10 +65,8 @@ async def create_user(
         TokenResponse: JWT access token
 
     Raises:
-        HTTPException:
-            - 400: Email already registered
-            - 422: Invalid input data
-            - 500: Database error or user creation failed
+        EmailAlreadyRegisteredError: Email is already registered
+        BusinessLogicError: Other business logic errors
     """
     log_context = {
         "email": user.user_email,
@@ -65,91 +74,64 @@ async def create_user(
         "operation": "user_registration",
     }
 
-    try:
-        logger.info("Attempting user registration", **log_context)
+    logger.info("Attempting user registration", **log_context)
 
-        with log_timing("check_existing_user", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_email == user.user_email)
-            result = await db.execute(query)
-            if result.scalar_one_or_none():
-                logger.warning(
-                    "Registration failed - email already exists", **log_context
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Email already registered",
-                )
+    # Check for existing user
+    with log_timing("check_existing_user", request_id=log_context["request_id"]):
+        query = select(User).where(User.user_email == user.user_email)
+        result = await db.execute(query)
+        if result.scalar_one_or_none():
+            logger.warning(
+                "Registration failed - email already exists", **log_context
+            )
+            raise EmailAlreadyRegisteredError()
 
+    # Create user
+    new_user = None
+    async with safe_operation("user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR):
         with log_timing("create_user_account", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
                 new_user = await uow.create_user(user)
 
-            if not new_user or not new_user.user_id:
-                logger.error("User creation failed", **log_context)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user",
-                )
-            log_context["user_id"] = str(new_user.user_id)
-
-        try:
-            with log_timing(
-                "send_verification_email", request_id=log_context["request_id"]
-            ):
-                await send_verification_email(
-                    user_email=user.user_email, user_id=str(new_user.user_id)
-                )
-                logger.info(
-                    "Verification email sent during registration", **log_context
-                )
-        except Exception as email_error:
-            sanitized_error = sanitize_error_message(str(email_error))
-            logger.error(
-                "Failed to send verification email during registration",
-                error=sanitized_error,
-                error_type=type(email_error).__name__,
-                **log_context,
+        if not new_user or not new_user.user_id:
+            logger.error("User creation failed", **log_context)
+            raise BusinessLogicError(
+                "Failed to create user",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        log_context["user_id"] = str(new_user.user_id)
 
-        with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            refresh_token = create_refresh_token(user_id=str(new_user.user_id))
-            access_token = create_access_token(user_id=str(new_user.user_id))
-            logger.debug("Tokens generated successfully", **log_context)
-
-        logger.info("User successfully registered", **log_context)
-
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user_first_name=new_user.user_first_name,
-            is_email_verified=new_user.is_email_verified,
-            user_id=str(new_user.user_id),
-        )
-
-    except HTTPException:
-        raise
-    except ValueError as e:
-        sanitized_error = sanitize_error_message(str(e))
+    # Send verification email - don't fail registration if this fails
+    try:
+        with log_timing("send_verification_email", request_id=log_context["request_id"]):
+            await send_verification_email(
+                user_email=user.user_email, user_id=str(new_user.user_id)
+            )
+            logger.info("Verification email sent during registration", **log_context)
+    except Exception as email_error:
+        sanitized_error = sanitize_error_message(str(email_error))
         logger.error(
-            "Validation error during user registration",
+            "Failed to send verification email during registration",
             error=sanitized_error,
+            error_type=type(email_error).__name__,
             **log_context,
         )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=sanitized_error
-        )
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Unexpected error during user registration",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An unexpected error occurred",
-        ) from e
+
+    # Generate tokens
+    with log_timing("generate_tokens", request_id=log_context["request_id"]):
+        refresh_token = create_refresh_token(user_id=str(new_user.user_id))
+        access_token = create_access_token(user_id=str(new_user.user_id))
+        logger.debug("Tokens generated successfully", **log_context)
+
+    logger.info("User successfully registered", **log_context)
+
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_first_name=new_user.user_first_name,
+        is_email_verified=new_user.is_email_verified,
+        user_id=str(new_user.user_id),
+    )
 
 
 @router.post(
@@ -174,88 +156,52 @@ async def login(
         TokenResponse: JWT access token with user_first_name
 
     Raises:
-        HTTPException:
-            - 401: Invalid credentials
-            - 422: Invalid input format
-            - 500: Database error
+        AuthenticationError: Invalid credentials
     """
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "user_login",
+        "email": user.user_email
     }
 
-    try:
-        logger.info("Login attempt", **log_context)
+    logger.info("Login attempt", **log_context)
 
-        with log_timing("user_authentication", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_email == user.user_email)
-            result = await db.execute(query)
-            db_user = result.scalar_one_or_none()
+    with log_timing("user_authentication", request_id=log_context["request_id"]):
+        query = select(User).where(User.user_email == user.user_email)
+        result = await db.execute(query)
+        db_user = result.scalar_one_or_none()
 
-            if not db_user:
-                logger.warning(
-                    "Login failed - user not found", email_exists=False, **log_context
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+        if not db_user:
+            logger.warning(
+                "Login failed - user not found", email_exists=False, **log_context
+            )
+            # Using consistent error message that doesn't reveal if email exists
+            raise AuthenticationError("Invalid email or password")
 
-            log_context["email"] = user.user_email
-            log_context["user_id"] = str(db_user.user_id)
+        log_context["user_id"] = str(db_user.user_id)
 
-            # Verify password separately to avoid timing attacks
-            if not verify_password(user.user_password, db_user.user_password_hash):
-                logger.warning(
-                    "Login failed - invalid password", email_exists=True, **log_context
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+        # Verify password separately to avoid timing attacks
+        if not verify_password(user.user_password, db_user.user_password_hash):
+            logger.warning(
+                "Login failed - invalid password", email_exists=True, **log_context
+            )
+            raise AuthenticationError("Invalid email or password")
 
-        with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            access_token = create_access_token(user_id=str(db_user.user_id))
-            refresh_token = create_refresh_token(user_id=str(db_user.user_id))
-            logger.debug("Tokens generated successfully", **log_context)
+    with log_timing("generate_tokens", request_id=log_context["request_id"]):
+        access_token = create_access_token(user_id=str(db_user.user_id))
+        refresh_token = create_refresh_token(user_id=str(db_user.user_id))
+        logger.debug("Tokens generated successfully", **log_context)
 
-        logger.info("Login successful", **log_context)
+    logger.info("Login successful", **log_context)
 
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            user_first_name=db_user.user_first_name,
-            is_email_verified=db_user.is_email_verified,
-            user_id=str(db_user.user_id),
-        )
-    except HTTPException:
-        raise
-    except ValueError as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.error(
-            "Validation error during login",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=sanitized_error
-        )
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Unexpected error during login",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during authentication",
-        ) from e
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer",
+        user_first_name=db_user.user_first_name,
+        is_email_verified=db_user.is_email_verified,
+        user_id=str(db_user.user_id),
+    )
 
 
 @router.post(
@@ -281,113 +227,73 @@ async def refresh_token(
         TokenResponse: New access and refresh tokens
 
     Raises:
-        HTTPException:
-            - 401: Invalid or expired refresh token
-            - 500: Database error
+        InvalidTokenError: Invalid or expired refresh token
+        UserNotFoundError: User not found
     """
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "token_refresh",
     }
 
-    try:
-        logger.debug("Token refresh requested", **log_context)
+    logger.debug("Token refresh requested", **log_context)
 
-        with log_timing("validate_refresh_token", request_id=log_context["request_id"]):
-            try:
-                payload = jwt.decode(refresh_data.refresh_token, settings.PUBLIC_KEY)
-                logger.debug("Token decoded successfully", **log_context)
-            except Exception as jwt_error:
-                sanitized_error = sanitize_error_message(str(jwt_error))
-                logger.warning(
-                    "Invalid token format",
-                    error=sanitized_error,
-                    error_type=type(jwt_error).__name__,
-                    **log_context,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid or expired refresh token",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
+    # First validate token format before decoding to catch malformed tokens
+    token_parts = refresh_data.refresh_token.split('.')
+    if len(token_parts) != 3:
+        raise InvalidTokenError("Malformed JWT token format")
 
-            # Validate token type
-            if payload.get("type") != "refresh":
-                logger.warning(
-                    "Invalid token type for refresh",
-                    token_type=payload.get("type"),
-                    **log_context,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token type",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            user_id = payload.get("sub")
-            if not user_id:
-                logger.warning("Missing subject in refresh token", **log_context)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            log_context["user_id"] = user_id
-
-            try:
-                uuid_user_id = uuid.UUID(user_id)
-            except ValueError:
-                logger.error("Invalid UUID format in token", **log_context)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid user ID format",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-        with log_timing("fetch_user", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_id == uuid_user_id)
-            result = await db.execute(query)
-            user = result.scalar_one_or_none()
-
-            if not user:
-                logger.warning("User from refresh token not found", **log_context)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="User not found",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-
-            log_context["email"] = user.user_email
-
-        with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            access_token = create_access_token(user_id=str(user.user_id))
-            new_refresh_token = create_refresh_token(user_id=str(user.user_id))
-            logger.debug("New tokens generated successfully", **log_context)
-
-        logger.info("Tokens refreshed successfully", **log_context)
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=new_refresh_token,
-            token_type="bearer",
-            user_first_name=user.user_first_name,
-            is_email_verified=user.is_email_verified,
-            user_id=str(user.user_id),
+    # Decode and validate the token with improved error handling
+    @translate_token_exceptions
+    async def decode_token():
+        return jwt.decode(
+            refresh_data.refresh_token, 
+            settings.PUBLIC_KEY, 
+            claims_options={"exp": {"essential": True}},
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Unexpected error during token refresh",
-            error=sanitized_error,
-            error_type=type(e).__name__,
+
+    payload = await decode_token()
+    
+    # Verify it's a refresh token
+    if payload.get("type") != "refresh":
+        logger.warning(
+            "Invalid token type for refresh",
+            expected="refresh",
+            received=payload.get("type"),
             **log_context,
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="An error occurred during token refresh",
-        ) from e
+        raise InvalidTokenError("Invalid token type: expected refresh token")
+
+    # Extract user_id
+    user_id = payload.get("sub")
+    if not user_id:
+        logger.warning("Missing subject in refresh token", **log_context)
+        raise InvalidTokenError("Invalid token - no user ID found")
+
+    log_context["user_id"] = user_id
+
+    try:
+        uuid_user_id = uuid.UUID(user_id)
+    except ValueError:
+        logger.error("Invalid UUID format in token", **log_context)
+        raise InvalidTokenError("Invalid user ID format")
+
+    # Fetch and validate the user using our utility
+    user = await validate_user_exists(db_session=db, user_model=User, user_id=uuid_user_id, log_context=log_context)
+    log_context["email"] = user.user_email
+
+    # Generate new tokens
+    access_token = create_access_token(user_id=str(user.user_id))
+    new_refresh_token = create_refresh_token(user_id=str(user.user_id))
+
+    logger.info("Tokens refreshed successfully", **log_context)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=new_refresh_token,
+        token_type="bearer",
+        user_first_name=user.user_first_name,
+        is_email_verified=user.is_email_verified,
+        user_id=str(user.user_id),
+    )
 
 
 @router.post(
@@ -409,6 +315,9 @@ async def request_verification_email(
 
     Returns:
         dict: Success message
+        
+    Raises:
+        UserNotFoundError: If the user is not found
     """
     log_context = {
         "email": user_email,
@@ -416,44 +325,20 @@ async def request_verification_email(
         "operation": "request_verification_email",
     }
 
-    try:
-        logger.debug("Verification email requested", **log_context)
+    logger.debug("Verification email requested", **log_context)
 
-        with log_timing("find_user", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_email == user_email)
-            result = await db.execute(query)
-            user = result.scalar_one_or_none()
-
-            if not user:
-                logger.warning("User not found for verification email", **log_context)
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
-
-            log_context["user_id"] = str(user.user_id)
-
+    # Find and validate user using our utility
+    user = await validate_user_exists(db_session=db, user_model=User, user_email=user_email, log_context=log_context)
+    log_context["user_id"] = str(user.user_id)
+    
+    # Send email with safe_operation
+    async with safe_operation("sending verification email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR):
         with log_timing("send_email", request_id=log_context["request_id"]):
             response = await send_verification_email(
                 user_email=user_email, user_id=str(user.user_id)
             )
             logger.info("Verification email sent successfully", **log_context)
             return response
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Error sending verification email",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to send verification email",
-        )
 
 
 @router.get(
@@ -482,56 +367,40 @@ async def verify_email_token(
         "token_provided": bool(token),
     }
 
+    logger.debug("Processing email verification", **log_context)
+
+    # Extract user_id from token with improved error handling
+    @translate_token_exceptions
+    async def attempt_decode():
+        payload = jwt.decode(token, settings.PUBLIC_KEY)
+        return payload.get("sub")
+
     try:
-        logger.debug("Processing email verification", **log_context)
+        user_id = await attempt_decode()
+        logger.debug("Successfully decoded JWT token", **log_context)
+    except InvalidTokenError:
+        # If it's not a valid JWT, try as direct user_id
+        logger.warning("Not a valid JWT, trying as direct user_id", **log_context)
+        user_id = token
 
-        user_id = None
-        with log_timing("decode_token", request_id=log_context["request_id"]):
-            try:
-                payload = jwt.decode(token, settings.PUBLIC_KEY)
-                user_id = payload.get("sub")
-                logger.debug("Successfully decoded JWT token", **log_context)
-            except JoseError as e:
-                sanitized_error = sanitize_error_message(str(e))
-                logger.warning(
-                    "Failed to decode JWT token, trying as direct user_id",
-                    error=sanitized_error,
-                    **log_context,
-                )
-                user_id = token
-
-        if not user_id:
-            logger.error("No user_id found in token", **log_context)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid token - no user ID found",
-            )
-
-        log_context["user_id"] = user_id
-
-        with log_timing("verify_email", request_id=log_context["request_id"]):
-            async with UserUnitOfWork(db) as uow:
-                user = await uow.verify_email(user_id)
-                if user and user.user_email:
-                    log_context["email"] = user.user_email
-
-        logger.info("Email verified successfully", **log_context)
-        return {"message": "Email verified successfully"}
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Error verifying email",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
+    if not user_id:
+        logger.error("No user_id found in token", **log_context)
+        raise BusinessLogicError(
+            "Invalid token - no user ID found", 
+            status_code=status.HTTP_400_BAD_REQUEST
         )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to verify email",
-        )
+
+    log_context["user_id"] = user_id
+
+    # Use safe_operation context manager for standardized error handling
+    async with safe_operation("email verification", log_context):
+        async with UserUnitOfWork(db) as uow:
+            user = await uow.verify_email(user_id)
+            if user and user.user_email:
+                log_context["email"] = user.user_email
+
+    logger.info("Email verified successfully", **log_context)
+    return {"message": "Email verified successfully"}
 
 
 @router.get(
@@ -560,43 +429,17 @@ async def check_verification_status(
         "operation": "check_verification_status",
     }
 
-    try:
-        logger.debug("Checking email verification status", **log_context)
+    logger.debug("Checking email verification status", **log_context)
 
-        with log_timing("fetch_user", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_email == user_email)
-            result = await db.execute(query)
-            user = result.scalar_one_or_none()
+    # Find and validate the user using our utility
+    user = await validate_user_exists(db_session=db, user_model=User, user_email=user_email, log_context=log_context)
+    
+    log_context["user_id"] = str(user.user_id)
+    log_context["verification_status"] = str(user.is_email_verified)
 
-            if not user:
-                logger.warning(
-                    "User not found for verification status check", **log_context
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="User not found",
-                )
+    logger.info("Verification status checked", **log_context)
 
-            log_context["user_id"] = str(user.user_id)
-            log_context["verification_status"] = str(user.is_email_verified)
-
-            logger.info("Verification status checked", **log_context)
-
-            return {
-                "is_email_verified": user.is_email_verified,
-                "user_id": str(user.user_id),
-            }
-    except HTTPException:
-        raise
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Error checking verification status",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to check verification status",
-        )
+    return {
+        "is_email_verified": user.is_email_verified,
+        "user_id": str(user.user_id),
+    }

@@ -49,6 +49,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Exception Handling Middleware
+logger.debug("Adding exception handling middleware")
+app.add_middleware(ExceptionHandlingMiddleware)
+
 # CORS Middleware
 logger.debug("Adding CORS middleware")
 app.add_middleware(
@@ -62,10 +66,6 @@ app.add_middleware(
 # Logging Middleware
 logger.debug("Adding logging middleware")
 app.add_middleware(AsyncLoggingMiddleware)
-
-# Exception Handling Middleware
-logger.debug("Adding exception handling middleware")
-app.add_middleware(ExceptionHandlingMiddleware)
 
 # Rate Limiter
 app.state.limiter = limiter
