@@ -44,7 +44,7 @@ export function FooterPresenter({
 			)}
 
 			<footer className="fixed bottom-0 left-0 w-full bg-card shadow-md z-50">
-				<div className="max-w-7xl mx-auto p-4 flex items-center justify-between">
+				<div className="mx-auto p-4 flex items-center justify-between">
 					<div className="w-1/3 flex items-center gap-4">
 						{isAuthenticated && (
 							<Button

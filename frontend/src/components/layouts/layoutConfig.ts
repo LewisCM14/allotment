@@ -44,7 +44,6 @@ export const getScreenSize = (width: number): ScreenSize => {
 	return "desktop";
 };
 
-// Convert container widths to Tailwind class strings - fixed to use literal string values
 export const widthClasses = {
 	default: "w-[96%] md:w-[84%] lg:w-[66%]",
 };
