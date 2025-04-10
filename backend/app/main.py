@@ -12,7 +12,7 @@ from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
-from app.api.middleware.exception_handler import setup_exception_handler
+from app.api.middleware.exception_handler import ExceptionHandlingMiddleware
 from app.api.middleware.logging_middleware import AsyncLoggingMiddleware
 from app.api.services.email_service import send_test_email
 from app.api.v1 import router as api_router
@@ -63,9 +63,9 @@ app.add_middleware(
 logger.debug("Adding logging middleware")
 app.add_middleware(AsyncLoggingMiddleware)
 
-# Register Exception Handler
-logger.debug("Setting up exception handlers")
-setup_exception_handler(app)
+# Exception Handling Middleware
+logger.debug("Adding exception handling middleware")
+app.add_middleware(ExceptionHandlingMiddleware)
 
 # Rate Limiter
 app.state.limiter = limiter
