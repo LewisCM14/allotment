@@ -89,23 +89,26 @@ class TestRegisterUser:
             ),
         ],
     )
-    def test_user_registration_validation(
-        self, client, test_input, expected_status
-    ):
+    def test_user_registration_validation(self, client, test_input, expected_status):
         """Test that invalid users cannot be created."""
         try:
             response = client.post(f"{PREFIX}/user", json=test_input)
             assert response.status_code == expected_status
         except Exception as e:
             assert (
-                'ValidationError' in str(type(e)) or 
-                'field:' in str(e) or
-                any(keyword in str(e).lower() for keyword in ['invalid', 'must contain', 'cannot'])
+                "ValidationError" in str(type(e))
+                or "field:" in str(e)
+                or any(
+                    keyword in str(e).lower()
+                    for keyword in ["invalid", "must contain", "cannot"]
+                )
             )
-            is_validation_error = 'ValidationError' in str(type(e))
-            has_status_code = '422' in str(e) or 'Unprocessable Entity' in str(e)
-            
-            assert is_validation_error or has_status_code, f"Expected ValidationError or status code 422, got: {e}"
+            is_validation_error = "ValidationError" in str(type(e))
+            has_status_code = "422" in str(e) or "Unprocessable Entity" in str(e)
+
+            assert is_validation_error or has_status_code, (
+                f"Expected ValidationError or status code 422, got: {e}"
+            )
 
     @pytest.mark.asyncio
     async def test_duplicate_email_registration(self, client, mocker):
@@ -134,6 +137,7 @@ class TestRegisterUser:
         except Exception as e:
             # Check if exception is of expected type
             from app.api.middleware.exception_handler import EmailAlreadyRegisteredError
+
             assert isinstance(e, EmailAlreadyRegisteredError)
             assert str(e) == "Email already registered"
 
@@ -222,6 +226,7 @@ class TestUserLogin:
         except Exception as e:
             # Check if exception is of expected type
             from app.api.middleware.exception_handler import AuthenticationError
+
             assert isinstance(e, AuthenticationError)
             assert str(e) == "Invalid email or password"
 
@@ -279,6 +284,7 @@ class TestTokenRefresh:
         except Exception as e:
             # Verify that it's the correct exception type and message
             from app.api.middleware.exception_handler import InvalidTokenError
+
             assert isinstance(e, InvalidTokenError)
             assert "Invalid token" in str(e)  # More flexible assertion
 
@@ -308,11 +314,15 @@ class TestTokenRefresh:
             )
             # If we get here, there was no exception and we can check the response
             assert response.status_code == status.HTTP_401_UNAUTHORIZED
-            assert response.json()["detail"][0]["msg"] == "Invalid token type: expected refresh token"
+            assert (
+                response.json()["detail"][0]["msg"]
+                == "Invalid token type: expected refresh token"
+            )
             assert response.json()["detail"][0]["type"] == "invalid_token"
         except Exception as e:
             # Verify that it's the correct exception type and message
             from app.api.middleware.exception_handler import InvalidTokenError
+
             assert isinstance(e, InvalidTokenError)
             assert str(e) == "Invalid token type: expected refresh token"
 
@@ -362,7 +372,11 @@ class TestVerifyEmail:
             assert "User not found" in verify_response.json()["detail"][0]["msg"]
         except Exception as e:
             # When testing, we might get either UserNotFoundError or BusinessLogicError
-            from app.api.middleware.exception_handler import UserNotFoundError, BusinessLogicError
+            from app.api.middleware.exception_handler import (
+                BusinessLogicError,
+                UserNotFoundError,
+            )
+
             assert isinstance(e, (UserNotFoundError, BusinessLogicError))
 
         mock_send_email.assert_not_called()
@@ -475,5 +489,6 @@ class TestEmailVerificationStatus:
         except Exception as e:
             # Check if exception is of expected type
             from app.api.middleware.exception_handler import UserNotFoundError
+
             assert isinstance(e, UserNotFoundError)
             assert str(e) == "User not found"

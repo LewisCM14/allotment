@@ -6,14 +6,19 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Optional
 
 import structlog
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
+from app.api.core.logging import log_timing
+from app.api.middleware.error_handler import safe_operation
 from app.api.middleware.exception_handler import ExceptionHandlingMiddleware
-from app.api.middleware.logging_middleware import AsyncLoggingMiddleware
+from app.api.middleware.logging_middleware import (
+    AsyncLoggingMiddleware,
+    request_id_ctx_var,
+)
 from app.api.services.email_service import send_test_email
 from app.api.v1 import router as api_router
 
@@ -104,10 +109,9 @@ def root() -> Dict[str, str]:
     status_code=status.HTTP_200_OK,
     summary="Test email configuration",
     description="Send a test email to verify SMTP configuration is working",
+    response_model=Dict[str, str],
 )
-async def test_email_config(
-    email: Optional[EmailStr] = None,
-) -> dict[str, str]:
+async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
     """
     Send a test email to verify SMTP configuration.
 
@@ -117,14 +121,20 @@ async def test_email_config(
     Returns:
         dict: Success message
     """
-    try:
-        recipient = email if email else settings.MAIL_USERNAME
+    log_context = {
+        "request_id": request_id_ctx_var.get(),
+        "operation": "test_email",
+        "recipient": email if email else settings.MAIL_USERNAME,
+    }
 
-        await send_test_email(recipient)
-        return {"message": "Test email sent successfully"}
-    except Exception as e:
-        logger.exception("Error sending test email", error=str(e))
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send test email: {str(e)}",
-        )
+    logger.info("Test email requested", **log_context)
+
+    async with safe_operation(
+        "sending test email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
+        with log_timing("send_email", request_id=log_context["request_id"]):
+            recipient = email if email else settings.MAIL_USERNAME
+            await send_test_email(recipient)
+            logger.info("Test email sent successfully", **log_context)
+
+    return {"message": "Test email sent successfully"}

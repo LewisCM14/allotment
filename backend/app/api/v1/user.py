@@ -4,6 +4,7 @@ User Endpoints
 """
 
 import uuid
+from typing import Any, Dict
 
 import structlog
 from authlib.jose import jwt
@@ -17,6 +18,18 @@ from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
+from app.api.middleware.error_handler import (
+    safe_operation,
+    translate_token_exceptions,
+    validate_user_exists,
+)
+from app.api.middleware.exception_handler import (
+    AuthenticationError,
+    BusinessLogicError,
+    EmailAlreadyRegisteredError,
+    EmailVerificationError,
+    InvalidTokenError,
+)
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -26,17 +39,6 @@ from app.api.schemas import TokenResponse, UserLogin
 from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
 from app.api.services.email_service import send_verification_email
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
-from app.api.middleware.exception_handler import (
-    InvalidTokenError,
-    EmailAlreadyRegisteredError,
-    AuthenticationError,
-    BusinessLogicError
-)
-from app.api.core.error_handler import (
-    translate_token_exceptions, 
-    safe_operation,
-    validate_user_exists
-)
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -76,19 +78,17 @@ async def create_user(
 
     logger.info("Attempting user registration", **log_context)
 
-    # Check for existing user
     with log_timing("check_existing_user", request_id=log_context["request_id"]):
         query = select(User).where(User.user_email == user.user_email)
         result = await db.execute(query)
         if result.scalar_one_or_none():
-            logger.warning(
-                "Registration failed - email already exists", **log_context
-            )
+            logger.warning("Registration failed - email already exists", **log_context)
             raise EmailAlreadyRegisteredError()
 
-    # Create user
     new_user = None
-    async with safe_operation("user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR):
+    async with safe_operation(
+        "user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
         with log_timing("create_user_account", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
                 new_user = await uow.create_user(user)
@@ -96,14 +96,15 @@ async def create_user(
         if not new_user or not new_user.user_id:
             logger.error("User creation failed", **log_context)
             raise BusinessLogicError(
-                "Failed to create user",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+                message="Failed to create user",
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         log_context["user_id"] = str(new_user.user_id)
 
-    # Send verification email - don't fail registration if this fails
     try:
-        with log_timing("send_verification_email", request_id=log_context["request_id"]):
+        with log_timing(
+            "send_verification_email", request_id=log_context["request_id"]
+        ):
             await send_verification_email(
                 user_email=user.user_email, user_id=str(new_user.user_id)
             )
@@ -117,7 +118,6 @@ async def create_user(
             **log_context,
         )
 
-    # Generate tokens
     with log_timing("generate_tokens", request_id=log_context["request_id"]):
         refresh_token = create_refresh_token(user_id=str(new_user.user_id))
         access_token = create_access_token(user_id=str(new_user.user_id))
@@ -161,31 +161,27 @@ async def login(
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "user_login",
-        "email": user.user_email
+        "email": user.user_email,
     }
 
     logger.info("Login attempt", **log_context)
 
-    with log_timing("user_authentication", request_id=log_context["request_id"]):
-        query = select(User).where(User.user_email == user.user_email)
-        result = await db.execute(query)
-        db_user = result.scalar_one_or_none()
+    db_user = await validate_user_exists(
+        db_session=db,
+        user_model=User,
+        user_email=user.user_email,
+        log_context=log_context,
+    )
 
-        if not db_user:
-            logger.warning(
-                "Login failed - user not found", email_exists=False, **log_context
-            )
-            # Using consistent error message that doesn't reveal if email exists
-            raise AuthenticationError("Invalid email or password")
+    log_context["user_id"] = str(db_user.user_id)
 
-        log_context["user_id"] = str(db_user.user_id)
-
-        # Verify password separately to avoid timing attacks
-        if not verify_password(user.user_password, db_user.user_password_hash):
-            logger.warning(
-                "Login failed - invalid password", email_exists=True, **log_context
-            )
-            raise AuthenticationError("Invalid email or password")
+    async with safe_operation("user_authentication", log_context):
+        with log_timing("password_verification", request_id=log_context["request_id"]):
+            if not verify_password(user.user_password, db_user.user_password_hash):
+                logger.warning(
+                    "Login failed - invalid password", email_exists=True, **log_context
+                )
+                raise AuthenticationError("Invalid email or password")
 
     with log_timing("generate_tokens", request_id=log_context["request_id"]):
         access_token = create_access_token(user_id=str(db_user.user_id))
@@ -238,22 +234,21 @@ async def refresh_token(
     logger.debug("Token refresh requested", **log_context)
 
     # First validate token format before decoding to catch malformed tokens
-    token_parts = refresh_data.refresh_token.split('.')
+    token_parts = refresh_data.refresh_token.split(".")
     if len(token_parts) != 3:
         raise InvalidTokenError("Malformed JWT token format")
 
-    # Decode and validate the token with improved error handling
     @translate_token_exceptions
-    async def decode_token():
-        return jwt.decode(
-            refresh_data.refresh_token, 
-            settings.PUBLIC_KEY, 
+    async def decode_token() -> Dict[str, Any]:
+        decoded = jwt.decode(
+            refresh_data.refresh_token,
+            settings.PUBLIC_KEY,
             claims_options={"exp": {"essential": True}},
         )
+        return dict(decoded)  # Convert to dict explicitly
 
     payload = await decode_token()
-    
-    # Verify it's a refresh token
+
     if payload.get("type") != "refresh":
         logger.warning(
             "Invalid token type for refresh",
@@ -263,7 +258,6 @@ async def refresh_token(
         )
         raise InvalidTokenError("Invalid token type: expected refresh token")
 
-    # Extract user_id
     user_id = payload.get("sub")
     if not user_id:
         logger.warning("Missing subject in refresh token", **log_context)
@@ -277,11 +271,14 @@ async def refresh_token(
         logger.error("Invalid UUID format in token", **log_context)
         raise InvalidTokenError("Invalid user ID format")
 
-    # Fetch and validate the user using our utility
-    user = await validate_user_exists(db_session=db, user_model=User, user_id=uuid_user_id, log_context=log_context)
+    user = await validate_user_exists(
+        db_session=db,
+        user_model=User,
+        user_id=str(uuid_user_id),
+        log_context=log_context,
+    )
     log_context["email"] = user.user_email
 
-    # Generate new tokens
     access_token = create_access_token(user_id=str(user.user_id))
     new_refresh_token = create_refresh_token(user_id=str(user.user_id))
 
@@ -305,7 +302,7 @@ async def refresh_token(
 )
 async def request_verification_email(
     user_email: EmailStr, db: AsyncSession = Depends(get_db)
-) -> dict[str, str]:
+) -> Dict[str, str]:
     """
     Send an email verification link to the user.
 
@@ -315,7 +312,7 @@ async def request_verification_email(
 
     Returns:
         dict: Success message
-        
+
     Raises:
         UserNotFoundError: If the user is not found
     """
@@ -327,12 +324,14 @@ async def request_verification_email(
 
     logger.debug("Verification email requested", **log_context)
 
-    # Find and validate user using our utility
-    user = await validate_user_exists(db_session=db, user_model=User, user_email=user_email, log_context=log_context)
+    user = await validate_user_exists(
+        db_session=db, user_model=User, user_email=user_email, log_context=log_context
+    )
     log_context["user_id"] = str(user.user_id)
-    
-    # Send email with safe_operation
-    async with safe_operation("sending verification email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR):
+
+    async with safe_operation(
+        "sending verification email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
         with log_timing("send_email", request_id=log_context["request_id"]):
             response = await send_verification_email(
                 user_email=user_email, user_id=str(user.user_id)
@@ -350,7 +349,7 @@ async def request_verification_email(
 )
 async def verify_email_token(
     token: str, db: AsyncSession = Depends(get_db)
-) -> dict[str, str]:
+) -> Dict[str, str]:
     """
     Verify the user's email using the token.
 
@@ -369,30 +368,26 @@ async def verify_email_token(
 
     logger.debug("Processing email verification", **log_context)
 
-    # Extract user_id from token with improved error handling
     @translate_token_exceptions
-    async def attempt_decode():
+    async def attempt_decode() -> str:
         payload = jwt.decode(token, settings.PUBLIC_KEY)
-        return payload.get("sub")
+        return str(payload.get("sub", ""))  # Explicitly cast to string
 
     try:
         user_id = await attempt_decode()
         logger.debug("Successfully decoded JWT token", **log_context)
     except InvalidTokenError:
-        # If it's not a valid JWT, try as direct user_id
         logger.warning("Not a valid JWT, trying as direct user_id", **log_context)
         user_id = token
 
     if not user_id:
         logger.error("No user_id found in token", **log_context)
-        raise BusinessLogicError(
-            "Invalid token - no user ID found", 
-            status_code=status.HTTP_400_BAD_REQUEST
+        raise EmailVerificationError(
+            message="Invalid verification token - no user ID found"
         )
 
     log_context["user_id"] = user_id
 
-    # Use safe_operation context manager for standardized error handling
     async with safe_operation("email verification", log_context):
         async with UserUnitOfWork(db) as uow:
             user = await uow.verify_email(user_id)
@@ -412,7 +407,7 @@ async def verify_email_token(
 )
 async def check_verification_status(
     user_email: EmailStr, db: AsyncSession = Depends(get_db)
-) -> dict:
+) -> Dict[str, Any]:
     """
     Check if a user's email is verified.
 
@@ -431,9 +426,10 @@ async def check_verification_status(
 
     logger.debug("Checking email verification status", **log_context)
 
-    # Find and validate the user using our utility
-    user = await validate_user_exists(db_session=db, user_model=User, user_email=user_email, log_context=log_context)
-    
+    user = await validate_user_exists(
+        db_session=db, user_model=User, user_email=user_email, log_context=log_context
+    )
+
     log_context["user_id"] = str(user.user_id)
     log_context["verification_status"] = str(user.is_email_verified)
 

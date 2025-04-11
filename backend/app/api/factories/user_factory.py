@@ -6,6 +6,7 @@ User Factory
 """
 
 import re
+from typing import Any, Dict
 
 import structlog
 
@@ -22,24 +23,24 @@ logger = structlog.get_logger()
 
 class ValidationError(Exception):
     """Exception for validation errors with HTTP status details."""
-    
-    def __init__(self, message: str, field: str, status_code: int = 422):
+
+    def __init__(self, message: str, field: str, status_code: int = 422) -> None:
         self.message = message
         self.field = field
         self.status_code = status_code
         # Format message for better display in error responses and include status code
         self.detail = f"{message} (field: {field}, status_code: {status_code})"
         super().__init__(self.detail)
-    
-    def __str__(self):
+
+    def __str__(self) -> str:
         return self.detail
-    
-    def to_dict(self):
+
+    def to_dict(self) -> Dict[str, Any]:
         """Convert the error to a JSON-serializable dict."""
         return {
             "detail": self.message,
             "field": self.field,
-            "status_code": self.status_code
+            "status_code": self.status_code,
         }
 
 
@@ -49,7 +50,7 @@ class UserFactory:
     @staticmethod
     def create_user(user_data: UserCreate) -> User:
         """Create a User object with validated data."""
-        safe_context = {
+        safe_context: Dict[str, Any] = {
             "email": user_data.user_email,
             "first_name": user_data.user_first_name,
             "country_code": user_data.user_country_code,
