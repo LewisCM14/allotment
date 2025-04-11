@@ -28,7 +28,6 @@ class ValidationError(Exception):
         self.message = message
         self.field = field
         self.status_code = status_code
-        # Format message for better display in error responses and include status code
         self.detail = f"{message} (field: {field}, status_code: {status_code})"
         super().__init__(self.detail)
 
@@ -52,15 +51,13 @@ class UserFactory:
         """Create a User object with validated data."""
         safe_context: Dict[str, Any] = {
             "email": user_data.user_email,
-            "first_name": user_data.user_first_name,
-            "country_code": user_data.user_country_code,
             "request_id": request_id_ctx_var.get(),
             "operation": "user_creation",
         }
 
         try:
             with log_timing("user_creation", request_id=safe_context["request_id"]):
-                logger.debug("Validating user data", **safe_context)
+                logger.info("Starting user creation", **safe_context)
 
                 UserFactory.validate_first_name(user_data.user_first_name)
                 UserFactory.validate_country_code(user_data.user_country_code)
@@ -165,7 +162,6 @@ class UserFactory:
     def validate_password(password: str) -> None:
         """Validate password complexity."""
         field = "password"
-        # Only log password metadata, never the content
         context = {
             "field": field,
             "password_length": len(password),

@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.logging import log_timing
 from app.api.factories.user_factory import UserFactory
+from app.api.middleware.error_handler import translate_db_exceptions
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -78,6 +79,7 @@ class UserUnitOfWork:
                     **log_context,
                 )
 
+    @translate_db_exceptions
     async def create_user(self, user_data: UserCreate) -> User:
         """Create a new user."""
         safe_context = {
@@ -86,30 +88,20 @@ class UserUnitOfWork:
             "operation": "create_user_uow",
         }
 
-        logger.debug("Creating user via unit of work", **safe_context)
+        logger.info("Creating user via unit of work", **safe_context)
 
-        try:
-            with log_timing(
-                "create_user_transaction", request_id=safe_context["request_id"]
-            ):
-                user = UserFactory.create_user(user_data)
-                self.db.add(user)
+        with log_timing(
+            "create_user_transaction", request_id=safe_context["request_id"]
+        ):
+            user = UserFactory.create_user(user_data)
+            self.db.add(user)
 
-                safe_context["user_id"] = str(user.user_id)
-                logger.info("User created in unit of work", **safe_context)
+            safe_context["user_id"] = str(user.user_id)
+            logger.info("User created in unit of work", **safe_context)
 
-                return user
+            return user
 
-        except Exception as e:
-            sanitized_error = sanitize_error_message(str(e))
-            logger.error(
-                "Failed to create user in unit of work",
-                error=sanitized_error,
-                error_type=type(e).__name__,
-                **safe_context,
-            )
-            raise
-
+    @translate_db_exceptions
     async def verify_email(self, user_id: str) -> User:
         """Verify a user's email."""
         log_context = {
@@ -120,28 +112,17 @@ class UserUnitOfWork:
 
         logger.debug("Verifying email via unit of work", **log_context)
 
-        try:
-            with log_timing(
-                "verify_email_transaction", request_id=log_context["request_id"]
-            ):
-                user = await self.user_repo.verify_email(user_id)
+        with log_timing(
+            "verify_email_transaction", request_id=log_context["request_id"]
+        ):
+            user = await self.user_repo.verify_email(user_id)
 
-                log_context["email"] = user.user_email
-                logger.info(
-                    "Email verified in unit of work",
-                    previous_status=False,
-                    new_status=True,
-                    **log_context,
-                )
-
-                return user
-
-        except Exception as e:
-            sanitized_error = sanitize_error_message(str(e))
-            logger.error(
-                "Failed to verify email in unit of work",
-                error=sanitized_error,
-                error_type=type(e).__name__,
+            log_context["email"] = user.user_email
+            logger.info(
+                "Email verified in unit of work",
+                previous_status=False,
+                new_status=True,
                 **log_context,
             )
-            raise
+
+            return user

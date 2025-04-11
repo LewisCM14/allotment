@@ -98,6 +98,7 @@ def translate_db_exceptions(
                 "Database integrity error",
                 error=sanitize_error_message(str(ie)),
                 error_type="IntegrityError",
+                exc_info=True,
             )
             raise DatabaseIntegrityError(message="Data integrity violation")
         except SQLAlchemyError as se:
@@ -105,6 +106,7 @@ def translate_db_exceptions(
                 "Database error",
                 error=sanitize_error_message(str(se)),
                 error_type=type(se).__name__,
+                exc_info=True,
             )
             raise BusinessLogicError(
                 message="Database operation failed",
@@ -132,6 +134,7 @@ async def safe_operation(
             f"Error during {operation_name}",
             error_type=error_type,
             error_details=str(e),
+            exc_info=True,
             **log_context,
         )
         raise BusinessLogicError(
@@ -152,7 +155,6 @@ async def validate_user_exists(
         if user_email:
             query = select(user_model).where(user_model.user_email == user_email)
         elif user_id:
-            # Convert string UUID to UUID object
             user_uuid = uuid.UUID(user_id)
             query = select(user_model).where(user_model.user_id == user_uuid)
         else:

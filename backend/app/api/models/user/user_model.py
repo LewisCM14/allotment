@@ -54,14 +54,9 @@ class User(Base):
     )
 
     def set_password(self, password: str) -> None:
-        """Hash and store the password.
-
-        Args:
-            password: The plain text password to hash
-        """
+        """Hash and store the password."""
         log_context = {
             "user_id": str(self.user_id) if self.user_id else "new_user",
-            "email": self.user_email,
             "request_id": request_id_ctx_var.get(),
         }
 
@@ -69,9 +64,7 @@ class User(Base):
             self.user_password_hash = bcrypt.hashpw(
                 password.encode("utf-8"), bcrypt.gensalt()
             ).decode("utf-8")
-            logger.debug(
-                "Password hashed successfully", action="set_password", **log_context
-            )
+            logger.debug("Password hashed successfully", **log_context)
         except Exception as e:
             sanitized_error = sanitize_error_message(str(e))
             logger.error(
@@ -83,14 +76,7 @@ class User(Base):
             raise
 
     def check_password(self, password: str) -> bool:
-        """Verify a password.
-
-        Args:
-            password: The plain text password to verify
-
-        Returns:
-            bool: True if password matches, False otherwise
-        """
+        """Verify a password."""
         log_context = {
             "user_id": str(self.user_id),
             "request_id": request_id_ctx_var.get(),
@@ -100,11 +86,7 @@ class User(Base):
             result = bcrypt.checkpw(
                 password.encode("utf-8"), self.user_password_hash.encode("utf-8")
             )
-            logger.debug(
-                "Password verification performed",
-                action="check_password",
-                **log_context,
-            )
+            logger.debug("Password verification performed", **log_context)
             return result
         except Exception as e:
             sanitized_error = sanitize_error_message(str(e))

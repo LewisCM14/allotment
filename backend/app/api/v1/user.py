@@ -25,6 +25,7 @@ from app.api.middleware.error_handler import (
 )
 from app.api.middleware.exception_handler import (
     AuthenticationError,
+    BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
     EmailVerificationError,
@@ -78,60 +79,89 @@ async def create_user(
 
     logger.info("Attempting user registration", **log_context)
 
-    with log_timing("check_existing_user", request_id=log_context["request_id"]):
-        query = select(User).where(User.user_email == user.user_email)
-        result = await db.execute(query)
-        if result.scalar_one_or_none():
-            logger.warning("Registration failed - email already exists", **log_context)
-            raise EmailAlreadyRegisteredError()
-
-    new_user = None
-    async with safe_operation(
-        "user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
-    ):
-        with log_timing("create_user_account", request_id=log_context["request_id"]):
-            async with UserUnitOfWork(db) as uow:
-                new_user = await uow.create_user(user)
-
-        if not new_user or not new_user.user_id:
-            logger.error("User creation failed", **log_context)
-            raise BusinessLogicError(
-                message="Failed to create user",
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        log_context["user_id"] = str(new_user.user_id)
-
     try:
-        with log_timing(
-            "send_verification_email", request_id=log_context["request_id"]
+        with log_timing("check_existing_user", request_id=log_context["request_id"]):
+            query = select(User).where(User.user_email == user.user_email)
+            result = await db.execute(query)
+            if result.scalar_one_or_none():
+                logger.warning(
+                    "Registration failed - email already exists", **log_context
+                )
+                raise EmailAlreadyRegisteredError()
+
+        new_user = None
+        async with safe_operation(
+            "user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
         ):
-            await send_verification_email(
-                user_email=user.user_email, user_id=str(new_user.user_id)
+            with log_timing(
+                "create_user_account", request_id=log_context["request_id"]
+            ):
+                async with UserUnitOfWork(db) as uow:
+                    new_user = await uow.create_user(user)
+
+            if not new_user or not new_user.user_id:
+                logger.error("User creation failed", **log_context)
+                raise BusinessLogicError(
+                    message="Failed to create user",
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+            log_context["user_id"] = str(new_user.user_id)
+
+        try:
+            with log_timing(
+                "send_verification_email", request_id=log_context["request_id"]
+            ):
+                await send_verification_email(
+                    user_email=user.user_email, user_id=str(new_user.user_id)
+                )
+                logger.info(
+                    "Verification email sent during registration", **log_context
+                )
+        except Exception as email_error:
+            sanitized_error = sanitize_error_message(str(email_error))
+            logger.error(
+                "Failed to send verification email during registration",
+                error=sanitized_error,
+                error_type=type(email_error).__name__,
+                **log_context,
             )
-            logger.info("Verification email sent during registration", **log_context)
-    except Exception as email_error:
-        sanitized_error = sanitize_error_message(str(email_error))
-        logger.error(
-            "Failed to send verification email during registration",
-            error=sanitized_error,
-            error_type=type(email_error).__name__,
-            **log_context,
+
+        with log_timing("generate_tokens", request_id=log_context["request_id"]):
+            refresh_token = create_refresh_token(user_id=str(new_user.user_id))
+            access_token = create_access_token(user_id=str(new_user.user_id))
+            logger.debug("Tokens generated successfully", **log_context)
+
+        logger.info("User successfully registered", **log_context)
+
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user_first_name=new_user.user_first_name,
+            is_email_verified=new_user.is_email_verified,
+            user_id=str(new_user.user_id),
         )
 
-    with log_timing("generate_tokens", request_id=log_context["request_id"]):
-        refresh_token = create_refresh_token(user_id=str(new_user.user_id))
-        access_token = create_access_token(user_id=str(new_user.user_id))
-        logger.debug("Tokens generated successfully", **log_context)
-
-    logger.info("User successfully registered", **log_context)
-
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_first_name=new_user.user_first_name,
-        is_email_verified=new_user.is_email_verified,
-        user_id=str(new_user.user_id),
-    )
+    except BaseApplicationError as exc:
+        logger.warning(
+            f"{type(exc).__name__}",
+            error=str(exc),
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+            **log_context,
+        )
+        raise
+    except Exception as exc:
+        sanitized_error = sanitize_error_message(str(exc))
+        logger.error(
+            "Unhandled exception during user registration",
+            error=sanitized_error,
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise BusinessLogicError(
+            message="An unexpected error occurred during registration",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @router.post(
@@ -166,38 +196,65 @@ async def login(
 
     logger.info("Login attempt", **log_context)
 
-    db_user = await validate_user_exists(
-        db_session=db,
-        user_model=User,
-        user_email=user.user_email,
-        log_context=log_context,
-    )
+    try:
+        db_user = await validate_user_exists(
+            db_session=db,
+            user_model=User,
+            user_email=user.user_email,
+            log_context=log_context,
+        )
 
-    log_context["user_id"] = str(db_user.user_id)
+        log_context["user_id"] = str(db_user.user_id)
 
-    async with safe_operation("user_authentication", log_context):
-        with log_timing("password_verification", request_id=log_context["request_id"]):
-            if not verify_password(user.user_password, db_user.user_password_hash):
-                logger.warning(
-                    "Login failed - invalid password", email_exists=True, **log_context
-                )
-                raise AuthenticationError("Invalid email or password")
+        async with safe_operation("user_authentication", log_context):
+            with log_timing(
+                "password_verification", request_id=log_context["request_id"]
+            ):
+                if not verify_password(user.user_password, db_user.user_password_hash):
+                    logger.warning(
+                        "Login failed - invalid password",
+                        email_exists=True,
+                        **log_context,
+                    )
+                    raise AuthenticationError("Invalid email or password")
 
-    with log_timing("generate_tokens", request_id=log_context["request_id"]):
-        access_token = create_access_token(user_id=str(db_user.user_id))
-        refresh_token = create_refresh_token(user_id=str(db_user.user_id))
-        logger.debug("Tokens generated successfully", **log_context)
+        with log_timing("generate_tokens", request_id=log_context["request_id"]):
+            access_token = create_access_token(user_id=str(db_user.user_id))
+            refresh_token = create_refresh_token(user_id=str(db_user.user_id))
+            logger.debug("Tokens generated successfully", **log_context)
 
-    logger.info("Login successful", **log_context)
+        logger.info("Login successful", **log_context)
 
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        token_type="bearer",
-        user_first_name=db_user.user_first_name,
-        is_email_verified=db_user.is_email_verified,
-        user_id=str(db_user.user_id),
-    )
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer",
+            user_first_name=db_user.user_first_name,
+            is_email_verified=db_user.is_email_verified,
+            user_id=str(db_user.user_id),
+        )
+
+    except BaseApplicationError as exc:
+        logger.warning(
+            f"{type(exc).__name__}",
+            error=str(exc),
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+            **log_context,
+        )
+        raise
+    except Exception as exc:
+        sanitized_error = sanitize_error_message(str(exc))
+        logger.error(
+            "Unhandled exception during login",
+            error=sanitized_error,
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise BusinessLogicError(
+            message="An unexpected error occurred during login",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
 
 @router.post(
