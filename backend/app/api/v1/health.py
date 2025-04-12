@@ -45,11 +45,13 @@ async def health_check(
     try:
         result = await db.scalar(text("SELECT 1"))
         db_status = "healthy" if result == 1 else "unhealthy"
-        logger.info("Database health check", status=db_status, result=result)
+        logger.info("Database health check", status=db_status)
     except Exception as e:
-        db_status = f"unhealthy: {str(e)}"
+        db_status = "unhealthy"
         logger.error(
-            "Database health check failed", error=str(e), error_type=type(e).__name__
+            "Database health check failed",
+            error="Database connectivity issue",
+            error_type=type(e).__name__,
         )
 
     cpu_usage = psutil.cpu_percent()
@@ -72,7 +74,7 @@ async def health_check(
         )
 
     response: Dict[str, Union[str, float, Dict[str, float]]] = {
-        "status": "ok",
+        "status": "ok" if db_status == "healthy" else "degraded",
         "uptime": uptime_seconds,
         "version": settings.APP_VERSION,
         "database": db_status,

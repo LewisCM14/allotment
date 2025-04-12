@@ -2,6 +2,7 @@
 Logging Middleware
 """
 
+import asyncio
 import re
 import time
 import uuid
@@ -10,6 +11,7 @@ from typing import Awaitable, Callable, Dict, Optional
 
 import structlog
 from fastapi import Request, Response
+from opentelemetry import trace
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -94,63 +96,90 @@ def sanitize_error_message(error_msg: str) -> str:
     return error_msg
 
 
+log_lock = asyncio.Lock()
+
+tracer = trace.get_tracer(__name__)
+
+
 class AsyncLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
-        """Logs incoming requests and outgoing responses."""
+        """Logs incoming requests, outgoing responses, and rate-limiting events."""
         clear_contextvars()
+        request_id = str(uuid.uuid4())
         bind_contextvars(
-            request_id=str(uuid.uuid4()),
+            request_id=request_id,
             ip=request.client.host if request.client else "Unknown",
             method=request.method,
             path=request.url.path,
         )
-        request_id = str(uuid.uuid4())
         request_id_ctx_var.set(request_id)
         start_time = time.monotonic()
 
-        # Ensure client IP is not None
         client_ip: Optional[str] = request.client.host if request.client else "Unknown"
 
-        logger.info(
-            "Incoming request",
-            request_id=request_id,
-            method=request.method,
-            url=str(request.url),
-            client_ip=client_ip,
-            headers=sanitize_headers(dict(request.headers)),
-            query_params=sanitize_params(dict(request.query_params)),
-        )
+        with tracer.start_as_current_span("http_request") as span:
+            span.set_attribute("http.method", request.method)
+            span.set_attribute("http.url", str(request.url))
+            span.set_attribute(
+                "http.client_ip", client_ip if client_ip is not None else ""
+            )
 
-        try:
-            response: Response = await call_next(request)
-        except Exception as exc:
-            logger.error(
-                "Unhandled Exception",
-                request_id=request_id_ctx_var.get(),
-                error=sanitize_error_message(str(exc)),
-                error_type=type(exc).__name__,
-                exc_info=True,
-                path=request.url.path,
+            logger.info(
+                "Incoming request",
+                request_id=request_id,
                 method=request.method,
-            )
-            return Response(
-                "Internal Server Error",
-                status_code=500,
-                headers={"X-Request-ID": request_id},
+                url=str(request.url),
+                client_ip=client_ip,
+                headers=sanitize_headers(dict(request.headers)),
+                query_params=sanitize_params(dict(request.query_params)),
             )
 
-        process_time = time.monotonic() - start_time
-        logger.info(
-            "Outgoing response",
-            request_id=request_id_ctx_var.get(),
-            status_code=response.status_code,
-            process_time=f"{process_time:.3f}s",
-            response_headers=sanitize_headers(dict(response.headers)),
-            content_length=response.headers.get("content-length"),
-            rate_limit_remaining=response.headers.get("X-RateLimit-Remaining"),
-            rate_limit_limit=response.headers.get("X-RateLimit-Limit"),
-        )
-        response.headers["X-Request-ID"] = request_id
-        return response
+            try:
+                response: Response = await call_next(request)
+            except Exception as exc:
+                error_category = (
+                    "OperationalError"
+                    if isinstance(exc, (OSError, ConnectionError))
+                    else "ProgrammerError"
+                )
+                logger.error(
+                    "Unhandled Exception",
+                    request_id=request_id_ctx_var.get(),
+                    error=sanitize_error_message(str(exc)),
+                    error_type=type(exc).__name__,
+                    error_category=error_category,
+                    exc_info=True,
+                    path=request.url.path,
+                    method=request.method,
+                )
+                return Response(
+                    "Internal Server Error",
+                    status_code=500,
+                    headers={"X-Request-ID": request_id},
+                )
+
+            rate_limit_remaining = response.headers.get("X-RateLimit-Remaining", None)
+            if rate_limit_remaining == "0":
+                logger.warning(
+                    "Rate limit exceeded",
+                    request_id=request_id,
+                    client_ip=client_ip,
+                    method=request.method,
+                    path=request.url.path,
+                )
+
+            process_time = time.monotonic() - start_time
+            logger.info(
+                "Outgoing response",
+                request_id=request_id_ctx_var.get(),
+                status_code=response.status_code,
+                process_time=f"{process_time:.3f}s",
+                response_headers=sanitize_headers(dict(response.headers)),
+                content_length=response.headers.get("content-length"),
+                rate_limit_remaining=rate_limit_remaining,
+                rate_limit_limit=response.headers.get("X-RateLimit-Limit", "N/A"),
+            )
+            response.headers["X-Request-ID"] = request_id
+            return response

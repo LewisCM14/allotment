@@ -5,6 +5,8 @@ app:
   log_level: "INFO" 
   log_to_file: true
   log_file: "app/app.log"
+  environment: "development"
+  slow_query_threshold: 1.0
   cors:
     origins: ["http://127.0.0.1:5173", "http://localhost:5173"]
     allow_credentials: true

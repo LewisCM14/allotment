@@ -6,11 +6,13 @@ User Factory
 """
 
 import re
+import uuid
 from typing import Any, Dict
 
 import structlog
 
 from app.api.core.logging import log_timing
+from app.api.middleware.exception_handler import BusinessLogicError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -49,10 +51,12 @@ class UserFactory:
     @staticmethod
     def create_user(user_data: UserCreate) -> User:
         """Create a User object with validated data."""
+        operation_id = str(uuid.uuid4())
         safe_context: Dict[str, Any] = {
             "email": user_data.user_email,
             "request_id": request_id_ctx_var.get(),
             "operation": "user_creation",
+            "operation_id": operation_id,
         }
 
         try:
@@ -74,7 +78,7 @@ class UserFactory:
                 return user
 
         except ValidationError as e:
-            logger.warning(
+            logger.error(
                 "User validation failed",
                 error=sanitize_error_message(str(e)),
                 field=e.field,
@@ -83,13 +87,16 @@ class UserFactory:
             raise
         except Exception as e:
             sanitized_error = sanitize_error_message(str(e))
-            logger.error(
+            logger.critical(
                 "Unexpected error during user creation",
                 error=sanitized_error,
                 error_type=type(e).__name__,
                 **safe_context,
             )
-            raise
+            raise BusinessLogicError(
+                message="An unexpected error occurred during user creation",
+                status_code=500,
+            )
 
     @staticmethod
     def validate_first_name(first_name: str) -> None:
@@ -206,4 +213,11 @@ class UserFactory:
 
             logger.debug("Password validation passed", **context)
         except ValidationError:
+            raise
+        except Exception as e:
+            logger.error(
+                "Unexpected error during password validation",
+                error=sanitize_error_message(str(e)),
+                **context,
+            )
             raise

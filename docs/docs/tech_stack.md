@@ -19,6 +19,7 @@
 | Server | Authlib | 1.5.1 | Authentication | 
 | Server | psutil | 7.0.0 | Resource Monitoring | 
 | Server | strutlog | 25.2.0 | Application Logging | 
+| Server | opentelemetry | 1.32.0 | Application Observation | 
 | Server | bcrypt | 4.3.0 | Password Hashing | 
 | Server | email-validator | 2.2.0 | Email Validation | 
 | Server | slowapi | 0.1.9 | Rate Limiting |

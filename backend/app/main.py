@@ -2,6 +2,8 @@
 Application Entrypoint
 """
 
+import atexit
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Optional
 
@@ -18,6 +20,7 @@ from app.api.middleware.exception_handler import ExceptionHandlingMiddleware
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
     request_id_ctx_var,
+    sanitize_error_message,
 )
 from app.api.services.email_service import send_test_email
 from app.api.v1 import router as api_router
@@ -28,23 +31,36 @@ logger.info(
     "Starting application",
     app_name=settings.APP_NAME,
     version=settings.APP_VERSION,
+    environment=settings.ENVIRONMENT,
 )
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    logger.info(
-        "Application startup complete",
-        app_name=settings.APP_NAME,
-        version=settings.APP_VERSION,
-        api_prefix=settings.API_PREFIX,
-    )
-    yield
-    logger.info(
-        "Application shutting down",
-        app_name=settings.APP_NAME,
-        version=settings.APP_VERSION,
-    )
+    try:
+        logger.info(
+            "Application startup complete",
+            app_name=settings.APP_NAME,
+            version=settings.APP_VERSION,
+            api_prefix=settings.API_PREFIX,
+        )
+        yield
+    except Exception as exc:
+        sanitized_error = sanitize_error_message(str(exc))
+        logger.error(
+            "Error during application lifespan",
+            error=sanitized_error,
+            error_type=type(exc).__name__,
+            request_id=request_id_ctx_var.get(),
+        )
+        raise
+    finally:
+        logger.info(
+            "Application shutting down",
+            app_name=settings.APP_NAME,
+            version=settings.APP_VERSION,
+        )
+        flush_logs()
 
 
 app = FastAPI(
@@ -138,3 +154,39 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
             logger.info("Test email sent successfully", **log_context)
 
     return {"message": "Test email sent successfully"}
+
+
+def flush_logs() -> None:
+    """Flush pending logs during shutdown."""
+    try:
+        logger = logging.getLogger()
+
+        can_log = all(
+            not (
+                hasattr(handler, "stream") and handler.stream and handler.stream.closed
+            )
+            for handler in logger.handlers
+            if hasattr(handler, "stream")
+        )
+
+        if can_log:
+            logger.info("Flushing logs before shutdown")
+            structlog.get_logger().info("Application shutting down")
+
+        for handler in logger.handlers:
+            try:
+                if hasattr(handler, "flush"):
+                    handler.flush()
+                if hasattr(handler, "close") and not (
+                    hasattr(handler, "stream")
+                    and handler.stream
+                    and handler.stream.closed
+                ):
+                    handler.close()
+            except (ValueError, IOError):
+                pass
+    except Exception:
+        pass
+
+
+atexit.register(flush_logs)

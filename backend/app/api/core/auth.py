@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.api.core.config import settings
 from app.api.core.database import get_db
+from app.api.middleware.logging_middleware import sanitize_error_message
 from app.api.models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
@@ -52,11 +53,20 @@ def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None)
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
         )
         logger.info(
-            "Access token created", user_id=user_id, expires_at=expire.isoformat()
+            "Access token created",
+            user_id=user_id,
+            expires_at=expire.isoformat(),
+            token_type="access",
         )
         return cast(str, token.decode("utf-8"))
     except Exception as e:
-        logger.error("Failed to create access token", user_id=user_id, error=str(e))
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Failed to create access token",
+            user_id=user_id,
+            error=sanitized_error,
+            error_type=type(e).__name__,
+        )
         raise
 
 
@@ -131,10 +141,15 @@ def get_current_user(
     try:
         payload = jwt.decode(token, settings.PUBLIC_KEY)
     except JoseError as e:
-        logger.error("Token validation failed", error=str(e))
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Token validation failed",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"Failed to decode token: {str(e)}",
+            detail="Invalid token",
             headers={"WWW-Authenticate": "Bearer"},
         ) from e
 
@@ -149,13 +164,16 @@ def get_current_user(
 
     user = db.query(User).filter(User.user_id == user_id).first()
     if user is None:
-        logger.warning("User from valid token not found in database", user_id=user_id)
+        logger.warning(
+            "User from valid token not found in database",
+            user_id=user_id,
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="User not found",
         )
 
-    logger.debug("Token validated successfully", user_id=user_id)
+    logger.info("Token validated successfully", user_id=user_id)
     return user
 
 

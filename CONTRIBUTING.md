@@ -128,7 +128,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
 
 1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
     
-    - _The settings will then want configuring to point at your local Postgres database as well as a GMAIL's SMPT solution._
+    - _The settings will then want configuring to point at your local Postgres database as well as a GMAIL SMPT solution._
 
     > You can update the `name`, `version` and path for the `log_file` as desired.
 
@@ -148,6 +148,8 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     ```
     fastapi dev
     ```
+
+> The settings file also configures what instance the service is, i.e. development, UAT, production.
 
 ---
 

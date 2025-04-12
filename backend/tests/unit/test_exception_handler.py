@@ -106,6 +106,8 @@ async def test_exception_handling_middleware_handles_unhandled_exception():
                 "type": "server_error",
                 "code": "GEN_999",
                 "request_id": "test-request-id",
+                "timestamp": response_body["detail"][0]["timestamp"],
+                "environment": "development",
             }
         ]
     }

@@ -15,6 +15,8 @@ import structlog
 from app.api.core.config import settings
 from app.api.middleware.logging_middleware import request_id_ctx_var
 
+log_lock = asyncio.Lock()
+
 
 def sync_log_to_file(
     logger: structlog.BoundLogger,
@@ -30,33 +32,22 @@ def sync_log_to_file(
 async def write_log_async(event_dict: MutableMapping[str, Any]) -> None:
     """Writes logs to a file asynchronously, preventing race conditions."""
     log_entry: str = f"{event_dict}\n"
-    async with asyncio.Lock():
+    async with log_lock:
         await asyncio.to_thread(append_to_file, log_entry)
 
 
 def append_to_file(log_entry: str) -> None:
     """Blocking file write function."""
-    with open(settings.LOG_FILE, "a") as log_file:
-        log_file.write(log_entry)
+    try:
+        with open(settings.LOG_FILE, "a") as log_file:
+            log_file.write(log_entry)
+    except Exception as e:
+        print(f"Failed to write log entry: {e}", file=sys.stderr)
 
 
 @contextmanager
 def log_timing(operation: str, **context: Any) -> Generator[None, None, None]:
-    """Context manager to log timing information for operations.
-
-    Args:
-        operation: Name of the operation being timed
-        context: Additional context variables to include in log entries
-
-    Yields:
-        None
-
-    Example:
-        ```python
-        with log_timing("database_query", query_type="select", table="users"):
-            result = db.execute(query)
-        ```
-    """
+    """Context manager to log timing information for operations."""
     start_time = time.monotonic()
     request_id = request_id_ctx_var.get()
 
@@ -68,9 +59,18 @@ def log_timing(operation: str, **context: Any) -> Generator[None, None, None]:
         yield
     finally:
         process_time = time.monotonic() - start_time
-        logger.debug(
-            f"Completed {operation}", process_time=f"{process_time:.3f}s", **log_context
-        )
+        if process_time > settings.SLOW_QUERY_THRESHOLD:
+            logger.warning(
+                f"Slow operation detected: {operation}",
+                process_time=f"{process_time:.3f}s",
+                **log_context,
+            )
+        else:
+            logger.debug(
+                f"Completed {operation}",
+                process_time=f"{process_time:.3f}s",
+                **log_context,
+            )
 
 
 def configure_logging() -> None:

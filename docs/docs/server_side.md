@@ -379,6 +379,8 @@ _The server-side architecture is designed to enforce clear boundaries between la
             /factories
                 - Contains the "Factories" that apply business rules and/or validation before persistence
             /middleware
+                - error_codes.py
+                - error_handler.py
                 - exception_handler.py
                 - logging_middleware.py
             /models

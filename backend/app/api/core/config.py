@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     LOG_TO_FILE: bool
     LOG_FILE: str
 
+    ENVIRONMENT: str
+    SLOW_QUERY_THRESHOLD: float
+
     CORS_ORIGINS: List[str]
     CORS_ALLOW_CREDENTIALS: bool
     CORS_ALLOW_METHODS: List[str]
@@ -124,6 +127,10 @@ try:
         LOG_LEVEL=yaml_config.get("app", {}).get("log_level", "INFO"),
         LOG_TO_FILE=yaml_config.get("app", {}).get("log_to_file", True),
         LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
+        ENVIRONMENT=yaml_config.get("app", {}).get("environment", "development"),
+        SLOW_QUERY_THRESHOLD=yaml_config.get("app", {}).get(
+            "slow_query_threshold", 1.0
+        ),
         CORS_ORIGINS=yaml_config.get("app", {})
         .get("cors", {})
         .get("origins", ["http://127.0.0.1:5173"]),

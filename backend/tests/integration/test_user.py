@@ -345,12 +345,15 @@ class TestVerifyEmail:
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
-        verify_response = client.get(f"{PREFIX}/user/verify-email?token={user_id}")
+        # Generate a valid JWT token for email verification
+        from app.api.core.auth import create_access_token
+
+        token = create_access_token(user_id=user_id)
+
+        verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
         assert verify_response.status_code == status.HTTP_200_OK
         assert verify_response.json()["message"] == "Email verified successfully"
 
-        # Assert that the mock was called with the right parameters during registration only
-        # (not during verification)
         mock_send_email.assert_called_once_with(
             user_email=user_data["user_email"], user_id=user_id
         )
@@ -374,10 +377,13 @@ class TestVerifyEmail:
             # When testing, we might get either UserNotFoundError or BusinessLogicError
             from app.api.middleware.exception_handler import (
                 BusinessLogicError,
+                EmailVerificationError,
                 UserNotFoundError,
             )
 
-            assert isinstance(e, (UserNotFoundError, BusinessLogicError))
+            assert isinstance(
+                e, (UserNotFoundError, BusinessLogicError, EmailVerificationError)
+            )
 
         mock_send_email.assert_not_called()
 
@@ -463,13 +469,17 @@ class TestEmailVerificationStatus:
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
-        verify_response = client.get(f"{PREFIX}/user/verify-email?token={user_id}")
+        # Generate a valid JWT token for email verification
+        from app.api.core.auth import create_access_token
+
+        token = create_access_token(user_id=user_id)
+
+        verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
         assert verify_response.status_code == status.HTTP_200_OK
 
         response = client.get(
             f"{PREFIX}/user/verification-status?user_email={user_data['user_email']}"
         )
-
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["is_email_verified"] is True

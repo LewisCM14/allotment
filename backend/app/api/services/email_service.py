@@ -8,6 +8,7 @@ Email Service
 from datetime import datetime, timedelta
 
 import structlog
+from aiosmtplib import SMTPException
 from fastapi import HTTPException, status
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
@@ -69,12 +70,11 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
 
             verification_link = f"{settings.FRONTEND_URL}/verify-email?token=[REDACTED]"
 
-            # Log without including the actual token
             logger.debug(
                 "Generated verification link",
                 frontend_url=settings.FRONTEND_URL,
                 token_expiry="1 hour",
-                **log_context,
+                **{k: v for k, v in log_context.items() if k != "token"},
             )
 
             message = MessageSchema(
@@ -105,10 +105,22 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
             logger.info("Verification email sent successfully", **log_context)
             return {"message": "Verification email sent successfully"}
 
+    except (SMTPException, ConnectionError) as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Email sending failed",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+            **log_context,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email service is temporarily unavailable",
+        )
     except Exception as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.exception(
-            "Failed to send verification email",
+            "Unhandled exception during email sending",
             error=sanitized_error,
             error_type=type(e).__name__,
             **log_context,

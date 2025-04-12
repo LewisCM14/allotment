@@ -386,15 +386,26 @@ async def request_verification_email(
     )
     log_context["user_id"] = str(user.user_id)
 
-    async with safe_operation(
-        "sending verification email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
-    ):
-        with log_timing("send_email", request_id=log_context["request_id"]):
-            response = await send_verification_email(
-                user_email=user_email, user_id=str(user.user_id)
-            )
-            logger.info("Verification email sent successfully", **log_context)
-            return response
+    try:
+        async with safe_operation(
+            "sending verification email",
+            log_context,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        ):
+            with log_timing("send_email", request_id=log_context["request_id"]):
+                await send_verification_email(
+                    user_email=user_email, user_id=str(user.user_id)
+                )
+                logger.info("Verification email sent successfully", **log_context)
+                return {"message": "Verification email sent successfully"}
+    except Exception as e:
+        logger.error(
+            "Failed to send verification email during operation",
+            error=str(e),
+            error_code="EMAIL_VERIFICATION_ERROR",
+            **log_context,
+        )
+        raise
 
 
 @router.get(
@@ -427,15 +438,32 @@ async def verify_email_token(
 
     @translate_token_exceptions
     async def attempt_decode() -> str:
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-        return str(payload.get("sub", ""))  # Explicitly cast to string
+        try:
+            payload = jwt.decode(
+                token,
+                settings.PUBLIC_KEY,
+                claims_options={"exp": {"essential": True}},
+            )
+            return str(payload.get("sub", ""))
+        except Exception as exc:
+            logger.error(
+                "Failed to decode token",
+                error=str(exc),
+                token_provided=bool(token),
+                **{k: v for k, v in log_context.items() if k != "token_provided"},
+            )
+            raise InvalidTokenError("Invalid or expired token")
 
     try:
         user_id = await attempt_decode()
-        logger.debug("Successfully decoded JWT token", **log_context)
     except InvalidTokenError:
-        logger.warning("Not a valid JWT, trying as direct user_id", **log_context)
-        user_id = token
+        logger.warning("Invalid JWT token provided", **log_context)
+        raise EmailVerificationError("Invalid verification token")
+    except ValueError as e:
+        logger.error(
+            "Unexpected error during token decoding", error=str(e), **log_context
+        )
+        raise
 
     if not user_id:
         logger.error("No user_id found in token", **log_context)

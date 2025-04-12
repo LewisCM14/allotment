@@ -39,7 +39,7 @@ class UserRepository:
         with log_timing("db_create_user", request_id=log_context["request_id"]):
             self.db.add(user)
             logger.info("User added to session", **log_context)
-            return user
+        return user
 
     @translate_db_exceptions
     async def verify_email(self, user_id: str) -> User:
@@ -63,7 +63,19 @@ class UserRepository:
         logger.debug("Attempting to verify email", **log_context)
 
         with log_timing("db_verify_email", request_id=log_context["request_id"]):
-            user_uuid = UUID(user_id)
+            try:
+                user_uuid = UUID(user_id)
+            except ValueError as e:
+                logger.warning(
+                    "Invalid user_id format",
+                    error=str(e),
+                    **log_context,
+                )
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid user ID format",
+                )
+
             user = await self.db.get(User, user_uuid)
 
             if not user:
@@ -82,4 +94,4 @@ class UserRepository:
                 new_status=True,
                 **log_context,
             )
-            return user
+        return user

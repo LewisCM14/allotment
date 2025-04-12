@@ -19,6 +19,12 @@ from sqlalchemy.ext.asyncio import (
 from sqlalchemy.orm import declarative_base
 
 from app.api.core.config import settings
+from app.api.middleware.logging_middleware import (
+    request_id_ctx_var,
+    sanitize_error_message,
+)
+
+settings.SLOW_QUERY_THRESHOLD = getattr(settings, "SLOW_QUERY_THRESHOLD", 1.0)
 
 logger = structlog.get_logger()
 logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
@@ -33,6 +39,7 @@ engine: AsyncEngine = create_async_engine(
     pool_size=10,
     max_overflow=5,
     echo=False,
+    pool_pre_ping=True,
 )
 
 AsyncSessionLocal = async_sessionmaker[AsyncSession](
@@ -59,10 +66,11 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             logger.debug("Database session started", session_id=session_id)
             yield db
         except Exception as e:
+            sanitized_error = sanitize_error_message(str(e))
             logger.error(
                 "Database session error",
                 session_id=session_id,
-                error=str(e),
+                error=sanitized_error,
                 exc_info=True,
             )
             await db.rollback()
@@ -86,7 +94,9 @@ def before_cursor_execute(
 
     logger.debug(
         "Starting database query",
+        session_id=id(conn),
         statement=statement[:200] + "..." if len(statement) > 200 else statement,
+        parameters=sanitize_error_message(str(parameters)),
         executemany=executemany,
     )
 
@@ -104,17 +114,21 @@ def after_cursor_execute(
 
     logger.debug(
         "Query completed",
+        session_id=id(conn),
         execution_time=f"{total:.3f}s",
         statement=statement[:200] + "..." if len(statement) > 200 else statement,
+        request_id=request_id_ctx_var.get(),
     )
 
     # Log slow queries as warnings
-    if total > 1.0:
+    if total > settings.SLOW_QUERY_THRESHOLD:
         logger.warning(
             "Slow query detected",
+            session_id=id(conn),
             execution_time=f"{total:.3f}s",
             statement=statement,
-            parameters=str(parameters),
+            parameters=sanitize_error_message(str(parameters)),
+            request_id=request_id_ctx_var.get(),
         )
 
 

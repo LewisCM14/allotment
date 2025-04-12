@@ -12,6 +12,7 @@ from fastapi.exceptions import HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.api.core.config import settings
 from app.api.middleware.error_codes import (
     AUTH_EXPIRED_TOKEN,
     AUTH_INVALID_CREDENTIALS,
@@ -30,6 +31,8 @@ from app.api.middleware.logging_middleware import (
     SENSITIVE_FIELDS,
     sanitize_error_message,
 )
+
+settings.ENVIRONMENT = getattr(settings, "ENVIRONMENT", "development")
 
 logger = structlog.get_logger()
 
@@ -229,19 +232,22 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                 path=path,
                 error=sanitized_error,
                 error_type=type(exc).__name__,
-                exc_info=True,
+                exc_info=settings.LOG_LEVEL.upper() == "DEBUG",
             )
+            response_body = {
+                "detail": [
+                    {
+                        "msg": "An unexpected error occurred",
+                        "type": "server_error",
+                        "code": GENERAL_UNEXPECTED_ERROR,
+                        "request_id": request_id,
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "environment": settings.ENVIRONMENT,
+                    }
+                ]
+            }
             return JSONResponse(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                content={
-                    "detail": [
-                        {
-                            "msg": "An unexpected error occurred",
-                            "type": "server_error",
-                            "code": GENERAL_UNEXPECTED_ERROR,
-                            "request_id": request_id,
-                        }
-                    ]
-                },
+                content=response_body,
                 headers={"X-Request-ID": request_id},
             )
