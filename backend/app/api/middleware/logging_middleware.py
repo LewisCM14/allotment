@@ -10,6 +10,8 @@ from typing import Awaitable, Callable, Dict, Optional
 
 import structlog
 from fastapi import Request, Response
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from starlette.middleware.base import BaseHTTPMiddleware
 from structlog.contextvars import bind_contextvars, clear_contextvars
 
@@ -45,6 +47,8 @@ SENSITIVE_FIELDS = {
     "authorization",
     "credential",
 }
+
+limiter = Limiter(key_func=get_remote_address)
 
 
 def sanitize_headers(headers: Dict) -> Dict:
@@ -148,5 +152,5 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
             rate_limit_remaining=response.headers.get("X-RateLimit-Remaining"),
             rate_limit_limit=response.headers.get("X-RateLimit-Limit"),
         )
-
+        response.headers["X-Request-ID"] = request_id
         return response

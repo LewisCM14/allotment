@@ -26,7 +26,10 @@ from app.api.middleware.error_codes import (
     USER_EMAIL_VERIFICATION_FAILED,
     USER_NOT_FOUND,
 )
-from app.api.middleware.logging_middleware import sanitize_error_message
+from app.api.middleware.logging_middleware import (
+    SENSITIVE_FIELDS,
+    sanitize_error_message,
+)
 
 logger = structlog.get_logger()
 
@@ -137,16 +140,20 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
     def _format_validation_errors(
         self, errors: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
-        """Format validation errors for consistent response structure"""
+        """Format validation errors with additional context."""
         formatted = []
         for error in errors:
+            sanitized_ctx = {
+                key: "[REDACTED]" if key.lower() in SENSITIVE_FIELDS else value
+                for key, value in error.get("ctx", {}).items()
+            }
             formatted.append(
                 {
                     "msg": error.get("msg", "Validation error"),
                     "loc": error.get("loc", []),
                     "type": error.get("type", "validation_error"),
                     "code": GENERAL_VALIDATION_ERROR,
-                    "ctx": error.get("ctx", {}),
+                    "ctx": sanitized_ctx,
                 }
             )
         return formatted
@@ -210,6 +217,7 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                         }
                     ]
                 },
+                headers={"X-Request-ID": request_id},
             )
 
         except Exception as exc:
@@ -235,4 +243,5 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                         }
                     ]
                 },
+                headers={"X-Request-ID": request_id},
             )

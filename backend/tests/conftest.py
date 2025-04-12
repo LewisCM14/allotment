@@ -4,6 +4,7 @@ Testing Configuration
 
 import asyncio
 import os
+import stat
 
 import pytest
 from fastapi.testclient import TestClient
@@ -24,6 +25,11 @@ TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
 # Remove test database file if it exists
 if os.path.exists(TEST_DB_FILE):
     os.unlink(TEST_DB_FILE)
+
+# Ensure the directory and file have the correct permissions
+os.umask(0)
+open(TEST_DB_FILE, "a").close()
+os.chmod(TEST_DB_FILE, stat.S_IWUSR | stat.S_IRUSR)
 
 engine = create_async_engine(
     TEST_DATABASE_URL,
@@ -67,7 +73,7 @@ def event_loop_policy():
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db():
-    """Create tables once at session start."""
+    """Create tables once at session start and clean up after tests."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
@@ -86,14 +92,16 @@ async def setup_test_db():
         await _db_session.close()
         _db_session = None
 
-    # Close and remove the test database
+    # Drop all tables and dispose of the engine
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
     await engine.dispose()
 
+    # Ensure the test database file is removed
     if os.path.exists(TEST_DB_FILE):
         os.unlink(TEST_DB_FILE)
+        print(f"Removed test database file: {TEST_DB_FILE}")
 
 
 @pytest.fixture(scope="function", autouse=True)
