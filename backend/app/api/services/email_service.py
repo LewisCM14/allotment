@@ -5,7 +5,7 @@ Email Service
 - Centralizes email configuration
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import structlog
 from aiosmtplib import SMTPException
@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
 
-from app.api.core.auth import create_access_token
+from app.api.core.auth import create_token
 from app.api.core.config import settings
 from app.api.core.logging import log_timing
 from app.api.middleware.logging_middleware import (
@@ -62,10 +62,10 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
 
     try:
         with log_timing("email_verification", request_id=log_context["request_id"]):
-            # Generate JWT token valid for 1 hour
-            token = create_access_token(
+            token = create_token(
                 user_id=user_id,
-                expires_delta=timedelta(hours=1),
+                expiry_seconds=3600,  # 1 hour
+                token_type="access",
             )
 
             verification_link = f"{settings.FRONTEND_URL}/verify-email?token=[REDACTED]"
@@ -188,4 +188,79 @@ async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send test email: {sanitized_error}",
+        )
+
+
+async def send_password_reset_email(
+    user_email: EmailStr, reset_url: str
+) -> dict[str, str]:
+    """
+    Send a password reset link to the user.
+
+    Args:
+        user_email: The user's email address
+        reset_url: The password reset URL with token
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        HTTPException: If email sending fails
+    """
+    log_context = {
+        "email": user_email,
+        "request_id": request_id_ctx_var.get(),
+        "operation": "send_password_reset_email",
+    }
+
+    try:
+        with log_timing("email_password_reset", request_id=log_context["request_id"]):
+            message = MessageSchema(
+                subject="Password Reset - Allotment Service",
+                recipients=[user_email],
+                body=f"""Dear Allotment Member,
+
+                You recently requested to reset your password. Click the link below to set a new password:
+
+                {reset_url}
+
+                This password reset link will expire in 1 hour for security purposes. 
+                If you did not request a password reset, please ignore this email or contact support if you have concerns.
+
+                Best regards,
+                The Allotment Team
+
+                ------------------------------
+                This is an automated message. Please do not reply directly to this email.
+                """,
+                subtype=MessageType.plain,
+            )
+
+            await mail_client.send_message(message)
+            logger.info("Password reset email sent successfully", **log_context)
+            return {"message": "Password reset email sent successfully"}
+
+    except (SMTPException, ConnectionError) as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Email sending failed",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+            **log_context,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Email service is temporarily unavailable",
+        )
+    except Exception as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.exception(
+            "Unhandled exception during email sending",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+            **log_context,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to send password reset email",
         )

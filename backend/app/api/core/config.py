@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
+    RESET_TOKEN_EXPIRE_MINUTES: int
     PRIVATE_KEY_PATH: str
     PUBLIC_KEY_PATH: str
     PRIVATE_KEY: bytes | None = None
@@ -149,6 +150,9 @@ try:
         ),
         REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(
             "refresh_token_expire_days", 7
+        ),
+        RESET_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
+            "reset_token_expire_minutes", 60
         ),
         PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
             "private_key_path", "private.pem"

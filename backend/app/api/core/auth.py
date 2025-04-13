@@ -7,7 +7,7 @@ Authentication Utilities
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Optional, cast
+from typing import Literal, Optional, cast
 
 import bcrypt
 import structlog
@@ -24,45 +24,66 @@ from app.api.models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 logger = structlog.get_logger()
 
+TokenType = Literal["access", "refresh", "reset"]
 
-def create_access_token(user_id: str, expires_delta: Optional[timedelta] = None) -> str:
-    """Generate JWT access token for authenticated user.
+
+def create_token(
+    user_id: str,
+    expiry_seconds: Optional[int] = None,
+    token_type: TokenType = "access",
+    expires_delta: Optional[timedelta] = None,
+) -> str:
+    """Generate a JWT token.
 
     Args:
         user_id: The user's ID to encode in the token
-        expires_delta: Optional token expiry override
+        expiry_seconds: Token expiration time in seconds (takes precedence over expires_delta)
+        token_type: Type of the token ("access", "refresh", "reset")
+        expires_delta: Optional token expiry as timedelta (used if expiry_seconds not provided)
 
     Returns:
-        str: Encoded JWT access token
+        str: Encoded JWT token
     """
     try:
-        if expires_delta:
-            expire = datetime.now(UTC) + expires_delta
+        if expiry_seconds is not None:
+            expire_seconds = expiry_seconds
+        elif expires_delta:
+            expire_seconds = int(expires_delta.total_seconds())
         else:
-            expire = datetime.now(UTC) + timedelta(
-                minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-            )
+            if token_type == "access":
+                expire_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+            elif token_type == "refresh":
+                expire_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
+            elif token_type == "reset":
+                expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
+
+        expire = datetime.now(UTC) + timedelta(seconds=expire_seconds)
 
         payload = {
             "sub": user_id,
             "exp": expire,
             "iat": datetime.now(UTC),
-            "jti": str(uuid.uuid4()),  # Add a unique token ID
+            "jti": str(uuid.uuid4()),
+            "type": token_type,
         }
+
         token = jwt.encode(
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
         )
+
         logger.info(
-            "Access token created",
+            "Token created",
             user_id=user_id,
+            token_type=token_type,
             expires_at=expire.isoformat(),
-            token_type="access",
+            expires_in_seconds=expire_seconds,
         )
+
         return cast(str, token.decode("utf-8"))
     except Exception as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
-            "Failed to create access token",
+            f"Failed to create {token_type} token",
             user_id=user_id,
             error=sanitized_error,
             error_type=type(e).__name__,
@@ -175,37 +196,3 @@ def get_current_user(
 
     logger.info("Token validated successfully", user_id=user_id)
     return user
-
-
-def create_refresh_token(user_id: str) -> str:
-    """Generate JWT refresh token with longer expiration.
-
-    Args:
-        user_id: The user's ID to encode in the token
-
-    Returns:
-        str: Encoded JWT refresh token
-    """
-    try:
-        expires_delta = timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        expire = datetime.now(UTC) + expires_delta
-        payload = {
-            "sub": user_id,
-            "exp": expire,
-            "iat": datetime.now(UTC),
-            "type": "refresh",
-            "jti": str(uuid.uuid4()),
-        }
-        token = jwt.encode(
-            {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
-        )
-        logger.info(
-            "Refresh token created",
-            user_id=user_id,
-            expires_at=expire.isoformat(),
-            expires_in_days=settings.REFRESH_TOKEN_EXPIRE_DAYS,
-        )
-        return cast(str, token.decode("utf-8"))
-    except Exception as e:
-        logger.error("Failed to create refresh token", user_id=user_id, error=str(e))
-        raise

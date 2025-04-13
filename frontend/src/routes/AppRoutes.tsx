@@ -6,6 +6,9 @@ import PublicRoute from "./PublicRoute";
 
 const LoginForm = React.lazy(() => import("../features/user/LoginForm"));
 const RegisterForm = React.lazy(() => import("../features/user/RegisterForm"));
+const ResetPassword = React.lazy(
+	() => import("../features/user/ResetPassword"),
+);
 const EmailVerificationPage = React.lazy(
 	() => import("../features/user/EmailVerification"),
 );
@@ -31,6 +34,14 @@ const AppRoutes = () => {
 					element={
 						<PublicRoute>
 							<RegisterForm />
+						</PublicRoute>
+					}
+				/>
+				<Route
+					path="/reset-password"
+					element={
+						<PublicRoute>
+							<ResetPassword />
 						</PublicRoute>
 					}
 				/>

@@ -8,12 +8,15 @@ from typing import Any, Dict
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Body, Depends, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import create_access_token, create_refresh_token, verify_password
+from app.api.core.auth import (
+    create_token,
+    verify_password,
+)
 from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
@@ -38,7 +41,10 @@ from app.api.middleware.logging_middleware import (
 from app.api.models import User
 from app.api.schemas import TokenResponse, UserLogin
 from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
-from app.api.services.email_service import send_verification_email
+from app.api.services.email_service import (
+    send_password_reset_email,
+    send_verification_email,
+)
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
@@ -127,8 +133,12 @@ async def create_user(
             )
 
         with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            refresh_token = create_refresh_token(user_id=str(new_user.user_id))
-            access_token = create_access_token(user_id=str(new_user.user_id))
+            access_token = create_token(
+                user_id=str(new_user.user_id), token_type="access"
+            )
+            refresh_token = create_token(
+                user_id=str(new_user.user_id), token_type="refresh"
+            )
             logger.debug("Tokens generated successfully", **log_context)
 
         logger.info("User successfully registered", **log_context)
@@ -219,8 +229,12 @@ async def login(
                     raise AuthenticationError("Invalid email or password")
 
         with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            access_token = create_access_token(user_id=str(db_user.user_id))
-            refresh_token = create_refresh_token(user_id=str(db_user.user_id))
+            access_token = create_token(
+                user_id=str(db_user.user_id), token_type="access"
+            )
+            refresh_token = create_token(
+                user_id=str(db_user.user_id), token_type="refresh"
+            )
             logger.debug("Tokens generated successfully", **log_context)
 
         logger.info("Login successful", **log_context)
@@ -336,8 +350,8 @@ async def refresh_token(
     )
     log_context["email"] = user.user_email
 
-    access_token = create_access_token(user_id=str(user.user_id))
-    new_refresh_token = create_refresh_token(user_id=str(user.user_id))
+    access_token = create_token(user_id=str(user.user_id), token_type="access")
+    new_refresh_token = create_token(user_id=str(user.user_id), token_type="refresh")
 
     logger.info("Tokens refreshed successfully", **log_context)
     return TokenResponse(
@@ -524,3 +538,121 @@ async def check_verification_status(
         "is_email_verified": user.is_email_verified,
         "user_id": str(user.user_id),
     }
+
+
+@router.post(
+    "/request-password-reset",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Request password reset",
+    description="Sends a password reset link to the user's email",
+)
+@limiter.limit("5/minute")
+async def request_password_reset(
+    request: Request,
+    user_email: EmailStr = Body(..., embed=True),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, str]:
+    """
+    Request a password reset link.
+
+    Args:
+        request: The incoming request
+        user_email: User's email address
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        UserNotFoundError: If the email is not found
+    """
+    log_context = {
+        "email": user_email,
+        "request_id": request_id_ctx_var.get(),
+        "operation": "request_password_reset",
+    }
+
+    logger.debug("Password reset requested", **log_context)
+
+    try:
+        user = await validate_user_exists(
+            db_session=db,
+            user_model=User,
+            user_email=user_email,
+            log_context=log_context,
+        )
+        log_context["user_id"] = str(user.user_id)
+        log_context["is_verified"] = user.is_email_verified
+
+        if not user.is_email_verified:
+            logger.info(
+                "Password reset requested for unverified email - sending verification email instead",
+                **log_context,
+            )
+
+            async with safe_operation(
+                "sending verification email",
+                log_context,
+                status.HTTP_500_INTERNAL_SERVER_ERROR,
+            ):
+                with log_timing(
+                    "send_verification_email", request_id=log_context["request_id"]
+                ):
+                    await send_verification_email(
+                        user_email=user_email, user_id=str(user.user_id)
+                    )
+
+                    return {
+                        "message": "Your email is not verified. We've sent you a verification email instead."
+                    }
+
+        async with safe_operation(
+            "sending password reset email",
+            log_context,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        ):
+            with log_timing(
+                "send_password_reset_email", request_id=log_context["request_id"]
+            ):
+                token = create_token(
+                    user_id=str(user.user_id),
+                    token_type="reset",
+                )
+
+                reset_url = f"{settings.FRONTEND_URL}/set-new-password?token={token}"
+
+                await send_password_reset_email(
+                    user_email=user_email, reset_url=reset_url
+                )
+
+                logger.info(
+                    "Password reset email sent",
+                    **log_context,
+                )
+
+                return {
+                    "message": "If your email exists in our system and is verified, you will receive a password reset link shortly."
+                }
+
+    except BaseApplicationError as exc:
+        logger.warning(
+            f"{type(exc).__name__}",
+            error=str(exc),
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+            **log_context,
+        )
+        raise
+    except Exception as exc:
+        sanitized_error = sanitize_error_message(str(exc))
+        logger.error(
+            "Unhandled exception during password reset request",
+            error=sanitized_error,
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise BusinessLogicError(
+            message="An unexpected error occurred during password reset request",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )

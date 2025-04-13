@@ -6,8 +6,7 @@ import bcrypt
 import pytest
 
 from app.api.core.auth import (
-    verify_password,
-    # create_access_token
+    verify_password
 )
 
 
@@ -51,11 +50,11 @@ async def test_password_hashing():
 
 # def test_expired_token(client):
 #     """Test that an expired JWT token is rejected."""
-#     expired_token = create_access_token(user_id="1234", expires_delta=timedelta(seconds=1))
+#     expired_token = create_token(user_id="1234", expires_delta=timedelta(seconds=1))
 
 #     time.sleep(2)
 
-#     response = client.get("/protected-route", headers={"Authorization": f"Bearer {expired_token}"})  # update to a auth route once in use
+#     response = client.get("/api/v1/grow-guide/protected-route", headers={"Authorization": f"Bearer {expired_token}"})
 
 #     assert response.status_code == 401
-#     assert response.json()["detail"] == "Invalid authentication credentials"
+#     assert "detail" in response.json()

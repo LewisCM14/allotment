@@ -12,6 +12,20 @@ export const AUTH_ERRORS = {
 	EMAIL_EXISTS: "This email is already registered. Try logging in instead.",
 	REGISTRATION_FAILED: "Registration failed. Please try again.",
 
+	// Password reset specific errors
+	EMAIL_NOT_FOUND: "Email address not found. Please check and try again.",
+	EMAIL_NOT_VERIFIED:
+		"Your email is not verified. A verification link has been sent.",
+	RESET_FAILED: "Password reset failed. Please try again later.",
+
+	// Email verification errors
+	VERIFICATION_FAILED:
+		"Email verification failed. Please request a new verification link.",
+	VERIFICATION_TOKEN_EXPIRED:
+		"The verification link has expired. Please request a new one.",
+	VERIFICATION_TOKEN_INVALID:
+		"Invalid verification link. Please request a new one.",
+
 	// Common errors
 	SERVER_ERROR: "Server error. Please try again later.",
 	NETWORK_ERROR: "Network error. Please check your connection and try again.",
@@ -49,16 +63,46 @@ export const registerUser = async (
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			if (error.response?.status === 409) {
-				throw new Error(AUTH_ERRORS.EMAIL_EXISTS);
-			}
-			if (error.response?.status === 400) {
-				throw new Error(
-					error.response?.data?.detail || AUTH_ERRORS.REGISTRATION_FAILED,
-				);
+			if (error.response) {
+				switch (error.response.status) {
+					case 409:
+						throw new Error(AUTH_ERRORS.EMAIL_EXISTS);
+					case 400:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.REGISTRATION_FAILED,
+						);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+								AUTH_ERRORS.REGISTRATION_FAILED,
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			} else if (error.request) {
+				// Request was made but no response received
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
 		return handleApiError(error, AUTH_ERRORS.REGISTRATION_FAILED);
+	}
+};
+
+// Helper function to format validation errors from the API
+const formatValidationErrors = (details: any): string => {
+	if (!details || !Array.isArray(details)) return "";
+
+	try {
+		const messages = details
+			.map((err: any) => err.msg || "Validation error")
+			.join(", ");
+		return messages || "Validation failed. Please check your inputs.";
+	} catch (e) {
+		return "Validation failed. Please check your inputs.";
 	}
 };
 
@@ -128,8 +172,26 @@ export const loginUser = async (
 		};
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			if (error.response?.status === 401) {
-				throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
+			if (error.response) {
+				switch (error.response.status) {
+					case 401:
+						throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
+					case 403:
+						throw new Error(AUTH_ERRORS.ACCOUNT_LOCKED);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+								AUTH_ERRORS.INVALID_CREDENTIALS,
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			} else if (error.request) {
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
 		return handleApiError(error, AUTH_ERRORS.UNKNOWN_ERROR);
@@ -147,19 +209,34 @@ export const verifyEmail = async (
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			if (error.response?.status === 400) {
-				throw new Error(
-					error.response.data?.detail || "Invalid verification token",
-				);
-			}
-			if (error.response?.status === 404) {
-				throw new Error("Verification token not found");
-			}
-			if (error.response?.status === 410) {
-				throw new Error("Verification token has expired");
+			if (error.response) {
+				switch (error.response.status) {
+					case 400:
+						throw new Error(
+							error.response.data?.detail ||
+								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
+						);
+					case 404:
+						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_INVALID);
+					case 410:
+						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+								AUTH_ERRORS.VERIFICATION_FAILED,
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			} else if (error.request) {
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
-		return handleApiError(error, "Failed to verify email");
+		return handleApiError(error, AUTH_ERRORS.VERIFICATION_FAILED);
 	}
 };
 
@@ -175,10 +252,82 @@ export const requestVerificationEmail = async (
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
-			if (error.response?.status === 404) {
-				throw new Error("Email address not found");
+			if (error.response) {
+				switch (error.response.status) {
+					case 404:
+						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+								AUTH_ERRORS.VERIFICATION_FAILED,
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					case 503:
+						throw new Error(
+							"Email service is temporarily unavailable. Please try again later.",
+						);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			} else if (error.request) {
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
 		return handleApiError(error, "Failed to send verification email");
+	}
+};
+
+export const requestPasswordReset = async (
+	email: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			`${import.meta.env.VITE_API_VERSION}/user/request-password-reset`,
+			{ user_email: email },
+		);
+		return response.data;
+	} catch (error) {
+		if (axios.isAxiosError(error)) {
+			if (error.response) {
+				switch (error.response.status) {
+					case 404:
+						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
+					case 400:
+						// Check for specific message about unverified email
+						const detail = error.response.data?.detail;
+						if (
+							detail &&
+							typeof detail === "string" &&
+							detail.includes("not verified")
+						) {
+							throw new Error(AUTH_ERRORS.EMAIL_NOT_VERIFIED);
+						}
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.RESET_FAILED,
+						);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+								AUTH_ERRORS.RESET_FAILED,
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					case 503:
+						throw new Error(
+							"Email service is temporarily unavailable. Please try again later.",
+						);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			} else if (error.request) {
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
+			}
+		}
+		return handleApiError(error, AUTH_ERRORS.RESET_FAILED);
 	}
 };

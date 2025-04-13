@@ -146,6 +146,14 @@ function LoginForm(_: React.ComponentProps<"div">) {
 										{errors.password.message}
 									</p>
 								)}
+								<div className="text-sm text-right">
+									<Link
+										to="/reset-password"
+										className="text-sm text-primary hover:underline underline-offset-4"
+									>
+										Forgot your password?
+									</Link>
+								</div>
 							</div>
 							<div className="flex flex-col gap-3">
 								<Button

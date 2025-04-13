@@ -346,9 +346,9 @@ class TestVerifyEmail:
         user_id = register_response.json()["user_id"]
 
         # Generate a valid JWT token for email verification
-        from app.api.core.auth import create_access_token
+        from app.api.core.auth import create_token
 
-        token = create_access_token(user_id=user_id)
+        token = create_token(user_id=user_id)
 
         verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
         assert verify_response.status_code == status.HTTP_200_OK
@@ -470,9 +470,9 @@ class TestEmailVerificationStatus:
         user_id = register_response.json()["user_id"]
 
         # Generate a valid JWT token for email verification
-        from app.api.core.auth import create_access_token
+        from app.api.core.auth import create_token
 
-        token = create_access_token(user_id=user_id)
+        token = create_token(user_id=user_id)
 
         verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
         assert verify_response.status_code == status.HTTP_200_OK
