@@ -3,14 +3,17 @@ User Repository
 - Encapsulates database operations for User model
 """
 
+from typing import Optional
 from uuid import UUID
 
 import structlog
 from fastapi import HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import translate_db_exceptions
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
@@ -94,4 +97,78 @@ class UserRepository:
                 new_status=True,
                 **log_context,
             )
+        return user
+
+    @translate_db_exceptions
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email address.
+
+        Args:
+            email: The user's email address
+
+        Returns:
+            User object or None if not found
+        """
+        log_context = {
+            "email": email,
+            "request_id": self.request_id,
+            "operation": "get_user_by_email",
+        }
+
+        logger.debug("Fetching user by email", **log_context)
+
+        with log_timing(
+            "db_get_user_by_email", request_id=self.request_id, **log_context
+        ):
+            query = select(User).where(User.user_email == email)
+            result = await self.db.execute(query)
+            user = result.scalar_one_or_none()
+
+            if user:
+                log_context["user_id"] = str(user.user_id)
+                logger.debug("User found", user_found=True, **log_context)
+            else:
+                logger.debug("User not found", user_found=False, **log_context)
+
+        return user
+
+    @translate_db_exceptions
+    async def update_user_password(self, user_id: str, new_password: str) -> User:
+        """Update a user's password.
+
+        Args:
+            user_id: The user's ID
+            new_password: The new password
+
+        Returns:
+            Updated User object
+
+        Raises:
+            HTTPException: If the user is not found
+        """
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "update_user_password",
+        }
+
+        logger.debug("Updating user password", **log_context)
+
+        with log_timing("db_update_password", **log_context):
+            try:
+                user_uuid = UUID(user_id)
+            except ValueError as e:
+                logger.error("Invalid UUID format", error=str(e), **log_context)
+                raise InvalidTokenError("Invalid user ID format")
+
+            user = await self.db.get(User, user_uuid)
+            if not user:
+                logger.warning("User not found for password reset", **log_context)
+                raise InvalidTokenError("User not found")
+
+            log_context["email"] = user.user_email
+            user.set_password(new_password)
+
+            logger.info("User password updated", **log_context)
+
         return user

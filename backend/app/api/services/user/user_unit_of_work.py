@@ -6,14 +6,23 @@ User Unit of Work
 """
 
 from types import TracebackType
-from typing import Optional, Type
+from typing import Any, Dict, Optional, Type
 
 import structlog
+from authlib.jose import jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.core.auth import (
+    create_token,
+)
+from app.api.core.config import settings
 from app.api.core.logging import log_timing
 from app.api.factories.user_factory import UserFactory
-from app.api.middleware.error_handler import translate_db_exceptions
+from app.api.middleware.error_handler import (
+    translate_db_exceptions,
+    translate_token_exceptions,
+)
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -21,6 +30,10 @@ from app.api.middleware.logging_middleware import (
 from app.api.models import User
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas.user.user_schema import UserCreate
+from app.api.services.email_service import (
+    send_password_reset_email,
+    send_verification_email,
+)
 
 logger = structlog.get_logger()
 
@@ -126,3 +139,129 @@ class UserUnitOfWork:
             )
 
             return user
+
+    @translate_db_exceptions
+    async def request_password_reset(self, user_email: str) -> Dict[str, str]:
+        """Process a password reset request.
+
+        Args:
+            user_email: The email address to send the reset link to
+
+        Returns:
+            Dict with status and message
+        """
+        log_context = {
+            "email": user_email,
+            "request_id": self.request_id,
+            "operation": "request_password_reset_uow",
+        }
+
+        logger.debug("Processing password reset request via UOW", **log_context)
+        user = await self.user_repo.get_user_by_email(user_email)
+
+        if not user:
+            logger.warning("User not found for password reset", **log_context)
+            return {
+                "status": "no_user",
+                "message": "If your email exists in our system and is verified, you will receive a password reset link shortly.",
+            }
+
+        log_context["user_id"] = str(user.user_id)
+        log_context["is_verified"] = str(
+            user.is_email_verified
+        )  # Convert boolean to string
+
+        if not user.is_email_verified:
+            logger.info(
+                "Password reset requested for unverified email - sending verification email instead",
+                **log_context,
+            )
+            with log_timing("send_verification_email", **log_context):
+                await send_verification_email(
+                    user_email=user_email, user_id=str(user.user_id)
+                )
+                return {
+                    "status": "unverified",
+                    "message": "Your email is not verified. We've sent you a verification email instead.",
+                }
+
+        with log_timing("create_reset_token", **log_context):
+            token = create_token(
+                user_id=str(user.user_id),
+                token_type="reset",
+            )
+            reset_url = f"{settings.FRONTEND_URL}/set-new-password?token={token}"
+
+            await send_password_reset_email(user_email=user_email, reset_url=reset_url)
+            logger.info("Password reset email sent", **log_context)
+
+            return {
+                "status": "success",
+                "message": "If your email exists in our system and is verified, you will receive a password reset link shortly.",
+            }
+
+    @translate_db_exceptions
+    async def reset_password(self, token: str, new_password: str) -> None:
+        """Reset a user's password with a token.
+
+        Args:
+            token: The reset token
+            new_password: The new password
+
+        Raises:
+            InvalidTokenError: If the token is invalid
+            ValidationError: If the password doesn't meet requirements
+        """
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "reset_password_uow",
+        }
+
+        logger.debug("Processing password reset via UOW", **log_context)
+
+        payload = await self._decode_token(token, log_context)
+        if payload.get("type") != "reset":
+            logger.warning(
+                "Invalid token type for password reset",
+                expected="reset",
+                received=payload.get("type"),
+                **log_context,
+            )
+            raise InvalidTokenError("Invalid token type: expected reset token")
+
+        user_id = payload.get("sub")
+        if not user_id:
+            logger.warning("Missing subject in reset token", **log_context)
+            raise InvalidTokenError("Invalid token - no user ID found")
+
+        log_context["user_id"] = user_id
+
+        UserFactory.validate_password(new_password)
+
+        user = await self.user_repo.update_user_password(user_id, new_password)
+
+        log_context["email"] = user.user_email
+        logger.info("Password reset successful", **log_context)
+
+    @translate_token_exceptions
+    async def _decode_token(
+        self, token: str, log_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Decode and validate a JWT token.
+
+        Args:
+            token: The JWT token to decode
+            log_context: Logging context
+
+        Returns:
+            The decoded token payload
+
+        Raises:
+            InvalidTokenError: If token is invalid
+        """
+        decoded = jwt.decode(
+            token,
+            settings.PUBLIC_KEY,
+            claims_options={"exp": {"essential": True}},
+        )
+        return dict(decoded)

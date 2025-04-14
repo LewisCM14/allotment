@@ -11,11 +11,11 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { z } from "zod";
-import { requestPasswordReset } from "./UserService";
+import { AUTH_ERRORS, requestPasswordReset } from "./UserService";
 
 const resetSchema = z.object({
 	email: z
@@ -40,6 +40,19 @@ export default function ResetPassword() {
 	const [success, setSuccess] = useState<string>("");
 	const [isOffline, setIsOffline] = useState(!navigator.onLine);
 
+	useEffect(() => {
+		const handleOnline = () => setIsOffline(false);
+		const handleOffline = () => setIsOffline(true);
+
+		window.addEventListener("online", handleOnline);
+		window.addEventListener("offline", handleOffline);
+
+		return () => {
+			window.removeEventListener("online", handleOnline);
+			window.removeEventListener("offline", handleOffline);
+		};
+	}, []);
+
 	const onSubmit = async (data: ResetFormData) => {
 		try {
 			setError("");
@@ -55,11 +68,7 @@ export default function ResetPassword() {
 			const result = await requestPasswordReset(data.email);
 			setSuccess(result.message);
 		} catch (err) {
-			if (err instanceof Error) {
-				setError(err.message);
-			} else {
-				setError("An unexpected error occurred. Please try again.");
-			}
+			setError(AUTH_ERRORS.format(err));
 			console.error("Password reset request failed", err);
 		}
 	};

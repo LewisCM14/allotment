@@ -14,6 +14,9 @@ const EmailVerificationPage = React.lazy(
 );
 const UserProfile = React.lazy(() => import("../features/user/UserProfile"));
 const NotFound = React.lazy(() => import("../components/NotFound"));
+const SetNewPassword = React.lazy(
+	() => import("../features/user/SetNewPassword"),
+);
 // const HomePage = React.lazy(() => import("../features/home/HomePage"));
 
 const AppRoutes = () => {
@@ -42,6 +45,14 @@ const AppRoutes = () => {
 					element={
 						<PublicRoute>
 							<ResetPassword />
+						</PublicRoute>
+					}
+				/>
+				<Route
+					path="/set-new-password"
+					element={
+						<PublicRoute>
+							<SetNewPassword />
 						</PublicRoute>
 					}
 				/>

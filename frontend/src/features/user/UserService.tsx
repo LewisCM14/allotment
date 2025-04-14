@@ -74,7 +74,7 @@ export const registerUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.REGISTRATION_FAILED,
+							AUTH_ERRORS.REGISTRATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -83,8 +83,8 @@ export const registerUser = async (
 							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
-			} else if (error.request) {
-				// Request was made but no response received
+			}
+			if (error.request) {
 				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
@@ -92,13 +92,21 @@ export const registerUser = async (
 	}
 };
 
+interface IValidationErrorDetail {
+	msg?: string;
+	loc?: string[];
+	type?: string;
+}
+
 // Helper function to format validation errors from the API
-const formatValidationErrors = (details: any): string => {
+const formatValidationErrors = (
+	details: IValidationErrorDetail[] | unknown,
+): string => {
 	if (!details || !Array.isArray(details)) return "";
 
 	try {
 		const messages = details
-			.map((err: any) => err.msg || "Validation error")
+			.map((err: IValidationErrorDetail) => err.msg || "Validation error")
 			.join(", ");
 		return messages || "Validation failed. Please check your inputs.";
 	} catch (e) {
@@ -181,7 +189,7 @@ export const loginUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.INVALID_CREDENTIALS,
+							AUTH_ERRORS.INVALID_CREDENTIALS,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -190,7 +198,8 @@ export const loginUser = async (
 							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
-			} else if (error.request) {
+			}
+			if (error.request) {
 				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
@@ -214,7 +223,7 @@ export const verifyEmail = async (
 					case 400:
 						throw new Error(
 							error.response.data?.detail ||
-								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
+							AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
 						);
 					case 404:
 						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_INVALID);
@@ -223,7 +232,7 @@ export const verifyEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
+							AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -232,7 +241,8 @@ export const verifyEmail = async (
 							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
-			} else if (error.request) {
+			}
+			if (error.request) {
 				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
@@ -259,7 +269,7 @@ export const requestVerificationEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
+							AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -272,7 +282,8 @@ export const requestVerificationEmail = async (
 							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
-			} else if (error.request) {
+			}
+			if (error.request) {
 				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
@@ -295,8 +306,7 @@ export const requestPasswordReset = async (
 				switch (error.response.status) {
 					case 404:
 						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
-					case 400:
-						// Check for specific message about unverified email
+					case 400: {
 						const detail = error.response.data?.detail;
 						if (
 							detail &&
@@ -308,10 +318,11 @@ export const requestPasswordReset = async (
 						throw new Error(
 							error.response.data?.detail || AUTH_ERRORS.RESET_FAILED,
 						);
+					}
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.RESET_FAILED,
+							AUTH_ERRORS.RESET_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -324,10 +335,50 @@ export const requestPasswordReset = async (
 							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
-			} else if (error.request) {
+			}
+			if (error.request) {
 				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
 			}
 		}
 		return handleApiError(error, AUTH_ERRORS.RESET_FAILED);
+	}
+};
+
+export const resetPassword = async (
+	token: string,
+	newPassword: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			`${import.meta.env.VITE_API_VERSION}/user/reset-password`,
+			{ token, new_password: newPassword },
+		);
+		return response.data;
+	} catch (error) {
+		if (axios.isAxiosError(error)) {
+			if (error.response) {
+				switch (error.response.status) {
+					case 400:
+						throw new Error(
+							error.response.data?.detail || "Invalid or expired token",
+						);
+					case 422:
+						throw new Error(
+							formatValidationErrors(error.response.data?.detail) ||
+							"Invalid password format",
+						);
+					case 500:
+						throw new Error(AUTH_ERRORS.SERVER_ERROR);
+					default:
+						throw new Error(
+							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+						);
+				}
+			}
+			if (error.request) {
+				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
+			}
+		}
+		return handleApiError(error, "Failed to reset password");
 	}
 };

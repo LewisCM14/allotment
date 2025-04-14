@@ -143,6 +143,50 @@ async def safe_operation(
         )
 
 
+def handle_route_exceptions(
+    operation: str,
+    log_context: Dict[str, Any],
+    error: Exception,
+    default_message: str = "An unexpected error occurred",
+    status_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
+) -> None:
+    """
+    Standardized exception handler for API routes
+
+    Args:
+        operation: Name of the operation being performed
+        log_context: Logging context dictionary
+        error: The exception that was raised
+        default_message: Default message for BusinessLogicError
+        status_code: Status code to use for BusinessLogicError
+
+    Raises:
+        BaseApplicationError: Re-raises if error is a BaseApplicationError
+        BusinessLogicError: For all other errors
+    """
+    if isinstance(error, BaseApplicationError):
+        logger.warning(
+            f"{operation} failed: {type(error).__name__}",
+            error=str(error),
+            error_code=error.error_code,
+            status_code=error.status_code,
+            **log_context,
+        )
+        raise
+    else:
+        sanitized_error = sanitize_error_message(str(error))
+        logger.error(
+            f"Unhandled exception during {operation}",
+            error=sanitized_error,
+            error_type=type(error).__name__,
+            **log_context,
+        )
+        raise BusinessLogicError(
+            message=default_message,
+            status_code=status_code,
+        )
+
+
 async def validate_user_exists(
     db_session: AsyncSession,
     user_model: Any,

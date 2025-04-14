@@ -21,6 +21,7 @@ from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
+from app.api.factories.user_factory import ValidationError
 from app.api.middleware.error_handler import (
     safe_operation,
     translate_token_exceptions,
@@ -42,7 +43,6 @@ from app.api.models import User
 from app.api.schemas import TokenResponse, UserLogin
 from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
 from app.api.services.email_service import (
-    send_password_reset_email,
     send_verification_email,
 )
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
@@ -82,9 +82,7 @@ async def create_user(
         "request_id": request_id_ctx_var.get(),
         "operation": "user_registration",
     }
-
     logger.info("Attempting user registration", **log_context)
-
     try:
         with log_timing("check_existing_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user.user_email)
@@ -94,7 +92,6 @@ async def create_user(
                     "Registration failed - email already exists", **log_context
                 )
                 raise EmailAlreadyRegisteredError()
-
         new_user = None
         async with safe_operation(
             "user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -104,7 +101,6 @@ async def create_user(
             ):
                 async with UserUnitOfWork(db) as uow:
                     new_user = await uow.create_user(user)
-
             if not new_user or not new_user.user_id:
                 logger.error("User creation failed", **log_context)
                 raise BusinessLogicError(
@@ -112,7 +108,6 @@ async def create_user(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 )
             log_context["user_id"] = str(new_user.user_id)
-
         try:
             with log_timing(
                 "send_verification_email", request_id=log_context["request_id"]
@@ -131,7 +126,6 @@ async def create_user(
                 error_type=type(email_error).__name__,
                 **log_context,
             )
-
         with log_timing("generate_tokens", request_id=log_context["request_id"]):
             access_token = create_token(
                 user_id=str(new_user.user_id), token_type="access"
@@ -140,9 +134,7 @@ async def create_user(
                 user_id=str(new_user.user_id), token_type="refresh"
             )
             logger.debug("Tokens generated successfully", **log_context)
-
         logger.info("User successfully registered", **log_context)
-
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -150,10 +142,9 @@ async def create_user(
             is_email_verified=new_user.is_email_verified,
             user_id=str(new_user.user_id),
         )
-
     except BaseApplicationError as exc:
         logger.warning(
-            f"{type(exc).__name__}",
+            f"User registration failed: {type(exc).__name__}",
             error=str(exc),
             error_code=exc.error_code,
             status_code=exc.status_code,
@@ -203,9 +194,7 @@ async def login(
         "operation": "user_login",
         "email": user.user_email,
     }
-
     logger.info("Login attempt", **log_context)
-
     try:
         db_user = await validate_user_exists(
             db_session=db,
@@ -213,9 +202,7 @@ async def login(
             user_email=user.user_email,
             log_context=log_context,
         )
-
         log_context["user_id"] = str(db_user.user_id)
-
         async with safe_operation("user_authentication", log_context):
             with log_timing(
                 "password_verification", request_id=log_context["request_id"]
@@ -227,7 +214,6 @@ async def login(
                         **log_context,
                     )
                     raise AuthenticationError("Invalid email or password")
-
         with log_timing("generate_tokens", request_id=log_context["request_id"]):
             access_token = create_token(
                 user_id=str(db_user.user_id), token_type="access"
@@ -236,9 +222,7 @@ async def login(
                 user_id=str(db_user.user_id), token_type="refresh"
             )
             logger.debug("Tokens generated successfully", **log_context)
-
         logger.info("Login successful", **log_context)
-
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,
@@ -247,10 +231,9 @@ async def login(
             is_email_verified=db_user.is_email_verified,
             user_id=str(db_user.user_id),
         )
-
     except BaseApplicationError as exc:
         logger.warning(
-            f"{type(exc).__name__}",
+            f"Login failed: {type(exc).__name__}",
             error=str(exc),
             error_code=exc.error_code,
             status_code=exc.status_code,
@@ -301,9 +284,7 @@ async def refresh_token(
         "request_id": request_id_ctx_var.get(),
         "operation": "token_refresh",
     }
-
     logger.debug("Token refresh requested", **log_context)
-
     # First validate token format before decoding to catch malformed tokens
     token_parts = refresh_data.refresh_token.split(".")
     if len(token_parts) != 3:
@@ -316,10 +297,9 @@ async def refresh_token(
             settings.PUBLIC_KEY,
             claims_options={"exp": {"essential": True}},
         )
-        return dict(decoded)  # Convert to dict explicitly
+        return dict(decoded)
 
     payload = await decode_token()
-
     if payload.get("type") != "refresh":
         logger.warning(
             "Invalid token type for refresh",
@@ -328,20 +308,16 @@ async def refresh_token(
             **log_context,
         )
         raise InvalidTokenError("Invalid token type: expected refresh token")
-
     user_id = payload.get("sub")
     if not user_id:
         logger.warning("Missing subject in refresh token", **log_context)
         raise InvalidTokenError("Invalid token - no user ID found")
-
     log_context["user_id"] = user_id
-
     try:
         uuid_user_id = uuid.UUID(user_id)
     except ValueError:
         logger.error("Invalid UUID format in token", **log_context)
         raise InvalidTokenError("Invalid user ID format")
-
     user = await validate_user_exists(
         db_session=db,
         user_model=User,
@@ -349,10 +325,8 @@ async def refresh_token(
         log_context=log_context,
     )
     log_context["email"] = user.user_email
-
     access_token = create_token(user_id=str(user.user_id), token_type="access")
     new_refresh_token = create_token(user_id=str(user.user_id), token_type="refresh")
-
     logger.info("Tokens refreshed successfully", **log_context)
     return TokenResponse(
         access_token=access_token,
@@ -392,14 +366,11 @@ async def request_verification_email(
         "request_id": request_id_ctx_var.get(),
         "operation": "request_verification_email",
     }
-
     logger.debug("Verification email requested", **log_context)
-
     user = await validate_user_exists(
         db_session=db, user_model=User, user_email=user_email, log_context=log_context
     )
     log_context["user_id"] = str(user.user_id)
-
     try:
         async with safe_operation(
             "sending verification email",
@@ -447,7 +418,6 @@ async def verify_email_token(
         "operation": "verify_email",
         "token_provided": bool(token),
     }
-
     logger.debug("Processing email verification", **log_context)
 
     @translate_token_exceptions
@@ -478,21 +448,17 @@ async def verify_email_token(
             "Unexpected error during token decoding", error=str(e), **log_context
         )
         raise
-
     if not user_id:
         logger.error("No user_id found in token", **log_context)
         raise EmailVerificationError(
             message="Invalid verification token - no user ID found"
         )
-
     log_context["user_id"] = user_id
-
     async with safe_operation("email verification", log_context):
         async with UserUnitOfWork(db) as uow:
             user = await uow.verify_email(user_id)
             if user and user.user_email:
                 log_context["email"] = user.user_email
-
     logger.info("Email verified successfully", **log_context)
     return {"message": "Email verified successfully"}
 
@@ -522,18 +488,13 @@ async def check_verification_status(
         "request_id": request_id_ctx_var.get(),
         "operation": "check_verification_status",
     }
-
     logger.debug("Checking email verification status", **log_context)
-
     user = await validate_user_exists(
         db_session=db, user_model=User, user_email=user_email, log_context=log_context
     )
-
     log_context["user_id"] = str(user.user_id)
     log_context["verification_status"] = str(user.is_email_verified)
-
     logger.info("Verification status checked", **log_context)
-
     return {
         "is_email_verified": user.is_email_verified,
         "user_id": str(user.user_id),
@@ -572,69 +533,17 @@ async def request_password_reset(
         "request_id": request_id_ctx_var.get(),
         "operation": "request_password_reset",
     }
-
     logger.debug("Password reset requested", **log_context)
 
     try:
-        user = await validate_user_exists(
-            db_session=db,
-            user_model=User,
-            user_email=user_email,
-            log_context=log_context,
-        )
-        log_context["user_id"] = str(user.user_id)
-        log_context["is_verified"] = user.is_email_verified
-
-        if not user.is_email_verified:
+        async with UserUnitOfWork(db) as uow:
+            result = await uow.request_password_reset(user_email)
             logger.info(
-                "Password reset requested for unverified email - sending verification email instead",
+                "Password reset operation completed",
+                status=result["status"],
                 **log_context,
             )
-
-            async with safe_operation(
-                "sending verification email",
-                log_context,
-                status.HTTP_500_INTERNAL_SERVER_ERROR,
-            ):
-                with log_timing(
-                    "send_verification_email", request_id=log_context["request_id"]
-                ):
-                    await send_verification_email(
-                        user_email=user_email, user_id=str(user.user_id)
-                    )
-
-                    return {
-                        "message": "Your email is not verified. We've sent you a verification email instead."
-                    }
-
-        async with safe_operation(
-            "sending password reset email",
-            log_context,
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-        ):
-            with log_timing(
-                "send_password_reset_email", request_id=log_context["request_id"]
-            ):
-                token = create_token(
-                    user_id=str(user.user_id),
-                    token_type="reset",
-                )
-
-                reset_url = f"{settings.FRONTEND_URL}/set-new-password?token={token}"
-
-                await send_password_reset_email(
-                    user_email=user_email, reset_url=reset_url
-                )
-
-                logger.info(
-                    "Password reset email sent",
-                    **log_context,
-                )
-
-                return {
-                    "message": "If your email exists in our system and is verified, you will receive a password reset link shortly."
-                }
-
+            return {"message": result["message"]}
     except BaseApplicationError as exc:
         logger.warning(
             f"{type(exc).__name__}",
@@ -654,5 +563,84 @@ async def request_password_reset(
         )
         raise BusinessLogicError(
             message="An unexpected error occurred during password reset request",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+
+@router.post(
+    "/reset-password",
+    tags=["User"],
+    status_code=status.HTTP_200_OK,
+    summary="Reset password with token",
+    description="Resets a user's password using a valid reset token",
+)
+@limiter.limit("5/minute")
+async def reset_password(
+    request: Request,
+    token: str = Body(...),
+    new_password: str = Body(...),
+    db: AsyncSession = Depends(get_db),
+) -> Dict[str, str]:
+    """
+    Reset user's password using a reset token.
+
+    Args:
+        request: The incoming request
+        token: JWT reset token
+        new_password: New password
+        db: Database session
+
+    Returns:
+        dict: Success message
+
+    Raises:
+        InvalidTokenError: If the token is invalid or expired
+        ValidationError: If the new password doesn't meet requirements
+        BusinessLogicError: Other unexpected errors
+    """
+    log_context = {
+        "request_id": request_id_ctx_var.get(),
+        "operation": "reset_password",
+    }
+    logger.debug("Password reset attempt with token", **log_context)
+
+    try:
+        token_parts = token.split(".")
+        if len(token_parts) != 3:
+            logger.warning("Malformed JWT token format", **log_context)
+            raise InvalidTokenError("Malformed JWT token")
+
+        async with UserUnitOfWork(db) as uow:
+            await uow.reset_password(token, new_password)
+
+        logger.info("Password reset successful", **log_context)
+        return {"message": "Password has been reset successfully"}
+    except ValidationError as e:
+        logger.warning(
+            "Password validation failed during reset",
+            error=str(e),
+            field=e.field,
+            **log_context,
+        )
+        raise
+    except BaseApplicationError as exc:
+        logger.warning(
+            f"{type(exc).__name__}",
+            error=str(exc),
+            error_code=exc.error_code,
+            status_code=exc.status_code,
+            **log_context,
+        )
+        raise
+    except Exception as exc:
+        sanitized_error = sanitize_error_message(str(exc))
+        logger.error(
+            "Unhandled exception during password reset",
+            error=sanitized_error,
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise BusinessLogicError(
+            message="An unexpected error occurred during password reset",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
