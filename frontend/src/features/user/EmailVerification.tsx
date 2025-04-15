@@ -15,8 +15,12 @@ export default function EmailVerificationPage() {
 	const [success, setSuccess] = useState(false);
 	const [error, setError] = useState("");
 	const navigate = useNavigate();
+	const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
 
 	useEffect(() => {
+		const fromReset = searchParams.get("fromReset") === "true";
+		setNeedsPasswordReset(fromReset);
+
 		async function verifyUserEmail() {
 			if (!token) {
 				setVerifying(false);
@@ -30,6 +34,7 @@ export default function EmailVerificationPage() {
 				await verifyEmail(token);
 				setSuccess(true);
 				setError("");
+				localStorage.setItem("is_email_verified", "true");
 				toast.success("Email verified successfully", {
 					description:
 						"Your email has been verified. You can now access all features.",
@@ -50,7 +55,11 @@ export default function EmailVerificationPage() {
 		}
 
 		verifyUserEmail();
-	}, [token]);
+	}, [token, searchParams]);
+
+	const handleResetPassword = () => {
+		navigate("/reset-password");
+	};
 
 	return (
 		<PageLayout variant="default">
@@ -76,9 +85,20 @@ export default function EmailVerificationPage() {
 								Your email address has been successfully verified. You can now
 								enjoy full access to all features.
 							</p>
-							<Button onClick={() => navigate("/")} className="mt-4">
-								Go to Dashboard
-							</Button>
+							{needsPasswordReset ? (
+								<>
+									<p className="text-muted-foreground mt-2">
+										Now you can proceed to reset your password.
+									</p>
+									<Button onClick={handleResetPassword} className="mt-2">
+										Reset Password
+									</Button>
+								</>
+							) : (
+								<Button onClick={() => navigate("/")} className="mt-4">
+									Go to Dashboard
+								</Button>
+							)}
 						</div>
 					)}
 

@@ -130,13 +130,15 @@ class UserUnitOfWork:
         ):
             user = await self.user_repo.verify_email(user_id)
 
-            log_context["email"] = user.user_email
-            logger.info(
-                "Email verified in unit of work",
-                previous_status=False,
-                new_status=True,
-                **log_context,
-            )
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                await self.db.commit()
+                logger.info(
+                    "Email verified in unit of work",
+                    previous_status=False,
+                    new_status=True,
+                    **log_context,
+                )
 
             return user
 
@@ -176,16 +178,18 @@ class UserUnitOfWork:
                 "Password reset requested for unverified email - sending verification email instead",
                 **log_context,
             )
-            with log_timing("send_verification_email", **log_context):
+            timing_context = {k: v for k, v in log_context.items() if k != "operation"}
+            with log_timing("send_verification_email", **timing_context):
                 await send_verification_email(
-                    user_email=user_email, user_id=str(user.user_id)
+                    user_email=user_email, user_id=str(user.user_id), from_reset=True
                 )
                 return {
                     "status": "unverified",
                     "message": "Your email is not verified. We've sent you a verification email instead.",
                 }
 
-        with log_timing("create_reset_token", **log_context):
+        timing_context = {k: v for k, v in log_context.items() if k != "operation"}
+        with log_timing("create_reset_token", **timing_context):
             token = create_token(
                 user_id=str(user.user_id),
                 token_type="reset",
@@ -220,7 +224,7 @@ class UserUnitOfWork:
         logger.debug("Processing password reset via UOW", **log_context)
 
         payload = await self._decode_token(token, log_context)
-        if payload.get("type") != "reset":
+        if (payload.get("type") != "reset"):
             logger.warning(
                 "Invalid token type for password reset",
                 expected="reset",

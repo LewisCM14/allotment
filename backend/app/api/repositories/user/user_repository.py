@@ -39,24 +39,17 @@ class UserRepository:
             "operation": "create_user",
         }
 
-        with log_timing("db_create_user", request_id=log_context["request_id"]):
+        timing_context = {k: v for k, v in log_context.items() 
+                         if k not in ("request_id", "operation")}
+
+        with log_timing("db_create_user", request_id=self.request_id, **timing_context):
             self.db.add(user)
             logger.info("User added to session", **log_context)
         return user
 
     @translate_db_exceptions
     async def verify_email(self, user_id: str) -> User:
-        """Mark a user's email as verified.
-
-        Args:
-            user_id: The ID of the user to update
-
-        Returns:
-            User: Updated user
-
-        Raises:
-            HTTPException: If the user is not found or the update fails
-        """
+        """Mark a user's email as verified."""
         log_context = {
             "user_id": user_id,
             "request_id": self.request_id,
@@ -65,20 +58,16 @@ class UserRepository:
 
         logger.debug("Attempting to verify email", **log_context)
 
-        with log_timing("db_verify_email", request_id=log_context["request_id"]):
+        # Remove request_id and operation from log_context since they will be passed separately
+        timing_context = {k: v for k, v in log_context.items() if k not in ("request_id", "operation")}
+        
+        with log_timing("db_verify_email", request_id=self.request_id, **timing_context):
             try:
                 user_uuid = UUID(user_id)
             except ValueError as e:
-                logger.warning(
-                    "Invalid user_id format",
-                    error=str(e),
-                    **log_context,
-                )
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid user ID format",
-                )
-
+                logger.error("Invalid UUID format", error=str(e), **log_context)
+                raise InvalidTokenError("Invalid user ID format")
+                
             user = await self.db.get(User, user_uuid)
 
             if not user:
@@ -88,49 +77,35 @@ class UserRepository:
                     detail="User not found",
                 )
 
-            log_context["email"] = user.user_email
+            if not user.is_email_verified:
+                user.is_email_verified = True
+                await self.db.flush()  # Make sure changes are sent to DB
+                logger.info(
+                    "Email verification successful",
+                    previous_status=False,
+                    new_status=True,
+                    **log_context,
+                )
 
-            user.is_email_verified = True
-            logger.info(
-                "Email verification successful",
-                previous_status=False,
-                new_status=True,
-                **log_context,
-            )
-        return user
+            return user
 
     @translate_db_exceptions
-    async def get_user_by_email(self, email: str) -> Optional[User]:
-        """Get a user by email address.
+    async def get_user_by_email(self, user_email: str) -> Optional[User]:
+        """
+        Get a user by their email address.
 
         Args:
-            email: The user's email address
+            user_email: Email address to look up
 
         Returns:
-            User object or None if not found
+            User object if found, None otherwise
         """
-        log_context = {
-            "email": email,
-            "request_id": self.request_id,
-            "operation": "get_user_by_email",
-        }
-
-        logger.debug("Fetching user by email", **log_context)
-
-        with log_timing(
-            "db_get_user_by_email", request_id=self.request_id, **log_context
-        ):
-            query = select(User).where(User.user_email == email)
+        log_context = {"email": user_email}
+        
+        with log_timing("db_get_user_by_email", request_id=self.request_id, **log_context):
+            query = select(User).where(User.user_email == user_email)
             result = await self.db.execute(query)
-            user = result.scalar_one_or_none()
-
-            if user:
-                log_context["user_id"] = str(user.user_id)
-                logger.debug("User found", user_found=True, **log_context)
-            else:
-                logger.debug("User not found", user_found=False, **log_context)
-
-        return user
+            return result.scalar_one_or_none()
 
     @translate_db_exceptions
     async def update_user_password(self, user_id: str, new_password: str) -> User:
@@ -154,7 +129,10 @@ class UserRepository:
 
         logger.debug("Updating user password", **log_context)
 
-        with log_timing("db_update_password", **log_context):
+        timing_context = {k: v for k, v in log_context.items() 
+                         if k not in ("request_id", "operation")}
+
+        with log_timing("db_update_password", request_id=self.request_id, **timing_context):
             try:
                 user_uuid = UUID(user_id)
             except ValueError as e:

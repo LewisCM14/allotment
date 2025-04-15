@@ -22,11 +22,11 @@ export default function UserProfile() {
 	const { user, firstName } = useAuth();
 	const [isEmailVerified, setIsEmailVerified] = useState(
 		user?.isEmailVerified ||
-			localStorage.getItem("is_email_verified") === "true",
+		localStorage.getItem("is_email_verified") === "true",
 	);
 
 	const checkVerificationStatus = useCallback(async () => {
-		const email = user?.user_email || localStorage.getItem("user_email");
+		const email = user?.user_email;
 
 		if (!email) return;
 
@@ -65,13 +65,18 @@ export default function UserProfile() {
 	}, [user]);
 
 	useEffect(() => {
+		// Always set email if available
+		if (user?.user_email) {
+			localStorage.setItem("user_email", user.user_email);
+		}
+
 		if (!isEmailVerified) {
 			checkVerificationStatus();
 		}
-	}, [isEmailVerified, checkVerificationStatus]);
+	}, [isEmailVerified, checkVerificationStatus, user]);
 
 	const handleRequestVerification = async () => {
-		const email = user?.user_email || localStorage.getItem("user_email");
+		const email = user?.user_email;
 
 		if (!email) {
 			setError("User email not available");
@@ -99,8 +104,6 @@ export default function UserProfile() {
 		}
 	};
 
-	const userEmail =
-		user?.user_email || localStorage.getItem("user_email") || "Not available";
 	const userName =
 		user?.user_first_name ||
 		firstName ||
@@ -125,7 +128,9 @@ export default function UserProfile() {
 								<h3 className="font-medium text-muted-foreground mb-1">
 									Email
 								</h3>
-								<p className="text-lg text-foreground">{userEmail}</p>
+								<p className="text-lg text-foreground">
+									{user?.user_email || "Not available"}
+								</p>
 								{isEmailVerified && (
 									<p className="text-primary text-sm mt-1">✓ Email verified</p>
 								)}

@@ -457,10 +457,14 @@ async def verify_email_token(
     async with safe_operation("email verification", log_context):
         async with UserUnitOfWork(db) as uow:
             user = await uow.verify_email(user_id)
-            if user and user.user_email:
+            if user and user.is_email_verified:
                 log_context["email"] = user.user_email
-    logger.info("Email verified successfully", **log_context)
-    return {"message": "Email verified successfully"}
+                log_context["is_verified"] = user.is_email_verified
+                logger.info("Email verified successfully", **log_context)
+                return {"message": "Email verified successfully"}
+            else:
+                logger.error("Failed to verify email", **log_context)
+                raise EmailVerificationError("Failed to verify email")
 
 
 @router.get(
@@ -536,6 +540,16 @@ async def request_password_reset(
     logger.debug("Password reset requested", **log_context)
 
     try:
+        query = select(User).where(User.user_email == user_email)
+        result = await db.execute(query)
+        user = result.scalar_one_or_none()
+        
+        if not user:
+            logger.warning("User not found for password reset", **log_context)
+            return {
+                "message": "If your email exists in our system and is verified, you will receive a password reset link shortly."
+            }
+            
         async with UserUnitOfWork(db) as uow:
             result = await uow.request_password_reset(user_email)
             logger.info(

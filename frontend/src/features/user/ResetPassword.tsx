@@ -14,17 +14,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { z } from "zod";
+import { ResetFormData, resetSchema } from "./ResetPasswordSchema";
 import { AUTH_ERRORS, requestPasswordReset } from "./UserService";
-
-const resetSchema = z.object({
-	email: z
-		.string()
-		.email("Please enter a valid email address")
-		.min(1, "Email is required"),
-});
-
-type ResetFormData = z.infer<typeof resetSchema>;
 
 export default function ResetPassword() {
 	const {
@@ -66,7 +57,9 @@ export default function ResetPassword() {
 			}
 
 			const result = await requestPasswordReset(data.email);
-			setSuccess(result.message);
+			setSuccess(
+				"If your email exists in our system, you will receive a password reset link shortly."
+			);
 		} catch (err) {
 			setError(AUTH_ERRORS.format(err));
 			console.error("Password reset request failed", err);

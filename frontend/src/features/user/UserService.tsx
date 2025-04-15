@@ -182,6 +182,8 @@ export const loginUser = async (
 		if (axios.isAxiosError(error)) {
 			if (error.response) {
 				switch (error.response.status) {
+					case 404:
+						throw new Error("The email address you entered is not registered.");
 					case 401:
 						throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
 					case 403:

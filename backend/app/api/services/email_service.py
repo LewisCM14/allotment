@@ -39,13 +39,14 @@ mail_client = FastMail(email_conf)
 current_year = datetime.now().year
 
 
-async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[str, str]:
+async def send_verification_email(user_email: EmailStr, user_id: str, from_reset: bool = False) -> dict[str, str]:
     """
     Send an email verification link to the user.
 
     Args:
         user_email: The user's email address
         user_id: The user's ID
+        from_reset: Whether this verification is part of password reset flow
 
     Returns:
         dict: Success message
@@ -58,6 +59,7 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
         "email": user_email,
         "request_id": request_id_ctx_var.get(),
         "operation": "send_verification_email",
+        "is_from_reset": from_reset,  # Changed key name to avoid conflict
     }
 
     try:
@@ -68,13 +70,17 @@ async def send_verification_email(user_email: EmailStr, user_id: str) -> dict[st
                 token_type="access",
             )
 
-            verification_link = f"{settings.FRONTEND_URL}/verify-email?token=[REDACTED]"
+            # Add fromReset parameter if needed
+            from_reset_param = "&fromReset=true" if from_reset else ""
+            verification_link = f"{settings.FRONTEND_URL}/verify-email?token=[REDACTED]{from_reset_param}"
 
+            # Remove the from_reset parameter from the log_context items to avoid conflict
+            log_dict = {k: v for k, v in log_context.items() if k != "token"}
             logger.debug(
                 "Generated verification link",
                 frontend_url=settings.FRONTEND_URL,
                 token_expiry="1 hour",
-                **{k: v for k, v in log_context.items() if k != "token"},
+                **log_dict,
             )
 
             message = MessageSchema(
