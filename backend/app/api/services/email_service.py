@@ -39,7 +39,9 @@ mail_client = FastMail(email_conf)
 current_year = datetime.now().year
 
 
-async def send_verification_email(user_email: EmailStr, user_id: str, from_reset: bool = False) -> dict[str, str]:
+async def send_verification_email(
+    user_email: EmailStr, user_id: str, from_reset: bool = False
+) -> dict[str, str]:
     """
     Send an email verification link to the user.
 
@@ -59,7 +61,7 @@ async def send_verification_email(user_email: EmailStr, user_id: str, from_reset
         "email": user_email,
         "request_id": request_id_ctx_var.get(),
         "operation": "send_verification_email",
-        "is_from_reset": from_reset,  # Changed key name to avoid conflict
+        "is_from_reset": from_reset,
     }
 
     try:
@@ -67,20 +69,16 @@ async def send_verification_email(user_email: EmailStr, user_id: str, from_reset
             token = create_token(
                 user_id=user_id,
                 expiry_seconds=3600,  # 1 hour
-                token_type="access",
+                token_type="email_verification",
             )
 
-            # Add fromReset parameter if needed
-            from_reset_param = "&fromReset=true" if from_reset else ""
-            verification_link = f"{settings.FRONTEND_URL}/verify-email?token=[REDACTED]{from_reset_param}"
+            verification_link = f"{settings.FRONTEND_URL}/verify-email?token={token}&fromReset={str(from_reset).lower()}"
 
-            # Remove the from_reset parameter from the log_context items to avoid conflict
-            log_dict = {k: v for k, v in log_context.items() if k != "token"}
             logger.debug(
                 "Generated verification link",
                 frontend_url=settings.FRONTEND_URL,
                 token_expiry="1 hour",
-                **log_dict,
+                **log_context,
             )
 
             message = MessageSchema(
@@ -92,7 +90,7 @@ async def send_verification_email(user_email: EmailStr, user_id: str, from_reset
 
                 To complete your registration and access all features, please verify your email address by clicking the link below:
 
-                {verification_link.replace("[REDACTED]", token)}
+                {verification_link}
 
                 This verification link will expire in 1 hour for security purposes. If you don't complete the verification within this timeframe, you'll need to request a new verification email.
 

@@ -25,6 +25,15 @@ const AppRoutes = () => {
 			<Routes>
 				{/* Public routes - only for non-authenticated users */}
 				<Route
+					path="/verify-email"
+					element={
+						<PublicRoute>
+							<EmailVerificationPage />
+						</PublicRoute>
+					}
+				/>
+
+				<Route
 					path="/login"
 					element={
 						<PublicRoute>
@@ -58,14 +67,6 @@ const AppRoutes = () => {
 				/>
 
 				{/* Protected routes - only for authenticated users */}
-				<Route
-					path="/verify-email"
-					element={
-						<ProtectedRoute>
-							<EmailVerificationPage />
-						</ProtectedRoute>
-					}
-				/>
 				<Route
 					path="/profile"
 					element={

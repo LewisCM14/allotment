@@ -74,7 +74,7 @@ export const registerUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							AUTH_ERRORS.REGISTRATION_FAILED,
+								AUTH_ERRORS.REGISTRATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -191,7 +191,7 @@ export const loginUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							AUTH_ERRORS.INVALID_CREDENTIALS,
+								AUTH_ERRORS.INVALID_CREDENTIALS,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -211,11 +211,12 @@ export const loginUser = async (
 
 export const verifyEmail = async (
 	token: string,
+	fromReset = false,
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.get<{ message: string }>(
 			`${import.meta.env.VITE_API_VERSION}/user/verify-email`,
-			{ params: { token } },
+			{ params: { token, fromReset } },
 		);
 		return response.data;
 	} catch (error) {
@@ -225,7 +226,7 @@ export const verifyEmail = async (
 					case 400:
 						throw new Error(
 							error.response.data?.detail ||
-							AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
+								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
 						);
 					case 404:
 						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_INVALID);
@@ -234,7 +235,7 @@ export const verifyEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							AUTH_ERRORS.VERIFICATION_FAILED,
+								AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -271,7 +272,7 @@ export const requestVerificationEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							AUTH_ERRORS.VERIFICATION_FAILED,
+								AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -306,25 +307,17 @@ export const requestPasswordReset = async (
 		if (axios.isAxiosError(error)) {
 			if (error.response) {
 				switch (error.response.status) {
+					case 400:
+						throw new Error(
+							error.response.data?.detail ||
+								"Email not verified. Please verify your email first.",
+						);
 					case 404:
 						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
-					case 400: {
-						const detail = error.response.data?.detail;
-						if (
-							detail &&
-							typeof detail === "string" &&
-							detail.includes("not verified")
-						) {
-							throw new Error(AUTH_ERRORS.EMAIL_NOT_VERIFIED);
-						}
-						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.RESET_FAILED,
-						);
-					}
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							AUTH_ERRORS.RESET_FAILED,
+								AUTH_ERRORS.RESET_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -367,7 +360,7 @@ export const resetPassword = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-							"Invalid password format",
+								"Invalid password format",
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);

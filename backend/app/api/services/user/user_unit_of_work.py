@@ -224,7 +224,7 @@ class UserUnitOfWork:
         logger.debug("Processing password reset via UOW", **log_context)
 
         payload = await self._decode_token(token, log_context)
-        if (payload.get("type") != "reset"):
+        if payload.get("type") != "reset":
             logger.warning(
                 "Invalid token type for password reset",
                 expected="reset",

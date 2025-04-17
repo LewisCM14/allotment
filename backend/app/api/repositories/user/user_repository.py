@@ -39,8 +39,9 @@ class UserRepository:
             "operation": "create_user",
         }
 
-        timing_context = {k: v for k, v in log_context.items() 
-                         if k not in ("request_id", "operation")}
+        timing_context = {
+            k: v for k, v in log_context.items() if k not in ("request_id", "operation")
+        }
 
         with log_timing("db_create_user", request_id=self.request_id, **timing_context):
             self.db.add(user)
@@ -58,16 +59,19 @@ class UserRepository:
 
         logger.debug("Attempting to verify email", **log_context)
 
-        # Remove request_id and operation from log_context since they will be passed separately
-        timing_context = {k: v for k, v in log_context.items() if k not in ("request_id", "operation")}
-        
-        with log_timing("db_verify_email", request_id=self.request_id, **timing_context):
+        timing_context = {
+            k: v for k, v in log_context.items() if k not in ("request_id", "operation")
+        }
+
+        with log_timing(
+            "db_verify_email", request_id=self.request_id, **timing_context
+        ):
             try:
                 user_uuid = UUID(user_id)
             except ValueError as e:
                 logger.error("Invalid UUID format", error=str(e), **log_context)
                 raise InvalidTokenError("Invalid user ID format")
-                
+
             user = await self.db.get(User, user_uuid)
 
             if not user:
@@ -79,7 +83,7 @@ class UserRepository:
 
             if not user.is_email_verified:
                 user.is_email_verified = True
-                await self.db.flush()  # Make sure changes are sent to DB
+                await self.db.flush()
                 logger.info(
                     "Email verification successful",
                     previous_status=False,
@@ -101,8 +105,10 @@ class UserRepository:
             User object if found, None otherwise
         """
         log_context = {"email": user_email}
-        
-        with log_timing("db_get_user_by_email", request_id=self.request_id, **log_context):
+
+        with log_timing(
+            "db_get_user_by_email", request_id=self.request_id, **log_context
+        ):
             query = select(User).where(User.user_email == user_email)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
@@ -129,10 +135,13 @@ class UserRepository:
 
         logger.debug("Updating user password", **log_context)
 
-        timing_context = {k: v for k, v in log_context.items() 
-                         if k not in ("request_id", "operation")}
+        timing_context = {
+            k: v for k, v in log_context.items() if k not in ("request_id", "operation")
+        }
 
-        with log_timing("db_update_password", request_id=self.request_id, **timing_context):
+        with log_timing(
+            "db_update_password", request_id=self.request_id, **timing_context
+        ):
             try:
                 user_uuid = UUID(user_id)
             except ValueError as e:

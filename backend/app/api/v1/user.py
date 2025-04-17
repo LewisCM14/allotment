@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Body, Depends, Request, status
+from fastapi import APIRouter, Body, Depends, Query, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -401,7 +401,9 @@ async def request_verification_email(
     description="Verifies the user's email using the provided token",
 )
 async def verify_email_token(
-    token: str, db: AsyncSession = Depends(get_db)
+    token: str,
+    from_reset: bool = Query(False, alias="fromReset"),
+    db: AsyncSession = Depends(get_db),
 ) -> Dict[str, str]:
     """
     Verify the user's email using the token.
@@ -443,28 +445,22 @@ async def verify_email_token(
     except InvalidTokenError:
         logger.warning("Invalid JWT token provided", **log_context)
         raise EmailVerificationError("Invalid verification token")
-    except ValueError as e:
-        logger.error(
-            "Unexpected error during token decoding", error=str(e), **log_context
-        )
-        raise
-    if not user_id:
-        logger.error("No user_id found in token", **log_context)
-        raise EmailVerificationError(
-            message="Invalid verification token - no user ID found"
-        )
     log_context["user_id"] = user_id
-    async with safe_operation("email verification", log_context):
-        async with UserUnitOfWork(db) as uow:
-            user = await uow.verify_email(user_id)
-            if user and user.is_email_verified:
-                log_context["email"] = user.user_email
-                log_context["is_verified"] = user.is_email_verified
-                logger.info("Email verified successfully", **log_context)
-                return {"message": "Email verified successfully"}
-            else:
-                logger.error("Failed to verify email", **log_context)
-                raise EmailVerificationError("Failed to verify email")
+    log_context["is_from_reset"] = from_reset
+
+    async with UserUnitOfWork(db) as uow:
+        user = await uow.verify_email(user_id)
+    logger.info(
+        "Email verification processed",
+        is_verified=user.is_email_verified,
+        **log_context,
+    )
+
+    if from_reset:
+        return {
+            "message": "Email verified successfully. You can now reset your password."
+        }
+    return {"message": "Email verified successfully"}
 
 
 @router.get(
@@ -541,23 +537,34 @@ async def request_password_reset(
 
     try:
         query = select(User).where(User.user_email == user_email)
-        result = await db.execute(query)
-        user = result.scalar_one_or_none()
-        
+        db_result = await db.execute(query)
+        user = db_result.scalar_one_or_none()
+
         if not user:
             logger.warning("User not found for password reset", **log_context)
             return {
                 "message": "If your email exists in our system and is verified, you will receive a password reset link shortly."
             }
-            
+
+        if not user.is_email_verified:
+            logger.info(
+                "User email not verified, sending verification email", **log_context
+            )
+            await send_verification_email(
+                user_email=user.user_email, user_id=str(user.user_id), from_reset=True
+            )
+            return {
+                "message": "Your email is not verified. A verification email has been sent to your address."
+            }
+
         async with UserUnitOfWork(db) as uow:
-            result = await uow.request_password_reset(user_email)
+            reset_result = await uow.request_password_reset(user_email)
             logger.info(
                 "Password reset operation completed",
-                status=result["status"],
+                status=reset_result["status"],
                 **log_context,
             )
-            return {"message": result["message"]}
+            return {"message": reset_result["message"]}
     except BaseApplicationError as exc:
         logger.warning(
             f"{type(exc).__name__}",

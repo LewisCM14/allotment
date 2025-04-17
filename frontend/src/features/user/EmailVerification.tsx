@@ -31,13 +31,13 @@ export default function EmailVerificationPage() {
 
 			try {
 				setVerifying(true);
-				await verifyEmail(token);
-				setSuccess(true);
+				await verifyEmail(token, needsPasswordReset);
 				setError("");
 				localStorage.setItem("is_email_verified", "true");
 				toast.success("Email verified successfully", {
-					description:
-						"Your email has been verified. You can now access all features.",
+					description: needsPasswordReset
+						? "Your email has been verified. You can now reset your password."
+						: "Your email has been verified. You can now access all features.",
 				});
 			} catch (err: unknown) {
 				setSuccess(false);
@@ -55,7 +55,7 @@ export default function EmailVerificationPage() {
 		}
 
 		verifyUserEmail();
-	}, [token, searchParams]);
+	}, [token, searchParams, needsPasswordReset]);
 
 	const handleResetPassword = () => {
 		navigate("/reset-password");

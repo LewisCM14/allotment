@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
-import { ResetFormData, resetSchema } from "./ResetPasswordSchema";
+import { type ResetFormData, resetSchema } from "./ResetPasswordSchema";
 import { AUTH_ERRORS, requestPasswordReset } from "./UserService";
 
 export default function ResetPassword() {
@@ -56,12 +56,22 @@ export default function ResetPassword() {
 				return;
 			}
 
-			const result = await requestPasswordReset(data.email);
+			await requestPasswordReset(data.email);
 			setSuccess(
-				"If your email exists in our system, you will receive a password reset link shortly."
+				"If your email exists in our system you will receive a link shortly.",
 			);
 		} catch (err) {
-			setError(AUTH_ERRORS.format(err));
+			if (err instanceof Error) {
+				if (err.message.includes("Email not verified")) {
+					setError(
+						"Your email is not verified. Please check your inbox for a verification email.",
+					);
+				} else {
+					setError(AUTH_ERRORS.format(err));
+				}
+			} else {
+				setError("An unexpected error occurred. Please try again.");
+			}
 			console.error("Password reset request failed", err);
 		}
 	};

@@ -24,7 +24,7 @@ from app.api.models import User
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 logger = structlog.get_logger()
 
-TokenType = Literal["access", "refresh", "reset"]
+TokenType = Literal["access", "refresh", "reset", "email_verification"]
 
 
 def create_token(
