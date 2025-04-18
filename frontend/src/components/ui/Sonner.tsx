@@ -36,6 +36,9 @@ const Toaster = ({ ...props }: ToasterProps) => {
 					"--z-index": "100",
 					"--width": config.width,
 					bottom: "calc(4rem + 20px)",
+					display: "flex",
+					flexDirection: "column-reverse",
+					gap: "0.5rem",
 				} as React.CSSProperties
 			}
 			{...props}
