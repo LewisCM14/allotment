@@ -99,24 +99,32 @@ app.include_router(api_router, prefix="/api/v1")
 @app.get(
     "/", tags=["Utility"], summary="API Root", description="Root endpoint for the API"
 )
-def root() -> Dict[str, str]:
+async def root() -> Dict[str, str]:
     """
     Application Root Endpoint
 
     Returns:
         dict: Metadata about the API, including name, version, and environment.
     """
-    logger.info(
-        "Root endpoint accessed",
-        endpoint="/",
-        app_name=settings.APP_NAME,
-        app_version=settings.APP_VERSION,
-    )
-    return {
-        "message": "Welcome to the Allotment Service API!",
-        "app_name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+    log_context = {
+        "request_id": request_id_ctx_var.get(),
+        "operation": "root",
     }
+    async with safe_operation(
+        "root", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
+    ):
+        logger.info(
+            "Root endpoint accessed",
+            endpoint="/",
+            app_name=settings.APP_NAME,
+            app_version=settings.APP_VERSION,
+            **log_context,
+        )
+        return {
+            "message": "Welcome to the Allotment Service API!",
+            "app_name": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+        }
 
 
 @app.post(

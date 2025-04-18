@@ -197,6 +197,7 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                 status_code=response.status_code,
                 duration_ms=round(process_time * 1000, 2),
             )
+            response.headers["X-Request-ID"] = request_id
             return response
 
         except BaseApplicationError as exc:
