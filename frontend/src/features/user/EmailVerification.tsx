@@ -32,6 +32,7 @@ export default function EmailVerificationPage() {
 			try {
 				setVerifying(true);
 				await verifyEmail(token, needsPasswordReset);
+				setSuccess(true);
 				setError("");
 				localStorage.setItem("is_email_verified", "true");
 				toast.success("Email verified successfully", {

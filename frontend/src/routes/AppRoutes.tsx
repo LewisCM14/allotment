@@ -25,15 +25,6 @@ const AppRoutes = () => {
 			<Routes>
 				{/* Public routes - only for non-authenticated users */}
 				<Route
-					path="/verify-email"
-					element={
-						<PublicRoute>
-							<EmailVerificationPage />
-						</PublicRoute>
-					}
-				/>
-
-				<Route
 					path="/login"
 					element={
 						<PublicRoute>
@@ -85,7 +76,7 @@ const AppRoutes = () => {
 					}
 				/>
 
-				{/* Undefined route - catches all other routes */}
+				{/* Page Not Found */}
 				<Route
 					path="*"
 					element={
@@ -94,6 +85,9 @@ const AppRoutes = () => {
 						</Suspense>
 					}
 				/>
+
+				{/* Verify Email */}
+				<Route path="/verify-email" element={<EmailVerificationPage />} />
 			</Routes>
 		</Suspense>
 	);

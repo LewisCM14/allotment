@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as apiModule from "../../services/api";
 import {
 	AUTH_ERRORS,
 	loginUser,
 	registerUser,
+	requestPasswordReset,
 	requestVerificationEmail,
+	resetPassword,
 	verifyEmail,
 } from "./UserService";
 
@@ -188,7 +190,122 @@ describe("UserService", () => {
 
 		it("should handle expired verification token", async () => {
 			await expect(verifyEmail("expired-token")).rejects.toThrow(
-				"Verification token has expired",
+				AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED,
+			);
+		});
+	});
+
+	describe("requestPasswordReset", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: any is fine in this context
+		let postSpy: any;
+
+		beforeEach(() => {
+			postSpy = vi.spyOn(apiModule.default, "post");
+		});
+		afterEach(() => {
+			postSpy.mockRestore();
+		});
+
+		it("should request password reset successfully", async () => {
+			postSpy.mockResolvedValueOnce({ data: { message: "Reset email sent" } });
+			await expect(requestPasswordReset("user@example.com")).resolves.toEqual({
+				message: "Reset email sent",
+			});
+		});
+
+		it("should handle email not found error (404)", async () => {
+			const err = new Error("Not found");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "response", {
+				value: { status: 404, data: {} },
+			});
+			postSpy.mockRejectedValueOnce(err);
+			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
+				AUTH_ERRORS.EMAIL_NOT_FOUND,
+			);
+		});
+
+		it("should handle network errors", async () => {
+			const err = new Error("Network Error");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "request", { value: {} });
+			Object.defineProperty(err, "response", { value: undefined });
+			postSpy.mockRejectedValueOnce(err);
+			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
+				AUTH_ERRORS.NETWORK_ERROR,
+			);
+		});
+	});
+
+	describe("resetPassword", () => {
+		// biome-ignore lint/suspicious/noExplicitAny: any is fine in this context
+		let postSpy: any;
+
+		beforeEach(() => {
+			postSpy = vi.spyOn(apiModule.default, "post");
+		});
+		afterEach(() => {
+			postSpy.mockRestore();
+		});
+
+		it("should reset password successfully", async () => {
+			postSpy.mockResolvedValueOnce({ data: { message: "Password updated" } });
+			await expect(
+				resetPassword("valid-token", "NewPass123!"),
+			).resolves.toEqual({
+				message: "Password updated",
+			});
+		});
+
+		it("should handle invalid or expired token (400)", async () => {
+			const err = new Error("Bad request");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "response", {
+				value: { status: 400, data: { detail: "Invalid token" } },
+			});
+			postSpy.mockRejectedValueOnce(err);
+			await expect(resetPassword("bad-token", "NewPass123!")).rejects.toThrow(
+				"Invalid token",
+			);
+		});
+
+		it("should handle validation errors (422)", async () => {
+			const err = new Error("Unprocessable");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "response", {
+				value: {
+					status: 422,
+					data: {
+						detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
+					},
+				},
+			});
+			postSpy.mockRejectedValueOnce(err);
+			await expect(resetPassword("valid-token", "short")).rejects.toThrow(
+				/Too weak/,
+			);
+		});
+
+		it("should handle server errors (500)", async () => {
+			const err = new Error("Server down");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "response", {
+				value: { status: 500, data: {} },
+			});
+			postSpy.mockRejectedValueOnce(err);
+			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
+				AUTH_ERRORS.SERVER_ERROR,
+			);
+		});
+
+		it("should handle network errors", async () => {
+			const err = new Error("Network Error");
+			Object.defineProperty(err, "isAxiosError", { value: true });
+			Object.defineProperty(err, "request", { value: {} });
+			Object.defineProperty(err, "response", { value: undefined });
+			postSpy.mockRejectedValueOnce(err);
+			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
+				AUTH_ERRORS.NETWORK_ERROR,
 			);
 		});
 	});
