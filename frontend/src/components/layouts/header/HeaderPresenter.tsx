@@ -22,7 +22,11 @@ export function HeaderPresenter({
 	return (
 		<header className="fixed top-0 left-0 w-full bg-card shadow-md z-50">
 			<div className="mx-auto flex justify-between items-center p-4">
-				<h1 className="text-xl font-bold text-card-foreground">{appTitle}</h1>
+				<h1 className="text-xl font-bold text-card-foreground">
+					<a href="/" className="hover:underline">
+						{appTitle}
+					</a>
+				</h1>
 
 				{/* Desktop Navigation */}
 				<nav className="hidden md:flex space-x-4">
