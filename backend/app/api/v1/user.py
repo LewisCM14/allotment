@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Body, Depends, Query, Request, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -643,7 +643,10 @@ async def reset_password(
             field=e.field,
             **log_context,
         )
-        raise
+        raise HTTPException(status_code=e.status_code, detail=e.message)
+    except InvalidTokenError as e:
+        logger.warning("Invalid reset token", error=str(e), **log_context)
+        raise HTTPException(status_code=e.status_code, detail=e.error_code)
     except BaseApplicationError as exc:
         logger.warning(
             f"{type(exc).__name__}",

@@ -56,6 +56,10 @@ def create_token(
                 expire_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
             elif token_type == "reset":
                 expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
+            elif token_type == "email_verification":
+                expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
+            else:
+                raise ValueError(f"Unknown token type: {token_type}")
 
         expire = datetime.now(UTC) + timedelta(seconds=expire_seconds)
 

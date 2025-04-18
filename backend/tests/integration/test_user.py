@@ -2,9 +2,12 @@
 User API Tests
 """
 
+import uuid
+
 import pytest
 from fastapi import status
 
+from app.api.core.auth import create_token
 from app.api.core.config import settings
 from tests.conftest import mock_email_service
 
@@ -14,7 +17,7 @@ PREFIX = settings.API_PREFIX
 class TestRegisterUser:
     def test_register_user(self, client, mocker):
         """Test user registration endpoint."""
-        mock_email = mock_email_service(
+        _mock_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
 
@@ -32,7 +35,7 @@ class TestRegisterUser:
         data = response.json()
         assert "access_token" in data
         assert data["token_type"] == "bearer"
-        mock_email.assert_called_once()
+        _mock_email.assert_called_once()
 
     @pytest.mark.parametrize(
         "test_input,expected_status",
@@ -179,7 +182,7 @@ class TestRegisterUser:
 class TestUserLogin:
     def test_login_user(self, client, mocker):
         """Test user login with correct credentials."""
-        mock_email = mock_email_service(  # noqa: F841
+        _mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
 
@@ -455,7 +458,7 @@ class TestEmailVerificationStatus:
     @pytest.mark.asyncio
     async def test_check_verification_status_verified(self, client, mocker):
         """Test checking verification status for a verified user."""
-        mock_email = mock_email_service(
+        mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
 
@@ -502,3 +505,124 @@ class TestEmailVerificationStatus:
 
             assert isinstance(e, UserNotFoundError)
             assert str(e) == "User not found"
+
+
+class TestPasswordResetFlow:
+    @pytest.mark.asyncio
+    async def test_request_password_reset_unverified(self, client, mocker):
+        _mock_verify = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
+        user_data = {
+            "user_email": "reset-unverified@example.com",
+            "user_password": "TestPass123!@",
+            "user_first_name": "NoVerify",
+            "user_country_code": "GB",
+        }
+        register = client.post(f"{PREFIX}/user", json=user_data)
+        assert register.status_code == status.HTTP_201_CREATED
+
+        # ignore the initial registration call
+        _mock_verify.reset_mock()
+
+        # now request reset
+        resp = client.post(
+            f"{PREFIX}/user/request-password-reset",
+            json={"user_email": user_data["user_email"]},
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        body = resp.json()
+        assert "not verified" in body["message"].lower()
+        _mock_verify.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_request_password_reset_verified(self, client, mocker):
+        _mock_verify = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
+        user_data = {
+            "user_email": "reset-verified@example.com",
+            "user_password": "TestPass123!@",
+            "user_first_name": "DoVerify",
+            "user_country_code": "GB",
+        }
+        reg = client.post(f"{PREFIX}/user", json=user_data)
+        user_id = reg.json()["user_id"]
+        token = create_token(user_id=user_id, token_type="email_verification")
+        verify = client.get(f"{PREFIX}/user/verify-email?token={token}")
+        assert verify.status_code == status.HTTP_200_OK
+
+        _mock_reset = mock_email_service(
+            mocker,
+            "app.api.services.user.user_unit_of_work.send_password_reset_email",
+        )
+
+        resp = client.post(
+            f"{PREFIX}/user/request-password-reset",
+            json={"user_email": user_data["user_email"]},
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        msg = resp.json()["message"].lower()
+        assert "password reset link" in msg
+        _mock_reset.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_reset_password_and_login(self, client, mocker):
+        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+
+        user_data = {
+            "user_email": "do-reset@example.com",
+            "user_password": "OldPass123!@",
+            "user_first_name": "Reseter",
+            "user_country_code": "GB",
+        }
+        reg = client.post(f"{PREFIX}/user", json=user_data)
+        user_id = reg.json()["user_id"]
+        token_ver = create_token(user_id=user_id, token_type="email_verification")
+        client.get(f"{PREFIX}/user/verify-email?token={token_ver}")
+
+        reset_token = create_token(user_id=user_id, token_type="reset")
+        new_pass = "NewPass456!#"
+
+        resp = client.post(
+            f"{PREFIX}/user/reset-password",
+            json={"token": reset_token, "new_password": new_pass},
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert "has been reset" in resp.json()["message"].lower()
+
+        login = client.post(
+            f"{PREFIX}/user/auth/login",
+            json={"user_email": user_data["user_email"], "user_password": new_pass},
+        )
+        assert login.status_code == status.HTTP_200_OK
+        data = login.json()
+        assert (
+            "access_token" in data
+            and data["user_first_name"] == user_data["user_first_name"]
+        )
+
+    @pytest.mark.parametrize(
+        "payload,code",
+        [
+            (
+                {"token": "bad.token.payload", "new_password": "Whatever1!"},
+                status.HTTP_401_UNAUTHORIZED,
+            ),
+            (
+                {
+                    "token": create_token(
+                        user_id=str(uuid.uuid4()), token_type="reset"
+                    ),
+                    "new_password": "short",
+                },
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            ),
+        ],
+    )
+    def test_reset_password_errors(self, client, payload, code):
+        """Invalid token or weak password yields appropriate error."""
+        resp = client.post(f"{PREFIX}/user/reset-password", json=payload)
+        assert resp.status_code == code
