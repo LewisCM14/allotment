@@ -49,6 +49,7 @@ export function FooterPresenter({
 						{isAuthenticated && (
 							<Button
 								variant="ghost"
+								aria-label="Toggle user menu"
 								onClick={onMenuClick}
 								data-menu-button
 								className="hover:bg-accent/10"

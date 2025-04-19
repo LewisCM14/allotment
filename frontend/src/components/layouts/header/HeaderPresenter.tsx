@@ -61,6 +61,7 @@ export function HeaderPresenter({
 				{isAuthenticated && (
 					<Button
 						variant="ghost"
+						aria-label="Toggle navigation menu"
 						className="md:hidden"
 						onClick={onMenuClick}
 						data-header-button
