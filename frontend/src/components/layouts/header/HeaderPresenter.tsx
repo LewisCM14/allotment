@@ -1,4 +1,4 @@
-import logo from "@/assets/logo.png";
+import logo from "@/assets/logo.webp";
 import { Button } from "@/components/ui/Button";
 import type { INavLink } from "@/types/NavigationTypes";
 import { Menu } from "lucide-react";
@@ -28,7 +28,6 @@ export function HeaderPresenter({
 						src={logo}
 						alt="Logo"
 						className="h-8 w-8"
-						style={{ transform: "scale(2)", transformOrigin: "center" }}
 					/>
 					<a href="/" className="hover:underline">
 						{appTitle}
@@ -42,7 +41,7 @@ export function HeaderPresenter({
 							<a
 								key={link.label}
 								href={link.href}
-								className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10"
+								className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 							>
 								{link.label}
 							</a>
@@ -50,7 +49,7 @@ export function HeaderPresenter({
 					) : (
 						<a
 							href="/login"
-							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10"
+							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 						>
 							Login
 						</a>
@@ -82,7 +81,7 @@ export function HeaderPresenter({
 							key={link.label}
 							href={link.href}
 							onClick={closeMenu}
-							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10 hover:translate-x-1"
+							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 						>
 							{link.label}
 						</a>

@@ -1,34 +1,41 @@
-import { StrictMode } from "react";
+import { StrictMode, Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { toast } from "sonner";
-import { registerSW } from "virtual:pwa-register";
-import App from "./App.tsx";
 import "./global.css";
 
-const updateSW = registerSW({
-	onNeedRefresh() {
-		if (confirm("New content available. Reload?")) {
-			updateSW();
-		}
-	},
-	onOfflineReady() {
-		toast.success("App ready to work offline", {
-			description: "You can use the app even without an internet connection",
-			duration: 3000,
+const App = lazy(() => import("./App.tsx"));
+
+function Main() {
+	useEffect(() => {
+		let updateSW: () => void;
+		import("virtual:pwa-register").then(({ registerSW }) => {
+			updateSW = registerSW({
+				onNeedRefresh() {
+					if (confirm("New content available. Reload?")) {
+						updateSW();
+					}
+				},
+				onOfflineReady() {
+					import("sonner").then(({ toast }) =>
+						toast.success("App ready to work offline", {
+							description:
+								"You can use the app even without an internet connection",
+							duration: 3000,
+						}),
+					);
+				},
+			});
 		});
-	},
-});
+	}, []);
 
-const rootElement = document.getElementById("root");
-
-if (!rootElement) {
-	throw new Error("Failed to find the root element");
+	return (
+		<StrictMode>
+			<Suspense fallback={null}>
+				<App />
+			</Suspense>
+		</StrictMode>
+	);
 }
 
-const root = createRoot(rootElement);
-
-root.render(
-	<StrictMode>
-		<App />
-	</StrictMode>,
-);
+const rootElement = document.getElementById("root");
+if (!rootElement) throw new Error("Failed to find the root element");
+createRoot(rootElement).render(<Main />);

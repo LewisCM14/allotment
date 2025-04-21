@@ -6,10 +6,40 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Allotment</title>
   <link rel="icon" href="/favicon.ico" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet" media="print" onload="this.media='all'" />
+  <noscript>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap"
+      rel="stylesheet" />
+  </noscript>
 </head>
 
 <body>
   <div id="root"></div>
+
+  <script>
+    (function () {
+      const OriginalWebSocket = window.WebSocket;
+      const __trackedSockets = new Set();
+      window.WebSocket = function (url, protocols) {
+        const ws = new OriginalWebSocket(url, protocols);
+        __trackedSockets.add(ws);
+        ws.addEventListener('close', () => __trackedSockets.delete(ws));
+        return ws;
+      };
+      window.addEventListener('pagehide', () => {
+        __trackedSockets.forEach(ws => ws.close());
+      });
+    })();
+  </script>
+
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

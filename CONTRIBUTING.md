@@ -213,6 +213,17 @@ pytest
 
 ## Frontend
 
+Dev Build
+
+```
+npm run dev
+```
+
+Preview Production Build
+```
+npm run build && npm run preview
+```
+
 Linting
 ```
 npm run lint

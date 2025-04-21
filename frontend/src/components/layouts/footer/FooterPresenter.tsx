@@ -35,7 +35,7 @@ export function FooterPresenter({
 							key={link.label}
 							href={link.href}
 							onClick={link.onClick || closeMenu}
-							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10 hover:translate-x-1"
+							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 						>
 							{link.label}
 						</a>
@@ -70,7 +70,7 @@ export function FooterPresenter({
 					<div className="w-1/3 flex justify-end">
 						<a
 							href={`mailto:${contactEmail}`}
-							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-all duration-200 hover:bg-accent/10"
+							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md"
 						>
 							Contact
 						</a>
