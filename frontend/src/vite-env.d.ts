@@ -21,3 +21,22 @@ declare module "*.avif*" {
 	const src: string;
 	export default src;
 }
+
+declare module "worker:*" {
+	const WorkerFactory: {
+		new(url: string, options?: WorkerOptions): Worker;
+	};
+	export default WorkerFactory;
+}
+
+declare module "./utils/wsTracker.js" {
+	const content: unknown;
+	export default content;
+}
+
+declare module "*?worker" {
+	const WorkerFactory: {
+		new(): Worker;
+	};
+	export default WorkerFactory;
+}

@@ -1,12 +1,14 @@
-import { StrictMode, Suspense, lazy, useEffect } from "react";
+import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
+import App from "./App.tsx";
 import "./global.css";
 
-const App = lazy(() => import("./App.tsx"));
-
 function Main() {
-	// Debug: confirm Main.tsx is executed
-	console.log("Main.tsx loaded");
+	useEffect(() => {
+		// @ts-ignore: no types for wsTracker
+		import("./utils/wsTracker.js");
+	}, []);
+
 	useEffect(() => {
 		if (import.meta.env.PROD) {
 			let updateSW: () => void;
@@ -33,9 +35,7 @@ function Main() {
 
 	return (
 		<StrictMode>
-			<Suspense fallback={null}>
-				<App />
-			</Suspense>
+			<App />
 		</StrictMode>
 	);
 }

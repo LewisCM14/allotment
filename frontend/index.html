@@ -24,22 +24,6 @@
 <body>
   <div id="root"></div>
 
-  <script>
-    (function () {
-      const OriginalWebSocket = window.WebSocket;
-      const __trackedSockets = new Set();
-      window.WebSocket = function (url, protocols) {
-        const ws = new OriginalWebSocket(url, protocols);
-        __trackedSockets.add(ws);
-        ws.addEventListener('close', () => __trackedSockets.delete(ws));
-        return ws;
-      };
-      window.addEventListener('pagehide', () => {
-        __trackedSockets.forEach(ws => ws.close());
-      });
-    })();
-  </script>
-
   <script type="module" src="/src/main.tsx"></script>
 </body>
 

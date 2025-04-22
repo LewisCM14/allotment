@@ -17,6 +17,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Control, Controller, type FieldError } from "react-hook-form";
 import { FixedSizeList as List } from "react-window";
+import CountryFilterWorker from "../../workers/countryFilter.worker.ts?worker";
 
 function useDebounce<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -107,32 +108,21 @@ const CountrySelector = memo(({ control, error }: CountrySelectorProps) => {
 	// Store the dropdown state in a ref to avoid re-renders
 	const popoverStateRef = useRef({ isOpen: false });
 
-	// Optimize filtering with memoization
-	const filterCountries = useCallback(
-		(value: string, options: Array<{ value: string; label: string }>) => {
-			if (!value.trim()) return options;
-
-			// Use lowercase search term to avoid repeated toLowerCase calls
-			const searchLower = value.toLowerCase();
-			return options.filter((country) =>
-				country.label.toLowerCase().includes(searchLower),
-			);
-		},
-		[],
-	);
-
-	// Update filtered options only when debounced value changes
 	useEffect(() => {
 		if (isDropdownOpen && !isLoading) {
-			setFilteredOptions(filterCountries(debouncedSearchValue, countryOptions));
+			const worker = new CountryFilterWorker();
+			worker.postMessage({
+				searchValue: debouncedSearchValue,
+				options: countryOptions,
+			});
+			worker.onmessage = (e: MessageEvent) => {
+				setFilteredOptions(e.data);
+			};
+			return () => {
+				worker.terminate();
+			};
 		}
-	}, [
-		debouncedSearchValue,
-		countryOptions,
-		filterCountries,
-		isLoading,
-		isDropdownOpen,
-	]);
+	}, [debouncedSearchValue, countryOptions, isLoading, isDropdownOpen]);
 
 	// Reset filtered options when dropdown opens
 	useEffect(() => {
