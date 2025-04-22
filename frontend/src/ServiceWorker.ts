@@ -109,10 +109,12 @@ registerRoute(
 	async ({ request, event }) => {
 		try {
 			const response = await navStrategy.handle({ request, event });
+			if (response) return response;
+			const index = await caches.match("/index.html");
+			if (index) return index;
 			return (
-				response ||
-				((await caches.match("/offline.html")) ??
-					new Response("Offline", { status: 503 }))
+				(await caches.match("/offline.html")) ??
+				new Response("Offline", { status: 503 })
 			);
 		} catch {
 			return (
@@ -144,8 +146,16 @@ self.addEventListener("message", (event) => {
 	}
 });
 
+// Add activate handler
+self.addEventListener("activate", (event) => {
+	event.waitUntil(self.clients.claim());
+});
+
 // Cache the app shell for offline use
 self.addEventListener("install", (event) => {
+	// take control immediately
+	self.skipWaiting();
+
 	const installEvent = event as ExtendableEvent;
 	installEvent.waitUntil(
 		caches.open("app-shell").then((cache) => {
@@ -153,7 +163,7 @@ self.addEventListener("install", (event) => {
 				"/",
 				"/index.html",
 				"/offline.html",
-				"/manifest.json",
+				"/manifest.webmanifest", // <-- was /manifest.json
 			]);
 		}),
 	);

@@ -25,7 +25,7 @@ export default defineConfig(() => {
       VitePWA({
         registerType: "autoUpdate",
         injectRegister: "auto",
-        includeAssets: ['offline.html', 'icon.png'],
+        includeAssets: ['offline.html', 'manifest.webmanifest', 'index.html'],
         manifest: {
           name: "Allotment",
           short_name: "Allotment",
@@ -33,10 +33,9 @@ export default defineConfig(() => {
           display: "standalone",
           background_color: "#ffffff",
           theme_color: "#007333",
-          icons: [{ src: "/icon.png", sizes: "512x512", type: "image/png" }],
         },
         workbox: {
-          navigateFallback: '/offline.html',
+          navigateFallback: '/index.html',
           globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
           runtimeCaching: [
             {
@@ -92,28 +91,13 @@ export default defineConfig(() => {
       target: 'es2015',
       sourcemap: false,
       cssCodeSplit: true,
-      minify: 'terser',
+      minify: 'terser' as const,
       terserOptions: {
         compress: {
           drop_console: true,
           drop_debugger: true,
         },
         mangle: true,
-      },
-      rollupOptions: {
-        external: ['react', 'react-dom'],
-        output: {
-          globals: { react: 'React', 'react-dom': 'ReactDOM' },
-          manualChunks(id: string) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react-dom')) return 'react-dom';
-              if (id.includes('react')) return 'react';
-              if (id.includes('scheduler')) return 'scheduler';
-              if (id.includes('workbox-window')) return 'workbox';
-              return 'vendor';
-            }
-          },
-        },
       },
     },
   };

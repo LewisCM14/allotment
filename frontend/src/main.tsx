@@ -5,26 +5,30 @@ import "./global.css";
 const App = lazy(() => import("./App.tsx"));
 
 function Main() {
+	// Debug: confirm Main.tsx is executed
+	console.log("Main.tsx loaded");
 	useEffect(() => {
-		let updateSW: () => void;
-		import("virtual:pwa-register").then(({ registerSW }) => {
-			updateSW = registerSW({
-				onNeedRefresh() {
-					if (confirm("New content available. Reload?")) {
-						updateSW();
-					}
-				},
-				onOfflineReady() {
-					import("sonner").then(({ toast }) =>
-						toast.success("App ready to work offline", {
-							description:
-								"You can use the app even without an internet connection",
-							duration: 3000,
-						}),
-					);
-				},
+		if (import.meta.env.PROD) {
+			let updateSW: () => void;
+			import("virtual:pwa-register").then(({ registerSW }) => {
+				updateSW = registerSW({
+					onNeedRefresh() {
+						if (confirm("New content available. Reload?")) {
+							updateSW();
+						}
+					},
+					onOfflineReady() {
+						import("sonner").then(({ toast }) =>
+							toast.success("App ready to work offline", {
+								description:
+									"You can use the app even without an internet connection",
+								duration: 3000,
+							}),
+						);
+					},
+				});
 			});
-		});
+		}
 	}, []);
 
 	return (
