@@ -1,0 +1,49 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install UV
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      - name: Install dependencies with UV
+        working-directory: backend
+        run: |
+          uv sync
+    
+      - name: Lint (ruff)
+        run: |
+          source .venv/bin/activate
+          ruff check --select I
+        working-directory: backend
+
+      - name: Verify format (ruff)
+        run: |
+          source .venv/bin/activate
+          ruff format --check
+        working-directory: backend
+
+      - name: Type checking (mypy)
+        run: |
+          source .venv/bin/activate
+          mypy .
+        working-directory: backend
+
+      - name: Run tests (pytest)
+        run: |
+          source .venv/bin/activate
+          pytest
+        working-directory: backend
