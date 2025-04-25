@@ -11,6 +11,8 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/backend
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
