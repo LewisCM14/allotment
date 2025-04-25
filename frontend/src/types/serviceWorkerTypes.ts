@@ -4,7 +4,6 @@ interface ServiceWorkerGlobalScope {
 	skipWaiting(): Promise<void>;
 	clients: Clients;
 
-	// Add standard EventTarget methods
 	addEventListener(
 		type: string,
 		listener: EventListenerOrEventListenerObject,

@@ -14,10 +14,17 @@ import {
 } from "@/components/ui/Popover";
 import type { RegisterFormData } from "@/features/user/RegisterSchema";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+	memo,
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+	useTransition,
+} from "react";
 import { type Control, Controller, type FieldError } from "react-hook-form";
 import { FixedSizeList as List } from "react-window";
-import CountryFilterWorker from "../../workers/countryFilter.worker.ts?worker";
 
 function useDebounce<T>(value: T, delay: number): T {
 	const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -37,7 +44,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const useCountryOptions = () => {
 	const [options, setOptions] = useState<
-		Array<{ value: string; label: string }>
+		Array<{ value: string; label: string; lowerLabel: string }>
 	>([]);
 	const [isLoading, setIsLoading] = useState(true);
 
@@ -46,7 +53,13 @@ const useCountryOptions = () => {
 			setIsLoading(true);
 			const { getCountryOptions } = await import("@/lib/countries");
 			const result = getCountryOptions();
-			setOptions(result);
+			setOptions(
+				result.map((c) => ({
+					value: c.value,
+					label: c.label,
+					lowerLabel: c.label.toLowerCase(),
+				})),
+			);
 			setIsLoading(false);
 		};
 
@@ -104,30 +117,29 @@ const CountrySelector = memo(({ control, error }: CountrySelectorProps) => {
 		Array<{ value: string; label: string }>
 	>([]);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const [isPending, startTransition] = useTransition();
 
 	// Store the dropdown state in a ref to avoid re-renders
 	const popoverStateRef = useRef({ isOpen: false });
 
+	// filtered on debounced search
 	useEffect(() => {
 		if (isDropdownOpen && !isLoading) {
-			const worker = new CountryFilterWorker();
-			worker.postMessage({
-				searchValue: debouncedSearchValue,
-				options: countryOptions,
+			const lower = debouncedSearchValue.toLowerCase();
+			startTransition(() => {
+				setFilteredOptions(
+					countryOptions.filter((opt) => opt.lowerLabel.includes(lower)),
+				);
 			});
-			worker.onmessage = (e: MessageEvent) => {
-				setFilteredOptions(e.data);
-			};
-			return () => {
-				worker.terminate();
-			};
 		}
 	}, [debouncedSearchValue, countryOptions, isLoading, isDropdownOpen]);
 
-	// Reset filtered options when dropdown opens
+	// reset when opening
 	useEffect(() => {
 		if (isDropdownOpen && !isLoading) {
-			setFilteredOptions(countryOptions);
+			startTransition(() => {
+				setFilteredOptions(countryOptions);
+			});
 		}
 	}, [isDropdownOpen, countryOptions, isLoading]);
 
@@ -226,31 +238,27 @@ const CountrySelector = memo(({ control, error }: CountrySelectorProps) => {
 											className="border-none focus:ring-0"
 										/>
 										{isLoading ? (
-											<div className="py-6 text-center">
-												Loading countries...
-											</div>
+											<div className="py-6 text-center">Loading countries…</div>
+										) : isPending ? (
+											<div className="py-6 text-center">Searching…</div>
+										) : filteredOptions.length === 0 ? (
+											<CommandEmpty>No country found.</CommandEmpty>
 										) : (
-											<>
-												{filteredOptions.length === 0 ? (
-													<CommandEmpty>No country found.</CommandEmpty>
-												) : (
-													<CommandGroup className="overflow-hidden p-0">
-														<List
-															height={Math.min(
-																LIST_HEIGHT,
-																filteredOptions.length * ITEM_HEIGHT,
-															)}
-															width="100%"
-															itemCount={filteredOptions.length}
-															itemSize={ITEM_HEIGHT}
-															overscanCount={OVERSCAN_COUNT}
-															className="scrollbar-thin"
-														>
-															{rowRenderer}
-														</List>
-													</CommandGroup>
-												)}
-											</>
+											<CommandGroup className="overflow-hidden p-0">
+												<List
+													height={Math.min(
+														LIST_HEIGHT,
+														filteredOptions.length * ITEM_HEIGHT,
+													)}
+													width="100%"
+													itemCount={filteredOptions.length}
+													itemSize={ITEM_HEIGHT}
+													overscanCount={OVERSCAN_COUNT}
+													className="scrollbar-thin"
+												>
+													{rowRenderer}
+												</List>
+											</CommandGroup>
 										)}
 									</Command>
 								</PopoverContent>

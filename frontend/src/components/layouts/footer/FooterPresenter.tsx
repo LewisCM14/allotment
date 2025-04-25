@@ -52,7 +52,7 @@ export function FooterPresenter({
 								aria-label="Toggle user menu"
 								onClick={onMenuClick}
 								data-menu-button
-								className="hover:bg-accent/10"
+								className="cursor-pointer hover:bg-accent/10"
 							>
 								<User size={24} />
 							</Button>

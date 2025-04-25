@@ -1,4 +1,5 @@
 import tailwindcss from '@tailwindcss/vite';
+import legacy from "@vitejs/plugin-legacy";
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -9,6 +10,9 @@ import { VitePWA } from "vite-plugin-pwa";
 export default defineConfig(() => {
   return {
     plugins: [
+      legacy({
+        targets: ['defaults', 'not IE 11'],
+      }),
       imagetools(),
       react(),
       tailwindcss(),
@@ -80,26 +84,40 @@ export default defineConfig(() => {
             },
           ],
         },
-      })
+      }),
     ],
+    optimizeDeps: {
+      include: ['react', 'react-dom'],
+    },
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
       },
+      dedupe: ['react', 'react-dom'],
     },
     build: {
-      target: 'esnext',
       rollupOptions: {
         output: {
           manualChunks(id) {
-            if (id.includes('node_modules')) {
-              return id.toString().split('node_modules/')[1].split('/')[0].toString();
+            // isolate lucide-react into its own chunk
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor_lucide';
             }
+            // only split other node_modules
+            if (!id.includes('node_modules')) {
+              return;
+            }
+            const pkg = id.split('node_modules/')[1].split('/')[0];
+            const skip = ['detect-node-es', 'react-router-dom', 'set-cookie-parser', 'turbo-stream'];
+            if (skip.includes(pkg)) {
+              return;
+            }
+            return pkg;
           },
         },
       },
       sourcemap: false,
-      cssCodeSplit: true,
+      cssCodeSplit: false,
       minify: 'terser' as const,
       terserOptions: {
         compress: {
@@ -108,6 +126,7 @@ export default defineConfig(() => {
         },
         mangle: true,
       },
+      chunkSizeWarningLimit: 1000,
     },
   };
 });

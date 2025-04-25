@@ -7,24 +7,28 @@
   <title>Allotment</title>
   <link rel="icon" href="/favicon.ico" />
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="preload" as="style"
-    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap"
-    rel="stylesheet" media="print" onload="this.media='all'" />
-  <noscript>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Noto+Sans:wght@400;500;600;700&display=swap"
-      rel="stylesheet" />
-  </noscript>
+  <link rel="preconnect" href="%VITE_API_URL%" crossorigin />
+  <link rel="preload" as="style" href="/src/global.css" />
+  <link rel="stylesheet" href="/src/global.css" />
+
+  <link rel="preload" as="font" href="/assets/fonts/Oswald-Regular.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/Oswald-Medium.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/Oswald-SemiBold.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/Oswald-Bold.woff2" type="font/woff2" crossorigin />
+
+  <link rel="preload" as="font" href="/assets/fonts/NotoSans-Regular.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/NotoSans-Medium.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/NotoSans-SemiBold.woff2" type="font/woff2" crossorigin />
+  <link rel="preload" as="font" href="/assets/fonts/NotoSans-Bold.woff2" type="font/woff2" crossorigin />
+
+  <link rel="preload" as="image" href="/src/assets/logo_32x32.webp" type="image/webp"
+    imagesrcset="/src/assets/logo_32x32.webp 32w, /src/assets/logo_64x64.webp 64w"
+    imagesizes="(min-width: 768px) 64px, 32px" />
 </head>
 
 <body>
   <div id="root"></div>
-
-  <script type="module" src="/src/main.tsx"></script>
+  <script type="module" src="/src/main.tsx" defer></script>
 </body>
 
 </html>

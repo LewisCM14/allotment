@@ -17,7 +17,7 @@ function App() {
 					<ThemeProvider>
 						<div className="flex flex-col h-screen">
 							<Header />
-							<div className="flex-1 overflow-y-auto pt-16 pb-16">
+							<div className="flex-1 overflow-y-auto pt-16 md:pt-24 pb-16">
 								<AppRoutes />
 							</div>
 							<Footer />

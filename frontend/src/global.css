@@ -1,11 +1,74 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Bold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Bold.woff2") format("woff2");
+}
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
 	--font-heading: "Oswald", "Georgia", sans-serif;
-	--font-body: "Noto Sans", "Verdana" sans-serif;
+	--font-body: "Noto Sans", "Verdana", sans-serif;
 	--radius: 0.625rem;
 
 	/* main page/component background */

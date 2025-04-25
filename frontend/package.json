@@ -3,11 +3,12 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "npx @biomejs/biome lint --write ./src",
-    "lint unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
+    "lint:unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
     "format": "npx @biomejs/biome format --write ./src",
     "preview": "vite preview",
     "test": "vitest run",
@@ -49,6 +50,7 @@
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.13.11",
     "@types/react-window": "^1.8.8",
+    "@vitejs/plugin-legacy": "^6.1.0",
     "@vitejs/plugin-react-swc": "^3.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -64,10 +66,11 @@
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "vite": "^6.3.2",
+    "vite-imagetools": "^7.0.5",
+    "vite-plugin-compression": "^0.3.1",
     "vite-plugin-pwa": "^0.21.2",
     "vitest": "^3.1.1",
-    "vite-plugin-compression": "^0.3.1",
-    "vite-imagetools": "^4.0.1"
+    "@types/react-dom": "^19.0.0"
   },
   "overrides": {
     "glob": "^9.0.0",
