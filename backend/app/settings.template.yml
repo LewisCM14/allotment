@@ -1,5 +1,5 @@
 app:
-  name: "name"
+  name: "Allotment Service"
   version: "0.0.0"
   api_prefix: "/api/v1"
   log_level: "INFO" 

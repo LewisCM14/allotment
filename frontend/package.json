@@ -9,9 +9,9 @@
     "build": "tsc -b && vite build",
     "lint": "npx @biomejs/biome lint --write ./src",
     "lint:unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
-    "lint:check": "npx @biomejs/biome lint --check ./src",
     "format": "npx @biomejs/biome format --write ./src",
-    "format:check": "npx @biomejs/biome format --check ./src",
+    "biome": "npx @biomejs/biome check --write ./src",
+    "ci:check": "npx @biomejs/biome check ./src",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -95,11 +95,18 @@ def load_yaml_config() -> Dict[str, Any]:
         Dict[str, Any]: Configuration dictionary from YAML or empty dict if file not found
     """
     config_path = "app/settings.yml"
+    template_path = "app/settings.template.yml"
     logger.info("Loading configuration", path=config_path)
 
     if not os.path.exists(config_path):
-        logger.warning("Configuration file not found", path=config_path)
-        return {}
+        logger.warning(
+            "Configuration file not found, falling back to template", path=config_path
+        )
+        if os.path.exists(template_path):
+            config_path = template_path
+            logger.info("Loading configuration from template", path=template_path)
+        else:
+            return {}
 
     try:
         with open(config_path, "r", encoding="utf-8") as file:
@@ -132,27 +139,25 @@ try:
         SLOW_QUERY_THRESHOLD=yaml_config.get("app", {}).get(
             "slow_query_threshold", 1.0
         ),
-        CORS_ORIGINS=yaml_config.get("app", {})
-        .get("cors", {})
-        .get("origins", ["http://127.0.0.1:5173"]),
+        CORS_ORIGINS=yaml_config.get("app", {}).get("cors", {}).get("origins"),
         CORS_ALLOW_CREDENTIALS=yaml_config.get("app", {})
         .get("cors", {})
-        .get("allow_credentials", True),
+        .get("allow_credentials"),
         CORS_ALLOW_METHODS=yaml_config.get("app", {})
         .get("cors", {})
-        .get("allow_methods", ["*"]),
+        .get("allow_methods"),
         CORS_ALLOW_HEADERS=yaml_config.get("app", {})
         .get("cors", {})
-        .get("allow_headers", ["*"]),
-        JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm", "RS256"),
+        .get("allow_headers"),
+        JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm"),
         ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
-            "access_token_expire_minutes", 60
+            "access_token_expire_minutes"
         ),
         REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(
-            "refresh_token_expire_days", 7
+            "refresh_token_expire_days"
         ),
         RESET_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
-            "reset_token_expire_minutes", 60
+            "reset_token_expire_minutes"
         ),
         PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
             "private_key_path", "private.pem"
