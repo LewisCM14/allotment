@@ -160,9 +160,11 @@ try:
             "reset_token_expire_minutes"
         ),
         PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
-            "private_key_path", "private.pem"
+            "private_key_path", "app/keys/private.pem"
         ),
-        PUBLIC_KEY_PATH=yaml_config.get("jwt", {}).get("public_key_path", "public.pem"),
+        PUBLIC_KEY_PATH=yaml_config.get("jwt", {}).get(
+            "public_key_path", "app/keys/public.pem"
+        ),
     )
     logger.info(
         "Settings initialized successfully",
