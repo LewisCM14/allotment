@@ -62,8 +62,8 @@ class Settings(BaseSettings):
         self.PUBLIC_KEY_PATH = str(BASE_DIR / self.PUBLIC_KEY_PATH)
 
         try:
-            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH)
-            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH)
+            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=True)
+            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=True)
             logger.info(
                 "Key files loaded successfully",
                 private_key_path=self.PRIVATE_KEY_PATH,
@@ -73,7 +73,7 @@ class Settings(BaseSettings):
             logger.error("Failed to load key files", error="REDACTED")
             raise
 
-    def _load_key(self, path: str) -> bytes | None:
+    def _load_key(self, path: str, required: bool = True) -> bytes | None:
         """Reads RSA key files safely."""
         if path and os.path.exists(path):
             try:
@@ -83,6 +83,12 @@ class Settings(BaseSettings):
             except IOError:
                 logger.error("Error reading key file", path=path, error="REDACTED")
                 raise
+        if required:
+            error_msg = (
+                f"Key file {path} not found. Ensure correct path in settings.yml"
+            )
+            logger.error("Key file not found", path=path)
+            raise FileNotFoundError(error_msg)
         logger.warning("Key file not found, skipping", path=path)
         return None
 

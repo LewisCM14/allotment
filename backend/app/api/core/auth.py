@@ -71,6 +71,9 @@ def create_token(
             "type": token_type,
         }
 
+        if not settings.PRIVATE_KEY:
+            raise ValueError("Private key is not loaded. Ensure the key file exists.")
+
         token = jwt.encode(
             {"alg": settings.JWT_ALGORITHM}, payload, settings.PRIVATE_KEY
         )
