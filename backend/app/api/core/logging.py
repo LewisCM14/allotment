@@ -29,7 +29,7 @@ def sync_log_to_file(
             loop = asyncio.get_running_loop()
         except RuntimeError:
             loop = None
-        if loop:
+        if loop and loop.is_running():
             loop.create_task(write_log_async(event_dict))
         else:
             asyncio.run(write_log_async(event_dict))
