@@ -25,7 +25,14 @@ def sync_log_to_file(
 ) -> Union[Mapping[str, Any], str, bytes, bytearray, Tuple[Any, ...]]:
     """Sync wrapper to execute async logging function."""
     if settings.LOG_TO_FILE:
-        asyncio.create_task(write_log_async(event_dict))
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop:
+            loop.create_task(write_log_async(event_dict))
+        else:
+            asyncio.run(write_log_async(event_dict))
     return event_dict
 
 
