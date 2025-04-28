@@ -1,4 +1,5 @@
 import { AUTH_ERRORS } from "@/features/user/UserService";
+import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import axios, { type AxiosError, type AxiosRequestConfig } from "axios";
 
@@ -38,7 +39,7 @@ export const handleApiError = (
 };
 
 const api = axios.create({
-	baseURL: `${import.meta.env.VITE_API_URL}`,
+	baseURL: `${API_URL}`,
 	headers: {
 		"Content-Type": "application/json",
 		Accept: "application/json",
@@ -101,7 +102,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
 	try {
 		const response = await axios.post<TokenPair>(
-			`${import.meta.env.VITE_API_URL}${import.meta.env.VITE_API_VERSION}/user/auth/refresh`,
+			`${API_URL}${API_VERSION}/user/auth/refresh`,
 			{ refresh_token: refreshToken },
 			{ baseURL: "" }, // Use absolute URL
 		);

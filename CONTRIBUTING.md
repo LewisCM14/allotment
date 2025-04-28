@@ -221,7 +221,7 @@ npm run dev
 
 Preview Production Build
 ```
-npm run build && npm run preview
+npm run preview
 ```
 
 Linting

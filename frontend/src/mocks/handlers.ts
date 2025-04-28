@@ -4,11 +4,9 @@ import type {
 	IRegisterRequest,
 } from "@/features/user/UserService";
 import type { IRefreshRequest } from "@/services/api";
+import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
-
-const API_VERSION = import.meta.env?.VITE_API_VERSION || "/api/v1";
-const API_URL = import.meta.env?.VITE_API_URL || "";
 
 export const handlers = [
 	// Mock the login endpoint

@@ -1,4 +1,5 @@
 import { formatError } from "@/lib/errorUtils";
+import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import axios from "axios";
 import api, { handleApiError } from "../../services/api";
@@ -57,7 +58,7 @@ export const registerUser = async (
 		};
 
 		const response = await api.post<TokenPair>(
-			`${import.meta.env.VITE_API_VERSION}/user`,
+			`${API_URL}${API_VERSION}/user`,
 			requestData,
 		);
 		return response.data;
@@ -145,7 +146,7 @@ export const loginUser = async (
 		};
 
 		const response = await api.post<ILoginResponse>(
-			`${import.meta.env.VITE_API_VERSION}/user/auth/login`,
+			`${API_URL}${API_VERSION}/user/auth/login`,
 			requestData,
 		);
 
@@ -215,7 +216,7 @@ export const verifyEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.get<{ message: string }>(
-			`${import.meta.env.VITE_API_VERSION}/user/verify-email`,
+			`${API_URL}${API_VERSION}/user/verify-email`,
 			{ params: { token, fromReset } },
 		);
 		return response.data;
@@ -258,7 +259,7 @@ export const requestVerificationEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${import.meta.env.VITE_API_VERSION}/user/send-verification-email`,
+			`${API_URL}${API_VERSION}/user/send-verification-email`,
 			null,
 			{ params: { user_email: email } },
 		);
@@ -299,7 +300,7 @@ export const requestPasswordReset = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${import.meta.env.VITE_API_VERSION}/user/request-password-reset`,
+			`${API_URL}${API_VERSION}/user/request-password-reset`,
 			{ user_email: email },
 		);
 		return response.data;
@@ -345,7 +346,7 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${import.meta.env.VITE_API_VERSION}/user/reset-password`,
+			`${API_URL}${API_VERSION}/user/reset-password`,
 			{ token, new_password: newPassword },
 		);
 		return response.data;

@@ -44,6 +44,13 @@ jobs:
           mypy .
         working-directory: backend
 
+      - name: Generate dummy keys
+        run: |
+          mkdir -p app/keys
+          if [ ! -f app/keys/private.pem ]; then openssl genrsa -out app/keys/private.pem 2048; fi
+          if [ ! -f app/keys/public.pem ]; then openssl rsa -in app/keys/private.pem -pubout -out app/keys/public.pem; fi
+        working-directory: backend
+
       - name: Run tests (pytest)
         run: |
           source .venv/bin/activate
