@@ -21,6 +21,13 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
 
+      - name: Generate dummy keys
+        run: |
+          mkdir -p backend/app/keys
+          openssl genrsa -out backend/app/keys/private.pem 2048
+          openssl rsa -in backend/app/keys/private.pem -pubout -out backend/app/keys/public.pem
+        working-directory: backend
+
       - name: Install dependencies with UV
         working-directory: backend
         run: |
@@ -42,13 +49,6 @@ jobs:
         run: |
           source .venv/bin/activate
           mypy .
-        working-directory: backend
-
-      - name: Generate dummy keys
-        run: |
-          mkdir -p backend/app/keys
-          openssl genrsa -out backend/app/keys/private.pem 2048
-          openssl rsa -in backend/app/keys/private.pem -pubout -out backend/app/keys/public.pem
         working-directory: backend
 
       - name: Run tests (pytest)
