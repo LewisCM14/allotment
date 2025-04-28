@@ -73,7 +73,7 @@ class Settings(BaseSettings):
             logger.error("Failed to load key files", error="REDACTED")
             raise
 
-    def _load_key(self, path: str) -> bytes:
+    def _load_key(self, path: str) -> bytes | None:
         """Reads RSA key files safely."""
         if path and os.path.exists(path):
             try:
@@ -83,9 +83,8 @@ class Settings(BaseSettings):
             except IOError:
                 logger.error("Error reading key file", path=path, error="REDACTED")
                 raise
-        error_msg = f"Key file {path} not found. Ensure correct path in settings.yml"
-        logger.error("Key file not found", path=path)
-        raise FileNotFoundError(error_msg)
+        logger.warning("Key file not found, skipping", path=path)
+        return None
 
 
 def load_yaml_config() -> Dict[str, Any]:
