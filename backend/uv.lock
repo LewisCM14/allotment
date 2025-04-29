@@ -62,6 +62,7 @@ dependencies = [
 dev = [
     { name = "aiosqlite" },
     { name = "alembic" },
+    { name = "cryptography" },
     { name = "fastapi", extra = ["standard"] },
     { name = "httpx" },
     { name = "mypy" },
@@ -97,6 +98,7 @@ requires-dist = [
 dev = [
     { name = "aiosqlite" },
     { name = "alembic" },
+    { name = "cryptography" },
     { name = "fastapi", extras = ["standard"] },
     { name = "httpx" },
     { name = "mypy" },

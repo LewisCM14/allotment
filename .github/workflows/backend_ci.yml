@@ -21,25 +21,11 @@ jobs:
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
 
-      - name: Generate dummy keys
-        run: |
-          mkdir -p backend/app/keys
-          openssl genrsa -out backend/app/keys/private.pem 2048
-          openssl rsa -in backend/app/keys/private.pem -pubout -out backend/app/keys/public.pem
-        working-directory: ${{ github.workspace }}
-
-      - name: Create test settings
-        run: |
-          cp app/settings.template.yml app/settings.yml
-          # Set require_keys to false for CI environment
-          sed -i 's/require_keys: true/require_keys: false/' app/settings.yml
-        working-directory: backend
-
       - name: Install dependencies with UV
         working-directory: backend
         run: |
           uv sync
-    
+
       - name: Lint (ruff)
         run: |
           source .venv/bin/activate

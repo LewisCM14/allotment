@@ -47,7 +47,6 @@ class Settings(BaseSettings):
     RESET_TOKEN_EXPIRE_MINUTES: int
     PRIVATE_KEY_PATH: str
     PUBLIC_KEY_PATH: str
-    REQUIRE_KEYS: bool = True  # Default to requiring keys
     PRIVATE_KEY: bytes | None = None
     PUBLIC_KEY: bytes | None = None
 
@@ -63,39 +62,16 @@ class Settings(BaseSettings):
         self.PUBLIC_KEY_PATH = str(BASE_DIR / self.PUBLIC_KEY_PATH)
 
         try:
-            # Only require keys if REQUIRE_KEYS is True
-            self.PRIVATE_KEY = self._load_key(
-                self.PRIVATE_KEY_PATH, required=self.REQUIRE_KEYS
+            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=True)
+            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=True)
+            logger.info(
+                "Key files loaded successfully",
+                private_key_path=self.PRIVATE_KEY_PATH,
+                public_key_path=self.PUBLIC_KEY_PATH,
             )
-            self.PUBLIC_KEY = self._load_key(
-                self.PUBLIC_KEY_PATH, required=self.REQUIRE_KEYS
-            )
-            if self.PRIVATE_KEY and self.PUBLIC_KEY:
-                logger.info(
-                    "Key files loaded successfully",
-                    private_key_path=self.PRIVATE_KEY_PATH,
-                    public_key_path=self.PUBLIC_KEY_PATH,
-                )
-            elif not self.REQUIRE_KEYS:
-                logger.warning(
-                    "Key validation skipped, using dummy keys",
-                    environment=self.ENVIRONMENT,
-                )
-                # Generate dummy keys for testing environments
-                if not self.PRIVATE_KEY:
-                    self.PRIVATE_KEY = b"DUMMY_PRIVATE_KEY"
-                if not self.PUBLIC_KEY:
-                    self.PUBLIC_KEY = b"DUMMY_PUBLIC_KEY"
         except FileNotFoundError:
-            if self.REQUIRE_KEYS:
-                logger.error("Failed to load key files", error="REDACTED")
-                raise
-            else:
-                logger.warning(
-                    "Key files not found, but not required in this environment"
-                )
-                self.PRIVATE_KEY = b"DUMMY_PRIVATE_KEY"
-                self.PUBLIC_KEY = b"DUMMY_PUBLIC_KEY"
+            logger.error("Failed to load key files", error="REDACTED")
+            raise
 
     def _load_key(self, path: str, required: bool = True) -> bytes | None:
         """Reads RSA key files safely."""
@@ -106,9 +82,7 @@ class Settings(BaseSettings):
                     return key_file.read()
             except IOError:
                 logger.error("Error reading key file", path=path, error="REDACTED")
-                if required:
-                    raise
-                return None
+                raise
         if required:
             error_msg = (
                 f"Key file {path} not found. Ensure correct path in settings.yml"
@@ -196,7 +170,6 @@ try:
         PUBLIC_KEY_PATH=yaml_config.get("jwt", {}).get(
             "public_key_path", "app/keys/public.pem"
         ),
-        REQUIRE_KEYS=yaml_config.get("jwt", {}).get("require_keys", True),
     )
     logger.info(
         "Settings initialized successfully",
