@@ -30,3 +30,4 @@ jwt:
   reset_token_expire_minutes: 60
   private_key_path: "app/keys/private.pem"
   public_key_path: "app/keys/public.pem"
+  require_keys: true  # Set to false in test environments
