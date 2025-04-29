@@ -5,9 +5,10 @@ User API Tests
 import uuid
 
 import pytest
+from fastapi import status
+
 from app.api.core.auth import create_token
 from app.api.core.config import settings
-from fastapi import status
 from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX

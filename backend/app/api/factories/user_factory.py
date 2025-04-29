@@ -10,6 +10,7 @@ import uuid
 from typing import Any, Dict
 
 import structlog
+
 from app.api.core.logging import log_timing
 from app.api.middleware.exception_handler import BusinessLogicError
 from app.api.middleware.logging_middleware import (

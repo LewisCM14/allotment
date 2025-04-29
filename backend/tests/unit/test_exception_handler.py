@@ -2,6 +2,8 @@ import json
 from unittest.mock import MagicMock
 
 import pytest
+from fastapi import status
+
 from app.api.middleware.error_codes import (
     DB_INTEGRITY_ERROR,
     GENERAL_BUSINESS_RULE_VIOLATION,
@@ -14,7 +16,6 @@ from app.api.middleware.exception_handler import (
     ExceptionHandlingMiddleware,
     UserNotFoundError,
 )
-from fastapi import status
 
 
 class TestBaseApplicationError:

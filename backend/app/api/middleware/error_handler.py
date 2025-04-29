@@ -18,17 +18,6 @@ from typing import (
 )
 
 import structlog
-from app.api.middleware.error_codes import DB_QUERY_ERROR
-from app.api.middleware.exception_handler import (
-    BaseApplicationError,
-    BusinessLogicError,
-    DatabaseIntegrityError,
-    EmailAlreadyRegisteredError,
-    ExpiredTokenError,
-    InvalidTokenError,
-    UserNotFoundError,
-)
-from app.api.middleware.logging_middleware import sanitize_error_message
 from authlib.jose.errors import (
     ExpiredTokenError as AuthlibExpiredTokenError,
 )
@@ -40,6 +29,18 @@ from fastapi import status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.middleware.error_codes import DB_QUERY_ERROR
+from app.api.middleware.exception_handler import (
+    BaseApplicationError,
+    BusinessLogicError,
+    DatabaseIntegrityError,
+    EmailAlreadyRegisteredError,
+    ExpiredTokenError,
+    InvalidTokenError,
+    UserNotFoundError,
+)
+from app.api.middleware.logging_middleware import sanitize_error_message
 
 logger = structlog.get_logger()
 

@@ -11,14 +11,15 @@ from typing import Any, Optional
 
 import bcrypt
 import structlog
+from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
 from app.api.core.database import Base
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
-from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 logger = structlog.get_logger()
 
