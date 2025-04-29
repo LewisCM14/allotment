@@ -9,9 +9,6 @@ from types import TracebackType
 from typing import Any, Dict, Optional, Type
 
 import structlog
-from authlib.jose import jwt
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.api.core.auth import (
     create_token,
 )
@@ -34,6 +31,8 @@ from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
 )
+from authlib.jose import jwt
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 

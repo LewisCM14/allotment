@@ -7,6 +7,8 @@ import os
 import stat
 
 import pytest
+from app.api.core.database import Base, get_db
+from app.main import app
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -14,9 +16,6 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
     create_async_engine,
 )
-
-from app.api.core.database import Base, get_db
-from app.main import app
 
 # Use a file-based SQLite database to ensures database is shared between connections
 TEST_DB_FILE = "test_db.sqlite3"

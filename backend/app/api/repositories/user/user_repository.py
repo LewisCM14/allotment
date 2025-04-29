@@ -7,10 +7,6 @@ from typing import Optional
 from uuid import UUID
 
 import structlog
-from fastapi import HTTPException, status
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import translate_db_exceptions
 from app.api.middleware.exception_handler import InvalidTokenError
@@ -18,6 +14,9 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
 from app.api.models import User
+from fastapi import HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 

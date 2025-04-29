@@ -1,8 +1,4 @@
 import pytest
-from authlib.jose.errors import ExpiredTokenError as AuthlibExpiredTokenError
-from authlib.jose.errors import JoseError
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-
 from app.api.middleware.error_handler import (
     safe_operation,
     translate_db_exceptions,
@@ -14,6 +10,9 @@ from app.api.middleware.exception_handler import (
     ExpiredTokenError,
     InvalidTokenError,
 )
+from authlib.jose.errors import ExpiredTokenError as AuthlibExpiredTokenError
+from authlib.jose.errors import JoseError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 
 class TestTranslateDbExceptions:

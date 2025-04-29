@@ -7,11 +7,6 @@ import uuid
 from typing import Any, Awaitable, Callable, Dict, List
 
 import structlog
-from fastapi import Request, Response, status
-from fastapi.exceptions import HTTPException
-from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
-
 from app.api.core.config import settings
 from app.api.middleware.error_codes import (
     AUTH_EXPIRED_TOKEN,
@@ -31,6 +26,10 @@ from app.api.middleware.logging_middleware import (
     SENSITIVE_FIELDS,
     sanitize_error_message,
 )
+from fastapi import Request, Response, status
+from fastapi.exceptions import HTTPException
+from fastapi.responses import JSONResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 
 settings.ENVIRONMENT = getattr(settings, "ENVIRONMENT", "development")
 

@@ -18,18 +18,6 @@ from typing import (
 )
 
 import structlog
-from authlib.jose.errors import (
-    ExpiredTokenError as AuthlibExpiredTokenError,
-)
-from authlib.jose.errors import (
-    InvalidClaimError,
-    JoseError,
-)
-from fastapi import status
-from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.api.middleware.error_codes import DB_QUERY_ERROR
 from app.api.middleware.exception_handler import (
     BaseApplicationError,
@@ -41,6 +29,17 @@ from app.api.middleware.exception_handler import (
     UserNotFoundError,
 )
 from app.api.middleware.logging_middleware import sanitize_error_message
+from authlib.jose.errors import (
+    ExpiredTokenError as AuthlibExpiredTokenError,
+)
+from authlib.jose.errors import (
+    InvalidClaimError,
+    JoseError,
+)
+from fastapi import status
+from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncSession
 
 logger = structlog.get_logger()
 

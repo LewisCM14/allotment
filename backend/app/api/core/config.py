@@ -64,8 +64,12 @@ class Settings(BaseSettings):
 
         try:
             # Only require keys if REQUIRE_KEYS is True
-            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=self.REQUIRE_KEYS)
-            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=self.REQUIRE_KEYS)
+            self.PRIVATE_KEY = self._load_key(
+                self.PRIVATE_KEY_PATH, required=self.REQUIRE_KEYS
+            )
+            self.PUBLIC_KEY = self._load_key(
+                self.PUBLIC_KEY_PATH, required=self.REQUIRE_KEYS
+            )
             if self.PRIVATE_KEY and self.PUBLIC_KEY:
                 logger.info(
                     "Key files loaded successfully",
@@ -87,7 +91,9 @@ class Settings(BaseSettings):
                 logger.error("Failed to load key files", error="REDACTED")
                 raise
             else:
-                logger.warning("Key files not found, but not required in this environment")
+                logger.warning(
+                    "Key files not found, but not required in this environment"
+                )
                 self.PRIVATE_KEY = b"DUMMY_PRIVATE_KEY"
                 self.PUBLIC_KEY = b"DUMMY_PUBLIC_KEY"
 

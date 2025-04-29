@@ -8,9 +8,6 @@ from unittest.mock import MagicMock, patch
 
 import bcrypt
 import pytest
-from authlib.jose import JoseError, jwt
-from fastapi import HTTPException
-
 from app.api.core.auth import (
     authenticate_user,
     create_token,
@@ -19,6 +16,8 @@ from app.api.core.auth import (
 )
 from app.api.core.config import settings
 from app.api.models import User
+from authlib.jose import JoseError, jwt
+from fastapi import HTTPException
 
 
 class TestPasswordVerification:

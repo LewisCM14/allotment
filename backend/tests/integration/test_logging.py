@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, mock_open, patch
 
 import pytest
 import structlog
-
 from app.api.core.config import settings
 from app.api.core.logging import log_timing, write_log_async
 from app.api.middleware.logging_middleware import (
