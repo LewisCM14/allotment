@@ -5,6 +5,7 @@ Testing Configuration
 import asyncio
 import os
 import stat
+from pathlib import Path
 
 import pytest
 from cryptography.hazmat.backends import default_backend
@@ -57,9 +58,20 @@ def generate_test_keys():
         return b"test-private-key", b"test-public-key"
 
 
-PRIVATE_KEY, PUBLIC_KEY = generate_test_keys()
-settings.PRIVATE_KEY = PRIVATE_KEY
-settings.PUBLIC_KEY = PUBLIC_KEY
+# Ensure the keys directory exists and generate test keys
+KEYS_DIR = Path("app/keys")
+KEYS_DIR.mkdir(parents=True, exist_ok=True)
+
+PRIVATE_KEY_PATH = KEYS_DIR / "private.pem"
+PUBLIC_KEY_PATH = KEYS_DIR / "public.pem"
+
+if not PRIVATE_KEY_PATH.exists() or not PUBLIC_KEY_PATH.exists():
+    private_key, public_key = generate_test_keys()
+    PRIVATE_KEY_PATH.write_bytes(private_key)
+    PUBLIC_KEY_PATH.write_bytes(public_key)
+
+settings.PRIVATE_KEY = PRIVATE_KEY_PATH.read_bytes()
+settings.PUBLIC_KEY = PUBLIC_KEY_PATH.read_bytes()
 
 # Remove test database file if it exists
 if os.path.exists(TEST_DB_FILE):
