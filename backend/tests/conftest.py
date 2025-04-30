@@ -5,12 +5,8 @@ Testing Configuration
 import asyncio
 import os
 import stat
-from pathlib import Path
 
 import pytest
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi.testclient import TestClient
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
@@ -19,59 +15,12 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from app.api.core.config import settings
 from app.api.core.database import Base, get_db
 from app.main import app
 
 # Use a file-based SQLite database to ensures database is shared between connections
 TEST_DB_FILE = "test_db.sqlite3"
 TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
-
-
-# Generate real RSA keys for testing
-def generate_test_keys():
-    """Generate RSA keys for testing purposes."""
-    try:
-        # Generate a private key
-        private_key = rsa.generate_private_key(
-            public_exponent=65537, key_size=2048, backend=default_backend()
-        )
-
-        # Get private key in PEM format
-        private_pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
-        )
-
-        # Get public key in PEM format
-        public_key = private_key.public_key()
-        public_pem = public_key.public_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo,
-        )
-
-        return private_pem, public_pem
-    except Exception as e:
-        print(f"Error generating test keys: {e}")
-        # Fallback to simple strings that will be mocked
-        return b"test-private-key", b"test-public-key"
-
-
-# Ensure the keys directory exists and generate test keys
-KEYS_DIR = Path("app/keys")
-KEYS_DIR.mkdir(parents=True, exist_ok=True)
-
-PRIVATE_KEY_PATH = KEYS_DIR / "private.pem"
-PUBLIC_KEY_PATH = KEYS_DIR / "public.pem"
-
-if not PRIVATE_KEY_PATH.exists() or not PUBLIC_KEY_PATH.exists():
-    private_key, public_key = generate_test_keys()
-    PRIVATE_KEY_PATH.write_bytes(private_key)
-    PUBLIC_KEY_PATH.write_bytes(public_key)
-
-settings.PRIVATE_KEY = PRIVATE_KEY_PATH.read_bytes()
-settings.PUBLIC_KEY = PUBLIC_KEY_PATH.read_bytes()
 
 # Remove test database file if it exists
 if os.path.exists(TEST_DB_FILE):

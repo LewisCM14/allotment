@@ -33,6 +33,5 @@ dev = [
     "pytest-asyncio",
     "pytest-mock",
     "httpx",
-    "aiosqlite",
-    "cryptography"
+    "aiosqlite"
 ]
