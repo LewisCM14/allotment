@@ -62,16 +62,16 @@ class Settings(BaseSettings):
         self.PUBLIC_KEY_PATH = str(BASE_DIR / self.PUBLIC_KEY_PATH)
 
         try:
-             self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=True)
-             self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=True)
-             logger.info(
-                 "Key files loaded successfully",
-                 private_key_path=self.PRIVATE_KEY_PATH,
-                 public_key_path=self.PUBLIC_KEY_PATH,
-             )
+            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=True)
+            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=True)
+            logger.info(
+                "Key files loaded successfully",
+                private_key_path=self.PRIVATE_KEY_PATH,
+                public_key_path=self.PUBLIC_KEY_PATH,
+            )
         except FileNotFoundError:
-             logger.error("Failed to load key files", error="REDACTED")
-             raise
+            logger.error("Failed to load key files", error="REDACTED")
+            raise
 
     def _load_key(self, path: str, required: bool = True) -> bytes | None:
         """Reads RSA key files safely."""
