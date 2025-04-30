@@ -13,7 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}/backend
-      TESTING: "true"
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

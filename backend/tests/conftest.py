@@ -23,7 +23,7 @@ from app.api.core.database import Base, get_db
 from app.main import app
 
 # Use a file-based SQLite database to ensures database is shared between connections
-TEST_DB_FILE = os.getenv("TEST_DB_FILE", "/tmp/test_db.sqlite3")
+TEST_DB_FILE = "test_db.sqlite3"
 TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
 
 
