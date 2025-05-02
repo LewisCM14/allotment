@@ -34,6 +34,7 @@ from app.api.middleware.exception_handler import (
     EmailAlreadyRegisteredError,
     EmailVerificationError,
     InvalidTokenError,
+    UserNotFoundError,
 )
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
@@ -196,12 +197,21 @@ async def login(
     }
     logger.info("Login attempt", **log_context)
     try:
-        db_user = await validate_user_exists(
-            db_session=db,
-            user_model=User,
-            user_email=user.user_email,
-            log_context=log_context,
-        )
+        try:
+            db_user = await validate_user_exists(
+                db_session=db,
+                user_model=User,
+                user_email=user.user_email,
+                log_context=log_context,
+            )
+        except UserNotFoundError:
+            logger.warning(
+                "Login failed - user not found",
+                email_exists=False,
+                **log_context,
+            )
+            raise AuthenticationError("Invalid email or password")
+            
         log_context["user_id"] = str(db_user.user_id)
         async with safe_operation("user_authentication", log_context):
             with log_timing(

@@ -3,40 +3,24 @@ Testing Configuration
 """
 
 import asyncio
-import os
-import stat
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import (
-    AsyncSession,
-    async_sessionmaker,
-    create_async_engine,
-)
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 
 from app.api.core.database import Base, get_db
 from app.main import app
 
-# Use a file-based SQLite database to ensures database is shared between connections
-TEST_DB_FILE = "test_db.sqlite3"
-TEST_DATABASE_URL = f"sqlite+aiosqlite:///{TEST_DB_FILE}"
-
-# Remove test database file if it exists
-if os.path.exists(TEST_DB_FILE):
-    os.unlink(TEST_DB_FILE)
-
-# Ensure the directory and file have the correct permissions
-os.umask(0)
-open(TEST_DB_FILE, "a").close()
-os.chmod(TEST_DB_FILE, stat.S_IWUSR | stat.S_IRUSR)
+# Use a shared in-memory database with a named URI
+TEST_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared&uri=true"
 
 engine = create_async_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
 )
 
-# Create async session factory
 TestingSessionLocal = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -44,76 +28,50 @@ TestingSessionLocal = async_sessionmaker(
     autoflush=False,
 )
 
-# Global variable to store the session across requests
-_db_session = None
 
-
+# Create a fresh session for each test
 async def override_get_db():
     """Override database dependency for testing."""
-    global _db_session
-    if _db_session is None:
-        _db_session = TestingSessionLocal()
-
+    session = TestingSessionLocal()
     try:
-        yield _db_session
-    except Exception:
-        await _db_session.rollback()
-        raise
+        yield session
+    finally:
+        await session.close()
 
 
 # Apply database override
 app.dependency_overrides[get_db] = override_get_db
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def event_loop_policy():
-    """Return the event loop policy to use in the test session."""
-    return asyncio.get_event_loop_policy()
+    """Configure the event loop policy for all tests."""
+    policy = asyncio.get_event_loop_policy()
+    return policy
 
 
 @pytest.fixture(scope="session", autouse=True)
 async def setup_test_db():
-    """Create tables once at session start and clean up after tests."""
+    """Set up the test database once for the test session."""
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
-
-        result = await conn.execute(
-            text("SELECT name FROM sqlite_master WHERE type='table'")
-        )
-        tables = result.scalars().all()
-        print(f"Created tables: {tables}")
-
+    
     yield
-
-    # Clean up at the end of all tests
-    global _db_session
-    if _db_session is not None:
-        await _db_session.close()
-        _db_session = None
-
-    # Drop all tables and dispose of the engine
+    
+    # Clean up after all tests
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
-
-    await engine.dispose()
-
-    # Ensure the test database file is removed
-    if os.path.exists(TEST_DB_FILE):
-        os.unlink(TEST_DB_FILE)
-        print(f"Removed test database file: {TEST_DB_FILE}")
 
 
 @pytest.fixture(scope="function", autouse=True)
 async def clear_tables():
     """Clear table data between tests."""
     yield
-
-    global _db_session
-    if _db_session is not None:
-        async with engine.begin() as conn:
-            for table in reversed(Base.metadata.sorted_tables):
-                await conn.execute(table.delete())
+    
+    # Delete all data after each test
+    async with engine.begin() as conn:
+        for table in reversed(Base.metadata.sorted_tables):
+            await conn.execute(table.delete())
 
 
 @pytest.fixture(name="client")

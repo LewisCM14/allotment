@@ -45,19 +45,8 @@ jobs:
         working-directory: backend
 
       - name: Run tests (pytest)
-        timeout-minutes: 5
-        env:
-          ENVIRONMENT: test
-          PYTHONUNBUFFERED: 1
+        timeout-minutes: 2
         run: |
           source .venv/bin/activate
-          # Remove test db if it exists
-          if [ -f "test_db.sqlite3" ]; then
-            rm test_db.sqlite3
-          fi
-          # Create file with correct permissions
-          touch test_db.sqlite3
-          chmod 666 test_db.sqlite3
-          # Run tests with verbose output to see where it might hang
-          pytest -v --asyncio-mode=strict
+          pytest
         working-directory: backend
