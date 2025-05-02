@@ -189,6 +189,7 @@ ___
 ## Backend
 
 _The following commands must be ran and issues resolved prior to raising pull requests_
+> The CI workflow uses `ruff check --select I` and `ruff format --check` to detect issues without automatically fixing them.
 
 Linting
 ```
