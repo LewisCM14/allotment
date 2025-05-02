@@ -211,7 +211,7 @@ async def login(
                 **log_context,
             )
             raise AuthenticationError("Invalid email or password")
-            
+
         log_context["user_id"] = str(db_user.user_id)
         async with safe_operation("user_authentication", log_context):
             with log_timing(

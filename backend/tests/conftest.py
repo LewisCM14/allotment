@@ -55,9 +55,9 @@ async def setup_test_db():
     """Set up the test database once for the test session."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    
+
     yield
-    
+
     # Clean up after all tests
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -67,7 +67,7 @@ async def setup_test_db():
 async def clear_tables():
     """Clear table data between tests."""
     yield
-    
+
     # Delete all data after each test
     async with engine.begin() as conn:
         for table in reversed(Base.metadata.sorted_tables):
