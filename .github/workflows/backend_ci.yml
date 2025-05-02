@@ -46,5 +46,6 @@ jobs:
         timeout-minutes: 2
         run: |
           source .venv/bin/activate
+          PYTHONPATH=$PYTHONPATH:$(pwd) pytest
           pytest
         working-directory: backend
