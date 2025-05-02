@@ -42,6 +42,31 @@ jobs:
           mypy .
         working-directory: backend
 
+      - name: Ensure test keys directory exists
+        run: |
+          mkdir -p backend/app/keys
+        working-directory: .
+
+      - name: Check for test keys
+        id: check_keys
+        run: |
+          if [ -f "app/keys/test_private.pem" ] && [ -f "app/keys/test_public.pem" ]; then
+            echo "Test keys already exist in repository"
+            echo "using_existing_keys=true" >> $GITHUB_OUTPUT
+          else
+            echo "Test keys not found in repository"
+            echo "using_existing_keys=false" >> $GITHUB_OUTPUT
+          fi
+        working-directory: backend
+
+      - name: Generate test RSA key pair if needed
+        if: steps.check_keys.outputs.using_existing_keys == 'false'
+        run: |
+          echo "Generating new test keys for JWT authentication"
+          openssl genpkey -algorithm RSA -out app/keys/test_private.pem -pkeyopt rsa_keygen_bits:2048
+          openssl rsa -pubout -in app/keys/test_private.pem -out app/keys/test_public.pem
+        working-directory: backend
+
       - name: Run tests (pytest)
         timeout-minutes: 2
         run: |
@@ -51,6 +76,8 @@ jobs:
           python --version
           echo "Pytest version:"
           python -m pytest --version
+          # List test files to ensure they exist
+          find tests -name "test_*.py" | sort
           # Run tests with proper path configuration and verbose output
-          PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest -v
+          PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest -xvs
         working-directory: backend
