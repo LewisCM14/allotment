@@ -46,6 +46,11 @@ jobs:
         timeout-minutes: 2
         run: |
           source .venv/bin/activate
-          PYTHONPATH=$PYTHONPATH:$(pwd) pytest
-          pytest
+          # Print debug information
+          echo "Python version:"
+          python --version
+          echo "Pytest version:"
+          python -m pytest --version
+          # Run tests with proper path configuration and verbose output
+          PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest -v
         working-directory: backend
