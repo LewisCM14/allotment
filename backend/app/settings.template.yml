@@ -21,7 +21,7 @@ mail:
   password: "your_gmail_password"
 
 database:
-  url: "postgresql+asyncpg://user:password@localhost:port/dbname"
+  url: "postgresql+asyncpg://user:password@localhost:5432/dbname"
 
 jwt:
   algorithm: "RS256"
