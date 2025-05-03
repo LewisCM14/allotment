@@ -210,6 +210,11 @@ Tests
 ```
 pytest
 ```
+
+Run Tests in Parrelell
+```
+pytest --numprocesses=auto
+```
 --- 
 
 ## Frontend
