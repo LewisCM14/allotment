@@ -3,7 +3,7 @@ app:
   version: "0.0.0"
   api_prefix: "/api/v1"
   log_level: "INFO" 
-  log_to_file: true
+  log_to_file: false
   log_file: "app/app.log"
   environment: "development"
   slow_query_threshold: 1.0
@@ -21,7 +21,7 @@ mail:
   password: "your_gmail_password"
 
 database:
-  url: "postgresql+asyncpg://user:password@localhost:5432/dbname"
+  url: "postgresql+asyncpg://user:password@localhost:port/dbname"
 
 jwt:
   algorithm: "RS256"

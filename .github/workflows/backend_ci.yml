@@ -68,7 +68,7 @@ jobs:
         working-directory: backend
 
       - name: Run tests (pytest)
-        timeout-minutes: 5
+        timeout-minutes: 2
         run: |
           source .venv/bin/activate
           # Print debug information
@@ -79,5 +79,5 @@ jobs:
           # List test files to ensure they exist
           find tests -name "test_*.py" | sort
           # Run tests with proper path configuration and verbose output
-          PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest -xvs
+          PYTHONPATH=$PYTHONPATH:$(pwd) python -m pytest -xvs --numprocesses=auto
         working-directory: backend
