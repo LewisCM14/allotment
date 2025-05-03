@@ -23,7 +23,8 @@ dependencies = [
 dev = [
     "fastapi[standard]", 
     "alembic", 
-    "pytest", 
+    "pytest",
+    "pytest-xdist",
     "ruff", 
     "mypy",
     "typing-extensions",
