@@ -553,12 +553,12 @@
   <h1>Deployment</h1>
 
 <h2 id="deployment-adr">Deployment ADR</h2>
-<p>Whilst the application is to prioritize vertical scaling over horizontal, in order to retain the ability to efficiently deploy to private severs if desired, the current intended deployment scenario is one that uses cloud infrastructure to run Docker containers. The chosen hosting provider must be able to support the deployment of React and FastAPI applications on top of a PostgreSQL database with the ability to scale to 2.5million users</p>
+<p>Whilst the application is to prioritize vertical scaling over horizontal, in order to retain the ability to efficiently deploy to private severs if desired, the current intended deployment scenario is one that use a cloud based hosting provider that offers managed Postgres and the ability to to run Docker containers. The chosen hosting provider must be able to support the deployment of React and FastAPI applications on top of a PostgreSQL database with the ability to scale to 2.5million users</p>
 <div class="admonition success">
 <p class="admonition-title">Outcome</p>
 <ul>
-<li>Fly.io<ul>
-<li>Fly.io provides a simple pathway for Docker based deployments, offering built in PostgreSQL, global distribution and good performance at the expense of customizability when compared to a provider like AWS.</li>
+<li>Render<ul>
+<li>Like Fly.io, Render provides a pathway for Docker based deployments, offering managed PostgreSQL databases, global distribution and good performance, it offers this solution with a free tier though which is ideal in this iteration of the project.</li>
 </ul>
 </li>
 </ul>
@@ -566,6 +566,12 @@
 <details class="abstract">
 <summary><strong>Alternatives</strong></summary>
 <ol>
+<li>
+<p>Fly.io</p>
+<ul>
+<li>Fly.io provides a simple pathway for Docker based deployments, offering built in PostgreSQL, global distribution and good performance at the expense of customizability when compared to a provider like AWS.</li>
+</ul>
+</li>
 <li>
 <p>Digital Ocean</p>
 <ul>
@@ -590,7 +596,10 @@
 <p>Push these containers to a GitHub container registry.</p>
 </li>
 <li>
-<p>Deploy to Fly.io.</p>
+<p>Create a PostgreSQL database on Render</p>
+</li>
+<li>
+<p>Deploy the Backend &amp; Frontend.</p>
 </li>
 </ol>
 <div class="admonition info">
