@@ -68,7 +68,7 @@ jobs:
         working-directory: backend
 
       - name: Run tests (pytest)
-        timeout-minutes: 10
+        timeout-minutes: 5
         run: |
           source .venv/bin/activate
           # Print debug information
