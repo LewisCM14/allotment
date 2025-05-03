@@ -2,7 +2,6 @@
 Logging Middleware
 """
 
-import asyncio
 import re
 import time
 import uuid
@@ -95,8 +94,6 @@ def sanitize_error_message(error_msg: str) -> str:
             )
     return error_msg
 
-
-log_lock = asyncio.Lock()
 
 tracer = trace.get_tracer(__name__)
 

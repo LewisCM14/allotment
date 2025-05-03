@@ -3,7 +3,7 @@ app:
   version: "0.0.0"
   api_prefix: "/api/v1"
   log_level: "INFO" 
-  log_to_file: false
+  log_to_file: true
   log_file: "app/app.log"
   environment: "development"
   slow_query_threshold: 1.0

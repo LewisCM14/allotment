@@ -10,7 +10,7 @@ import pytest
 import structlog
 
 from app.api.core.config import settings
-from app.api.core.logging import log_timing, write_log_async
+from app.api.core.logging import log_timing
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
     request_id_ctx_var,
@@ -35,16 +35,20 @@ class TestStructLog:
         assert "value" in log_record.message
 
     @pytest.mark.asyncio
-    async def test_write_log_async(self):
-        """Tests that write_log_async correctly writes logs asynchronously."""
+    async def test_file_logging(self):
+        """Tests that logs are correctly written to file."""
+        from app.api.core.logging import sync_log_to_file
+
         test_event = {"event": "Test Event", "level": "info"}
 
         with patch("builtins.open", mock_open()) as mocked_file:
-            asyncio.create_task(write_log_async(test_event))
-            await asyncio.sleep(0.1)
+            mock_logger = MagicMock()
 
-            mocked_file.assert_called_once_with(settings.LOG_FILE, "a")
-            mocked_file().write.assert_called_once_with(f"{test_event}\n")
+            with patch("app.api.core.logging.settings.LOG_TO_FILE", True):
+                result = sync_log_to_file(mock_logger, "info", test_event)
+                assert result == test_event
+                mocked_file.assert_called_once_with(settings.LOG_FILE, "a")
+                mocked_file().write.assert_called_once_with(f"{test_event}\n")
 
 
 class TestLoggingContextManagers:
