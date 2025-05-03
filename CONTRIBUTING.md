@@ -211,7 +211,7 @@ Tests
 pytest
 ```
 
-Run Tests in Parrelell
+Run Tests in Parallel
 ```
 pytest --numprocesses=auto
 ```
