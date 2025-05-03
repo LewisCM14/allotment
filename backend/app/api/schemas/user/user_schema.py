@@ -141,3 +141,89 @@ class RefreshRequest(SecureBaseModel):
             }
         }
     )
+
+
+class MessageResponse(SecureBaseModel):
+    """Schema for simple message responses."""
+
+    message: str = Field(
+        ...,
+        description="Response message",
+        examples=["Operation completed successfully"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "message": "Operation completed successfully",
+            }
+        }
+    )
+
+
+class VerificationStatusResponse(SecureBaseModel):
+    """Schema for email verification status response."""
+
+    is_email_verified: bool = Field(
+        ...,
+        description="Indicates if the user's email is verified",
+        examples=[True, False],
+    )
+    user_id: str = Field(
+        ...,
+        description="The unique ID of the user",
+        examples=["123e4567-e89b-12d3-a456-426614174000"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "is_email_verified": True,
+                "user_id": "123e4567-e89b-12d3-a456-426614174000",
+            }
+        }
+    )
+
+
+class PasswordResetRequest(SecureBaseModel):
+    """Schema for password reset request."""
+
+    user_email: EmailStr = Field(
+        ...,
+        description="User's email address",
+        examples=["user@example.com"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "user_email": "user@example.com",
+            }
+        }
+    )
+
+
+class PasswordResetAction(SecureBaseModel):
+    """Schema for password reset with token."""
+
+    token: str = Field(
+        ...,
+        description="JWT reset token",
+        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=30,
+        description="New password",
+        examples=["NewSecurePass123!"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                "new_password": "NewSecurePass123!",
+            }
+        }
+    )

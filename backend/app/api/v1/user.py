@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,8 +41,16 @@ from app.api.middleware.logging_middleware import (
     sanitize_error_message,
 )
 from app.api.models import User
-from app.api.schemas import TokenResponse, UserLogin
-from app.api.schemas.user.user_schema import RefreshRequest, UserCreate
+from app.api.schemas import TokenResponse
+from app.api.schemas.user.user_schema import (
+    MessageResponse,
+    PasswordResetAction,
+    PasswordResetRequest,
+    RefreshRequest,
+    UserCreate,
+    UserLogin,
+    VerificationStatusResponse,
+)
 from app.api.services.email_service import (
     send_verification_email,
 )
@@ -351,13 +359,14 @@ async def refresh_token(
 @router.post(
     "/send-verification-email",
     tags=["User"],
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Send email verification link",
     description="Sends an email verification link to the user",
 )
 async def request_verification_email(
     user_email: EmailStr, db: AsyncSession = Depends(get_db)
-) -> Dict[str, str]:
+) -> MessageResponse:
     """
     Send an email verification link to the user.
 
@@ -366,7 +375,7 @@ async def request_verification_email(
         db: Database session
 
     Returns:
-        dict: Success message
+        MessageResponse: Success message
 
     Raises:
         UserNotFoundError: If the user is not found
@@ -392,7 +401,7 @@ async def request_verification_email(
                     user_email=user_email, user_id=str(user.user_id)
                 )
                 logger.info("Verification email sent successfully", **log_context)
-                return {"message": "Verification email sent successfully"}
+                return MessageResponse(message="Verification email sent successfully")
     except Exception as e:
         logger.error(
             "Failed to send verification email during operation",
@@ -406,6 +415,7 @@ async def request_verification_email(
 @router.get(
     "/verify-email",
     tags=["User"],
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Verify email using token",
     description="Verifies the user's email using the provided token",
@@ -414,7 +424,7 @@ async def verify_email_token(
     token: str,
     from_reset: bool = Query(False, alias="fromReset"),
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> MessageResponse:
     """
     Verify the user's email using the token.
 
@@ -423,7 +433,7 @@ async def verify_email_token(
         db: Database session
 
     Returns:
-        dict: Success message
+        MessageResponse: Success message
     """
     log_context = {
         "request_id": request_id_ctx_var.get(),
@@ -467,22 +477,23 @@ async def verify_email_token(
     )
 
     if from_reset:
-        return {
-            "message": "Email verified successfully. You can now reset your password."
-        }
-    return {"message": "Email verified successfully"}
+        return MessageResponse(
+            message="Email verified successfully. You can now reset your password."
+        )
+    return MessageResponse(message="Email verified successfully")
 
 
 @router.get(
     "/verification-status",
     tags=["User"],
+    response_model=VerificationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Check email verification status",
     description="Returns the current email verification status for a user",
 )
 async def check_verification_status(
     user_email: EmailStr, db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
+) -> VerificationStatusResponse:
     """
     Check if a user's email is verified.
 
@@ -491,7 +502,7 @@ async def check_verification_status(
         db: Database session
 
     Returns:
-        dict: Contains verification status
+        VerificationStatusResponse: Contains verification status
     """
     log_context = {
         "email": user_email,
@@ -505,15 +516,16 @@ async def check_verification_status(
     log_context["user_id"] = str(user.user_id)
     log_context["verification_status"] = str(user.is_email_verified)
     logger.info("Verification status checked", **log_context)
-    return {
-        "is_email_verified": user.is_email_verified,
-        "user_id": str(user.user_id),
-    }
+    return VerificationStatusResponse(
+        is_email_verified=user.is_email_verified,
+        user_id=str(user.user_id),
+    )
 
 
 @router.post(
     "/request-password-reset",
     tags=["User"],
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Request password reset",
     description="Sends a password reset link to the user's email",
@@ -521,23 +533,24 @@ async def check_verification_status(
 @limiter.limit("5/minute")
 async def request_password_reset(
     request: Request,
-    user_email: EmailStr = Body(..., embed=True),
+    user_data: PasswordResetRequest,
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> MessageResponse:
     """
     Request a password reset link.
 
     Args:
         request: The incoming request
-        user_email: User's email address
+        user_data: Request containing user's email
         db: Database session
 
     Returns:
-        dict: Success message
+        MessageResponse: Success message
 
     Raises:
         UserNotFoundError: If the email is not found
     """
+    user_email = user_data.user_email
     log_context = {
         "email": user_email,
         "request_id": request_id_ctx_var.get(),
@@ -552,9 +565,9 @@ async def request_password_reset(
 
         if not user:
             logger.warning("User not found for password reset", **log_context)
-            return {
-                "message": "If your email exists in our system and is verified, you will receive a password reset link shortly."
-            }
+            return MessageResponse(
+                message="If your email exists in our system and is verified, you will receive a password reset link shortly."
+            )
 
         if not user.is_email_verified:
             logger.info(
@@ -563,9 +576,9 @@ async def request_password_reset(
             await send_verification_email(
                 user_email=user.user_email, user_id=str(user.user_id), from_reset=True
             )
-            return {
-                "message": "Your email is not verified. A verification email has been sent to your address."
-            }
+            return MessageResponse(
+                message="Your email is not verified. A verification email has been sent to your address."
+            )
 
         async with UserUnitOfWork(db) as uow:
             reset_result = await uow.request_password_reset(user_email)
@@ -574,7 +587,7 @@ async def request_password_reset(
                 status=reset_result["status"],
                 **log_context,
             )
-            return {"message": reset_result["message"]}
+            return MessageResponse(message=reset_result["message"])
     except BaseApplicationError as exc:
         logger.warning(
             f"{type(exc).__name__}",
@@ -601,6 +614,7 @@ async def request_password_reset(
 @router.post(
     "/reset-password",
     tags=["User"],
+    response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Reset password with token",
     description="Resets a user's password using a valid reset token",
@@ -608,21 +622,19 @@ async def request_password_reset(
 @limiter.limit("5/minute")
 async def reset_password(
     request: Request,
-    token: str = Body(...),
-    new_password: str = Body(...),
+    reset_data: PasswordResetAction,
     db: AsyncSession = Depends(get_db),
-) -> Dict[str, str]:
+) -> MessageResponse:
     """
     Reset user's password using a reset token.
 
     Args:
         request: The incoming request
-        token: JWT reset token
-        new_password: New password
+        reset_data: Contains token and new password
         db: Database session
 
     Returns:
-        dict: Success message
+        MessageResponse: Success message
 
     Raises:
         InvalidTokenError: If the token is invalid or expired
@@ -636,16 +648,16 @@ async def reset_password(
     logger.debug("Password reset attempt with token", **log_context)
 
     try:
-        token_parts = token.split(".")
+        token_parts = reset_data.token.split(".")
         if len(token_parts) != 3:
             logger.warning("Malformed JWT token format", **log_context)
             raise InvalidTokenError("Malformed JWT token")
 
         async with UserUnitOfWork(db) as uow:
-            await uow.reset_password(token, new_password)
+            await uow.reset_password(reset_data.token, reset_data.new_password)
 
         logger.info("Password reset successful", **log_context)
-        return {"message": "Password has been reset successfully"}
+        return MessageResponse(message="Password has been reset successfully")
     except ValidationError as e:
         logger.warning(
             "Password validation failed during reset",
