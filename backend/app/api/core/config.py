@@ -3,11 +3,12 @@ Application Settings
 """
 
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Type
 
 import structlog
-from pydantic import SecretStr, model_validator
+from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings.sources import DotEnvSettingsSource
 
 from app.api.middleware.logging_middleware import sanitize_error_message
 
@@ -27,6 +28,34 @@ def get_env_file() -> Optional[str]:
         logger.warning("Using .env.template as fallback")
         return str(env_template)
     return None
+
+
+class CustomDotEnvSettingsSource(DotEnvSettingsSource):
+    """Custom DotEnv settings source that handles comma-separated string lists."""
+
+    def decode_complex_value(self, field_name: str, field: Any, value: str) -> Any:
+        """Override the complex value decoder to handle comma-separated lists for CORS settings."""
+        if field_name in [
+            "CORS_ORIGINS",
+            "CORS_ALLOW_METHODS",
+            "CORS_ALLOW_HEADERS",
+        ] and isinstance(value, str):
+            items = [item.strip() for item in value.split(",") if item.strip()]
+            logger.debug(f"Parsed comma-separated {field_name}", items=items)
+            return items
+
+        try:
+            return super().decode_complex_value(field_name, field, value)
+        except ValueError as e:
+            if field_name in [
+                "CORS_ORIGINS",
+                "CORS_ALLOW_METHODS",
+                "CORS_ALLOW_HEADERS",
+            ] and isinstance(value, str):
+                items = [item.strip() for item in value.split(",") if item.strip()]
+                logger.debug(f"Fallback parsing for {field_name}", items=items)
+                return items
+            raise e
 
 
 class Settings(BaseSettings):
@@ -67,6 +96,39 @@ class Settings(BaseSettings):
         env_file=get_env_file(),
         env_file_encoding="utf-8",
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: Type[BaseSettings],
+        init_settings: Any,
+        env_settings: Any,
+        dotenv_settings: Any,
+        file_secret_settings: Any,
+    ) -> tuple[Any, ...]:
+        """Customize settings source."""
+        return (
+            init_settings,
+            env_settings,
+            CustomDotEnvSettingsSource(
+                settings_cls=settings_cls,
+                env_file=get_env_file(),
+                env_file_encoding="utf-8",
+            ),
+            file_secret_settings,
+        )
+
+    @field_validator(
+        "CORS_ORIGINS", "CORS_ALLOW_METHODS", "CORS_ALLOW_HEADERS", mode="before"
+    )
+    @classmethod
+    def split_comma_separated_values(cls, value: Any) -> List[str]:
+        """Parse comma-separated strings into lists for CORS settings."""
+        if isinstance(value, str):
+            items = [item.strip() for item in value.split(",") if item.strip()]
+            logger.debug("Parsed comma-separated string into list", items=items)
+            return items
+        return value if isinstance(value, list) else []
 
     @model_validator(mode="after")
     def set_jwt_keys(self) -> "Settings":
