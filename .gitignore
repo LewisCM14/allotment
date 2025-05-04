@@ -5,6 +5,7 @@ __pycache__/
 ## Settings & Keys
 settings.yml
 private.pem
+public.pem
 
 ## Logs
 app.log

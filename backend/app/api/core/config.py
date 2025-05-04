@@ -2,18 +2,31 @@
 Application Settings
 """
 
-import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, List, Optional
 
 import structlog
-import yaml
-from pydantic import SecretStr
-from pydantic_settings import BaseSettings
+from pydantic import SecretStr, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from app.api.middleware.logging_middleware import sanitize_error_message
 
 logger = structlog.get_logger()
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+
+
+def get_env_file() -> Optional[str]:
+    """Get the appropriate .env file based on availability."""
+    env_file = BASE_DIR / "app" / ".env"
+    env_template = BASE_DIR / "app" / ".env.template"
+
+    if env_file.exists():
+        return str(env_file)
+    elif env_template.exists():
+        logger.warning("Using .env.template as fallback")
+        return str(env_template)
+    return None
 
 
 class Settings(BaseSettings):
@@ -45,10 +58,34 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int
     REFRESH_TOKEN_EXPIRE_DAYS: int
     RESET_TOKEN_EXPIRE_MINUTES: int
-    PRIVATE_KEY_PATH: str
-    PUBLIC_KEY_PATH: str
-    PRIVATE_KEY: bytes | None = None
-    PUBLIC_KEY: bytes | None = None
+    JWT_PRIVATE_KEY: str
+    JWT_PUBLIC_KEY: str
+    PRIVATE_KEY: bytes = b""
+    PUBLIC_KEY: bytes = b""
+
+    model_config = SettingsConfigDict(
+        env_file=get_env_file(),
+        env_file_encoding="utf-8",
+    )
+
+    @model_validator(mode="after")
+    def set_jwt_keys(self) -> "Settings":
+        """Process JWT keys after model initialization."""
+        try:
+            private_key = self.JWT_PRIVATE_KEY.replace("\\n", "\n")
+            public_key = self.JWT_PUBLIC_KEY.replace("\\n", "\n")
+
+            self.PRIVATE_KEY = private_key.encode("utf-8")
+            self.PUBLIC_KEY = public_key.encode("utf-8")
+            logger.info("JWT keys loaded successfully from environment variables")
+        except Exception as e:
+            logger.error(
+                "Failed to load JWT keys from environment variables",
+                error=sanitize_error_message(str(e)),
+                environment=self.ENVIRONMENT,
+            )
+            raise ValueError("Invalid JWT key format in environment variables") from e
+        return self
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
@@ -56,129 +93,25 @@ class Settings(BaseSettings):
             "Initializing application configuration",
             app_name=self.APP_NAME,
             version=self.APP_VERSION,
+            environment=self.ENVIRONMENT,
         )
 
-        self.PRIVATE_KEY_PATH = str(BASE_DIR / self.PRIVATE_KEY_PATH)
-        self.PUBLIC_KEY_PATH = str(BASE_DIR / self.PUBLIC_KEY_PATH)
-
-        try:
-            self.PRIVATE_KEY = self._load_key(self.PRIVATE_KEY_PATH, required=True)
-            self.PUBLIC_KEY = self._load_key(self.PUBLIC_KEY_PATH, required=True)
-            logger.info(
-                "Key files loaded successfully",
-                private_key_path=self.PRIVATE_KEY_PATH,
-                public_key_path=self.PUBLIC_KEY_PATH,
-            )
-        except FileNotFoundError:
-            logger.error("Failed to load key files", error="REDACTED")
-            raise
-
-    def _load_key(self, path: str, required: bool = True) -> bytes | None:
-        """Reads RSA key files safely."""
-        if path and os.path.exists(path):
-            try:
-                with open(path, "rb") as key_file:
-                    logger.debug("Loading key file", path=path)
-                    return key_file.read()
-            except IOError:
-                logger.error("Error reading key file", path=path, error="REDACTED")
-                raise
-        if required:
-            error_msg = (
-                f"Key file {path} not found. Ensure correct path in settings.yml"
-            )
-            logger.error("Key file not found", path=path)
-            raise FileNotFoundError(error_msg)
-        logger.warning("Key file not found, skipping", path=path)
-        return None
-
-
-def load_yaml_config() -> Dict[str, Any]:
-    """Loads YAML configuration from settings.yml.
-
-    Returns:
-        Dict[str, Any]: Configuration dictionary from YAML or empty dict if file not found
-    """
-    config_path = "app/settings.yml"
-    template_path = "app/settings.template.yml"
-    logger.info("Loading configuration", path=config_path)
-
-    if not os.path.exists(config_path):
-        logger.warning(
-            "Configuration file not found, falling back to template", path=config_path
-        )
-        if os.path.exists(template_path):
-            config_path = template_path
-            logger.info("Loading configuration from template", path=template_path)
-        else:
-            return {}
-
-    try:
-        with open(config_path, "r", encoding="utf-8") as file:
-            config = yaml.safe_load(file)
-            if not isinstance(config, dict):
-                logger.warning("Invalid YAML configuration format", path=config_path)
-                return {}
-            logger.info("Configuration loaded successfully")
-            return config
-    except (yaml.YAMLError, IOError):
-        logger.error("Error loading configuration", path=config_path, error="REDACTED")
-        return {}
-
-
-yaml_config = load_yaml_config()
 
 try:
-    settings = Settings(
-        APP_NAME=yaml_config.get("app", {}).get("name", "Allotment Service"),
-        APP_VERSION=yaml_config.get("app", {}).get("version", "0.0.0"),
-        API_PREFIX=yaml_config.get("app", {}).get("api_prefix", "/api/v1"),
-        DATABASE_URL=yaml_config.get("database", {}).get("url"),
-        FRONTEND_URL=yaml_config.get("frontend", {}).get("url"),
-        MAIL_USERNAME=yaml_config.get("mail", {}).get("username"),
-        MAIL_PASSWORD=SecretStr(yaml_config.get("mail", {}).get("password")),
-        LOG_LEVEL=yaml_config.get("app", {}).get("log_level", "INFO"),
-        LOG_TO_FILE=yaml_config.get("app", {}).get("log_to_file", True),
-        LOG_FILE=yaml_config.get("app", {}).get("log_file", "app.log"),
-        ENVIRONMENT=yaml_config.get("app", {}).get("environment", "development"),
-        SLOW_QUERY_THRESHOLD=yaml_config.get("app", {}).get(
-            "slow_query_threshold", 1.0
-        ),
-        CORS_ORIGINS=yaml_config.get("app", {}).get("cors", {}).get("origins"),
-        CORS_ALLOW_CREDENTIALS=yaml_config.get("app", {})
-        .get("cors", {})
-        .get("allow_credentials"),
-        CORS_ALLOW_METHODS=yaml_config.get("app", {})
-        .get("cors", {})
-        .get("allow_methods"),
-        CORS_ALLOW_HEADERS=yaml_config.get("app", {})
-        .get("cors", {})
-        .get("allow_headers"),
-        JWT_ALGORITHM=yaml_config.get("jwt", {}).get("algorithm"),
-        ACCESS_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
-            "access_token_expire_minutes"
-        ),
-        REFRESH_TOKEN_EXPIRE_DAYS=yaml_config.get("jwt", {}).get(
-            "refresh_token_expire_days"
-        ),
-        RESET_TOKEN_EXPIRE_MINUTES=yaml_config.get("jwt", {}).get(
-            "reset_token_expire_minutes"
-        ),
-        PRIVATE_KEY_PATH=yaml_config.get("jwt", {}).get(
-            "private_key_path", "app/keys/private.pem"
-        ),
-        PUBLIC_KEY_PATH=yaml_config.get("jwt", {}).get(
-            "public_key_path", "app/keys/public.pem"
-        ),
-    )
+    settings = Settings()
     logger.info(
         "Settings initialized successfully",
         app_name=settings.APP_NAME,
         version=settings.APP_VERSION,
         api_prefix=settings.API_PREFIX,
+        environment=settings.ENVIRONMENT,
     )
 except Exception as e:
     logger.error(
-        "Settings initialization failed", error="REDACTED", error_type=type(e).__name__
+        "Settings initialization failed",
+        error=sanitize_error_message(str(e))
+        if "sanitize_error_message" in globals()
+        else str(e),
+        error_type=type(e).__name__,
     )
     raise

@@ -394,9 +394,6 @@ _The server-side architecture is designed to enforce clear boundaries between la
                 - Contains any general purpose utilities i.e. the email service.
             /v1
                 - Contains the API Endpoints.
-        /keys
-            - private.pem
-            - public.pem
         - main.py
         - settings.yaml
     ```

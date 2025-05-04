@@ -124,32 +124,37 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     ```
     
     > This command will also install the required version of Python on your machine.
-    > As a sanity check you can activate the virtual env by running the following command from inside the `backend` folder - `source .venv/bin/activate`
+    > As a sanity check you can activate the virtual env by running the following command from inside the `backend` folder `source .venv/bin/activate`
 
-1. Copy the `settings.template.yml` to `backend/app` folder and rename to `settings.yml`
+1. Create a copy of the the `.env.template` found in the `backend/app` folder and rename to `.env`
     
-    - _The settings will then want configuring to point at your local Postgres database as well as a GMAIL SMPT solution._
+    - _Update the environment variables to point at your local Postgres database as well as a GMAIL SMTP solution._
 
-    > You can update the `name`, `version` and path for the `log_file` as desired.
+    > You can update the `APP_NAME`, `APP_VERSION` and `LOG_FILE` as desired.
 
-1. Generate the RSA Key Pair (For RS256)
+1. Generate the RSA Key Pair for JWT Authentication
     ```
-    openssl genpkey -algorithm RSA -out app/keys/private.pem -pkeyopt rsa_keygen_bits:2048
-    openssl rsa -pubout -in app/keys/private.pem -out app/keys/public.pem
+    openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
+    openssl rsa -pubout -in private.pem -out public.pem
     ```
 
-    > You may need to set permissions with the following commands:
+    Then format the keys for your `.env` file:
     ```
-    chmod 600 app/keys/private.pem
-    chmod 644 app/keys/public.pem
+    echo "JWT_PRIVATE_KEY=$(cat private.pem | tr '\n' '\\n')"
+    echo "JWT_PUBLIC_KEY=$(cat public.pem | tr '\n' '\\n')"
     ```
+    
+    Copy the output from these commands and paste them into your `.env` file, replacing the existing JWT key variables.
+    
+    > You can now safely delete the temporary key files (`private.pem` and `public.pem`) as they're stored in your environment variables.
 
 1. The API can now be launched be executing the following command from the root of the `backend` folder with the virtual environment activated.
     ```
     fastapi dev
     ```
 
-> The settings file also configures what instance the service is, i.e. development, UAT, production.
+> The environment variables also configure what instance the service is, i.e. development, UAT, production.
+> In production, environment variables are set in the hosting platform.
 
 ---
 
@@ -172,7 +177,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
 
 1. Ensure `CORS` configuration
     
-    - _By default the backend is setup to accept the frontend running on port `5173`, ths can be configured differently if desired though._
+    - _By default the backend is setup to accept the frontend running on port `5173`, this can be configured differently if desired though._
 
 1. The UI can now be launched be executing the following command from the root of the `frontend`.
 
