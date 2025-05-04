@@ -4,6 +4,7 @@ from unittest.mock import MagicMock
 import pytest
 from fastapi import status
 
+from app.api.core.config import settings
 from app.api.middleware.error_codes import (
     DB_INTEGRITY_ERROR,
     GENERAL_BUSINESS_RULE_VIOLATION,
@@ -107,7 +108,7 @@ async def test_exception_handling_middleware_handles_unhandled_exception():
                 "code": "GEN_999",
                 "request_id": "test-request-id",
                 "timestamp": response_body["detail"][0]["timestamp"],
-                "environment": "development",
+                "environment": settings.ENVIRONMENT,
             }
         ]
     }
