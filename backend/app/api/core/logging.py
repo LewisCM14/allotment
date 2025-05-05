@@ -8,12 +8,17 @@ import threading
 import time
 from contextlib import contextmanager
 from logging.handlers import RotatingFileHandler
-from typing import Any, Generator, List, Mapping, MutableMapping, Tuple, Union
+from typing import Any, Callable, Generator, List, Mapping, MutableMapping, Tuple, Union
 
 import structlog
 
 from app.api.core.config import settings
 from app.api.middleware.logging_middleware import request_id_ctx_var
+
+ProcessorType = Callable[
+    [Any, str, MutableMapping[str, Any]],
+    Union[Mapping[str, Any], str, bytes, bytearray, Tuple[Any, ...]],
+]
 
 log_lock = threading.Lock()
 
@@ -91,8 +96,22 @@ def configure_logging() -> None:
         handlers=handlers,
     )
 
-    structlog.configure(
-        processors=[
+    processors: List[ProcessorType]
+
+    if settings.ENVIRONMENT == "production":
+        processors = [
+            structlog.stdlib.filter_by_level,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.stdlib.add_logger_name,
+            structlog.stdlib.add_log_level,
+            structlog.processors.StackInfoRenderer(),
+            add_container_context,
+            structlog.processors.format_exc_info,
+            structlog.processors.UnicodeDecoder(),
+            structlog.processors.JSONRenderer(),
+        ]
+    else:
+        processors = [
             structlog.stdlib.filter_by_level,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.stdlib.add_logger_name,
@@ -102,12 +121,28 @@ def configure_logging() -> None:
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.JSONRenderer(),
-        ],
+        ]
+
+    structlog.configure(
+        processors=processors,
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
+
+
+def add_container_context(
+    logger: structlog.BoundLogger,
+    method_name: str,
+    event_dict: MutableMapping[str, Any],
+) -> MutableMapping[str, Any]:
+    """Add container-specific context to log entries."""
+    import os
+
+    hostname = os.environ.get("HOSTNAME", "unknown")
+    event_dict["container_id"] = hostname
+    return event_dict
 
 
 configure_logging()

@@ -48,3 +48,10 @@ jobs:
           source .venv/bin/activate
           PYTHONPATH=$PYTHONPATH:$(pwd) pytest --numprocesses=auto
         working-directory: backend
+
+      - name: Trigger deployment
+        if: success() && github.ref == 'refs/heads/main'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: deploy-backend

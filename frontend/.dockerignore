@@ -1,0 +1,21 @@
+node_modules/
+.vscode/
+.idea/
+*.log
+
+# Build artifacts
+dist/
+build/
+.cache/
+
+# Environment files
+.env.local
+.env.development
+.env
+
+# Version control
+.git/
+.gitignore
+
+# Test artifacts
+coverage/
