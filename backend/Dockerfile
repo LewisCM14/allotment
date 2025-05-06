@@ -16,7 +16,10 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-RUN uv pip install -e .
+# Add a label to identify this layer for cache busting
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=cache,target=/root/.cache/pip \
+    uv pip install --system -e .
 
 # Copy application code
 COPY . .
