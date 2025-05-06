@@ -38,3 +38,10 @@ jobs:
       - name: Run tests
         run: npm run test
         working-directory: frontend
+
+      - name: Trigger deployment
+        if: success() && github.ref == 'refs/heads/main'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: deploy-frontend
