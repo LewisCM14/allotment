@@ -10,9 +10,6 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Create production .env file from template
-COPY .env.template .env
-
 # Build the application
 RUN npm run build
 
