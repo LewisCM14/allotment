@@ -24,6 +24,11 @@
 | Server | email-validator | 2.2.0 | Email Validation | 
 | Server | slowapi | 0.1.9 | Rate Limiting |
 | Server | Pytest | 8.3.5 | Test Runner |
+| Server | Pytest Asyncio | 0.25.3 | Asynchronous Testing |
+| Server | Pytest Mock | 3.14.0 | Test Mocking |
+| Server | Pytest X-Dist | 3.6.1 | Test Parallelization |
+| Server | HTTPX | 0.28.1 | Testing Client |
+| Server | AIOSQLite | 0.21.0 | In-Memory Asynchronous Testing Database |
 | Server | Ruff | 0.9.10 | Formatting & Linting |
 | Server | MyPy | 1.15 | Type Checking |
 |||||
@@ -34,11 +39,12 @@
 | Client | React | 19.0.0 | Frontend Framework |
 | Client | React Query | 5.69.0 | State Management |
 | Client | Tailwind CSS | 4.0.15 | CSS Library |
-| Client | Radix UI (React Switch) | 1.1.3 | UI Library |
+| Client | Radix UI | 1.1.3 | UI Library |
 | Client | ShadCN | 2.4.0 | UI Library |
 | Client | Lucide-React | 0.483.0 | Icon Library | 
 | Client | Axios | 1.8.4 | API Communication |
 | Client | Workbox | 7.3.0 | Service Workers |
+| Client | CMDK | 1.1.1 | Composable Command Pallet |
 | Client | IDB | 8.0.2 | Client Side Storage (PWA Support) |
 | Client | ZOD | 3.24.2 | Form Validation | 
 | Client | React Hook Form | 7.54.2 | Form Validation |
@@ -49,7 +55,7 @@
 | Client | Vitest | 3.1.1 | Component Testing |
 |||||
 | Deployment | Docker | | Containerization |
-| Deployment | Fly.io | | Hosting |
+| Deployment | Render | | Hosting |
 | Deployment | GitHub | | Version Control |
 | Deployment | GitHub Actions | | CI/CD |
 
