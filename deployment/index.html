@@ -588,23 +588,67 @@
 </details>
 <hr />
 <h2 id="deployment-process">Deployment Process</h2>
+<p>In order to ensure that the applications deployments are scalable and repeatable GitHub actions is to be leveraged in conjunction with Render to create a CI/CD pipeline.</p>
 <ol>
 <li>
-<p>Containerize the FastAPI backend &amp; React Frontend.</p>
+<p><strong>CI Pipelines</strong></p>
+<ul>
+<li>
+<p>The <strong>Frontend</strong> pipeline is to be triggered each time a pull to <code>main</code> is made. First ensuring the correct versions of <code>Node</code> &amp; <code>NPM</code> are available before installing the dependencies in order to check the linting and formatting and ensure the <code>TypeScript</code> code compiles. Once these steps are complete the test suite is to be ran and upon a 100% pass rate the CD pipeline is to be triggered.</p>
 </li>
 <li>
-<p>Push these containers to a GitHub container registry.</p>
-</li>
-<li>
-<p>Create a PostgreSQL database on Render</p>
-</li>
-<li>
-<p>Deploy the Backend &amp; Frontend.</p>
-</li>
-</ol>
+<p>The <strong>Backend</strong> pipeline is to be triggered each time a pull to <code>main</code> is made. First it must install <code>UV</code> before using the package management tool to install <code>Python</code> and the required dependencies. The virtual environment is to then activated so the linting and formatting can be checked followed by verification of the static typing. Once these steps are complete the test suite is to be ran and upon a 100% pass rate the CD pipeline is to be triggered.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>This process can be automated using GitHub actions.</p>
+<p>In order to run the test suite the <code>.env.template</code> will be utilized to provide environment variables.</p>
+</div>
+</li>
+</ul>
+</li>
+<li>
+<p><strong>CD Pipelines</strong></p>
+<ul>
+<li>
+<p>The <strong>Frontend</strong> pipeline is to orchestrate the process of creating the required container for application deployment's and registering it on GitHub. This process leverages a <code>Dockerfile</code> that installs the dependencies, copies the source code for better caching and builds the application. An <code>NGINX</code> configuration, that is under version control in the repository, is to then be applied and a health check endpoint as defined in a <code>health.json</code> file utilized for monitoring and recovery.</p>
+</li>
+<li>
+<p>The <strong>Backend</strong> pipeline is to orchestrate the process of creating the required container for application deployment and registering it on GitHub. This process leverages a <code>Dockerfile</code> that installs <code>UV</code> before then using the package management tool to install the applications dependencies. The source code is to then be copied for caching and the APIs health check endpoint utilized for monitoring and recovery. Database migrations are to then be ran prior to container startup. A <code>docker-entrypoint.sh</code> script that leverages the <code>Alembic</code> migration scripts is to be executed.</p>
+</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>In order to ensure that only relevant source code is copied, making the images smaller, more secure, and faster to build <code>.dockerignore</code> files are to be created in the <strong>Frontend</strong> &amp; <strong>Backend</strong> folders.</p>
+</div>
+</li>
+<li>
+<p><strong>Register the Containers on GitHub</strong></p>
+<ul>
+<li>Upon successful orchestration of the CD pipeline a <strong>Frontend</strong> &amp; <strong>Backend</strong> container is to be registered within the repository on GitHub.</li>
+</ul>
+</li>
+<li>
+<p><strong>Create a PostgreSQL Database on Render</strong></p>
+<ul>
+<li>As the current deployment scenario leverages a cloud based hosting platform, in Render, that offers managed PostgreSQL Databases, the applications datastore must be configured within the platform.</li>
+</ul>
+</li>
+<li>
+<p><strong>Register Environment Variables</strong></p>
+<ul>
+<li>Once a PostgreSQL database has been registered the applications environment variables are to then be registered in Renders dashboard. <code>.env.template</code> files are to be provided within the <strong>Frontend</strong> &amp; <strong>Backend</strong> folders for reference when instantiating these settings.</li>
+</ul>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>When running the application for local development, copies of these files are to be created and the <em>template</em> suffix dropped in order to run the application. To prevent the leaking of secrets to the public these files are to be added to the repositories global <code>.gitignore</code> file.</p>
+</div>
+</li>
+<li>
+<p>Deploy the Backend &amp; Frontend Containers on Render</p>
+</li>
+</ol>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The developer documentation, detailed in the <code>docs</code> folder of the repository, is to be a <code>MKDocs</code> application that is automatically deployed via a CD/CD action on GitHub to there static website hosting platform (GitHub Pages). The pipeline is to leverage <code>UV</code> to install the required dependencies and build the static website before pushing these files to a <code>gh-pages</code> branch that the site is configured to display from within the GitHub dashboard. </p>
 </div>
 
 
