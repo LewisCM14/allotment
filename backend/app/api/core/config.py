@@ -2,6 +2,7 @@
 Application Settings
 """
 
+import os
 from pathlib import Path
 from typing import Any, List, Optional, Type
 
@@ -107,6 +108,11 @@ class Settings(BaseSettings):
         file_secret_settings: Any,
     ) -> tuple[Any, ...]:
         """Customize settings source."""
+        # In production, prioritize system environment variables
+        if os.environ.get("ENVIRONMENT") == "production":
+            return init_settings, env_settings, file_secret_settings
+
+        # In development, use the custom dotenv source
         return (
             init_settings,
             env_settings,

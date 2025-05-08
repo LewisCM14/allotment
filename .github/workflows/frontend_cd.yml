@@ -46,8 +46,8 @@ jobs:
           build-args: |
             BUILDTIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
     
-    #   - name: Deploy to Render
-    #     env:
-    #         RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
-    #     run: |
-    #         curl -X POST $RENDER_DEPLOY_HOOK
+      - name: Deploy to Render
+        env:
+            RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_FRONTEND_DEPLOY_HOOK }}
+        run: |
+            curl -X POST $RENDER_DEPLOY_HOOK
