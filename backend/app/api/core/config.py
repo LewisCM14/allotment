@@ -45,18 +45,7 @@ class CustomDotEnvSettingsSource(DotEnvSettingsSource):
             logger.debug(f"Parsed comma-separated {field_name}", items=items)
             return items
 
-        try:
-            return super().decode_complex_value(field_name, field, value)
-        except ValueError as e:
-            if field_name in [
-                "CORS_ORIGINS",
-                "CORS_ALLOW_METHODS",
-                "CORS_ALLOW_HEADERS",
-            ] and isinstance(value, str):
-                items = [item.strip() for item in value.split(",") if item.strip()]
-                logger.debug(f"Fallback parsing for {field_name}", items=items)
-                return items
-            raise e
+        return super().decode_complex_value(field_name, field, value)
 
 
 class Settings(BaseSettings):
