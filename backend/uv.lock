@@ -58,6 +58,7 @@ dependencies = [
     { name = "slowapi" },
     { name = "sqlalchemy" },
     { name = "structlog" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -95,6 +96,7 @@ requires-dist = [
     { name = "slowapi" },
     { name = "sqlalchemy" },
     { name = "structlog" },
+    { name = "uvicorn" },
 ]
 
 [package.metadata.requires-dev]

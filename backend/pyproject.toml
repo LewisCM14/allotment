@@ -18,7 +18,8 @@ dependencies = [
     "slowapi",
     "opentelemetry-api",
     "opentelemetry-sdk",
-    "alembic"
+    "alembic",
+    "uvicorn"
 ]
 
 [dependency-groups]
