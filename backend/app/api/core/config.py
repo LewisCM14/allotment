@@ -108,21 +108,19 @@ class Settings(BaseSettings):
         file_secret_settings: Any,
     ) -> tuple[Any, ...]:
         """Customize settings source."""
-        # In production, prioritize system environment variables
-        if os.environ.get("ENVIRONMENT") == "production":
-            return init_settings, env_settings, file_secret_settings
-
-        # In development, use the custom dotenv source
-        return (
-            init_settings,
-            env_settings,
-            CustomDotEnvSettingsSource(
-                settings_cls=settings_cls,
-                env_file=get_env_file(),
-                env_file_encoding="utf-8",
-            ),
-            file_secret_settings,
-        )
+        if os.getenv("ENVIRONMENT") == "production":
+            return env_settings, init_settings, file_secret_settings
+        else:
+            return (
+                init_settings,
+                env_settings,
+                CustomDotEnvSettingsSource(
+                    settings_cls=settings_cls,
+                    env_file=get_env_file(),
+                    env_file_encoding="utf-8",
+                ),
+                file_secret_settings,
+            )
 
     @field_validator(
         "CORS_ORIGINS", "CORS_ALLOW_METHODS", "CORS_ALLOW_HEADERS", mode="before"
