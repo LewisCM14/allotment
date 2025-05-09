@@ -9,7 +9,7 @@ from typing import Any, List, Optional, Type
 import structlog
 from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic_settings.sources import DotEnvSettingsSource
+from pydantic_settings.sources import DotEnvSettingsSource, EnvSettingsSource
 
 from app.api.middleware.logging_middleware import sanitize_error_message
 
@@ -31,6 +31,25 @@ def get_env_file() -> Optional[str]:
     return None
 
 
+class CustomEnvSettingsSource(EnvSettingsSource):
+    """Custom environment settings source that handles comma-separated string lists."""
+
+    def prepare_field_value(
+        self, field_name: str, field: Any, value: Any, value_is_complex: bool
+    ) -> Any:
+        """Handle comma-separated values for list-type fields in environment variables."""
+        if field_name in [
+            "CORS_ORIGINS",
+            "CORS_ALLOW_METHODS",
+            "CORS_ALLOW_HEADERS",
+        ] and isinstance(value, str):
+            items = [item.strip() for item in value.split(",") if item.strip()]
+            logger.debug(f"Parsed comma-separated {field_name} from env", items=items)
+            return items
+        
+        return super().prepare_field_value(field_name, field, value, value_is_complex)
+
+
 class CustomDotEnvSettingsSource(DotEnvSettingsSource):
     """Custom DotEnv settings source that handles comma-separated string lists."""
 
@@ -42,7 +61,7 @@ class CustomDotEnvSettingsSource(DotEnvSettingsSource):
             "CORS_ALLOW_HEADERS",
         ] and isinstance(value, str):
             items = [item.strip() for item in value.split(",") if item.strip()]
-            logger.debug(f"Parsed comma-separated {field_name}", items=items)
+            logger.debug(f"Parsed comma-separated {field_name} from .env", items=items)
             return items
 
         return super().decode_complex_value(field_name, field, value)
@@ -96,13 +115,19 @@ class Settings(BaseSettings):
         dotenv_settings: Any,
         file_secret_settings: Any,
     ) -> tuple[Any, ...]:
-        """Customize settings source."""
+        """Customize settings source to properly handle environment variables."""
+        custom_env_settings = CustomEnvSettingsSource(
+            settings_cls=settings_cls,
+        )
+        
         if os.getenv("ENVIRONMENT") == "production":
-            return env_settings, init_settings, file_secret_settings
+            logger.info("Using production settings configuration")
+            return custom_env_settings, init_settings, file_secret_settings
         else:
+            logger.info(f"Using {os.getenv('ENVIRONMENT', 'development')} settings configuration")
             return (
                 init_settings,
-                env_settings,
+                custom_env_settings,
                 CustomDotEnvSettingsSource(
                     settings_cls=settings_cls,
                     env_file=get_env_file(),
@@ -143,13 +168,21 @@ class Settings(BaseSettings):
         return self
 
     def __init__(self, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
-        logger.info(
-            "Initializing application configuration",
-            app_name=self.APP_NAME,
-            version=self.APP_VERSION,
-            environment=self.ENVIRONMENT,
-        )
+        try:
+            super().__init__(**kwargs)
+            logger.info(
+                "Initializing application configuration",
+                app_name=self.APP_NAME,
+                version=self.APP_VERSION,
+                environment=self.ENVIRONMENT,
+            )
+        except Exception as e:
+            logger.error(
+                "Failed to initialize settings",
+                error=sanitize_error_message(str(e)),
+                error_type=type(e).__name__,
+            )
+            raise
 
 
 try:
