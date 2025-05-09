@@ -31,7 +31,7 @@ ENV PORT=8000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f -X HEAD http://localhost:8000/api/v1/health/ || exit 1
+    CMD curl -f -X GET http://localhost:8000/api/v1/health || exit 1
 
 EXPOSE 8000
 
