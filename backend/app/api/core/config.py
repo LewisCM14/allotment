@@ -46,7 +46,7 @@ class CustomEnvSettingsSource(EnvSettingsSource):
             items = [item.strip() for item in value.split(",") if item.strip()]
             logger.debug(f"Parsed comma-separated {field_name} from env", items=items)
             return items
-        
+
         return super().prepare_field_value(field_name, field, value, value_is_complex)
 
 
@@ -119,12 +119,14 @@ class Settings(BaseSettings):
         custom_env_settings = CustomEnvSettingsSource(
             settings_cls=settings_cls,
         )
-        
+
         if os.getenv("ENVIRONMENT") == "production":
             logger.info("Using production settings configuration")
             return custom_env_settings, init_settings, file_secret_settings
         else:
-            logger.info(f"Using {os.getenv('ENVIRONMENT', 'development')} settings configuration")
+            logger.info(
+                f"Using {os.getenv('ENVIRONMENT', 'development')} settings configuration"
+            )
             return (
                 init_settings,
                 custom_env_settings,
