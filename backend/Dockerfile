@@ -18,7 +18,7 @@ ENV PATH="/root/.local/bin:$PATH"
 COPY pyproject.toml uv.lock ./
 
 # Install dependencies
-# Add a label to identify this layer for cache busting
+# Label to identify this layer for cache busting
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/pip \
     uv pip install --system -e .
@@ -26,9 +26,12 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Copy application code
 COPY . .
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health/ || exit 1
+# Explicitly set the port for the service
+ENV PORT=8000
+
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD curl -f -X HEAD http://localhost:8000/api/v1/health/ || exit 1
 
 EXPOSE 8000
 

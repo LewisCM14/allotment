@@ -30,6 +30,13 @@ START_TIME = time.time()
     summary="Health check",
     description="Returns system health information",
 )
+@router.head(
+    "/",
+    tags=["Health"],
+    summary="Health check (HEAD)",
+    description="Lightweight health check - returns 200 if system is operational",
+    include_in_schema=False,
+)
 @limiter.limit("10/minute")
 async def health_check(
     request: Request,
@@ -37,6 +44,14 @@ async def health_check(
 ) -> Dict[str, Union[str, float, Dict[str, float]]]:
     """Health check endpoint."""
     uptime_seconds: float = round(time.time() - START_TIME, 2)
+
+    if request.method == "HEAD":
+        try:
+            result = await db.scalar(text("SELECT 1"))
+            db_status = "healthy" if result == 1 else "unhealthy"
+            return {"status": "ok" if db_status == "healthy" else "degraded"}
+        except Exception:
+            return {"status": "degraded"}
 
     logger.debug(
         "Health check initiated", uptime=uptime_seconds, version=settings.APP_VERSION
