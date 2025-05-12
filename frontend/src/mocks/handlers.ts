@@ -4,13 +4,21 @@ import type {
 	IRegisterRequest,
 } from "@/features/user/UserService";
 import type { IRefreshRequest } from "@/services/api";
-import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 
+interface PasswordResetRequest {
+	user_email: string;
+}
+
+interface PasswordResetAction {
+	token: string;
+	new_password: string;
+}
+
 export const handlers = [
 	// Mock the login endpoint
-	http.post(`${API_URL}${API_VERSION}/user/auth/login`, async ({ request }) => {
+	http.post("/user/auth/login", async ({ request }) => {
 		const body = (await request.json()) as ILoginRequest;
 
 		// Example validation logic
@@ -23,21 +31,23 @@ export const handlers = [
 				refresh_token: "mock-refresh-token",
 				token_type: "bearer",
 				user_first_name: "Test",
+				is_email_verified: true,
+				user_id: "user-123",
 			} as ILoginResponse);
 		}
 
 		// Return 401 for invalid credentials
-		return new HttpResponse(null, {
-			status: 401,
-			statusText: "Unauthorized",
-			headers: {
-				"Content-Type": "application/json",
+		return new HttpResponse(
+			JSON.stringify({ detail: "Invalid email or password" }),
+			{
+				status: 401,
+				headers: { "Content-Type": "application/json" },
 			},
-		});
+		);
 	}),
 
 	// Mock the registration endpoint
-	http.post(`${API_URL}${API_VERSION}/user`, async ({ request }) => {
+	http.post("/user", async ({ request }) => {
 		const body = (await request.json()) as IRegisterRequest;
 
 		// Check for existing email scenario
@@ -59,82 +69,121 @@ export const handlers = [
 	}),
 
 	// Mock the token refresh endpoint
-	http.post(
-		`${API_URL}${API_VERSION}/user/auth/refresh`,
-		async ({ request }) => {
-			const body = (await request.json()) as IRefreshRequest;
+	http.post("/user/auth/refresh", async ({ request }) => {
+		const body = (await request.json()) as IRefreshRequest;
 
-			if (body?.refresh_token === "mock-refresh-token") {
-				return HttpResponse.json({
-					access_token: "refreshed-access-token",
-					refresh_token: "new-refresh-token",
-				} as TokenPair);
-			}
+		if (body?.refresh_token === "mock-refresh-token") {
+			return HttpResponse.json({
+				access_token: "refreshed-access-token",
+				refresh_token: "new-refresh-token",
+			} as TokenPair);
+		}
 
-			return new HttpResponse(null, {
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			});
-		},
-	),
+		return new HttpResponse(null, {
+			status: 401,
+			headers: { "Content-Type": "application/json" },
+		});
+	}),
 
 	// Mock the requestVerificationEmail endpoint
-	http.post(
-		`${API_URL}${API_VERSION}/user/send-verification-email`,
-		async ({ request }) => {
-			const url = new URL(request.url);
-			const email = url.searchParams.get("user_email");
+	http.post("/user/send-verification-email", async ({ request }) => {
+		const url = new URL(request.url);
+		const email = url.searchParams.get("user_email");
 
-			if (email === "test@example.com") {
-				return HttpResponse.json({ message: "Verification email sent" });
-			}
+		if (email === "test@example.com") {
+			return HttpResponse.json({ message: "Verification email sent" });
+		}
 
-			if (email === "nonexistent@example.com") {
-				return new HttpResponse(
-					JSON.stringify({ detail: "Email address not found" }),
-					{
-						status: 404,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
-			}
+		if (email === "nonexistent@example.com") {
+			return new HttpResponse(
+				JSON.stringify({ detail: "Email address not found" }),
+				{
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
 
-			return new HttpResponse(null, { status: 400 });
-		},
-	),
+		return new HttpResponse(null, { status: 400 });
+	}),
 
 	// Mock the Verify Email endpoint
-	http.get(
-		`${API_URL}${API_VERSION}/user/verify-email`,
-		async ({ request }) => {
-			const url = new URL(request.url);
-			const token = url.searchParams.get("token");
+	http.get("/user/verify-email", async ({ request }) => {
+		const url = new URL(request.url);
+		const token = url.searchParams.get("token");
 
-			if (token === "valid-token") {
-				return HttpResponse.json({ message: "Email verified successfully" });
-			}
+		if (token === "valid-token") {
+			return HttpResponse.json({ message: "Email verified successfully" });
+		}
 
-			if (token === "invalid-token") {
-				return new HttpResponse(
-					JSON.stringify({ detail: "Invalid verification token" }),
-					{
-						status: 400,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
-			}
+		if (token === "invalid-token") {
+			return new HttpResponse(
+				JSON.stringify({ detail: "Invalid verification token" }),
+				{
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
 
-			if (token === "expired-token") {
-				return new HttpResponse(
-					JSON.stringify({ detail: "Verification token has expired" }),
-					{
-						status: 410,
-						headers: { "Content-Type": "application/json" },
-					},
-				);
-			}
+		if (token === "expired-token") {
+			return new HttpResponse(JSON.stringify({ detail: "Token has expired" }), {
+				status: 410,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
 
-			return new HttpResponse(null, { status: 400 });
-		},
-	),
+		return new HttpResponse(null, { status: 400 });
+	}),
+
+	http.post("/user/request-password-reset", async ({ request }) => {
+		const body = (await request.json()) as PasswordResetRequest;
+		const email = body.user_email;
+
+		if (email === "nonexistent@example.com") {
+			return new HttpResponse(
+				JSON.stringify({ detail: "Email address not found" }),
+				{
+					status: 404,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
+
+		return HttpResponse.json({ message: "Reset email sent" });
+	}),
+
+	http.post("/user/reset-password", async ({ request }) => {
+		const body = (await request.json()) as PasswordResetAction;
+		const token = body.token;
+
+		if (token === "invalid-token") {
+			return new HttpResponse(
+				JSON.stringify({ detail: "Invalid or expired token" }),
+				{
+					status: 400,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
+
+		if (token === "validation-error") {
+			return new HttpResponse(
+				JSON.stringify({
+					detail: [
+						{
+							loc: ["body", "new_password"],
+							msg: "Password too short",
+						},
+					],
+				}),
+				{
+					status: 422,
+					headers: { "Content-Type": "application/json" },
+				},
+			);
+		}
+
+		return HttpResponse.json({ message: "Password updated" });
+	}),
 ];

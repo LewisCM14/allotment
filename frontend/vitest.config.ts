@@ -1,18 +1,19 @@
-import react from '@vitejs/plugin-react-swc';
-import path from 'path';
-import { defineConfig } from 'vitest/config';
+import path from "path";
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-    plugins: [react()],
+    plugins: [],
     test: {
-        environment: 'jsdom',
+        environment: "jsdom",
         globals: true,
-        setupFiles: './src/setupTests.ts',
+        setupFiles: ["./vitest.setup.ts"],
+        alias: {
+            "@": path.resolve(__dirname, "./src"),
+        },
     },
     resolve: {
         alias: {
             "@": path.resolve(__dirname, "./src"),
         },
-        dedupe: ['react', 'react-dom'],
     },
 });

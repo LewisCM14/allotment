@@ -1,4 +1,6 @@
+import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
 import {
 	AUTH_ERRORS,
@@ -10,14 +12,14 @@ import {
 	verifyEmail,
 } from "./UserService";
 
-const mockFetch = (response: unknown, status = 200) => {
-	global.fetch = vi.fn(() =>
-		Promise.resolve(
-			new Response(JSON.stringify(response), {
-				status,
-				headers: { "Content-Type": "application/json" },
-			}),
-		),
+const mockFetch = (response: Record<string, unknown>, status = 200) => {
+	return server.use(
+		http.post("*", () => {
+			return HttpResponse.json(response, { status });
+		}),
+		http.get("*", () => {
+			return HttpResponse.json(response, { status });
+		}),
 	);
 };
 
@@ -32,19 +34,13 @@ describe("UserService", () => {
 
 		// Clear localStorage before each test
 		localStorage.clear();
+
+		// Reset any mocked functions
+		vi.restoreAllMocks();
 	});
 
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
-			const mockResponse = {
-				access_token: "mock-access-token",
-				refresh_token: "mock-refresh-token",
-				user_first_name: "Test",
-				is_email_verified: false,
-				user_id: "",
-			};
-			mockFetch(mockResponse);
-
 			const result = await loginUser("test@example.com", "password123");
 
 			expect(result).toEqual({
@@ -55,15 +51,13 @@ describe("UserService", () => {
 				firstName: "Test",
 				userData: {
 					user_email: "test@example.com",
-					user_id: "",
-					is_email_verified: false,
+					user_id: "user-123",
+					is_email_verified: true,
 				},
 			});
 		});
 
 		it("should throw an error with invalid credentials", async () => {
-			mockFetch({ detail: "Invalid email or password" }, 401);
-
 			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
 				AUTH_ERRORS.INVALID_CREDENTIALS,
 			);
@@ -201,7 +195,9 @@ describe("UserService", () => {
 
 		beforeEach(() => {
 			postSpy = vi.spyOn(apiModule.default, "post");
+			mockFetch({ message: "Reset email sent" });
 		});
+
 		afterEach(() => {
 			postSpy.mockRestore();
 		});
@@ -243,7 +239,9 @@ describe("UserService", () => {
 
 		beforeEach(() => {
 			postSpy = vi.spyOn(apiModule.default, "post");
+			mockFetch({ message: "Password updated" });
 		});
+
 		afterEach(() => {
 			postSpy.mockRestore();
 		});

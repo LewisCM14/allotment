@@ -1,5 +1,4 @@
 import { formatError } from "@/lib/errorUtils";
-import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { TokenPair } from "@/store/auth/AuthContext";
 import axios from "axios";
 import api, { handleApiError } from "../../services/api";
@@ -57,10 +56,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<TokenPair>(
-			`${API_URL}${API_VERSION}/user`,
-			requestData,
-		);
+		const response = await api.post<TokenPair>("/user", requestData);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -146,7 +142,7 @@ export const loginUser = async (
 		};
 
 		const response = await api.post<ILoginResponse>(
-			`${API_URL}${API_VERSION}/user/auth/login`,
+			"/user/auth/login",
 			requestData,
 		);
 
@@ -215,10 +211,9 @@ export const verifyEmail = async (
 	fromReset = false,
 ): Promise<{ message: string }> => {
 	try {
-		const response = await api.get<{ message: string }>(
-			`${API_URL}${API_VERSION}/user/verify-email`,
-			{ params: { token, fromReset } },
-		);
+		const response = await api.get<{ message: string }>("/user/verify-email", {
+			params: { token, fromReset },
+		});
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -259,7 +254,7 @@ export const requestVerificationEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${API_URL}${API_VERSION}/user/send-verification-email`,
+			"/user/send-verification-email",
 			null,
 			{ params: { user_email: email } },
 		);
@@ -300,7 +295,7 @@ export const requestPasswordReset = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${API_URL}${API_VERSION}/user/request-password-reset`,
+			"/user/request-password-reset",
 			{ user_email: email },
 		);
 		return response.data;
@@ -346,7 +341,7 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`${API_URL}${API_VERSION}/user/reset-password`,
+			"/user/reset-password",
 			{ token, new_password: newPassword },
 		);
 		return response.data;
