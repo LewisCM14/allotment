@@ -71,7 +71,10 @@ function LoginForm(_: React.ComponentProps<"div">) {
 				is_email_verified: result.userData.is_email_verified || false,
 			};
 
-			console.log("Login successful, proceeding to login with user data:", userData);
+			console.log(
+				"Login successful, proceeding to login with user data:",
+				userData,
+			);
 
 			await login(result.tokens, result.firstName, userData);
 			navigate("/");
