@@ -141,12 +141,6 @@ export const loginUser = async (
 			user_password: password,
 		};
 
-		// Make sure we're using the correct endpoint here
-		// The error is showing 405 Method Not Allowed at "/auth/login"
-		// But the code is correctly using "/user/auth/login"
-		// Let's add a logging statement to debug
-		console.log("Attempting login with endpoint:", "/user/auth/login");
-
 		const response = await api.post<ILoginResponse>(
 			"/user/auth/login",
 			requestData,
@@ -182,13 +176,7 @@ export const loginUser = async (
 			},
 		};
 	} catch (error) {
-		// Add additional error logging to debug the issue
-		console.error("Login error:", error);
 		if (axios.isAxiosError(error)) {
-			console.error("Error response:", error.response?.data);
-			console.error("Error status:", error.response?.status);
-			console.error("Error URL:", error.config?.url);
-
 			if (error.response) {
 				switch (error.response.status) {
 					case 404:

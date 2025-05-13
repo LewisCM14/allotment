@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
+import { API_VERSION } from "../../services/apiConfig";
 import {
 	AUTH_ERRORS,
 	loginUser,
@@ -12,35 +13,42 @@ import {
 	verifyEmail,
 } from "./UserService";
 
-const mockFetch = (response: Record<string, unknown>, status = 200) => {
-	return server.use(
-		http.post("*", () => {
-			return HttpResponse.json(response, { status });
-		}),
-		http.get("*", () => {
-			return HttpResponse.json(response, { status });
-		}),
-	);
-};
-
 describe("UserService", () => {
 	beforeEach(() => {
-		// Ensure navigator.onLine is true for all tests
 		Object.defineProperty(navigator, "onLine", {
 			configurable: true,
 			value: true,
 			writable: true,
 		});
-
-		// Clear localStorage before each test
 		localStorage.clear();
-
-		// Reset any mocked functions
 		vi.restoreAllMocks();
+	});
+
+	afterEach(() => {
+		server.resetHandlers();
 	});
 
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
+			server.use(
+				http.post(`${API_VERSION}/user/auth/login`, async ({ request }) => {
+					const body = (await request.json()) as { user_email?: string };
+					if (body.user_email === "test@example.com") {
+						return HttpResponse.json({
+							access_token: "mock-access-token",
+							refresh_token: "mock-refresh-token",
+							user_first_name: "Test",
+							user_id: "user-123",
+							is_email_verified: true,
+						});
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock case" },
+						{ status: 500 },
+					);
+				}),
+			);
+
 			const result = await loginUser("test@example.com", "password123");
 
 			expect(result).toEqual({
@@ -58,6 +66,21 @@ describe("UserService", () => {
 		});
 
 		it("should throw an error with invalid credentials", async () => {
+			server.use(
+				http.post(`${API_VERSION}/user/auth/login`, async ({ request }) => {
+					const body = (await request.json()) as { user_email?: string };
+					if (body.user_email === "wrong@example.com") {
+						return HttpResponse.json(
+							{ detail: "Invalid email or password" },
+							{ status: 401 },
+						);
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock case" },
+						{ status: 500 },
+					);
+				}),
+			);
 			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
 				AUTH_ERRORS.INVALID_CREDENTIALS,
 			);
@@ -108,7 +131,11 @@ describe("UserService", () => {
 				access_token: "new-access-token",
 				refresh_token: "new-refresh-token",
 			};
-			mockFetch(mockResponse);
+			server.use(
+				http.post(`${API_VERSION}/user`, () => {
+					return HttpResponse.json(mockResponse);
+				}),
+			);
 
 			const result = await registerUser(
 				"new@example.com",
@@ -121,7 +148,14 @@ describe("UserService", () => {
 		});
 
 		it("should throw an error if email already exists", async () => {
-			mockFetch({ detail: "Email already registered" }, 409);
+			server.use(
+				http.post(`${API_VERSION}/user`, () => {
+					return HttpResponse.json(
+						{ detail: "Email already registered" },
+						{ status: 409 },
+					);
+				}),
+			);
 
 			await expect(
 				registerUser("exists@example.com", "password123", "John", "US"),
@@ -159,11 +193,46 @@ describe("UserService", () => {
 
 	describe("requestVerificationEmail", () => {
 		it("should send a verification email successfully", async () => {
+			server.use(
+				http.post(
+					`${API_VERSION}/user/send-verification-email`,
+					async ({ request }) => {
+						const url = new URL(request.url);
+						if (url.searchParams.get("user_email") === "test@example.com") {
+							return HttpResponse.json({ message: "Verification email sent" });
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
+						);
+					},
+				),
+			);
 			const result = await requestVerificationEmail("test@example.com");
 			expect(result).toEqual({ message: "Verification email sent" });
 		});
 
 		it("should handle email not found error", async () => {
+			server.use(
+				http.post(
+					`${API_VERSION}/user/send-verification-email`,
+					async ({ request }) => {
+						const url = new URL(request.url);
+						if (
+							url.searchParams.get("user_email") === "nonexistent@example.com"
+						) {
+							return HttpResponse.json(
+								{ detail: "Email address not found" },
+								{ status: 404 },
+							);
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
+						);
+					},
+				),
+			);
 			await expect(
 				requestVerificationEmail("nonexistent@example.com"),
 			).rejects.toThrow("Email address not found");
@@ -172,17 +241,61 @@ describe("UserService", () => {
 
 	describe("verifyEmail", () => {
 		it("should verify email successfully", async () => {
+			server.use(
+				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+					const url = new URL(request.url);
+					if (url.searchParams.get("token") === "valid-token") {
+						return HttpResponse.json({
+							message: "Email verified successfully",
+						});
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock" },
+						{ status: 500 },
+					);
+				}),
+			);
 			const result = await verifyEmail("valid-token");
 			expect(result).toEqual({ message: "Email verified successfully" });
 		});
 
 		it("should handle invalid verification token", async () => {
+			server.use(
+				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+					const url = new URL(request.url);
+					if (url.searchParams.get("token") === "invalid-token") {
+						return HttpResponse.json(
+							{ detail: "Invalid verification token" },
+							{ status: 400 }, // Or 404 depending on API
+						);
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock" },
+						{ status: 500 },
+					);
+				}),
+			);
 			await expect(verifyEmail("invalid-token")).rejects.toThrow(
 				"Invalid verification token",
 			);
 		});
 
 		it("should handle expired verification token", async () => {
+			server.use(
+				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+					const url = new URL(request.url);
+					if (url.searchParams.get("token") === "expired-token") {
+						return HttpResponse.json(
+							{ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED },
+							{ status: 410 },
+						);
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock" },
+						{ status: 500 },
+					);
+				}),
+			);
 			await expect(verifyEmail("expired-token")).rejects.toThrow(
 				AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED,
 			);
@@ -190,38 +303,57 @@ describe("UserService", () => {
 	});
 
 	describe("requestPasswordReset", () => {
-		// biome-ignore lint/suspicious/noExplicitAny: any is fine in this context
-		let postSpy: any;
+		beforeEach(() => {});
 
-		beforeEach(() => {
-			postSpy = vi.spyOn(apiModule.default, "post");
-			mockFetch({ message: "Reset email sent" });
-		});
-
-		afterEach(() => {
-			postSpy.mockRestore();
-		});
+		afterEach(() => {});
 
 		it("should request password reset successfully", async () => {
-			postSpy.mockResolvedValueOnce({ data: { message: "Reset email sent" } });
+			server.use(
+				http.post(
+					`${API_VERSION}/user/request-password-reset`,
+					async ({ request }) => {
+						const body = (await request.json()) as { user_email?: string };
+						if (body.user_email === "user@example.com") {
+							return HttpResponse.json({ message: "Reset email sent" });
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
+						);
+					},
+				),
+			);
 			await expect(requestPasswordReset("user@example.com")).resolves.toEqual({
 				message: "Reset email sent",
 			});
 		});
 
 		it("should handle email not found error (404)", async () => {
-			const err = new Error("Not found");
-			Object.defineProperty(err, "isAxiosError", { value: true });
-			Object.defineProperty(err, "response", {
-				value: { status: 404, data: {} },
-			});
-			postSpy.mockRejectedValueOnce(err);
+			server.use(
+				http.post(
+					`${API_VERSION}/user/request-password-reset`,
+					async ({ request }) => {
+						const body = (await request.json()) as { user_email?: string };
+						if (body.user_email === "user@example.com") {
+							return HttpResponse.json(
+								{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
+								{ status: 404 },
+							);
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock for 404" },
+							{ status: 500 },
+						);
+					},
+				),
+			);
 			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
 				AUTH_ERRORS.EMAIL_NOT_FOUND,
 			);
 		});
 
 		it("should handle network errors", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
 			const err = new Error("Network Error");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "request", { value: {} });
@@ -230,24 +362,41 @@ describe("UserService", () => {
 			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
 				AUTH_ERRORS.NETWORK_ERROR,
 			);
+			postSpy.mockRestore();
 		});
 	});
 
 	describe("resetPassword", () => {
-		// biome-ignore lint/suspicious/noExplicitAny: any is fine in this context
-		let postSpy: any;
+		beforeEach(() => {});
 
-		beforeEach(() => {
-			postSpy = vi.spyOn(apiModule.default, "post");
-			mockFetch({ message: "Password updated" });
-		});
-
-		afterEach(() => {
-			postSpy.mockRestore();
-		});
+		afterEach(() => {});
 
 		it("should reset password successfully", async () => {
-			postSpy.mockResolvedValueOnce({ data: { message: "Password updated" } });
+			server.use(
+				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
+					try {
+						const body = (await request.json()) as {
+							token?: string;
+							new_password?: string;
+						};
+						if (
+							body.token === "valid-token" &&
+							body.new_password === "NewPass123!"
+						) {
+							return HttpResponse.json({ message: "Password updated" });
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock: wrong token or password" },
+							{ status: 400 },
+						);
+					} catch (e) {
+						return HttpResponse.json(
+							{ detail: "MSW handler error" },
+							{ status: 500 },
+						);
+					}
+				}),
+			);
 			await expect(
 				resetPassword("valid-token", "NewPass123!"),
 			).resolves.toEqual({
@@ -256,35 +405,51 @@ describe("UserService", () => {
 		});
 
 		it("should handle invalid or expired token (400)", async () => {
-			const err = new Error("Bad request");
-			Object.defineProperty(err, "isAxiosError", { value: true });
-			Object.defineProperty(err, "response", {
-				value: { status: 400, data: { detail: "Invalid token" } },
-			});
-			postSpy.mockRejectedValueOnce(err);
+			server.use(
+				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
+					const body = (await request.json()) as { token?: string };
+					if (body.token === "bad-token") {
+						return HttpResponse.json(
+							{ detail: "Invalid token" },
+							{ status: 400 },
+						);
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock for bad-token" },
+						{ status: 500 },
+					);
+				}),
+			);
 			await expect(resetPassword("bad-token", "NewPass123!")).rejects.toThrow(
 				"Invalid token",
 			);
 		});
 
 		it("should handle validation errors (422)", async () => {
-			const err = new Error("Unprocessable");
-			Object.defineProperty(err, "isAxiosError", { value: true });
-			Object.defineProperty(err, "response", {
-				value: {
-					status: 422,
-					data: {
-						detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
-					},
-				},
-			});
-			postSpy.mockRejectedValueOnce(err);
+			server.use(
+				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
+					const body = (await request.json()) as { new_password?: string };
+					if (body.new_password === "short") {
+						return HttpResponse.json(
+							{
+								detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
+							},
+							{ status: 422 },
+						);
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock for validation" },
+						{ status: 500 },
+					);
+				}),
+			);
 			await expect(resetPassword("valid-token", "short")).rejects.toThrow(
 				/Too weak/,
 			);
 		});
 
 		it("should handle server errors (500)", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
 			const err = new Error("Server down");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "response", {
@@ -294,9 +459,11 @@ describe("UserService", () => {
 			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
 				AUTH_ERRORS.SERVER_ERROR,
 			);
+			postSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
 			const err = new Error("Network Error");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "request", { value: {} });
@@ -305,6 +472,7 @@ describe("UserService", () => {
 			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
 				AUTH_ERRORS.NETWORK_ERROR,
 			);
+			postSpy.mockRestore();
 		});
 	});
 });

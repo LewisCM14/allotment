@@ -61,8 +61,6 @@ function LoginForm(_: React.ComponentProps<"div">) {
 				return;
 			}
 
-			console.log("Submitting login form with email:", data.email);
-
 			const result = await loginUser(data.email, data.password);
 
 			const userData = {
@@ -70,11 +68,6 @@ function LoginForm(_: React.ComponentProps<"div">) {
 				user_email: result.userData.user_email,
 				is_email_verified: result.userData.is_email_verified || false,
 			};
-
-			console.log(
-				"Login successful, proceeding to login with user data:",
-				userData,
-			);
 
 			await login(result.tokens, result.firstName, userData);
 			navigate("/");

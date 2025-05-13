@@ -60,6 +60,20 @@ api.interceptors.request.use(
 
 		const token = localStorage.getItem("access_token");
 		if (token) config.headers.Authorization = `Bearer ${token}`;
+		if (
+			config.url &&
+			!config.url.startsWith("http") &&
+			!config.url.startsWith(API_VERSION)
+		) {
+			const apiVersionClean = API_VERSION.endsWith("/")
+				? API_VERSION.slice(0, -1)
+				: API_VERSION;
+			const pathClean = config.url.startsWith("/")
+				? config.url
+				: `/${config.url}`;
+			config.url = apiVersionClean + pathClean;
+		}
+
 		return config;
 	},
 	(error) => {
@@ -100,6 +114,8 @@ const refreshAccessToken = async (): Promise<string | null> => {
 	if (!refreshToken) return null;
 
 	try {
+		// This request goes to current_host/api/v1/user/auth/refresh,
+		// which is correctly handled by Nginx proxying.
 		const response = await axios.post<TokenPair>(
 			`${API_VERSION}/user/auth/refresh`,
 			{ refresh_token: refreshToken },
