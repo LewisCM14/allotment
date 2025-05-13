@@ -61,6 +61,8 @@ function LoginForm(_: React.ComponentProps<"div">) {
 				return;
 			}
 
+			console.log("Submitting login form with email:", data.email);
+
 			const result = await loginUser(data.email, data.password);
 
 			const userData = {
@@ -69,11 +71,15 @@ function LoginForm(_: React.ComponentProps<"div">) {
 				is_email_verified: result.userData.is_email_verified || false,
 			};
 
+			console.log("Login successful, proceeding to login with user data:", userData);
+
 			await login(result.tokens, result.firstName, userData);
 			navigate("/");
 		} catch (err) {
-			setError(AUTH_ERRORS.format(err));
-			console.error("Login failed", err);
+			const errorMessage = AUTH_ERRORS.format(err);
+			setError(errorMessage);
+			console.error("Login failed:", err);
+			console.error("Formatted error:", errorMessage);
 		}
 	};
 

@@ -71,7 +71,7 @@ export const registerUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.REGISTRATION_FAILED,
+							AUTH_ERRORS.REGISTRATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -141,6 +141,12 @@ export const loginUser = async (
 			user_password: password,
 		};
 
+		// Make sure we're using the correct endpoint here
+		// The error is showing 405 Method Not Allowed at "/auth/login"
+		// But the code is correctly using "/user/auth/login"
+		// Let's add a logging statement to debug
+		console.log("Attempting login with endpoint:", "/user/auth/login");
+
 		const response = await api.post<ILoginResponse>(
 			"/user/auth/login",
 			requestData,
@@ -176,7 +182,13 @@ export const loginUser = async (
 			},
 		};
 	} catch (error) {
+		// Add additional error logging to debug the issue
+		console.error("Login error:", error);
 		if (axios.isAxiosError(error)) {
+			console.error("Error response:", error.response?.data);
+			console.error("Error status:", error.response?.status);
+			console.error("Error URL:", error.config?.url);
+
 			if (error.response) {
 				switch (error.response.status) {
 					case 404:
@@ -188,7 +200,7 @@ export const loginUser = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.INVALID_CREDENTIALS,
+							AUTH_ERRORS.INVALID_CREDENTIALS,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -222,7 +234,7 @@ export const verifyEmail = async (
 					case 400:
 						throw new Error(
 							error.response.data?.detail ||
-								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
+							AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
 						);
 					case 404:
 						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_INVALID);
@@ -231,7 +243,7 @@ export const verifyEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
+							AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -268,7 +280,7 @@ export const requestVerificationEmail = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
+							AUTH_ERRORS.VERIFICATION_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -306,14 +318,14 @@ export const requestPasswordReset = async (
 					case 400:
 						throw new Error(
 							error.response.data?.detail ||
-								"Email not verified. Please verify your email first.",
+							"Email not verified. Please verify your email first.",
 						);
 					case 404:
 						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.RESET_FAILED,
+							AUTH_ERRORS.RESET_FAILED,
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
@@ -356,7 +368,7 @@ export const resetPassword = async (
 					case 422:
 						throw new Error(
 							formatValidationErrors(error.response.data?.detail) ||
-								"Invalid password format",
+							"Invalid password format",
 						);
 					case 500:
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
