@@ -23,16 +23,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/pip \
     uv pip install --system -e .
 
-# Copy application code
 COPY . .
 
-# Explicitly set the port for the service
+# Explicitly set the default port for the service
+# Render will override this with its own PORT environment variable
 ENV PORT=8000
 
-# Healthcheck
+# Healthcheck uses the PORT environment variable
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD curl -f -X GET http://localhost:8000/api/v1/health || exit 1
+    CMD curl -f -X GET http://localhost:${PORT}/api/v1/health || exit 1
 
+# Expose the default port
 EXPOSE 8000
 
 # Create entrypoint script to run migrations

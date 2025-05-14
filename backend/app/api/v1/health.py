@@ -37,7 +37,7 @@ START_TIME = time.time()
     description="Lightweight health check - returns 200 if system is operational",
     include_in_schema=False,
 )
-@limiter.limit("10/minute")
+@limiter.limit("30/minute")
 async def health_check(
     request: Request,
     db: AsyncSession = Depends(get_db),
