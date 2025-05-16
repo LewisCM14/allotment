@@ -99,7 +99,9 @@ describe("API interceptors", () => {
 			configurable: true,
 		});
 
-		await expect(api.get("/any-endpoint")).rejects.toThrow("You are offline");
+		await expect(api.get("/any-endpoint")).rejects.toThrow(
+			"You are offline. Please check your connection.",
+		);
 
 		Object.defineProperty(navigator, "onLine", {
 			value: originalNavigator.onLine,

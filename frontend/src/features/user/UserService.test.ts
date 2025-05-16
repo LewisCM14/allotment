@@ -1,8 +1,8 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { buildUrl } from "../../mocks/handlers";
 import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
-import { API_VERSION } from "../../services/apiConfig";
 import {
 	AUTH_ERRORS,
 	loginUser,
@@ -31,7 +31,7 @@ describe("UserService", () => {
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user/auth/login`, async ({ request }) => {
+				http.post(buildUrl("/user/auth/login"), async ({ request }) => {
 					const body = (await request.json()) as { user_email?: string };
 					if (body.user_email === "test@example.com") {
 						return HttpResponse.json({
@@ -46,6 +46,9 @@ describe("UserService", () => {
 						{ detail: "Unhandled mock case" },
 						{ status: 500 },
 					);
+				}),
+				http.options(buildUrl("/user/auth/login"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 
@@ -67,7 +70,7 @@ describe("UserService", () => {
 
 		it("should throw an error with invalid credentials", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user/auth/login`, async ({ request }) => {
+				http.post(buildUrl("/user/auth/login"), async ({ request }) => {
 					const body = (await request.json()) as { user_email?: string };
 					if (body.user_email === "wrong@example.com") {
 						return HttpResponse.json(
@@ -79,6 +82,9 @@ describe("UserService", () => {
 						{ detail: "Unhandled mock case" },
 						{ status: 500 },
 					);
+				}),
+				http.options(buildUrl("/user/auth/login"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
@@ -132,8 +138,11 @@ describe("UserService", () => {
 				refresh_token: "new-refresh-token",
 			};
 			server.use(
-				http.post(`${API_VERSION}/user`, () => {
+				http.post(buildUrl("/user"), () => {
 					return HttpResponse.json(mockResponse);
+				}),
+				http.options(buildUrl("/user"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 
@@ -149,11 +158,14 @@ describe("UserService", () => {
 
 		it("should throw an error if email already exists", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user`, () => {
+				http.post(buildUrl("/user"), () => {
 					return HttpResponse.json(
 						{ detail: "Email already registered" },
 						{ status: 409 },
 					);
+				}),
+				http.options(buildUrl("/user"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 
@@ -195,7 +207,7 @@ describe("UserService", () => {
 		it("should send a verification email successfully", async () => {
 			server.use(
 				http.post(
-					`${API_VERSION}/user/send-verification-email`,
+					buildUrl("/user/send-verification-email"),
 					async ({ request }) => {
 						const url = new URL(request.url);
 						if (url.searchParams.get("user_email") === "test@example.com") {
@@ -207,6 +219,9 @@ describe("UserService", () => {
 						);
 					},
 				),
+				http.options(buildUrl("/user/send-verification-email"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			const result = await requestVerificationEmail("test@example.com");
 			expect(result).toEqual({ message: "Verification email sent" });
@@ -215,7 +230,7 @@ describe("UserService", () => {
 		it("should handle email not found error", async () => {
 			server.use(
 				http.post(
-					`${API_VERSION}/user/send-verification-email`,
+					buildUrl("/user/send-verification-email"),
 					async ({ request }) => {
 						const url = new URL(request.url);
 						if (
@@ -232,6 +247,9 @@ describe("UserService", () => {
 						);
 					},
 				),
+				http.options(buildUrl("/user/send-verification-email"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(
 				requestVerificationEmail("nonexistent@example.com"),
@@ -242,7 +260,7 @@ describe("UserService", () => {
 	describe("verifyEmail", () => {
 		it("should verify email successfully", async () => {
 			server.use(
-				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
 					const url = new URL(request.url);
 					if (url.searchParams.get("token") === "valid-token") {
 						return HttpResponse.json({
@@ -254,6 +272,9 @@ describe("UserService", () => {
 						{ status: 500 },
 					);
 				}),
+				http.options(buildUrl("/user/verify-email"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			const result = await verifyEmail("valid-token");
 			expect(result).toEqual({ message: "Email verified successfully" });
@@ -261,7 +282,7 @@ describe("UserService", () => {
 
 		it("should handle invalid verification token", async () => {
 			server.use(
-				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
 					const url = new URL(request.url);
 					if (url.searchParams.get("token") === "invalid-token") {
 						return HttpResponse.json(
@@ -274,6 +295,9 @@ describe("UserService", () => {
 						{ status: 500 },
 					);
 				}),
+				http.options(buildUrl("/user/verify-email"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(verifyEmail("invalid-token")).rejects.toThrow(
 				"Invalid verification token",
@@ -282,7 +306,7 @@ describe("UserService", () => {
 
 		it("should handle expired verification token", async () => {
 			server.use(
-				http.get(`${API_VERSION}/user/verify-email`, async ({ request }) => {
+				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
 					const url = new URL(request.url);
 					if (url.searchParams.get("token") === "expired-token") {
 						return HttpResponse.json(
@@ -294,6 +318,9 @@ describe("UserService", () => {
 						{ detail: "Unhandled mock" },
 						{ status: 500 },
 					);
+				}),
+				http.options(buildUrl("/user/verify-email"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			await expect(verifyEmail("expired-token")).rejects.toThrow(
@@ -310,7 +337,7 @@ describe("UserService", () => {
 		it("should request password reset successfully", async () => {
 			server.use(
 				http.post(
-					`${API_VERSION}/user/request-password-reset`,
+					buildUrl("/user/request-password-reset"),
 					async ({ request }) => {
 						const body = (await request.json()) as { user_email?: string };
 						if (body.user_email === "user@example.com") {
@@ -322,6 +349,9 @@ describe("UserService", () => {
 						);
 					},
 				),
+				http.options(buildUrl("/user/request-password-reset"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(requestPasswordReset("user@example.com")).resolves.toEqual({
 				message: "Reset email sent",
@@ -331,7 +361,7 @@ describe("UserService", () => {
 		it("should handle email not found error (404)", async () => {
 			server.use(
 				http.post(
-					`${API_VERSION}/user/request-password-reset`,
+					buildUrl("/user/request-password-reset"),
 					async ({ request }) => {
 						const body = (await request.json()) as { user_email?: string };
 						if (body.user_email === "user@example.com") {
@@ -346,6 +376,9 @@ describe("UserService", () => {
 						);
 					},
 				),
+				http.options(buildUrl("/user/request-password-reset"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
 				AUTH_ERRORS.EMAIL_NOT_FOUND,
@@ -373,7 +406,7 @@ describe("UserService", () => {
 
 		it("should reset password successfully", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
+				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
 					try {
 						const body = (await request.json()) as {
 							token?: string;
@@ -396,6 +429,9 @@ describe("UserService", () => {
 						);
 					}
 				}),
+				http.options(buildUrl("/user/reset-password"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(
 				resetPassword("valid-token", "NewPass123!"),
@@ -406,7 +442,7 @@ describe("UserService", () => {
 
 		it("should handle invalid or expired token (400)", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
+				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
 					const body = (await request.json()) as { token?: string };
 					if (body.token === "bad-token") {
 						return HttpResponse.json(
@@ -414,10 +450,10 @@ describe("UserService", () => {
 							{ status: 400 },
 						);
 					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock for bad-token" },
-						{ status: 500 },
-					);
+					return HttpResponse.json({ message: "Password updated" });
+				}),
+				http.options(buildUrl("/user/reset-password"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			await expect(resetPassword("bad-token", "NewPass123!")).rejects.toThrow(
@@ -427,9 +463,12 @@ describe("UserService", () => {
 
 		it("should handle validation errors (422)", async () => {
 			server.use(
-				http.post(`${API_VERSION}/user/reset-password`, async ({ request }) => {
-					const body = (await request.json()) as { new_password?: string };
-					if (body.new_password === "short") {
+				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
+					const body = (await request.json()) as {
+						token?: string;
+						new_password?: string;
+					};
+					if (body.token === "valid-token" && body.new_password === "short") {
 						return HttpResponse.json(
 							{
 								detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
@@ -437,10 +476,10 @@ describe("UserService", () => {
 							{ status: 422 },
 						);
 					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock for validation" },
-						{ status: 500 },
-					);
+					return HttpResponse.json({ message: "Password updated" });
+				}),
+				http.options(buildUrl("/user/reset-password"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			await expect(resetPassword("valid-token", "short")).rejects.toThrow(
