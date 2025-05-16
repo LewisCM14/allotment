@@ -12,5 +12,5 @@ const getApiUrl = () => {
 	return configuredUrl;
 };
 
-export const API_VERSION = import.meta.env.VITE_API_VERSION;
+export const API_VERSION = import.meta.env.VITE_API_VERSION || "/api/v1";
 export const API_URL = getApiUrl();
