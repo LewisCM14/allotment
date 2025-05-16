@@ -21,20 +21,22 @@ class ErrorMonitoringService {
 		// or defaults to a known one if that's also problematic.
 		const apiVersionPath = import.meta.env.VITE_API_VERSION;
 
-		if (typeof apiVersionPath === 'string' && apiVersionPath.startsWith('/')) {
+		if (typeof apiVersionPath === "string" && apiVersionPath.startsWith("/")) {
 			// Ensure apiVersionPath doesn't end with a slash to prevent double slashes
-			const cleanedApiVersionPath = apiVersionPath.endsWith('/') ? apiVersionPath.slice(0, -1) : apiVersionPath;
+			const cleanedApiVersionPath = apiVersionPath.endsWith("/")
+				? apiVersionPath.slice(0, -1)
+				: apiVersionPath;
 			this.logEndpoint = `${cleanedApiVersionPath}/log-client-error`;
 		} else {
 			// Fallback if VITE_API_VERSION is not set or not in the expected format (e.g., /api/v1)
 			console.warn(
-				"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly."
+				"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly.",
 			);
 			this.logEndpoint = "/api/v1/log-client-error";
 		}
 
 		// Ensure the path starts with a single slash if it's relative.
-		if (!this.logEndpoint.startsWith('/')) {
+		if (!this.logEndpoint.startsWith("/")) {
 			this.logEndpoint = `/${this.logEndpoint}`;
 		}
 
