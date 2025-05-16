@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Dict, Optional
 
 import structlog
-from fastapi import FastAPI, status
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import EmailStr
 
@@ -22,6 +22,7 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
+from app.api.schemas.client_error_schema import ClientErrorLog
 from app.api.services.email_service import send_test_email
 from app.api.v1 import router as api_router
 
@@ -162,6 +163,22 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
             logger.info("Test email sent successfully", **log_context)
 
     return {"message": "Test email sent successfully"}
+
+
+@app.post("/api/v1/log-client-error")
+async def handle_log_client_error(
+    error_log: ClientErrorLog, request: Request
+) -> Dict[str, str]:
+    client_host = request.client.host if request.client else "unknown_client"
+    logger.error(
+        f"Client-side error reported from {client_host}: {error_log.error}",
+        extra={
+            "client_error_info": error_log.model_dump(),
+            "client_ip": client_host,
+            "user_agent": request.headers.get("user-agent", "unknown_agent"),
+        },
+    )
+    return {"message": "Client error logged successfully"}
 
 
 def flush_logs() -> None:
