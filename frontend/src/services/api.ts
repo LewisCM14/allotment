@@ -227,25 +227,31 @@ api.interceptors.response.use(
 		}
 
 		// Cache invalidation for mutation requests
-		const { method, url } = response.config;
+		const { method, url: fullUrl } = response.config; // url here is the full URL
 		if (
 			method &&
-			["post", "put", "patch", "delete"].includes(method.toLowerCase()) &&
-			url
+			fullUrl &&
+			["post", "put", "patch", "delete"].includes(method.toLowerCase())
 		) {
-			// Extract the base endpoint path for invalidation
-			// E.g., extract "/api/v1/users" from "/api/v1/users/123"
-			const urlParts = url.split("/");
-			const resourceIndex = urlParts.findIndex(
-				(part) =>
-					part === "api" ||
-					part === "v1" ||
-					part === API_VERSION.replace(/\//g, ""),
-			);
+			try {
+				const pathName = new URL(fullUrl).pathname;
 
-			if (resourceIndex >= 0 && urlParts.length > resourceIndex + 1) {
-				const resourceType = urlParts[resourceIndex + 1];
-				apiCache.invalidateByPrefix(`/${resourceType}`);
+				let resourcePath = pathName;
+				if (API_VERSION && pathName.startsWith(API_VERSION)) {
+					resourcePath = pathName.substring(API_VERSION.length);
+				}
+				resourcePath = resourcePath.startsWith("/")
+					? resourcePath.substring(1)
+					: resourcePath;
+
+				const resourceParts = resourcePath.split("/");
+				if (resourceParts.length > 0) {
+					const resourceType = resourceParts[0];
+					apiCache.invalidateByPrefix(`/${resourceType}`);
+				}
+			} catch (e) {
+				// Log error if URL parsing or cache invalidation fails
+				errorMonitor.captureException(e, { context: "cache_invalidation" });
 			}
 		}
 

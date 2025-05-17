@@ -56,7 +56,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<TokenPair>("/user", requestData);
+		const response = await api.post<TokenPair>("/user/", requestData);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
