@@ -1,8 +1,6 @@
 name: Frontend CD
 
 on:
-  repository_dispatch:
-    types: [deploy-frontend]
   workflow_run:
     workflows: ["Frontend CI"]
     branches: [main]
@@ -11,7 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'repository_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
       packages: write
@@ -19,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -40,7 +40,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_LOWERCASE }}/frontend:latest
-            ghcr.io/${{ env.REPO_LOWERCASE }}/frontend:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWERCASE }}/frontend:${{ github.event.workflow_run.head_sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |

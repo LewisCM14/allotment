@@ -1,12 +1,17 @@
 name: Backend CD
 
 on:
-  repository_dispatch:
-    types: [deploy-backend]
+  workflow_run:
+    workflows: ["Backend CI"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success'
     permissions:
       contents: read
       packages: write
@@ -14,6 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -35,7 +42,7 @@ jobs:
           push: true
           tags: |
             ghcr.io/${{ env.REPO_LOWERCASE }}/backend:latest
-            ghcr.io/${{ env.REPO_LOWERCASE }}/backend:${{ github.sha }}
+            ghcr.io/${{ env.REPO_LOWERCASE }}/backend:${{ github.event.workflow_run.head_sha }}
           no-cache: true
           build-args: |
             BUILDTIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
