@@ -1,6 +1,8 @@
+import { Loader2 } from "lucide-react";
 import { StrictMode, Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./global.css";
+import { ThemeProvider } from "./store/theme/ThemeProvider.tsx";
 
 const App = lazy(() => import("./App.tsx"));
 
@@ -45,9 +47,17 @@ function Main() {
 
 	return (
 		<StrictMode>
-			<Suspense fallback={<div>Loading...</div>}>
-				<App />
-			</Suspense>
+			<ThemeProvider>
+				<Suspense
+					fallback={
+						<div className="flex h-screen w-screen items-center justify-center bg-background">
+							<Loader2 className="h-8 w-8 animate-spin text-primary" />
+						</div>
+					}
+				>
+					<App />
+				</Suspense>
+			</ThemeProvider>
 		</StrictMode>
 	);
 }
