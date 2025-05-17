@@ -42,6 +42,28 @@ export interface IRegisterRequest {
 	user_country_code: string;
 }
 
+interface IValidationErrorDetail {
+	msg?: string;
+	loc?: string[];
+	type?: string;
+}
+
+// Helper function to format validation errors from the API
+const formatValidationErrors = (
+	details: IValidationErrorDetail[] | unknown,
+): string => {
+	if (!details || !Array.isArray(details)) return "";
+
+	try {
+		const messages = details
+			.map((err: IValidationErrorDetail) => err.msg || "Validation error")
+			.join(", ");
+		return messages || "Validation failed. Please check your inputs.";
+	} catch (e) {
+		return "Validation failed. Please check your inputs.";
+	}
+};
+
 export const registerUser = async (
 	email: string,
 	password: string,
@@ -66,7 +88,8 @@ export const registerUser = async (
 						throw new Error(AUTH_ERRORS.EMAIL_EXISTS);
 					case 400:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.REGISTRATION_FAILED,
+							formatError(error.response.data) ||
+								AUTH_ERRORS.REGISTRATION_FAILED,
 						);
 					case 422:
 						throw new Error(
@@ -77,7 +100,7 @@ export const registerUser = async (
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}
@@ -86,28 +109,6 @@ export const registerUser = async (
 			}
 		}
 		return handleApiError(error, AUTH_ERRORS.REGISTRATION_FAILED);
-	}
-};
-
-interface IValidationErrorDetail {
-	msg?: string;
-	loc?: string[];
-	type?: string;
-}
-
-// Helper function to format validation errors from the API
-const formatValidationErrors = (
-	details: IValidationErrorDetail[] | unknown,
-): string => {
-	if (!details || !Array.isArray(details)) return "";
-
-	try {
-		const messages = details
-			.map((err: IValidationErrorDetail) => err.msg || "Validation error")
-			.join(", ");
-		return messages || "Validation failed. Please check your inputs.";
-	} catch (e) {
-		return "Validation failed. Please check your inputs.";
 	}
 };
 
@@ -168,7 +169,7 @@ export const loginUser = async (
 				access_token,
 				refresh_token,
 			},
-			firstName,
+			firstName: firstName || "User",
 			userData: {
 				user_email: email,
 				user_id: user_id || "",
@@ -194,7 +195,7 @@ export const loginUser = async (
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}
@@ -221,7 +222,7 @@ export const verifyEmail = async (
 				switch (error.response.status) {
 					case 400:
 						throw new Error(
-							error.response.data?.detail ||
+							formatError(error.response.data) ||
 								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
 						);
 					case 404:
@@ -237,7 +238,7 @@ export const verifyEmail = async (
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}
@@ -278,7 +279,7 @@ export const requestVerificationEmail = async (
 						);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}
@@ -305,7 +306,7 @@ export const requestPasswordReset = async (
 				switch (error.response.status) {
 					case 400:
 						throw new Error(
-							error.response.data?.detail ||
+							formatError(error.response.data) ||
 								"Email not verified. Please verify your email first.",
 						);
 					case 404:
@@ -323,7 +324,7 @@ export const requestPasswordReset = async (
 						);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}
@@ -351,7 +352,7 @@ export const resetPassword = async (
 				switch (error.response.status) {
 					case 400:
 						throw new Error(
-							error.response.data?.detail || "Invalid or expired token",
+							formatError(error.response.data) || "Invalid or expired token",
 						);
 					case 422:
 						throw new Error(
@@ -362,7 +363,7 @@ export const resetPassword = async (
 						throw new Error(AUTH_ERRORS.SERVER_ERROR);
 					default:
 						throw new Error(
-							error.response.data?.detail || AUTH_ERRORS.UNKNOWN_ERROR,
+							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
 						);
 				}
 			}

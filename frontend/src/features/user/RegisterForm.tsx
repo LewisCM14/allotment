@@ -77,9 +77,10 @@ export default function RegisterForm(_: React.ComponentProps<"div">) {
 			);
 			await login(tokenPair, data.first_name);
 			navigate("/");
-		} catch (error) {
-			setError(AUTH_ERRORS.format(error));
-			console.error("Registration failed", error);
+		} catch (err: unknown) {
+			const errorMessage = AUTH_ERRORS.format(err);
+			setError(errorMessage);
+			console.error("Registration failed:", err);
 		}
 	};
 

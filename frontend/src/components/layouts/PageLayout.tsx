@@ -15,12 +15,11 @@ export function PageLayout({
 	...props
 }: IPageLayout) {
 	return (
-		<main className="h-full w-full flex items-center justify-center">
+		<main className="w-full">
 			<div
 				className={cn(
 					"mx-auto",
 					"px-4 py-6 md:px-6 md:py-8 lg:px-8",
-					centered && "flex items-center justify-center",
 					widthClasses[variant],
 					className,
 				)}
