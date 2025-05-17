@@ -53,7 +53,7 @@ class ErrorMonitoringService {
 					timestamp: new Date().toISOString(),
 					url: window.location.href,
 					userAgent: navigator.userAgent,
-				}
+				},
 			};
 
 			if (navigator.sendBeacon) {
@@ -93,7 +93,7 @@ class ErrorMonitoringService {
 					timestamp: new Date().toISOString(),
 					url: window.location.href,
 					userAgent: navigator.userAgent,
-				}
+				},
 			};
 
 			if (navigator.sendBeacon) {
