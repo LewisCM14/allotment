@@ -203,6 +203,44 @@ class PasswordResetRequest(SecureBaseModel):
     )
 
 
+class EmailRequest(SecureBaseModel):
+    """Schema for requests requiring only user email."""
+
+    user_email: EmailStr = Field(
+        ...,
+        description="User's email address",
+        examples=["user@example.com"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "user_email": "user@example.com",
+            }
+        }
+    )
+
+
+class PasswordUpdate(SecureBaseModel):
+    """Schema for updating password when token is in path."""
+
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=30,
+        description="New password",
+        examples=["NewSecurePass123!"],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "new_password": "NewSecurePass123!",
+            }
+        }
+    )
+
+
 class PasswordResetAction(SecureBaseModel):
     """Schema for password reset with token."""
 

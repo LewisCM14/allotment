@@ -22,7 +22,7 @@ class TestRegisterUser:
         )
 
         response = client.post(
-            f"{PREFIX}/user",
+            f"{PREFIX}/users",
             json={
                 "user_email": "test@example.com",
                 "user_password": "TestPass123!@",
@@ -95,7 +95,7 @@ class TestRegisterUser:
     def test_user_registration_validation(self, client, test_input, expected_status):
         """Test that invalid users cannot be created."""
         try:
-            response = client.post(f"{PREFIX}/user", json=test_input)
+            response = client.post(f"{PREFIX}/users", json=test_input)
             assert response.status_code == expected_status
         except Exception as e:
             assert (
@@ -127,12 +127,12 @@ class TestRegisterUser:
             "user_country_code": "GB",
         }
 
-        response = client.post(f"{PREFIX}/user", json=user_data)
+        response = client.post(f"{PREFIX}/users", json=user_data)
         assert response.status_code == status.HTTP_201_CREATED
 
         # Attempt duplicate registration
         try:
-            response = client.post(f"{PREFIX}/user", json=user_data)
+            response = client.post(f"{PREFIX}/users", json=user_data)
             # If no exception is raised, check the response
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             assert response.json()["detail"][0]["msg"] == "Email already registered"
@@ -162,7 +162,7 @@ class TestRegisterUser:
             "user_country_code": "GB",
         }
 
-        response = client.post(f"{PREFIX}/user", json=user_data)
+        response = client.post(f"{PREFIX}/users", json=user_data)
         assert response.status_code == status.HTTP_201_CREATED
 
         user_id = response.json().get("user_id")
@@ -187,7 +187,7 @@ class TestUserLogin:
         )
 
         client.post(
-            f"{PREFIX}/user",
+            f"{PREFIX}/users",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "SecurePass123!",
@@ -197,7 +197,7 @@ class TestUserLogin:
         )
 
         response = client.post(
-            f"{PREFIX}/user/auth/login",
+            f"{PREFIX}/auth/token",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "SecurePass123!",
@@ -216,7 +216,7 @@ class TestUserLogin:
         """Test login with incorrect password."""
         try:
             response = client.post(
-                f"{PREFIX}/user/auth/login",
+                f"{PREFIX}/auth/token",
                 json={
                     "user_email": "testuser@example.com",
                     "user_password": "WrongPassword!",
@@ -242,7 +242,7 @@ class TestTokenRefresh:
         )
 
         register_response = client.post(
-            f"{PREFIX}/user",
+            f"{PREFIX}/users",
             json={
                 "user_email": "refresh@example.com",
                 "user_password": "SecurePass123!",
@@ -257,7 +257,7 @@ class TestTokenRefresh:
 
         # 2. Use the refresh token to get a new access token
         refresh_response = client.post(
-            f"{PREFIX}/user/auth/refresh",
+            f"{PREFIX}/auth/token/refresh",
             json={"refresh_token": refresh_token},
         )
 
@@ -277,7 +277,7 @@ class TestTokenRefresh:
 
         try:
             response = client.post(
-                f"{PREFIX}/user/auth/refresh",
+                f"{PREFIX}/auth/token/refresh",
                 json={"refresh_token": invalid_token},
             )
             # If we get here, there was no exception and we can check the response
@@ -298,7 +298,7 @@ class TestTokenRefresh:
         )
 
         register_response = client.post(
-            f"{PREFIX}/user",
+            f"{PREFIX}/users",
             json={
                 "user_email": "wrong_token@example.com",
                 "user_password": "SecurePass123!",
@@ -312,7 +312,7 @@ class TestTokenRefresh:
 
         try:
             response = client.post(
-                f"{PREFIX}/user/auth/refresh",
+                f"{PREFIX}/auth/token/refresh",
                 json={"refresh_token": access_token},
             )
             # If we get here, there was no exception and we can check the response
@@ -344,7 +344,7 @@ class TestVerifyEmail:
             "user_first_name": "Verify",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        register_response = client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
@@ -353,7 +353,8 @@ class TestVerifyEmail:
 
         token = create_token(user_id=user_id)
 
-        verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
+        verify_response = client.post(f"{PREFIX}/users/email-verifications/{token}")
+
         assert verify_response.status_code == status.HTTP_200_OK
         assert verify_response.json()["message"] == "Email verified successfully"
 
@@ -368,26 +369,12 @@ class TestVerifyEmail:
             mocker, "app.api.v1.user.send_verification_email"
         )
 
+        # Create a valid token for a non-existent user ID
         invalid_user_id = "00000000-0000-0000-0000-000000000000"
-        try:
-            verify_response = client.get(
-                f"{PREFIX}/user/verify-email?token={invalid_user_id}"
-            )
-            # If no exception is raised, check the response
-            assert verify_response.status_code == status.HTTP_404_NOT_FOUND
-            assert "User not found" in verify_response.json()["detail"][0]["msg"]
-        except Exception as e:
-            # When testing, we might get either UserNotFoundError or BusinessLogicError
-            from app.api.middleware.exception_handler import (
-                BusinessLogicError,
-                EmailVerificationError,
-                UserNotFoundError,
-            )
+        invalid_token = create_token(user_id=invalid_user_id)
 
-            assert isinstance(
-                e, (UserNotFoundError, BusinessLogicError, EmailVerificationError)
-            )
-
+        response = client.post(f"{PREFIX}/users/email-verifications/{invalid_token}")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         mock_send_email.assert_not_called()
 
 
@@ -404,7 +391,7 @@ class TestRequestVerificationEmail:
         mock_register_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        register_response = client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
 
         mock_register_email.reset_mock()
@@ -412,9 +399,9 @@ class TestRequestVerificationEmail:
         mock_verify_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-
         response = client.post(
-            f"{PREFIX}/user/send-verification-email?user_email={user_data['user_email']}"
+            f"{PREFIX}/users/email-verifications",
+            json={"user_email": user_data["user_email"]},
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -439,11 +426,12 @@ class TestEmailVerificationStatus:
             "user_first_name": "Status",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        register_response = client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         assert register_response.json().get("is_email_verified") is False
+        # Update to use the correct path format with user_email in the path
         response = client.get(
-            f"{PREFIX}/user/verification-status?user_email={user_data['user_email']}"
+            f"{PREFIX}/users/{user_data['user_email']}/email-verification-status"
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -468,7 +456,7 @@ class TestEmailVerificationStatus:
             "user_first_name": "Verified",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/user", json=user_data)
+        register_response = client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
@@ -477,11 +465,11 @@ class TestEmailVerificationStatus:
 
         token = create_token(user_id=user_id)
 
-        verify_response = client.get(f"{PREFIX}/user/verify-email?token={token}")
+        verify_response = client.post(f"{PREFIX}/users/email-verifications/{token}")
         assert verify_response.status_code == status.HTTP_200_OK
 
         response = client.get(
-            f"{PREFIX}/user/verification-status?user_email={user_data['user_email']}"
+            f"{PREFIX}/users/{user_data['user_email']}/email-verification-status"
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -493,7 +481,7 @@ class TestEmailVerificationStatus:
         """Test checking verification status for a non-existent user."""
         try:
             response = client.get(
-                f"{PREFIX}/user/verification-status?user_email=nonexistent@example.com"
+                f"{PREFIX}/users/nonexistent@example.com/email-verification-status"
             )
             # If no exception is raised, check the response
             assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -520,7 +508,7 @@ class TestPasswordResetFlow:
             "user_first_name": "NoVerify",
             "user_country_code": "GB",
         }
-        register = client.post(f"{PREFIX}/user", json=user_data)
+        register = client.post(f"{PREFIX}/users", json=user_data)
         assert register.status_code == status.HTTP_201_CREATED
 
         # ignore the initial registration call
@@ -528,7 +516,7 @@ class TestPasswordResetFlow:
 
         # now request reset
         resp = client.post(
-            f"{PREFIX}/user/request-password-reset",
+            f"{PREFIX}/users/password-resets",
             json={"user_email": user_data["user_email"]},
         )
         assert resp.status_code == status.HTTP_200_OK
@@ -548,10 +536,10 @@ class TestPasswordResetFlow:
             "user_first_name": "DoVerify",
             "user_country_code": "GB",
         }
-        reg = client.post(f"{PREFIX}/user", json=user_data)
+        reg = client.post(f"{PREFIX}/users", json=user_data)
         user_id = reg.json()["user_id"]
         token = create_token(user_id=user_id, token_type="email_verification")
-        verify = client.get(f"{PREFIX}/user/verify-email?token={token}")
+        verify = client.post(f"{PREFIX}/users/email-verifications/{token}")
         assert verify.status_code == status.HTTP_200_OK
 
         _mock_reset = mock_email_service(
@@ -560,7 +548,7 @@ class TestPasswordResetFlow:
         )
 
         resp = client.post(
-            f"{PREFIX}/user/request-password-reset",
+            f"{PREFIX}/users/password-resets",
             json={"user_email": user_data["user_email"]},
         )
         assert resp.status_code == status.HTTP_200_OK
@@ -578,23 +566,22 @@ class TestPasswordResetFlow:
             "user_first_name": "Reseter",
             "user_country_code": "GB",
         }
-        reg = client.post(f"{PREFIX}/user", json=user_data)
+        reg = client.post(f"{PREFIX}/users", json=user_data)
         user_id = reg.json()["user_id"]
         token_ver = create_token(user_id=user_id, token_type="email_verification")
-        client.get(f"{PREFIX}/user/verify-email?token={token_ver}")
+        client.post(f"{PREFIX}/users/email-verifications/{token_ver}")
 
         reset_token = create_token(user_id=user_id, token_type="reset")
         new_pass = "NewPass456!#"
 
         resp = client.post(
-            f"{PREFIX}/user/reset-password",
-            json={"token": reset_token, "new_password": new_pass},
+            f"{PREFIX}/users/password-resets/{reset_token}",
+            json={"new_password": new_pass},
         )
         assert resp.status_code == status.HTTP_200_OK
         assert "has been reset" in resp.json()["message"].lower()
-
         login = client.post(
-            f"{PREFIX}/user/auth/login",
+            f"{PREFIX}/auth/token",
             json={"user_email": user_data["user_email"], "user_password": new_pass},
         )
         assert login.status_code == status.HTTP_200_OK
@@ -608,14 +595,11 @@ class TestPasswordResetFlow:
         "payload,code",
         [
             (
-                {"token": "bad.token.payload", "new_password": "Whatever1!"},
+                {"new_password": "Whatever1!"},
                 status.HTTP_401_UNAUTHORIZED,
             ),
             (
                 {
-                    "token": create_token(
-                        user_id=str(uuid.uuid4()), token_type="reset"
-                    ),
                     "new_password": "short",
                 },
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -624,5 +608,13 @@ class TestPasswordResetFlow:
     )
     def test_reset_password_errors(self, client, payload, code):
         """Invalid token or weak password yields appropriate error."""
-        resp = client.post(f"{PREFIX}/user/reset-password", json=payload)
+        if code == status.HTTP_401_UNAUTHORIZED:
+            bad_token = "bad.token.payload"
+            resp = client.post(
+                f"{PREFIX}/users/password-resets/{bad_token}", json=payload
+            )
+        else:
+            token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
+            resp = client.post(f"{PREFIX}/users/password-resets/{token}", json=payload)
+
         assert resp.status_code == code

@@ -43,9 +43,10 @@ from app.api.middleware.logging_middleware import (
 from app.api.models import User
 from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import (
+    EmailRequest,
     MessageResponse,
-    PasswordResetAction,
     PasswordResetRequest,
+    PasswordUpdate,
     RefreshRequest,
     UserCreate,
     UserLogin,
@@ -61,7 +62,7 @@ logger = structlog.get_logger()
 
 
 @router.post(
-    "/",
+    "/users",
     tags=["User"],
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
@@ -175,7 +176,7 @@ async def create_user(
 
 
 @router.post(
-    "/auth/login",
+    "/auth/token",
     tags=["User"],
     response_model=TokenResponse,
     summary="Login user",
@@ -273,7 +274,7 @@ async def login(
 
 
 @router.post(
-    "/auth/refresh",
+    "/auth/token/refresh",
     tags=["User"],
     response_model=TokenResponse,
     summary="Refresh access token",
@@ -357,21 +358,21 @@ async def refresh_token(
 
 
 @router.post(
-    "/send-verification-email",
+    "/users/email-verifications",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
     summary="Send email verification link",
-    description="Sends an email verification link to the user",
+    description="Sends an email verification link to the user's email address provided in the request body",
 )
 async def request_verification_email(
-    user_email: EmailStr, db: AsyncSession = Depends(get_db)
+    request_data: EmailRequest, db: AsyncSession = Depends(get_db)
 ) -> MessageResponse:
     """
     Send an email verification link to the user.
 
     Args:
-        user_email: The user's email address
+        request_data: Contains the user's email address
         db: Database session
 
     Returns:
@@ -380,6 +381,7 @@ async def request_verification_email(
     Raises:
         UserNotFoundError: If the user is not found
     """
+    user_email = request_data.user_email
     log_context = {
         "email": user_email,
         "request_id": request_id_ctx_var.get(),
@@ -412,13 +414,13 @@ async def request_verification_email(
         raise
 
 
-@router.get(
-    "/verify-email",
+@router.post(
+    "/users/email-verifications/{token}",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Verify email using token",
-    description="Verifies the user's email using the provided token",
+    summary="Verify email using token from path",
+    description="Verifies the user's email using the provided token in the URL path. This is a POST request as it changes server state.",
 )
 async def verify_email_token(
     token: str,
@@ -484,7 +486,7 @@ async def verify_email_token(
 
 
 @router.get(
-    "/verification-status",
+    "/users/{user_email}/email-verification-status",
     tags=["User"],
     response_model=VerificationStatusResponse,
     status_code=status.HTTP_200_OK,
@@ -523,7 +525,7 @@ async def check_verification_status(
 
 
 @router.post(
-    "/request-password-reset",
+    "/users/password-resets",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
@@ -612,25 +614,27 @@ async def request_password_reset(
 
 
 @router.post(
-    "/reset-password",
+    "/users/password-resets/{token}",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Reset password with token",
-    description="Resets a user's password using a valid reset token",
+    summary="Reset password with token from path",
+    description="Resets a user's password using a valid reset token from the URL path and new password from the request body.",
 )
 @limiter.limit("5/minute")
 async def reset_password(
-    request: Request,
-    reset_data: PasswordResetAction,
+    token: str,
+    password_data: PasswordUpdate,
+    request: Request,  # Keep request for logging if needed, or remove if not used
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """
     Reset user's password using a reset token.
 
     Args:
+        token: The reset token from the URL path
+        password_data: Contains the new password
         request: The incoming request
-        reset_data: Contains token and new password
         db: Database session
 
     Returns:
@@ -648,13 +652,13 @@ async def reset_password(
     logger.debug("Password reset attempt with token", **log_context)
 
     try:
-        token_parts = reset_data.token.split(".")
+        token_parts = token.split(".")
         if len(token_parts) != 3:
             logger.warning("Malformed JWT token format", **log_context)
             raise InvalidTokenError("Malformed JWT token")
 
         async with UserUnitOfWork(db) as uow:
-            await uow.reset_password(reset_data.token, reset_data.new_password)
+            await uow.reset_password(token, password_data.new_password)
 
         logger.info("Password reset successful", **log_context)
         return MessageResponse(message="Password has been reset successfully")
