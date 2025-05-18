@@ -25,23 +25,23 @@
 
 ### Deployments
 
-- The ability to vertically scale is to be prioritized over horizontal scaling as the option to efficiently deploy to private servers must always be available. 
+- The ability to vertically scale is prioritized over horizontal scaling as the option to efficiently deploy to private and/or dedicated servers must always be available to the application. 
     
     !!! info    
-        However the current desired deployment scenario is one that uses Docker, hosted in a cloud environment.
+        However the current deployment scenario is one that uses containers created with Docker, hosted in a cloud environment with a provider that offers managed database solutions.
 
-- The application will be served by a single database so there is currently no need for eventual consistency.
+- The application is served by a single database so there is currently no need for eventual consistency.
     
     !!! info
-        However the client and server side application are not to be tightly coupled so to allow for independent deployment inline with the modular architectural design.
+        However the client and server side application are not tightly coupled so to allow for independent deployment inline with the modular architectural design.
 
 ---
 
 ### User Base
 
 - The age of a typical user is to be assumed to be between 35-75, due to this all aspects of the user interface must be intuitive and simple to use.
-- There is an estimated 330,000 allotments in the UK, assuming each of these has a unique owner the initial scale that the application should be able to support is 10% or 33,000 users. 
-- It should also be assumed that traffic peaks on the weekends, with the application to support many concurrent users, especially during summer months. Due to this the architecture should be able to facilitate 30,000 unique queries at a time initially.
+- There is an estimated 330,000 allotments in the UK, assuming each of these has a unique owner the initial scale that the application must be able to support is 10% or 33,000 users. 
+- It is also to be assumed that traffic peaks on the weekends, with the application required to support many concurrent users, especially during summer months. Due to this the architecture should be able to facilitate several thousand unique queries at a time initially.
     
     !!! info
-        Due to the desired modularity in the applications architecture a solution to further scaling is the option of selecting a new underlying technology. However, if the initial technologies used can scale to roughly 2.5 million users with the ability to facilitate approximately 2.25 million unique queries at once it would be more than sufficient to support the entire market share of European allotments.
+        Due to the modularity in the applications architecture design, a solution to further scaling is the option of selecting a new underlying technology. However, if the initial technologies used can scale to support roughly 2.5 million active users at once it would be more than sufficient to support the entire market share of European allotments.
