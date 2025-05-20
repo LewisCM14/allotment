@@ -31,7 +31,7 @@ describe("UserService", () => {
 	describe("loginUser", () => {
 		it("should log in a user with valid credentials", async () => {
 			server.use(
-				http.post(buildUrl("/user/auth/login"), async ({ request }) => {
+				http.post(buildUrl("/auth/token"), async ({ request }) => {
 					const body = (await request.json()) as { user_email?: string };
 					if (body.user_email === "test@example.com") {
 						return HttpResponse.json({
@@ -47,7 +47,7 @@ describe("UserService", () => {
 						{ status: 500 },
 					);
 				}),
-				http.options(buildUrl("/user/auth/login"), () => {
+				http.options(buildUrl("/auth/token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -70,7 +70,7 @@ describe("UserService", () => {
 
 		it("should throw an error with invalid credentials", async () => {
 			server.use(
-				http.post(buildUrl("/user/auth/login"), async ({ request }) => {
+				http.post(buildUrl("/auth/token"), async ({ request }) => {
 					const body = (await request.json()) as { user_email?: string };
 					if (body.user_email === "wrong@example.com") {
 						return HttpResponse.json(
@@ -83,7 +83,7 @@ describe("UserService", () => {
 						{ status: 500 },
 					);
 				}),
-				http.options(buildUrl("/user/auth/login"), () => {
+				http.options(buildUrl("/auth/token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -138,10 +138,10 @@ describe("UserService", () => {
 				refresh_token: "new-refresh-token",
 			};
 			server.use(
-				http.post(buildUrl("/user"), () => {
+				http.post(buildUrl("/users"), () => {
 					return HttpResponse.json(mockResponse);
 				}),
-				http.options(buildUrl("/user"), () => {
+				http.options(buildUrl("/users"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -158,13 +158,13 @@ describe("UserService", () => {
 
 		it("should throw an error if email already exists", async () => {
 			server.use(
-				http.post(buildUrl("/user"), () => {
+				http.post(buildUrl("/users"), () => {
 					return HttpResponse.json(
 						{ detail: "Email already registered" },
 						{ status: 409 },
 					);
 				}),
-				http.options(buildUrl("/user"), () => {
+				http.options(buildUrl("/users"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -207,10 +207,10 @@ describe("UserService", () => {
 		it("should send a verification email successfully", async () => {
 			server.use(
 				http.post(
-					buildUrl("/user/send-verification-email"),
+					buildUrl("/users/email-verifications"),
 					async ({ request }) => {
-						const url = new URL(request.url);
-						if (url.searchParams.get("user_email") === "test@example.com") {
+						const body = (await request.json()) as { user_email?: string };
+						if (body.user_email === "test@example.com") {
 							return HttpResponse.json({ message: "Verification email sent" });
 						}
 						return HttpResponse.json(
@@ -219,7 +219,7 @@ describe("UserService", () => {
 						);
 					},
 				),
-				http.options(buildUrl("/user/send-verification-email"), () => {
+				http.options(buildUrl("/users/email-verifications"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -230,12 +230,10 @@ describe("UserService", () => {
 		it("should handle email not found error", async () => {
 			server.use(
 				http.post(
-					buildUrl("/user/send-verification-email"),
+					buildUrl("/users/email-verifications"),
 					async ({ request }) => {
-						const url = new URL(request.url);
-						if (
-							url.searchParams.get("user_email") === "nonexistent@example.com"
-						) {
+						const body = (await request.json()) as { user_email?: string };
+						if (body.user_email === "nonexistent@example.com") {
 							return HttpResponse.json(
 								{ detail: "Email address not found" },
 								{ status: 404 },
@@ -247,7 +245,7 @@ describe("UserService", () => {
 						);
 					},
 				),
-				http.options(buildUrl("/user/send-verification-email"), () => {
+				http.options(buildUrl("/users/email-verifications"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -260,42 +258,53 @@ describe("UserService", () => {
 	describe("verifyEmail", () => {
 		it("should verify email successfully", async () => {
 			server.use(
-				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
-					const url = new URL(request.url);
-					if (url.searchParams.get("token") === "valid-token") {
-						return HttpResponse.json({
-							message: "Email verified successfully",
-						});
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/user/verify-email"), () => {
+				http.post(
+					buildUrl("/users/email-verifications/:token"),
+					async ({ params, request }) => {
+						const url = new URL(request.url);
+						const fromReset = url.searchParams.get("fromReset");
+						if (params.token === "valid-token") {
+							return HttpResponse.json({
+								message: fromReset
+									? "Email verified successfully. You can now reset your password."
+									: "Email verified successfully",
+							});
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
+						);
+					},
+				),
+				http.options(buildUrl("/users/email-verifications/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			const result = await verifyEmail("valid-token");
-			expect(result).toEqual({ message: "Email verified successfully" });
+			expect(result).toEqual({
+				message:
+					"Email verified successfully. You can now reset your password.",
+			});
 		});
 
 		it("should handle invalid verification token", async () => {
 			server.use(
-				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
-					const url = new URL(request.url);
-					if (url.searchParams.get("token") === "invalid-token") {
+				http.post(
+					buildUrl("/users/email-verifications/:token"),
+					async ({ params }) => {
+						if (params.token === "invalid-token") {
+							return HttpResponse.json(
+								{ detail: "Invalid verification token" },
+								{ status: 400 }, // Or 404 depending on API
+							);
+						}
 						return HttpResponse.json(
-							{ detail: "Invalid verification token" },
-							{ status: 400 }, // Or 404 depending on API
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
 						);
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/user/verify-email"), () => {
+					},
+				),
+				http.options(buildUrl("/users/email-verifications/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -306,20 +315,22 @@ describe("UserService", () => {
 
 		it("should handle expired verification token", async () => {
 			server.use(
-				http.get(buildUrl("/user/verify-email"), async ({ request }) => {
-					const url = new URL(request.url);
-					if (url.searchParams.get("token") === "expired-token") {
+				http.post(
+					buildUrl("/users/email-verifications/:token"),
+					async ({ params }) => {
+						if (params.token === "expired-token") {
+							return HttpResponse.json(
+								{ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED },
+								{ status: 410 },
+							);
+						}
 						return HttpResponse.json(
-							{ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED },
-							{ status: 410 },
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
 						);
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/user/verify-email"), () => {
+					},
+				),
+				http.options(buildUrl("/users/email-verifications/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -336,20 +347,17 @@ describe("UserService", () => {
 
 		it("should request password reset successfully", async () => {
 			server.use(
-				http.post(
-					buildUrl("/user/request-password-reset"),
-					async ({ request }) => {
-						const body = (await request.json()) as { user_email?: string };
-						if (body.user_email === "user@example.com") {
-							return HttpResponse.json({ message: "Reset email sent" });
-						}
-						return HttpResponse.json(
-							{ detail: "Unhandled mock" },
-							{ status: 500 },
-						);
-					},
-				),
-				http.options(buildUrl("/user/request-password-reset"), () => {
+				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
+					const body = (await request.json()) as { user_email?: string };
+					if (body.user_email === "user@example.com") {
+						return HttpResponse.json({ message: "Reset email sent" });
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock" },
+						{ status: 500 },
+					);
+				}),
+				http.options(buildUrl("/users/password-resets"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -360,23 +368,20 @@ describe("UserService", () => {
 
 		it("should handle email not found error (404)", async () => {
 			server.use(
-				http.post(
-					buildUrl("/user/request-password-reset"),
-					async ({ request }) => {
-						const body = (await request.json()) as { user_email?: string };
-						if (body.user_email === "user@example.com") {
-							return HttpResponse.json(
-								{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
-								{ status: 404 },
-							);
-						}
+				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
+					const body = (await request.json()) as { user_email?: string };
+					if (body.user_email === "user@example.com") {
 						return HttpResponse.json(
-							{ detail: "Unhandled mock for 404" },
-							{ status: 500 },
+							{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
+							{ status: 404 },
 						);
-					},
-				),
-				http.options(buildUrl("/user/request-password-reset"), () => {
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock for 404" },
+						{ status: 500 },
+					);
+				}),
+				http.options(buildUrl("/users/password-resets"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -406,30 +411,32 @@ describe("UserService", () => {
 
 		it("should reset password successfully", async () => {
 			server.use(
-				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
-					try {
-						const body = (await request.json()) as {
-							token?: string;
-							new_password?: string;
-						};
-						if (
-							body.token === "valid-token" &&
-							body.new_password === "NewPass123!"
-						) {
-							return HttpResponse.json({ message: "Password updated" });
+				http.post(
+					buildUrl("/users/password-resets/:token"),
+					async ({ params, request }) => {
+						try {
+							const body = (await request.json()) as {
+								new_password?: string;
+							};
+							if (
+								params.token === "valid-token" &&
+								body.new_password === "NewPass123!"
+							) {
+								return HttpResponse.json({ message: "Password updated" });
+							}
+							return HttpResponse.json(
+								{ detail: "Unhandled mock: wrong token or password" },
+								{ status: 400 },
+							);
+						} catch (e) {
+							return HttpResponse.json(
+								{ detail: "MSW handler error" },
+								{ status: 500 },
+							);
 						}
-						return HttpResponse.json(
-							{ detail: "Unhandled mock: wrong token or password" },
-							{ status: 400 },
-						);
-					} catch (e) {
-						return HttpResponse.json(
-							{ detail: "MSW handler error" },
-							{ status: 500 },
-						);
-					}
-				}),
-				http.options(buildUrl("/user/reset-password"), () => {
+					},
+				),
+				http.options(buildUrl("/users/password-resets/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -442,17 +449,19 @@ describe("UserService", () => {
 
 		it("should handle invalid or expired token (400)", async () => {
 			server.use(
-				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
-					const body = (await request.json()) as { token?: string };
-					if (body.token === "bad-token") {
-						return HttpResponse.json(
-							{ detail: "Invalid token" },
-							{ status: 400 },
-						);
-					}
-					return HttpResponse.json({ message: "Password updated" });
-				}),
-				http.options(buildUrl("/user/reset-password"), () => {
+				http.post(
+					buildUrl("/users/password-resets/:token"),
+					async ({ params }) => {
+						if (params.token === "bad-token") {
+							return HttpResponse.json(
+								{ detail: "Invalid token" },
+								{ status: 400 },
+							);
+						}
+						return HttpResponse.json({ message: "Password updated" });
+					},
+				),
+				http.options(buildUrl("/users/password-resets/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -463,22 +472,27 @@ describe("UserService", () => {
 
 		it("should handle validation errors (422)", async () => {
 			server.use(
-				http.post(buildUrl("/user/reset-password"), async ({ request }) => {
-					const body = (await request.json()) as {
-						token?: string;
-						new_password?: string;
-					};
-					if (body.token === "valid-token" && body.new_password === "short") {
-						return HttpResponse.json(
-							{
-								detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
-							},
-							{ status: 422 },
-						);
-					}
-					return HttpResponse.json({ message: "Password updated" });
-				}),
-				http.options(buildUrl("/user/reset-password"), () => {
+				http.post(
+					buildUrl("/users/password-resets/:token"),
+					async ({ params, request }) => {
+						const body = (await request.json()) as {
+							new_password?: string;
+						};
+						if (
+							params.token === "valid-token" &&
+							body.new_password === "short"
+						) {
+							return HttpResponse.json(
+								{
+									detail: [{ loc: ["body", "new_password"], msg: "Too weak" }],
+								},
+								{ status: 422 },
+							);
+						}
+						return HttpResponse.json({ message: "Password updated" });
+					},
+				),
+				http.options(buildUrl("/users/password-resets/:token"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);

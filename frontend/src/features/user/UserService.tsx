@@ -78,7 +78,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<TokenPair>("/user/", requestData);
+		const response = await api.post<TokenPair>("/users/", requestData);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -142,10 +142,7 @@ export const loginUser = async (
 			user_password: password,
 		};
 
-		const response = await api.post<ILoginResponse>(
-			"/user/auth/login",
-			requestData,
-		);
+		const response = await api.post<ILoginResponse>("/auth/token", requestData);
 
 		const {
 			access_token,
@@ -212,9 +209,11 @@ export const verifyEmail = async (
 	fromReset = false,
 ): Promise<{ message: string }> => {
 	try {
-		const response = await api.get<{ message: string }>("/user/verify-email", {
-			params: { token, fromReset },
-		});
+		const response = await api.post<{ message: string }>(
+			`/users/email-verifications/${token}`,
+			null,
+			{ params: { fromReset } },
+		);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -255,9 +254,8 @@ export const requestVerificationEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			"/user/send-verification-email",
-			null,
-			{ params: { user_email: email } },
+			"/users/email-verifications",
+			{ user_email: email },
 		);
 		return response.data;
 	} catch (error) {
@@ -296,7 +294,7 @@ export const requestPasswordReset = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			"/user/request-password-reset",
+			"/users/password-resets",
 			{ user_email: email },
 		);
 		return response.data;
@@ -342,8 +340,8 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			"/user/reset-password",
-			{ token, new_password: newPassword },
+			`/users/password-resets/${token}`,
+			{ new_password: newPassword },
 		);
 		return response.data;
 	} catch (error) {

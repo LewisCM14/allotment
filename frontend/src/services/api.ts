@@ -196,7 +196,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 	if (!refreshToken) return null;
 
 	try {
-		const refreshUrl = `${API_URL}${API_VERSION}/user/auth/refresh`;
+		const refreshUrl = `${API_URL}${API_VERSION}/auth/token/refresh`;
 		const response = await axios.post<TokenPair>(refreshUrl, {
 			refresh_token: refreshToken,
 		});
