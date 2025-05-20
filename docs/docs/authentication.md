@@ -12,6 +12,8 @@ As with all other aspects of the application the solution must run on Linux base
 - Will need to integrate with a modern front end framework in order to deliver a progressive web app (PWA).
 - Must accommodate Representational State Transfer (REST) architectural design principles.
 - Must be able to support offline capabilities as allotments can be in areas of poor signal.
+- Passwords are not to be stored as plain text.
+- Client side request are to be made with **HTTPS** to ensure data is encrypted in transit.
 
 !!! info
     There is currently only a need to authenticate users within the application as all admin owned data is to be managed at the data base layer, meaning an authorization solution is not required. However, the ability to implement a method of authorization in order to support admin activity later on must also be considered.

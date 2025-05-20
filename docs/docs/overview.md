@@ -17,9 +17,10 @@
 
 ### The Development Team
 
-- A personal project for a developer familiar with domain driven design, mainly using Python for server side code and modern JavaScript/TypeScript based frameworks for creating user interfaces built on top of relational databases. With a strong desire to use advanced design patterns.
+- A personal project for a developer familiar with domain driven design, mainly using Python for server side code and modern JavaScript/TypeScript based frameworks like React & Vue for creating user interfaces built on top of relational databases. With a strong desire to use advanced design patterns.
 
 - Able to working in CI/CD environments with agile delivery.
+- Able to produce their own custom components or make use of component libraries like Mui & Tailwind.
 
 ---
 
