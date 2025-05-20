@@ -28,7 +28,7 @@ All while delivering a fast and seamless "request - response" experience to many
 
 ---
 
-## Routes Required
+## Routes
 
 ### User Tables
 
@@ -36,13 +36,13 @@ All while delivering a fast and seamless "request - response" experience to many
     Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.
 
     !!! info
-        This will also require the supporting routes like: login/logout, password reset and email confirmation.
+        Supporting routes like: login/logout, password reset and email confirmation are also provided when interacting with the User table.
 
 === "User Allotment"
     Ability for users to create an associated allotment. The details required for this allotment include a zip or postal code along with a width and length measurement. These fields must be editable by the associated user and thus must also be readable.
 
 ???+ tip "Future Improvement"
-    The ability for users to be able to trigger a cascading delete of all their related data would also be desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.
+    The ability for users to be able to trigger a cascading delete of all their related data is desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.
 
 ---
 
@@ -67,31 +67,31 @@ Ability to read from the following tables found within the database:
 1. Companion Family 
 
 ???+ tip "Future Improvement"
-    There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling. 
+    There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects database administrator(s) and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators panel in the UI later on is desirable though as this will allow for more efficient scaling. 
 
 ---
 
 ### Grow Guide Tables
 
 === "Grow Guides"
-    The Variety table is the main table users will interact with and the data within it forms the backbone off the application. It will utilize the applications authentication solution to allow users to perform complete CRUD operations on the data contained within it. Only a authenticated Users who's ID matches the owner column of a pre exiting row can alter any data within that row. The complexities of this table that the server side service would need to accommodate include:
+    The Variety table is the main table users interact with and the data within it forms the backbone off the application. It utilizes the applications authentication solution to allow users to perform complete CRUD operations on the data contained within it. Only a authenticated User, who's ID matches the owner column of a pre exiting row, can alter any data within that row. The complexities of this table that the server side service accommodates include:
 
     1. If either one of the following pairs exists the other must also:
         1. Transplant Week Start & Transplant Week End
         1. Prune Week Start & Prune Week End
     1. The same logic, in that if a single one exists so must the rest, applies to the following group of columns:
         1. Feed ID - Feed Week Start - Feed Frequency
-    1. When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.
+    1. When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day is performed.
 
 === "Activate Guide" 
-    Users will require the ability to set the grow guides they own to active and/or inactive. This action will require a route that can read, create and delete entries from the User Active Varieties junction table.
+    Users have the ability to set the grow guides they own to active and/or inactive. This action utilizes a route that can read, create and delete entries from the User Active Varieties junction table.
 
 === "Publish Guide" 
-    Users will also require the ability to make guides they own public/private.
-        - The ability for users to copy public guides will also be required.
+    Users have the ability to make guides they own public/private.
+        - The ability for users to copy public guides is also provided.
 
 === "Feed Day's"
-    Users will require the ability to alter the day they give a nominated feed type. This will require a read and update route that manipulates entries in the User Feed Day table.
+    Users have the ability to alter the day they give a nominated feed type. This utilizes a read and update route that manipulates entries in the User Feed Day table.
 
 === "Supporting Tables"
     Ability to read from the following tables found within the database:
@@ -107,7 +107,7 @@ Ability to read from the following tables found within the database:
     1. Season
 
     ???+ tip "Future Improvement"
-        There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling.
+        There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects database administrator(s) and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators panel in the UI later on is desirable though as this will allow for more efficient scaling. 
 
 ---
 
@@ -118,26 +118,26 @@ Ability to read from the following tables found within the database:
 
 === "Weekly & Daily" 
     
-    A route will be required that uses the Weeks table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of weekly tasks.
+    A route that uses the Weeks table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of weekly tasks.
 
 
     The Day table is then joined in order to provide users with a list of daily todos across a specific week.
 
 === "Monthly & Seasonal"
 
-    A route will be required that uses the Month table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of monthly tasks.
+    A route that uses the Month table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of monthly tasks.
 
  
     This level can then be referenced against the Season and Country Season tables in order to provide a list of seasonal tasks.
 
 ???+ tip "Future Improvement"
-    These todos, whilst surfaced in the application for users to interact with, will also eventually be able to be sent out as a notification via Email or Push Notifications.
+    These todos, whilst surfaced in the application for users to interact with, will also eventually be able to be sent out as notifications via Email or Push Notification.
 
 ---
 
 ## General Data Integrity Rules
 
-A method for ensuring no special characters, aside from hyphens and a single space are used, as well as all characters are lower case will be required. That is to be applied to most text based columns, aside from those designated to store notes.
+A method for ensuring no special characters, aside from hyphens and a single space are used, as well as all characters are lower case os provided. That is to be applied to most text based columns, aside from those designated to store notes.
     
 !!! danger "Please Note"
     Notes columns are not idea in relational databases and it is to be an ongoing effort to look at the content users are storing within these columns in an effort to provide a more efficient solution.
@@ -162,7 +162,7 @@ Operates at the Database Layer, Interacting only with the database and should no
 
 A Repository class is created for each aggregate or related table group.
 
-!!! example "_Required Repositories include:_"
+!!! example "_The systems Repositories include:_"
 
     === "User"
 
@@ -228,7 +228,7 @@ Only interacts with Repositories at the Service Layer.
 
 Unit of Work classes are created to manage transactions and ensure multiple database operations occur as a single unit.
 
-!!! example "_Required classes include:_"
+!!! example "_The systems classes include:_"
     
     === "User Management"
 
@@ -282,7 +282,7 @@ Prepares objects at the Domain Layer before they are passed to the Repositories 
 
 The Factory pattern is used to simplify the creation of complex domain objects with all required fields validated and constraints applied.
 
-!!! example "_The required Factories include:_"
+!!! example "_The systems Factories include:_"
    
     === "User"
         
@@ -295,7 +295,7 @@ The Factory pattern is used to simplify the creation of complex domain objects w
         - Variety Factory
 
     !!! note "Please Note"
-        Data input for the remaining tables is handled via a database admin currently Factories are not required until an admin panel is introduced in to the application.
+        Data input for the remaining tables is handled via a database admin currently factories are not required until an admin panel is introduced in to the application.
 ---
 
 ### Workflow
@@ -313,7 +313,7 @@ _The server-side architecture is designed to enforce clear boundaries between la
 
     1. Service Layer (Unit of Work):
         - Starts a **Unit of Work** to manage the transaction.
-        - Invokes the **Domain Layer** (e.g., Factories) to validate and prepare domain objects.
+        - Invokes the **Domain Layer** (i.e. Factories) to validate and prepare domain objects.
         - Coordinates operations across multiple **Repositories** via the **Unit of Work**.
 
     1. Domain Layer (Factories):
@@ -365,7 +365,7 @@ _The server-side architecture is designed to enforce clear boundaries between la
 
 !!! example "Pattern-Based Folder Structure"
 
-    Due to the server-side being a FastAPI application that has a well defined architecture that makes use of specified design patterns the following folder structure makes sense, allowing related logic to be kept together.
+    Due to the server-side being a FastAPI application that has a well defined architecture that makes use of specified design patterns the following folder structure is implemented, allowing related logic to be kept together.
 
     ``` title="FastAPI & Python Application"
     /app
@@ -396,6 +396,12 @@ _The server-side architecture is designed to enforce clear boundaries between la
                 - Contains the API Endpoints.
         - main.py
         - settings.yaml
+    /migrations
+        - Database migrations version controlled with `Alembic`
+    /tests
+        - Integration & Unit test suites ran with `Pytest`
+    - pyproject.toml
+    - uv.lock
     ```
 ---
 
