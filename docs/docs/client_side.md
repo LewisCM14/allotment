@@ -11,14 +11,13 @@ All while delivering a progressive web application experience to many concurrent
 - Must integrate with a RESTful API written using the FastAPI framework.
 - Must be able to handle JWTs for user authentication provided from the sever side via fastapi.security and Authlib.
 - Must be able to facilitate the creation of a Progressive Web App.
-    - The developer is familiar with JavaScript/TypeScript based frameworks like React and Vue but open to other technologies.
-    - The developer is able to produce their own custom components or make use of component libraries like Mui, Tailwind and Bootstrap. But any library used must be free for commercial use.
 - Must be able to provide type safety and complete form validation for data consistency and integrity across the application.
 - Must be able to provide offline capabilities and caching in order to accommodate users with allotments in low signal areas.
-- The only required global state is authentication state, everything else can be handled with simple UI state.
 
 !!! info
-    There is currently no suspected need for heavy data synchronization between the front and backend.
+    There is currently no need for heavy data synchronization between the front and backend.
+    
+    The only required global state is authentication state, everything else is handled via component based state.
 
 !!! tip "Future Improvement"
     Whilst the need for real time updates via push notifications is beyond the scope of a minimal viable product. The ability to deliver upon this is desired long term in order to create a feature rich application.
@@ -33,7 +32,7 @@ All while delivering a progressive web application experience to many concurrent
 
 ---
 
-## Interfaces Required
+## Interfaces
 
 _High level interface functionality accompanied by low fidelity designs._
 
@@ -46,7 +45,7 @@ _High level interface functionality accompanied by low fidelity designs._
 === "User Registration Interface"
     - Ability for users to register an account within the application using an email address and password.
         - Users must also provide a first name and country code.
-        - Emails must be unique and singing up with an existing one should trigger the password reset flow.
+        - Emails must be unique and singing up with an existing one triggers an error message for the user.
 
 === "User Login Interface"
     - Ability for users to sign into the application via email and password
@@ -54,14 +53,14 @@ _High level interface functionality accompanied by low fidelity designs._
         - Ability for users to trigger the registration window if they do not have an account.
 
 === "User Owned Grow Guide Interface"
-    - A interface to list a users currently owned grow guides with a flow for activating/deactivating a guide. As well as a flow for deleting a guide that will also require an "are you sure" style confirmation. 
-    - The individual items in the list are to be navigation items that lead to a dedicated interface for displaying the grow guide.
-    - The interface will also require a flow for creating a new grow guide.
-    - The interface will also require a toggle that provides users the ability to make a guide public or private.
+    - A interface to list a users currently owned grow guides with a flow for activating/deactivating a guide. As well as a flow for deleting a guide that is behind a "are you sure" style confirmation. 
+    - The individual items in the list are navigation links that lead to a dedicated interface for displaying the grow guide.
+    - The interface provides a flow for creating a new grow guide.
+    - The interface includes a toggle that provides users with the ability to make a guide public or private.
 
 === "User Allotment Interface"
     - Ability for users to create an associated allotment by providing the following information: postal code, width and length.
-        - Initially this interface will just be populated with placeholder text until a user submits the required information to create an associated allotment.
+        - Initially this interface is populated with placeholder text until a user submits the required information to create an associated allotment.
     - Ability for users to update the following information for their allotment: postal code, width and length.
     
     ???+ tip "Future Improvement"
@@ -79,7 +78,7 @@ _High level interface functionality accompanied by low fidelity designs._
     - Ability for users to update their: first name, email address, password and country code.
 
 === "User Password Reset Interface"
-    - Ability for users to enter a new password, after having coming from the magic link provided via email to their registered address.
+    - Ability for users to enter a new password, after having come from the magic link provided via email to their registered address.
 
 <u>_**Low Priority**_</u>
 
@@ -87,7 +86,7 @@ _High level interface functionality accompanied by low fidelity designs._
     - The ability for users to control: type, method and frequency of notifications they receive. 
 
     !!! info "Please Note"
-        This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required to provide this functionality. 
+        This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required for storing a users nominated preferences to provide this functionality. 
 
 ---
 
@@ -97,7 +96,7 @@ _High level interface functionality accompanied by low fidelity designs._
 
 === "Botanical Group List Interface"
     - A interface that lists the different botanical groups available within the application. Where each group is a dropdown that can be select to expand/collapse. When expanded it displays the families within that group below a recommend rotate years info section.
-        - Each heading within the dropdown is to be a navigation link to a page informing on that family in detail.
+        - Each heading within the dropdown is a navigation link to a page informing on that family in detail.
 
 === "Family Information Interface"
     - A interface that displays the surrounding information for a specific family of fruit or vegetables. 
@@ -112,14 +111,14 @@ _High level interface functionality accompanied by low fidelity designs._
 <u>_**High Priority**_</u>
 
 === "Grow Guide"
-    - A interface that presents the user with a overview of a specific varieties grow guide. This interface is to double up as the form for creating/editing the grow guide also.
-        - For guides a user own there is to be a button that unlocks the guide for editing.
-            - This mode will require a method of ensuring users pass validation per field of the form and a method of handling submissions failures in a friendly way.
+    - A interface that presents the user with a overview of a specific varieties grow guide. This interface doubles up as the form for creating/editing the grow guide also.
+        - For guides a user own there is a button that unlocks the guide for editing.
+            - This mode includes methods of ensuring users pass validation per field of the form and a method of handling submissions failures in a friendly way.
 
 <u>_**Low Priority**_</u>
 
 === "Public Grow Guides"
-    - A interfaces that lists all the publicly available grow guides for users to browse and use. As initial offering this screen should organize the available grow guides into botanical groups that are alphabetically sorted and the guides within each group are to be alphabetized again.
+    - A interfaces that lists all the publicly available grow guides for users to browse and use. As an initial offering this screen organizes the available grow guides into botanical groups that are alphabetically sorted and the guides within each group are alphabetized again.
        
     ???+ tip "Future Improvement"
         Long term this interface will want comprehensive search and filter functionality. PostgreSQL's tsvector will likely form part of this solution.
@@ -134,7 +133,7 @@ _High level interface functionality accompanied by low fidelity designs._
 <u>_**High Priority**_</u>
 
 === "Weekly ToDo"
-    - The interface that is to be considered the home page. This view will display, based on a users active varieties, their weekly tasks and where appropriate these weekly tasks are to be broken down into there specific days.
+    - The interface that is considered the home page. This view displays, based on a users active varieties, their weekly tasks and where appropriate these weekly tasks are to be broken down into there specific days.
         
         - **Weekly Tasks:**
             - What varieties can be sown.
@@ -142,28 +141,28 @@ _High level interface functionality accompanied by low fidelity designs._
             - What varieties can be harvested.
             - What varieties need to be pruned.
             - What varieties can be dug up and composted.
-                - This task will be based of when a variety has reached the end of its harvest period and lifecycle.
+                - This task is based of when a variety has reached the end of its harvest period and lifecycle.
         
         - **Daily Tasks:**
             - What varieties need to be fed this week on what day.
-                - Varieties that are to be fed, need to be grouped by feed type and this feed type highlighted.
+                - Varieties that are to be fed, are grouped by feed type and this feed type highlighted.
             - What varieties need to be watered this week on what day.
                 ???+ tip "Future Improvement"
-                    Long term this task be dictated via a live weather feed based on the users allotment postal/zip code.
+                    Long term this task will be dictated via a live weather feed based on the users allotment postal/zip code.
     
-    - Each user is to be able to select a desired week in order to view the past or future, with the default load week to be the present week.
+    - Each user is able to select a desired week in order to view the past or future, with the default load week set to the present week.
 
 <u>_**Low Priority**_</u>
 
 === "Monthly ToDo"
-    - This view will display a high level overview based on a users active varieties, their monthly tasks, grouped by season.
+    - This view displays a high level overview based on a users active varieties, their monthly tasks, grouped by season.
         - These tasks are to include:
             - What varieties can be sown.
             - What varieties can be transplanted.
             - What varieties can be harvested.
             - What varieties need to be pruned.
             - What varieties can be dug up and composted.
-    - Each user is to be able to select a month in order to view the past or future, with the default load month to be the present.
+    - Each user is able to select a month in order to view the past or future, with the default load month set to the present.
 
 ---
 
@@ -247,7 +246,7 @@ There are several aspects to consider when deciding on the appropriate technolog
 
 !!! example "Container-Presenter Pattern"
 
-    In order to keep the components listed below clean and separate logic from presentation, the container presenter pattern is to be utilized. Allowing for a "smart" container component to handle state, API calls and business logic with a "dumb" presenter component created in order to display data. This pattern also prevents re-renders when only the UI changes, improving performance.
+    In order to keep the components listed below clean and separate logic from presentation, the container presenter pattern is utilized. Allowing for a "smart" container component to handle state, API calls and business logic with a "dumb" presenter component created in order to display data. This pattern also prevents re-renders when only the UI changes, improving performance.
 
     1. Header
     1. Footer
@@ -263,7 +262,7 @@ There are several aspects to consider when deciding on the appropriate technolog
     
     **Form Component**
 
-    - In order to ensure form validation is correct, inline with the applications data integrity principles, a reusable validation schema (Factory) is to be defined in a separate file. Within the form component itself this schema is to be utilized via Zod and React Hook Form in order to ensure consistent and reusable logic with minimal re-renders.
+    - In order to ensure form validation is correct, inline with the applications data integrity principles, a reusable validation schema (Factory) is defined in a separate file. Within the form component itself this schema is then utilized via Zod and React Hook Form in order to ensure consistent and reusable logic with minimal re-renders.
 
 ---
 
@@ -271,11 +270,11 @@ There are several aspects to consider when deciding on the appropriate technolog
 
 !!! example "Repository Pattern"
     
-    In order to separate API logic from UI, allowing for cleaner components, easier endpoint switching and the reduction of redundant calls. API logic is to be stored in its own separate service, within these services Axios is to be used to handle data retrieval from the server. React Query is to then be implemented when retrieving data through the service in order to cache queries.
+    In order to separate API logic from UI, allowing for cleaner components, easier endpoint switching and the reduction of redundant calls. API logic is stored in its own separate service, within these services Axios is used to handle data retrieval from the server. React Query is then utilized when retrieving data through the service in order to cache queries.
 
 !!! example "Cache-Aside Pattern"
 
-    In order to provide offline capabilities within the application Workbox is to be used to cache API responses on top of React Query. Improving performance and allowing for a progressive web application.
+    In order to provide offline capabilities within the application Workbox is used to cache API responses on top of React Query. Improving performance and allowing for a progressive web application.
 
 ---
 
@@ -283,7 +282,7 @@ There are several aspects to consider when deciding on the appropriate technolog
 
 !!! example "Observer & Provider Pattern"
 
-    As user authentication is the only required global state ContextAPI is to be used in order to setup a auth provider. React Query can then observe this provider in order to update application state.
+    As user authentication is the only required global state the ContextAPI used in order to setup a auth provider. React Query then observes this provider in order to update application state.
 
 ---
 
@@ -296,37 +295,33 @@ There are several aspects to consider when deciding on the appropriate technolog
     ``` title="Vite & React Application"
     
     /frontend
+        /config
+            - Vite specific configuration files.
         /public
             - Static assets that are served directly, i.e. a Favicon.
         /src
             /assets
                 - Resources that are imported directly into the code, i.e. a logo.
             /components
-                /layouts
-                    - Contains components that dictate page layouts.
-                /ui
-                    - Contains UI components to use as interface building blocks.
+                - Contains components that dictate page layouts.
+                - Contains UI components to use as interface building blocks.
             /features
-                /user
-                    - LoginForm.tsx
-                    - LoginSchema.ts
-                    - RegisterForm.tsx
-                    - RegisterSchema.ts
-                    - UserService.test.ts
-                    - UserService.tsx
+                - The frontend applications interfaces and the services that serve them.
+                - Related test files.
             /hooks
                 - useLogout.tsx
-            /lib
-                - utils.ts
             /mocks
                 - handlers.ts
                 - server.ts
             /routes
                 - AppRoutes.tsx
-                - ProtectedRoutes.tsx
+                - ProtectedRoute.tsx
+                - PublicRoute.tsx
             /services
-                - api.test.ts
                 - api.ts
+                - apiCache.ts
+                - apiConfig.ts
+                - errorMonitoring.ts
             /store
                 /auth
                     - AuthContext.tsx
@@ -337,6 +332,8 @@ There are several aspects to consider when deciding on the appropriate technolog
                     - ThemeProvider.tsx
             /types
                 - Common interfaces & types, i.e. NavigationTypes.ts
+            /utils
+                - Utility files used across the frontend application, i.e. errorUtils.ts
             - App.tsx
             - global.css
             - main.tsc
@@ -344,15 +341,12 @@ There are several aspects to consider when deciding on the appropriate technolog
             - setupTests.ts
             - vite-env.d.ts
         - .env
-        - components.json
         - index.html
         - package-lock.json
         - package.json
         - tsconfig.app.json
         - tsconfig.json
         - tsconfig.node.json
-        - vite.config.ts
-        - vitest.config.ts
     ```
 
 ---
