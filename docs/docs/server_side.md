@@ -395,7 +395,7 @@ _The server-side architecture is designed to enforce clear boundaries between la
             /v1
                 - Contains the API Endpoints.
         - main.py
-        - settings.yaml
+        - .env
     /migrations
         - Database migrations version controlled with `Alembic`
     /tests
