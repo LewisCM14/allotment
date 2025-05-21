@@ -51,7 +51,7 @@ const useCountryOptions = () => {
 	useEffect(() => {
 		const loadOptions = async () => {
 			setIsLoading(true);
-			const { getCountryOptions } = await import("@/lib/countries");
+			const { getCountryOptions } = await import("@/utils/countries");
 			const result = getCountryOptions();
 			setOptions(
 				result.map((c) => ({
@@ -69,7 +69,7 @@ const useCountryOptions = () => {
 	return { options, isLoading };
 };
 
-interface CountrySelectorProps {
+interface ICountrySelector {
 	control: Control<RegisterFormData>;
 	error?: FieldError;
 }
@@ -107,7 +107,7 @@ const CountryItemRenderer = memo(
 
 CountryItemRenderer.displayName = "CountryItemRenderer";
 
-const CountrySelector = memo(({ control, error }: CountrySelectorProps) => {
+const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { options: countryOptions, isLoading } = useCountryOptions();
 

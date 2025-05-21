@@ -24,6 +24,6 @@
     ]
   },
   "include": [
-    "vite.config.ts"
+    "config/vite.config.ts"
   ]
 }

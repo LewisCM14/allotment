@@ -1,8 +1,8 @@
-import type { UserData } from "@/features/user/UserService";
+import type { IUserData } from "@/features/user/UserService";
 import api from "@/services/api";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AuthContext, type IUser, type TokenPair } from "./AuthContext";
+import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
 import {
 	clearAuthFromIndexedDB,
 	loadAuthFromIndexedDB,
@@ -83,9 +83,9 @@ export function AuthProvider({ children }: IAuthProvider) {
 	}, [hasLoggedOut]);
 
 	const login = async (
-		tokenPair: TokenPair,
+		tokenPair: ITokenPair,
 		userFirstName?: string,
-		userData?: UserData,
+		userData?: IUserData,
 	) => {
 		setAccessToken(tokenPair.access_token);
 		setRefreshToken(tokenPair.refresh_token);
@@ -139,7 +139,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 				return false;
 			}
 
-			const response = await api.post<TokenPair>(
+			const response = await api.post<ITokenPair>(
 				`${import.meta.env.VITE_API_VERSION}/user/auth/refresh`,
 				{ refresh_token: refreshToken },
 			);

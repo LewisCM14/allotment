@@ -3,7 +3,7 @@
  * Captures and logs errors for debugging and monitoring
  */
 
-interface ErrorContext {
+interface IErrorContext {
 	url?: string;
 	method?: string;
 	status?: number;
@@ -38,7 +38,7 @@ class ErrorMonitoringService {
 		}
 	}
 
-	captureException(error: unknown, context?: ErrorContext): void {
+	captureException(error: unknown, context?: IErrorContext): void {
 		if (!this.isProduction) {
 			console.error("[ErrorMonitor]", error, context);
 			return;
@@ -78,7 +78,7 @@ class ErrorMonitoringService {
 		}
 	}
 
-	captureMessage(message: string, context?: ErrorContext): void {
+	captureMessage(message: string, context?: IErrorContext): void {
 		if (!this.isProduction) {
 			console.info("[ErrorMonitor]", message, context);
 			return;

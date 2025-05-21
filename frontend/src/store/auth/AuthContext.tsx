@@ -1,7 +1,7 @@
-import type { UserData } from "@/features/user/UserService";
+import type { IUserData } from "@/features/user/UserService";
 import { createContext, useContext } from "react";
 
-export interface TokenPair {
+export interface ITokenPair {
 	access_token: string;
 	refresh_token: string;
 }
@@ -20,9 +20,9 @@ export interface IAuthContext {
 	firstName: string | null;
 	user: IUser | null;
 	login: (
-		tokenPair: TokenPair,
+		tokenPair: ITokenPair,
 		firstName?: string,
-		userData?: UserData,
+		userData?: IUserData,
 	) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshAccessToken: () => Promise<boolean>;

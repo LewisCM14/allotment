@@ -2,7 +2,7 @@ import { AUTH_ERRORS } from "@/features/user/UserService";
 import { apiCache } from "@/services/apiCache";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import { errorMonitor } from "@/services/errorMonitoring";
-import type { TokenPair } from "@/store/auth/AuthContext";
+import type { ITokenPair } from "@/store/auth/AuthContext";
 import axios, {
 	type AxiosError,
 	type AxiosRequestConfig,
@@ -197,7 +197,7 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
 	try {
 		const refreshUrl = `${API_URL}${API_VERSION}/auth/token/refresh`;
-		const response = await axios.post<TokenPair>(refreshUrl, {
+		const response = await axios.post<ITokenPair>(refreshUrl, {
 			refresh_token: refreshToken,
 		});
 

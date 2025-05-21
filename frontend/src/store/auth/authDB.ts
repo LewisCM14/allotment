@@ -1,7 +1,7 @@
 import { openDB } from "idb";
-import type { TokenPair } from "./AuthContext";
+import type { ITokenPair } from "./AuthContext";
 
-interface AuthState extends TokenPair {
+interface IAuthState extends ITokenPair {
 	isAuthenticated: boolean;
 	firstName?: string | null;
 }
@@ -12,12 +12,12 @@ const dbPromise = openDB("auth-store", 1, {
 	},
 });
 
-export async function saveAuthToIndexedDB(auth: AuthState): Promise<void> {
+export async function saveAuthToIndexedDB(auth: IAuthState): Promise<void> {
 	const db = await dbPromise;
 	await db.put("auth", auth, "authState");
 }
 
-export async function loadAuthFromIndexedDB(): Promise<AuthState> {
+export async function loadAuthFromIndexedDB(): Promise<IAuthState> {
 	try {
 		const db = await dbPromise;
 		const authState = await db.get("auth", "authState");

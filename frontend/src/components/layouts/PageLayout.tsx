@@ -1,5 +1,5 @@
 import { widthClasses } from "@/components/layouts/layoutConfig";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 
 interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
 	children: React.ReactNode;

@@ -46,14 +46,14 @@ export const formatError = (error: unknown): string => {
 		return error;
 	}
 
-	interface AxiosErrorLike {
+	interface IAxiosErrorLike {
 		isAxiosError?: boolean;
 		response?: { data?: unknown };
 		message?: string;
 	}
 
 	if (error && typeof error === "object") {
-		const axiosError = error as AxiosErrorLike;
+		const axiosError = error as IAxiosErrorLike;
 		if (
 			axiosError.isAxiosError &&
 			axiosError.response &&

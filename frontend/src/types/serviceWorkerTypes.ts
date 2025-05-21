@@ -1,4 +1,4 @@
-interface ServiceWorkerGlobalScope {
+interface IServiceWorkerGlobalScope {
 	readonly registration: ServiceWorkerRegistration;
 	readonly caches: CacheStorage;
 	skipWaiting(): Promise<void>;
@@ -17,5 +17,5 @@ interface ServiceWorkerGlobalScope {
 	dispatchEvent(event: Event): boolean;
 }
 
-declare const self: ServiceWorkerGlobalScope;
+declare const self: IServiceWorkerGlobalScope;
 declare const __WB_MANIFEST: Array<{ url: string; revision: string | null }>;

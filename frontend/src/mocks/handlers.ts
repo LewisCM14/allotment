@@ -6,7 +6,7 @@ import type {
 import { AUTH_ERRORS } from "@/features/user/UserService";
 import type { IRefreshRequest } from "@/services/api";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
-import type { TokenPair } from "@/store/auth/AuthContext";
+import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 
 interface PasswordResetRequest {
@@ -20,17 +20,19 @@ interface PasswordResetAction {
 
 // Helper to construct full URLs for handlers
 export const buildUrl = (path: string) => {
-	const normalizedPath =
-		API_VERSION.endsWith("/") || path.startsWith("/") ? path : `/${path}`;
-	return `${API_URL}${API_VERSION}${normalizedPath}`
-		.replace(/\/\//g, "/")
-		.replace(/^http:\//, "http://")
-		.replace(/^https:\//, "https://");
+	const apiVersionSegment = API_VERSION.startsWith("/")
+		? API_VERSION
+		: `/${API_VERSION}`;
+	const pathSegment = path.startsWith("/") ? path : `/${path}`;
+	return `${API_URL}${apiVersionSegment}${pathSegment}`.replace(
+		/([^:]\/)\/+/g,
+		"$1",
+	);
 };
 
-export const handlers = [
+const authHandlers = [
 	// Mock the login endpoint
-	http.post(buildUrl("/user/auth/login"), async ({ request }) => {
+	http.post(buildUrl("/auth/token"), async ({ request }) => {
 		const body = (await request.json()) as ILoginRequest;
 
 		// Example validation logic
@@ -57,12 +59,35 @@ export const handlers = [
 			},
 		);
 	}),
-	http.options(buildUrl("/user/auth/login"), () => {
+	http.options(buildUrl("/auth/token"), () => {
+		// Assuming /auth/token
 		return new HttpResponse(null, { status: 204 });
 	}),
 
+	// Mock the token refresh endpoint
+	http.post(buildUrl("/auth/token/refresh"), async ({ request }) => {
+		const body = (await request.json()) as IRefreshRequest;
+
+		if (body?.refresh_token === "mock-refresh-token") {
+			return HttpResponse.json({
+				access_token: "refreshed-access-token",
+				refresh_token: "new-refresh-token",
+			} as ITokenPair);
+		}
+
+		return new HttpResponse(null, {
+			status: 401,
+			headers: { "Content-Type": "application/json" },
+		});
+	}),
+	http.options(buildUrl("/auth/token/refresh"), () => {
+		return new HttpResponse(null, { status: 204 });
+	}),
+];
+
+const userHandlers = [
 	// Mock the registration endpoint
-	http.post(buildUrl("/user"), async ({ request }) => {
+	http.post(buildUrl("/users/"), async ({ request }) => {
 		const body = (await request.json()) as IRegisterRequest;
 
 		// Check for existing email scenario
@@ -80,36 +105,16 @@ export const handlers = [
 		return HttpResponse.json({
 			access_token: "new-access-token",
 			refresh_token: "new-refresh-token",
-		} as TokenPair);
+		} as ITokenPair);
 	}),
-	http.options(buildUrl("/user"), () => {
-		return new HttpResponse(null, { status: 204 });
-	}),
-
-	// Mock the token refresh endpoint
-	http.post(buildUrl("/user/auth/refresh"), async ({ request }) => {
-		const body = (await request.json()) as IRefreshRequest;
-
-		if (body?.refresh_token === "mock-refresh-token") {
-			return HttpResponse.json({
-				access_token: "refreshed-access-token",
-				refresh_token: "new-refresh-token",
-			} as TokenPair);
-		}
-
-		return new HttpResponse(null, {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
-	}),
-	http.options(buildUrl("/user/auth/refresh"), () => {
+	http.options(buildUrl("/users/"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 
 	// Mock the requestVerificationEmail endpoint
-	http.post(buildUrl("/user/send-verification-email"), async ({ request }) => {
-		const url = new URL(request.url);
-		const email = url.searchParams.get("user_email");
+	http.post(buildUrl("/users/email-verifications"), async ({ request }) => {
+		const body = (await request.json()) as { user_email?: string };
+		const email = body?.user_email;
 
 		if (email === "test@example.com") {
 			return HttpResponse.json({ message: "Verification email sent" });
@@ -127,47 +132,54 @@ export const handlers = [
 
 		return new HttpResponse(null, { status: 400 });
 	}),
-	http.options(buildUrl("/user/send-verification-email"), () => {
+	http.options(buildUrl("/users/email-verifications"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 
 	// Mock the Verify Email endpoint
-	http.get(buildUrl("/user/verify-email"), async ({ request }) => {
-		const url = new URL(request.url);
-		const token = url.searchParams.get("token");
+	http.post(
+		buildUrl("/users/email-verifications/:token"),
+		async ({ params, request }) => {
+			const token = params.token;
+			const url = new URL(request.url);
+			const fromReset = url.searchParams.get("fromReset") === "true";
 
-		if (token === "valid-token") {
-			return HttpResponse.json({ message: "Email verified successfully" });
-		}
+			if (token === "valid-token") {
+				return HttpResponse.json({
+					message: `Email verified successfully${fromReset ? ". You can now reset your password." : ""}`,
+				});
+			}
 
-		if (token === "invalid-token") {
-			return new HttpResponse(
-				JSON.stringify({ detail: "Invalid verification token" }),
-				{
-					status: 400,
-					headers: { "Content-Type": "application/json" },
-				},
-			);
-		}
+			if (token === "invalid-token") {
+				return new HttpResponse(
+					JSON.stringify({ detail: "Invalid verification token" }),
+					{
+						status: 400,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
 
-		if (token === "expired-token") {
-			return new HttpResponse(
-				JSON.stringify({ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED }),
-				{
-					status: 410,
-					headers: { "Content-Type": "application/json" },
-				},
-			);
-		}
+			if (token === "expired-token") {
+				return new HttpResponse(
+					JSON.stringify({ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED }),
+					{
+						status: 410,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
 
-		return new HttpResponse(null, { status: 400 });
-	}),
-	// OPTIONS handler for GET is not strictly necessary but harmless
-	http.options(buildUrl("/user/verify-email"), () => {
+			return new HttpResponse(JSON.stringify({ detail: "Token not handled" }), {
+				status: 400,
+			});
+		},
+	),
+	http.options(buildUrl("/users/email-verifications/:token"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 
-	http.post(buildUrl("/user/request-password-reset"), async ({ request }) => {
+	http.post(buildUrl("/users/password-resets"), async ({ request }) => {
 		const body = (await request.json()) as PasswordResetRequest;
 		const email = body.user_email;
 
@@ -180,44 +192,72 @@ export const handlers = [
 				},
 			);
 		}
-
-		return HttpResponse.json({ message: "Reset email sent" });
-	}),
-	http.options(buildUrl("/user/request-password-reset"), () => {
-		return new HttpResponse(null, { status: 204 });
-	}),
-
-	http.post(buildUrl("/user/reset-password"), async ({ request }) => {
-		const body = (await request.json()) as PasswordResetAction;
-		const token = body.token;
-
-		if (token === "invalid-token") {
-			return new HttpResponse(JSON.stringify({ detail: "Invalid token" }), {
-				status: 400,
-				headers: { "Content-Type": "application/json" },
-			});
-		}
-
-		if (token === "validation-error") {
+		if (email === "unverified@example.com") {
 			return new HttpResponse(
 				JSON.stringify({
-					detail: [
-						{
-							loc: ["body", "new_password"],
-							msg: "Too weak",
-						},
-					],
+					detail: "Email not verified. Please verify your email first.",
 				}),
 				{
-					status: 422,
+					status: 400,
 					headers: { "Content-Type": "application/json" },
 				},
 			);
 		}
 
-		return HttpResponse.json({ message: "Password updated" });
+		return HttpResponse.json({ message: "Reset email sent" });
 	}),
-	http.options(buildUrl("/user/reset-password"), () => {
+	http.options(buildUrl("/users/password-resets"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
+
+	http.post(
+		buildUrl("/users/password-resets/:token"),
+		async ({ params, request }) => {
+			const body = (await request.json()) as PasswordResetAction;
+			const token = params.token;
+
+			if (token === "invalid-token") {
+				return new HttpResponse(
+					JSON.stringify({ detail: "Invalid or expired token" }),
+					{
+						status: 400,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+
+			if (token === "validation-error-token" && body.new_password === "weak") {
+				return new HttpResponse(
+					JSON.stringify({
+						detail: [
+							{
+								loc: ["body", "new_password"],
+								msg: "Invalid password format",
+							},
+						],
+					}),
+					{
+						status: 422,
+						headers: { "Content-Type": "application/json" },
+					},
+				);
+			}
+			if (token === "valid-token") {
+				return HttpResponse.json({ message: "Password updated" });
+			}
+			return new HttpResponse(
+				JSON.stringify({ detail: "Token not handled for reset" }),
+				{ status: 400 },
+			);
+		},
+	),
+	http.options(buildUrl("/users/password-resets/:token"), () => {
+		return new HttpResponse(null, { status: 204 });
+	}),
+];
+
+export const handlers = [
+	...authHandlers,
+	...userHandlers,
+	// ...other groups of handlers
 ];

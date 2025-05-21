@@ -5,15 +5,15 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "dev": "vite -c config/vite.config.ts",
+    "build": "tsc -b && vite build -c config/vite.config.ts",
     "lint": "npx @biomejs/biome lint --write ./src",
     "lint:unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
     "format": "npx @biomejs/biome format --write ./src",
     "ci:check": "npx @biomejs/biome check ./src",
-    "preview": "vite preview",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "preview": "vite preview -c config/vite.config.ts",
+    "test": "vitest run --config config/vitest.config.ts",
+    "test:watch": "vitest --config config/vitest.config.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.3",

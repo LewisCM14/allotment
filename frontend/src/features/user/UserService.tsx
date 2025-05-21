@@ -1,5 +1,5 @@
-import { formatError } from "@/lib/errorUtils";
-import type { TokenPair } from "@/store/auth/AuthContext";
+import type { ITokenPair } from "@/store/auth/AuthContext";
+import { formatError } from "@/utils/errorUtils";
 import axios from "axios";
 import api, { handleApiError } from "../../services/api";
 
@@ -69,7 +69,7 @@ export const registerUser = async (
 	password: string,
 	firstName: string,
 	countryCode: string,
-): Promise<TokenPair> => {
+): Promise<ITokenPair> => {
 	try {
 		const requestData: IRegisterRequest = {
 			user_email: email,
@@ -78,7 +78,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<TokenPair>("/users/", requestData);
+		const response = await api.post<ITokenPair>("/users/", requestData);
 		return response.data;
 	} catch (error) {
 		if (axios.isAxiosError(error)) {
@@ -126,7 +126,7 @@ export interface ILoginResponse {
 	user_id?: string;
 }
 
-export interface UserData {
+export interface IUserData {
 	user_id: string;
 	user_email: string;
 	is_email_verified: boolean;
@@ -135,7 +135,7 @@ export interface UserData {
 export const loginUser = async (
 	email: string,
 	password: string,
-): Promise<{ tokens: TokenPair; firstName: string; userData: UserData }> => {
+): Promise<{ tokens: ITokenPair; firstName: string; userData: IUserData }> => {
 	try {
 		const requestData: ILoginRequest = {
 			user_email: email,

@@ -37,6 +37,7 @@ describe("UserService", () => {
 						return HttpResponse.json({
 							access_token: "mock-access-token",
 							refresh_token: "mock-refresh-token",
+							token_type: "bearer",
 							user_first_name: "Test",
 							user_id: "user-123",
 							is_email_verified: true,
@@ -66,6 +67,8 @@ describe("UserService", () => {
 					is_email_verified: true,
 				},
 			});
+			expect(localStorage.getItem("access_token")).toBe("mock-access-token");
+			expect(localStorage.getItem("refresh_token")).toBe("mock-refresh-token");
 		});
 
 		it("should throw an error with invalid credentials", async () => {
@@ -90,6 +93,48 @@ describe("UserService", () => {
 			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
 				AUTH_ERRORS.INVALID_CREDENTIALS,
 			);
+		});
+
+		it("should throw an error for user not found (404)", async () => {
+			server.use(
+				http.post(buildUrl("/auth/token"), () => {
+					return HttpResponse.json(
+						{ detail: "User not found" },
+						{ status: 404 },
+					);
+				}),
+			);
+			await expect(
+				loginUser("notfound@example.com", "password"),
+			).rejects.toThrow("The email address you entered is not registered.");
+		});
+
+		it("should throw an error for account locked (403)", async () => {
+			server.use(
+				http.post(buildUrl("/auth/token"), () => {
+					return HttpResponse.json(
+						{ detail: "Account locked" },
+						{ status: 403 },
+					);
+				}),
+			);
+			await expect(loginUser("locked@example.com", "password")).rejects.toThrow(
+				AUTH_ERRORS.ACCOUNT_LOCKED,
+			);
+		});
+
+		it("should throw an error for validation error (422)", async () => {
+			server.use(
+				http.post(buildUrl("/auth/token"), () => {
+					return HttpResponse.json(
+						{ detail: [{ msg: "Invalid input" }] },
+						{ status: 422 },
+					);
+				}),
+			);
+			await expect(
+				loginUser("badinput@example.com", "password"),
+			).rejects.toThrow("Invalid input");
 		});
 
 		it("should handle unexpected server responses", async () => {
@@ -133,15 +178,19 @@ describe("UserService", () => {
 
 	describe("registerUser", () => {
 		it("should register a new user successfully", async () => {
-			const mockResponse = {
+			const mockApiResponse = {
 				access_token: "new-access-token",
 				refresh_token: "new-refresh-token",
+				token_type: "bearer",
+				user_first_name: "John",
+				is_email_verified: false,
+				user_id: "user-new-id",
 			};
 			server.use(
-				http.post(buildUrl("/users"), () => {
-					return HttpResponse.json(mockResponse);
+				http.post(buildUrl("/users/"), () => {
+					return HttpResponse.json(mockApiResponse);
 				}),
-				http.options(buildUrl("/users"), () => {
+				http.options(buildUrl("/users/"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -153,18 +202,18 @@ describe("UserService", () => {
 				"US",
 			);
 
-			expect(result).toEqual(mockResponse);
+			expect(result).toEqual(mockApiResponse);
 		});
 
-		it("should throw an error if email already exists", async () => {
+		it("should throw an error if email already exists (409)", async () => {
 			server.use(
-				http.post(buildUrl("/users"), () => {
+				http.post(buildUrl("/users/"), () => {
 					return HttpResponse.json(
 						{ detail: "Email already registered" },
 						{ status: 409 },
 					);
 				}),
-				http.options(buildUrl("/users"), () => {
+				http.options(buildUrl("/users/"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -174,7 +223,21 @@ describe("UserService", () => {
 			).rejects.toThrow(AUTH_ERRORS.EMAIL_EXISTS);
 		});
 
-		it("should handle validation errors from the server", async () => {
+		it("should handle bad request errors (400)", async () => {
+			server.use(
+				http.post(buildUrl("/users/"), () => {
+					return HttpResponse.json(
+						{ detail: "Bad request data" },
+						{ status: 400 },
+					);
+				}),
+			);
+			await expect(
+				registerUser("bad@example.com", "password", "Bad", "XX"),
+			).rejects.toThrow("Bad request data");
+		});
+
+		it("should handle validation errors from the server (422)", async () => {
 			const postSpy = vi.spyOn(apiModule.default, "post");
 			const validationError = new Error("Request failed with status code 422");
 			Object.defineProperty(validationError, "isAxiosError", { value: true });
@@ -227,7 +290,7 @@ describe("UserService", () => {
 			expect(result).toEqual({ message: "Verification email sent" });
 		});
 
-		it("should handle email not found error", async () => {
+		it("should handle email not found error (404)", async () => {
 			server.use(
 				http.post(
 					buildUrl("/users/email-verifications"),
@@ -253,16 +316,52 @@ describe("UserService", () => {
 				requestVerificationEmail("nonexistent@example.com"),
 			).rejects.toThrow("Email address not found");
 		});
+
+		it("should handle validation errors (422)", async () => {
+			server.use(
+				http.post(buildUrl("/users/email-verifications"), () => {
+					return HttpResponse.json(
+						{ detail: [{ msg: "Invalid email format" }] },
+						{ status: 422 },
+					);
+				}),
+			);
+			await expect(requestVerificationEmail("invalid-email")).rejects.toThrow(
+				"Invalid email format",
+			);
+		});
+
+		it("should handle service unavailable (503)", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
+			const serviceUnavailableError = new Error("Service Unavailable");
+			Object.defineProperty(serviceUnavailableError, "isAxiosError", {
+				value: true,
+			});
+			Object.defineProperty(serviceUnavailableError, "response", {
+				value: {
+					status: 503,
+					data: { detail: "Service down" },
+				},
+			});
+			postSpy.mockRejectedValueOnce(serviceUnavailableError);
+
+			await expect(
+				requestVerificationEmail("test@example.com"),
+			).rejects.toThrow(
+				"Email service is temporarily unavailable. Please try again later.",
+			);
+			postSpy.mockRestore();
+		});
 	});
 
 	describe("verifyEmail", () => {
-		it("should verify email successfully", async () => {
+		it("should verify email successfully when not from reset", async () => {
 			server.use(
 				http.post(
 					buildUrl("/users/email-verifications/:token"),
 					async ({ params, request }) => {
 						const url = new URL(request.url);
-						const fromReset = url.searchParams.get("fromReset");
+						const fromReset = url.searchParams.get("fromReset") === "true";
 						if (params.token === "valid-token") {
 							return HttpResponse.json({
 								message: fromReset
@@ -276,18 +375,40 @@ describe("UserService", () => {
 						);
 					},
 				),
-				http.options(buildUrl("/users/email-verifications/:token"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
 			);
-			const result = await verifyEmail("valid-token");
+			const result = await verifyEmail("valid-token", false);
+			expect(result).toEqual({ message: "Email verified successfully" });
+		});
+
+		it("should verify email successfully when from reset", async () => {
+			server.use(
+				http.post(
+					buildUrl("/users/email-verifications/:token"),
+					async ({ params, request }) => {
+						const url = new URL(request.url);
+						const fromReset = url.searchParams.get("fromReset") === "true";
+						if (params.token === "valid-token-for-reset") {
+							return HttpResponse.json({
+								message: fromReset
+									? "Email verified successfully. You can now reset your password."
+									: "Email verified successfully",
+							});
+						}
+						return HttpResponse.json(
+							{ detail: "Unhandled mock" },
+							{ status: 500 },
+						);
+					},
+				),
+			);
+			const result = await verifyEmail("valid-token-for-reset", true);
 			expect(result).toEqual({
 				message:
 					"Email verified successfully. You can now reset your password.",
 			});
 		});
 
-		it("should handle invalid verification token", async () => {
+		it("should handle invalid verification token (400)", async () => {
 			server.use(
 				http.post(
 					buildUrl("/users/email-verifications/:token"),
@@ -310,6 +431,20 @@ describe("UserService", () => {
 			);
 			await expect(verifyEmail("invalid-token")).rejects.toThrow(
 				"Invalid verification token",
+			);
+		});
+
+		it("should handle invalid verification token (404)", async () => {
+			server.use(
+				http.post(buildUrl("/users/email-verifications/:token"), () => {
+					return HttpResponse.json(
+						{ detail: "Token not found" },
+						{ status: 404 },
+					);
+				}),
+			);
+			await expect(verifyEmail("not-found-token")).rejects.toThrow(
+				AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
 			);
 		});
 
@@ -338,18 +473,28 @@ describe("UserService", () => {
 				AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED,
 			);
 		});
+
+		it("should handle validation errors (422)", async () => {
+			server.use(
+				http.post(buildUrl("/users/email-verifications/:token"), () => {
+					return HttpResponse.json(
+						{ detail: [{ msg: "Validation issue" }] },
+						{ status: 422 },
+					);
+				}),
+			);
+			await expect(verifyEmail("any-token")).rejects.toThrow(
+				"Validation issue",
+			);
+		});
 	});
 
 	describe("requestPasswordReset", () => {
-		beforeEach(() => {});
-
-		afterEach(() => {});
-
-		it("should request password reset successfully", async () => {
+		it("should request password reset successfully if user exists and is verified", async () => {
 			server.use(
 				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
 					const body = (await request.json()) as { user_email?: string };
-					if (body.user_email === "user@example.com") {
+					if (body.user_email === "verified@example.com") {
 						return HttpResponse.json({ message: "Reset email sent" });
 					}
 					return HttpResponse.json(
@@ -357,37 +502,77 @@ describe("UserService", () => {
 						{ status: 500 },
 					);
 				}),
-				http.options(buildUrl("/users/password-resets"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
 			);
-			await expect(requestPasswordReset("user@example.com")).resolves.toEqual({
+			await expect(
+				requestPasswordReset("verified@example.com"),
+			).resolves.toEqual({
 				message: "Reset email sent",
 			});
 		});
 
-		it("should handle email not found error (404)", async () => {
+		it("should handle email not found (404) as per current frontend logic", async () => {
 			server.use(
-				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
-					const body = (await request.json()) as { user_email?: string };
-					if (body.user_email === "user@example.com") {
-						return HttpResponse.json(
-							{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
-							{ status: 404 },
-						);
-					}
+				http.post(buildUrl("/users/password-resets"), () => {
 					return HttpResponse.json(
-						{ detail: "Unhandled mock for 404" },
-						{ status: 500 },
+						{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
+						{ status: 404 },
+					);
+				}),
+			);
+			await expect(
+				requestPasswordReset("nonexistent@example.com"),
+			).rejects.toThrow(AUTH_ERRORS.EMAIL_NOT_FOUND);
+		});
+
+		it("should handle email not verified (400) as per current frontend logic", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets"), () => {
+					return HttpResponse.json(
+						{ detail: "Email not verified" },
+						{ status: 400 },
 					);
 				}),
 				http.options(buildUrl("/users/password-resets"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
-			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
-				AUTH_ERRORS.EMAIL_NOT_FOUND,
+			await expect(
+				requestPasswordReset("unverified@example.com"),
+			).rejects.toThrow("Email not verified");
+		});
+
+		it("should handle validation errors (422)", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets"), () => {
+					return HttpResponse.json(
+						{ detail: [{ msg: "Invalid email for reset" }] },
+						{ status: 422 },
+					);
+				}),
 			);
+			await expect(requestPasswordReset("bad-email@format")).rejects.toThrow(
+				"Invalid email for reset",
+			);
+		});
+
+		it("should handle service unavailable (503)", async () => {
+			const postSpy = vi.spyOn(apiModule.default, "post");
+			const serviceUnavailableError = new Error("Service Unavailable");
+			Object.defineProperty(serviceUnavailableError, "isAxiosError", {
+				value: true,
+			});
+			Object.defineProperty(serviceUnavailableError, "response", {
+				value: {
+					status: 503,
+					data: { detail: "Email service down" },
+				},
+			});
+			postSpy.mockRejectedValueOnce(serviceUnavailableError);
+
+			await expect(requestPasswordReset("any@example.com")).rejects.toThrow(
+				"Email service is temporarily unavailable. Please try again later.",
+			);
+			postSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
@@ -405,10 +590,6 @@ describe("UserService", () => {
 	});
 
 	describe("resetPassword", () => {
-		beforeEach(() => {});
-
-		afterEach(() => {});
-
 		it("should reset password successfully", async () => {
 			server.use(
 				http.post(

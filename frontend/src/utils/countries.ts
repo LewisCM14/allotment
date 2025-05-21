@@ -1,11 +1,11 @@
 import { countries } from "countries-list";
 
-export interface CountryOption {
+export interface ICountryOption {
 	value: string;
 	label: string;
 }
 
-export const getCountryOptions = (): CountryOption[] => {
+export const getCountryOptions = (): ICountryOption[] => {
 	return Object.entries(countries)
 		.map(([code, country]) => ({
 			value: code,

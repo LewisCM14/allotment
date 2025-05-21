@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import * as Switch from "@radix-ui/react-switch";
 import { Moon, Sun } from "lucide-react";
 

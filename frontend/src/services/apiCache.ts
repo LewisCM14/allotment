@@ -3,7 +3,7 @@
  * Provides in-memory caching for API responses
  */
 
-interface CacheEntry<T> {
+interface ICacheEntry<T> {
 	data: T;
 	timestamp: number;
 }
@@ -14,7 +14,7 @@ export interface CacheOptions {
 }
 
 class ApiCache {
-	private cache = new Map<string, CacheEntry<unknown>>();
+	private cache = new Map<string, ICacheEntry<unknown>>();
 	private defaultDuration = 5 * 60 * 1000; // 5 minutes
 
 	set<T>(key: string, data: T, duration?: number): void {

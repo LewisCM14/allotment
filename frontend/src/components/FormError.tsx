@@ -1,12 +1,12 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 import { AlertCircle } from "lucide-react";
 
-interface FormErrorProps {
+interface IFormError {
 	message?: string;
 	className?: string;
 }
 
-export function FormError({ message, className }: FormErrorProps) {
+export function FormError({ message, className }: IFormError) {
 	if (!message) return null;
 
 	return (
