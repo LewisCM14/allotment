@@ -85,7 +85,7 @@ _High level interface functionality accompanied by low fidelity designs._
 === "User Notification Interface"
     - The ability for users to control: type, method and frequency of notifications they receive. 
 
-    !!! info "Please Note"
+    !!! note "Please Note"
         This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required for storing a users nominated preferences to provide this functionality. 
 
 ---

@@ -4,7 +4,7 @@ The aim for the database layer of the application is to enforce data consistency
 
 The solution must also allow for modularity in the applications architecture such that new database technologies can be dropped in/out with minimal disruption to the other layers. 
 
-!!! info
+!!! note "Please Note"
     This is important as a goal of the project is to deliver the ability to learn new technologies by using them to replace components of the application following the original design laid out in this document as a blueprint.
 
 <u>**Requirements:**</u>
@@ -25,25 +25,25 @@ The solution must also allow for modularity in the applications architecture suc
 === "Pest"
     Holds the various types of pests.
 
-    !!! note
+    !!! info
         - The default `VARCHAR` constraint is not applied to the notes field.
 
 === "Disease"
     Holds the various types of diseases.
     
-    !!! note
+    !!! info
         - The default `VARCHAR` constraint is not applied to the notes field.
 
 === "Symptom"
     Holds the various types of symptoms different diseases can exhibit.
     
-    !!! note
+    !!! info
         - The symptom field will not require the default `VARCHAR` constraint applied.
 
 === "Intervention"
     Holds methods of intervention used to treat or prevent the various disease and pests.
     
-    !!! note
+    !!! info
         - The default `VARCHAR` constraint is not applied to the notes field.
 
 === "Pest Treatment"
@@ -90,7 +90,7 @@ The solution must also allow for modularity in the applications architecture suc
 === "User"
     Holds the minimum amount of unique user information required to provide the applications functionality.
     
-    !!! note
+    !!! info
         - The user email & password fields do not require the default `VARCHAR` constraint.
         - The User first name field requires the `VARCHAR` constraint applied with an additional rule, preventing the use of numbers also.
         - When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables is required for data consistency.
@@ -109,7 +109,7 @@ The solution must also allow for modularity in the applications architecture suc
 === "User Active Varieties"
     A junction table that uses a composite primary key for storing what grow guides users are currently following.
 
-    !!! note
+    !!! info
         - There is currently no method of preventing users from following multiple guides for same specific variety of plant, it is down to users themselves to monitor this.
         - A trigger is required at the database layer that when users activate varieties the User Feed Day table is checked to ensure they have a nominated day for the guides applicable feed. If there is no nominated day a default is added that can then be updated later within the Users Preferences page. This ensures data consistency at both the database and backend layers.
 
@@ -123,7 +123,7 @@ The solution must also allow for modularity in the applications architecture suc
 === "Variety"
     The predominate table end users interact with. Storing the grow guides. The application works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be linked to specific days, as well as months & seasons referred to.
     
-    !!! note
+    !!! info
         - The default `VARCHAR` constraint is not applied to the notes field.
         - The first constraint this table requires, is that any time even a single column is altered the last updated column is set to the current datetime.
         - The next constraint this table requires is that if either one of the following pairs exists the other must also:
@@ -149,7 +149,7 @@ The solution must also allow for modularity in the applications architecture suc
 === "Variety Water Day"
     A junction table that uses a composite primary key for linking what day each variety detailed within a unique grow guide should be watered on.
     
-    !!! note
+    !!! info
         - A trigger is required at the database layer that ensures the amount of days nominated within this table, for a specific variety per week, is equal to that of the integer value stored in the column titled frequency days per year, found in the Frequency table, that is linked within the Variety table via ID. To do this the amount of days in the Variety Water Day table is multiplied by 52.
     
     ???+ tip "Future Improvement"
@@ -167,14 +167,14 @@ The solution must also allow for modularity in the applications architecture suc
 === "Week"
     A table that holds the 52 weeks of the year and their corresponding start and end dates in the format of `01/01, 07/01` etc. The month each unique week starts in is also stored to allow for easy collection of month specific activities.
     
-    !!! note
+    !!! info
         - A check constraint is required to ensure the start & end date columns meet the described format.
         - There is one week that has a potential 8 days within it in order to handle leap years.
 
 === "Month"
     A reference table for the twelve possible months for use when creating grow guides. Also provides a clear entry point for collecting month specific information to provide to end users.
     
-    !!! note
+    !!! info
         The application predominantly works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be distributed across the seven available days. Due to this the Month table links to the Week table via ID.
 
 === "Season"
@@ -183,7 +183,7 @@ The solution must also allow for modularity in the applications architecture suc
 === "Country Season"
     A table that stores the start and end date for each season per unique country. These dates can then be referenced against the Week and User table for detailing seasonal activity to end users.
     
-    !!! note
+    !!! info
         - The first check constraint this table requires is one to ensure the start & end date columns meet the following format `01/01, 07/01`, as per the Week table.
         - The next check constraint required is one that ensures for each unique country added, all four corresponding seasons are added at the same time.
             - It is up to database admins to ensure the start & end dates for these seasons are correct due to the large variation between countries, but infrequent requirement of data being added.

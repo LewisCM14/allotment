@@ -36,7 +36,7 @@ All while delivering a fast and seamless "request - response" experience to many
     Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.
 
     !!! info
-        Supporting routes like: login/logout, password reset and email confirmation are also provided when interacting with the User table.
+        Supporting routes like: login & logout, password reset and email confirmation are also provided when interacting with the User table.
 
 === "User Allotment"
     Ability for users to create an associated allotment. The details required for this allotment include a zip or postal code along with a width and length measurement. These fields must be editable by the associated user and thus must also be readable.
@@ -324,7 +324,7 @@ _The server-side architecture is designed to enforce clear boundaries between la
         - Encapsulates database access logic.
         - Executes SQL queries or ORM operations to persist the validated objects.
         
-        !!! info
+        !!! danger "info"
             Does not handle transactions or business logic.
 
     1. Service Layer (Unit of Work):

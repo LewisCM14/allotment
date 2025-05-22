@@ -2,7 +2,7 @@
 
 This is the design documentation for a web application designed for allotment holders looking to optimize their growing season. The system provides a dynamic, personalized to-do list, helping users stay on top of crucial tasks like watering, feeding, pruning, and harvesting. Along with a collaborative grow guide database, allowing users to share and discover the best techniques for different fruit and vegetable varieties.
 
-!!! info "Please Note"
+!!! note "Please Note"
     The purpose of this documentation is two fold:
 
     - **Act as the documentation that details the implemented solution.**
