@@ -1,15 +1,17 @@
 ## Implementation
 
-The application is to be implemented following the Walking Skeleton approach, allowing for a minimal end-to-end version to be completed early before then expanding upon it, the sequence of development is laid out below.
+!!! note "Please Note"
+    - This whole section of the documentation is for reference when building the entire application from the ground up and details a logical approach to developing and integrating each of its constituents.
+
+The application is designed to be implemented following the Walking Skeleton approach, allowing for a minimal end-to-end version to be completed early before then expanding upon it, a logical sequence of development is laid out below.
 
 ---
 
 ### Preliminary
 
-!!! info
+!!! info 
     - A Linux based operation system will be required that has PostgreSQL & pgAdmin installed alongside UV and NPM for package management of Python and JavaScript libraries respectively. 
-    - The system will also require Docker in order to run and manage containers
-    - A GitHub and Fly.io account will also be required for version control and hosting of the application.
+    - A GitHub and Render account will also be required for version control and hosting of the application.
     - A code editor will also be required.
 
 ---
@@ -17,17 +19,17 @@ The application is to be implemented following the Walking Skeleton approach, al
 ### Skeleton
 
 1. **Scaffold Code Repository Structure**
-    - The code is to be placed under version control in GitHub with a repository that includes the backend and frontend folders as well as a deployments folder to hold infrastructure as code files plus a documentation folder to house supporting documentation, like this design document.
+    - The code is to be placed under version control in GitHub with a repository that includes the backend and frontend folders as well as a `.github/workflows` folder to hold infrastructure as code files plus a docs folder to house supporting documentation.
         
-        !!! info
-            The design document is to be a MKDocs application hosted via GitHub pages.
+        !!! note "Please Note"
+            i.e. this design document, which is a MKDocs application hosted via GitHub pages.
 
 1. **Server Side Initial Setup**
-    - A Minimal FastAPI application is to be implemented with a heath check endpoint.
+    - A Minimal FastAPI application is to be implemented with a health check endpoint.
         - Pydantic, Ruff and MyPy can be integrated at this point.
 
 1. **Database Integration**
-    - SQLAlchemy is to be used to setup and migrate the database schema for the User table to a PostgreSQL database.
+    - SQLAlchemy is to be used to setup and migrate the database schema for the User table to a PostgreSQL database used for development.
         - Pytest can be utilized at this point to allow for the automated integration testing of the server and database layers.
 
 1. **Authentication**
@@ -45,22 +47,16 @@ The application is to be implemented following the Walking Skeleton approach, al
         - A hook for logging out users on the frontend should also be implemented at this point as it offers the ability to manually test the registration flow and authentication state of the UI.
 
 1. **User Password Reset Interface**
-    - As the skeleton of the application offers little in terms of user functionality a password reset method should be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.
+    - As the skeleton of the application offers little in terms of user functionality a password reset method is to be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.
 
-        !!! info
-            Gmail SMTP will be sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
+        !!! note "Please Note"
+            Gmail SMTP is sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
 
-1. **Containerization**
-    - Both the front & backend are to be containerized using Docker. With a `docker-compose.yml` configured for local development.
+1. **CI/CD**
+    - GitHub actions are to be setup in order to automate builds and release pipelines to production. These pipelines are to ensure Docker containers, that have passed all required validations, are registered on GitHub and then deployed to a hosting provider that offers managed PostgreSQL solutions.
 
-1. **CI**
-    - GitHub actions are to be setup in order to automate builds.
-
-1. **Deployment**
-    - The application is to be deployed to Fly.io
-
-1. **CD**
-    - GitHub actions are to be setup in order to automate deployments
+        !!! note "Please Note"
+            The current hosting provider is Render.
 
 ---
 
