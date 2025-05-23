@@ -101,7 +101,7 @@ In order to ensure that the applications deployments are scalable and repeatable
         - Separate web services have been created within the Render environment. One for the Frontend and one for the Backend. Each of these services has had their environment variables configured through the Render UI based upon the `.env.template` files found within the **Frontend** & **Backend** folders.
         
         !!! info
-            When running the application for local development, copies of these files are created and the _template_ suffix dropped in order to run the application. To prevent the leaking of secrets to the public these files have been added to the repositories global `.gitignore` file.
+            When running the application for local development, copies of these files are created and the _template_ suffix dropped in order to run the application. To prevent the leaking of secrets to the public these files have been added to the repositories global `.gitignore` file. More information on setting the project up locally can be found in the `CONTRIBUTING.md` file at the root of the repository.
     
     1. **Register The Hook in GitHub**
 

@@ -49,11 +49,14 @@ The application is designed to be implemented following the Walking Skeleton app
 1. **User Password Reset Interface**
     - As the skeleton of the application offers little in terms of user functionality a password reset method is to be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.
 
-        !!! note "Please Note"
+        !!! tip "Future Improvement"
             Gmail SMTP is sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
 
 1. **CI/CD**
     - GitHub actions are to be setup in order to automate builds and release pipelines to production. These pipelines are to ensure Docker containers, that have passed all required validations, are registered on GitHub and then deployed to a hosting provider that offers managed PostgreSQL solutions.
+
+        !!! info
+            Further detail on the required validations can be found in the `CONTRIBUTING.md` file at the root of the repository.
 
         !!! note "Please Note"
             The current hosting provider is Render.
