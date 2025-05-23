@@ -46,7 +46,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
-    "@eslint/js": "^9.21.0",
     "@tailwindcss/vite": "^4.0.15",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^22.13.11",
@@ -55,9 +54,6 @@
     "@vitejs/plugin-react-swc": "^3.8.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "eslint": "^9.21.0",
-    "eslint-plugin-react-hooks": "^5.1.0",
-    "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^15.15.0",
     "jsdom": "^26.0.0",
     "msw": "^2.7.3",
