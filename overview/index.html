@@ -631,8 +631,8 @@
 <li>The application is to be a Progressive Web App (PWA).</li>
 <li>
 <p>The applications architecture must ensure that the Client, Server and Database layers are not tightly coupled. So to to allow for the ease of replacing them with other technologies as desired.</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
 <p>A goal of the project is to deliver upon the ability to use this document as a blueprint to reproduce aspects of the application in new technologies as a personal learning and development exercise.</p>
 </div>
 </li>
@@ -642,27 +642,28 @@
 <h3 id="the-development-team">The Development Team</h3>
 <ul>
 <li>
-<p>A personal project for a developer familiar with domain driven design, mainly using Python for server side code and modern JavaScript/TypeScript based frameworks for creating user interfaces built on top of relational databases. With a strong desire to use advanced design patterns.</p>
+<p>A personal project for a developer familiar with domain driven design, mainly using Python for server side code and modern JavaScript/TypeScript based frameworks like React &amp; Vue for creating user interfaces built on top of relational databases. With a strong desire to use advanced design patterns.</p>
 </li>
 <li>
 <p>Able to working in CI/CD environments with agile delivery.</p>
 </li>
+<li>Able to produce their own custom components or make use of component libraries like Mui &amp; Tailwind.</li>
 </ul>
 <hr />
 <h3 id="deployments">Deployments</h3>
 <ul>
 <li>
-<p>The ability to vertically scale is to be prioritized over horizontal scaling as the option to efficiently deploy to private servers must always be available. </p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>However the current desired deployment scenario is one that uses Docker, hosted in a cloud environment.</p>
+<p>The ability to vertically scale is prioritized over horizontal scaling as the option to efficiently deploy to private and/or dedicated servers must always be available to the application. </p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>The current deployment scenario is one that uses containers created with Docker, hosted in a cloud environment by a provider that offers managed database solutions.</p>
 </div>
 </li>
 <li>
-<p>The application will be served by a single database so there is currently no need for eventual consistency.</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>However the client and server side application are not to be tightly coupled so to allow for independent deployment inline with the modular architectural design.</p>
+<p>The application is served by a single database so there is currently no need for eventual consistency.</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>However, the client and server side application are not tightly coupled so to allow for independent deployment inline with the modular architectural design.</p>
 </div>
 </li>
 </ul>
@@ -670,12 +671,12 @@
 <h3 id="user-base">User Base</h3>
 <ul>
 <li>The age of a typical user is to be assumed to be between 35-75, due to this all aspects of the user interface must be intuitive and simple to use.</li>
-<li>There is an estimated 330,000 allotments in the UK, assuming each of these has a unique owner the initial scale that the application should be able to support is 10% or 33,000 users. </li>
+<li>There is an estimated 330,000 allotments in the UK, assuming each of these has a unique owner the initial scale that the application must be able to support is 10% or 33,000 users. </li>
 <li>
-<p>It should also be assumed that traffic peaks on the weekends, with the application to support many concurrent users, especially during summer months. Due to this the architecture should be able to facilitate 30,000 unique queries at a time initially.</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>Due to the desired modularity in the applications architecture a solution to further scaling is the option of selecting a new underlying technology. However, if the initial technologies used can scale to roughly 2.5 million users with the ability to facilitate approximately 2.25 million unique queries at once it would be more than sufficient to support the entire market share of European allotments.</p>
+<p>It is also to be assumed that traffic peaks on the weekends, with the application required to support many concurrent users, especially during summer months. Due to this the architecture should be able to facilitate several thousand unique queries at a time initially.</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>Due to the modularity in the applications architecture design, a solution to further scaling is the option of selecting a new underlying technology. However, if the initial technologies used can scale to support roughly 2.5 million active users at once it would be more than sufficient to support the entire market share of European allotments.</p>
 </div>
 </li>
 </ul>

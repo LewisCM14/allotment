@@ -410,13 +410,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interfaces-required" class="md-nav__link">
+  <a href="#interfaces" class="md-nav__link">
     <span class="md-ellipsis">
-      Interfaces Required
+      Interfaces
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Interfaces Required">
+    <nav class="md-nav" aria-label="Interfaces">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -646,13 +646,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#interfaces-required" class="md-nav__link">
+  <a href="#interfaces" class="md-nav__link">
     <span class="md-ellipsis">
-      Interfaces Required
+      Interfaces
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Interfaces Required">
+    <nav class="md-nav" aria-label="Interfaces">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -804,18 +804,14 @@
 <p>Must integrate with a RESTful API written using the FastAPI framework.</p>
 </li>
 <li>Must be able to handle JWTs for user authentication provided from the sever side via fastapi.security and Authlib.</li>
-<li>Must be able to facilitate the creation of a Progressive Web App.<ul>
-<li>The developer is familiar with JavaScript/TypeScript based frameworks like React and Vue but open to other technologies.</li>
-<li>The developer is able to produce their own custom components or make use of component libraries like Mui, Tailwind and Bootstrap. But any library used must be free for commercial use.</li>
-</ul>
-</li>
+<li>Must be able to facilitate the creation of a Progressive Web App.</li>
 <li>Must be able to provide type safety and complete form validation for data consistency and integrity across the application.</li>
 <li>Must be able to provide offline capabilities and caching in order to accommodate users with allotments in low signal areas.</li>
-<li>The only required global state is authentication state, everything else can be handled with simple UI state.</li>
 </ul>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>There is currently no suspected need for heavy data synchronization between the front and backend.</p>
+<p>There is currently no need for heavy data synchronization between the front and backend.</p>
+<p>The only required global state is authentication state, everything else is handled via component based state.</p>
 </div>
 <div class="admonition tip">
 <p class="admonition-title">Future Improvement</p>
@@ -831,7 +827,7 @@
 <p>Testing the happy pathway is to be prioritized and deemed sufficient unless a bug is discovered that steers the application away from intended functionality. In this instance a test confirming the bug is no longer present is to be written first before a resolution is implemented, following Test Driven Development (TDD) principles and allowing for an automated check that the ensures the application does not regress in the future.</p>
 </div>
 <hr />
-<h2 id="interfaces-required">Interfaces Required</h2>
+<h2 id="interfaces">Interfaces</h2>
 <p><em>High level interface functionality accompanied by low fidelity designs.</em></p>
 <p><a class="glightbox" href="../wireframe.svg" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="Wireframes" loading="lazy" src="../wireframe.svg" /></a></p>
 <h3 id="user-account-interfaces">User Account Interfaces</h3>
@@ -842,7 +838,7 @@
 <ul>
 <li>Ability for users to register an account within the application using an email address and password.<ul>
 <li>Users must also provide a first name and country code.</li>
-<li>Emails must be unique and singing up with an existing one should trigger the password reset flow.</li>
+<li>Emails must be unique and singing up with an existing one triggers an error message for the user.</li>
 </ul>
 </li>
 </ul>
@@ -858,16 +854,16 @@
 </div>
 <div class="tabbed-block">
 <ul>
-<li>A interface to list a users currently owned grow guides with a flow for activating/deactivating a guide. As well as a flow for deleting a guide that will also require an "are you sure" style confirmation. </li>
-<li>The individual items in the list are to be navigation items that lead to a dedicated interface for displaying the grow guide.</li>
-<li>The interface will also require a flow for creating a new grow guide.</li>
-<li>The interface will also require a toggle that provides users the ability to make a guide public or private.</li>
+<li>A interface to list a users currently owned grow guides with a flow for activating/deactivating a guide. As well as a flow for deleting a guide that is behind a "are you sure" style confirmation. </li>
+<li>The individual items in the list are navigation links that lead to a dedicated interface for displaying the grow guide.</li>
+<li>The interface provides a flow for creating a new grow guide.</li>
+<li>The interface includes a toggle that provides users with the ability to make a guide public or private.</li>
 </ul>
 </div>
 <div class="tabbed-block">
 <ul>
 <li>Ability for users to create an associated allotment by providing the following information: postal code, width and length.<ul>
-<li>Initially this interface will just be populated with placeholder text until a user submits the required information to create an associated allotment.</li>
+<li>Initially this interface is populated with placeholder text until a user submits the required information to create an associated allotment.</li>
 </ul>
 </li>
 <li>Ability for users to update the following information for their allotment: postal code, width and length.</li>
@@ -899,7 +895,7 @@
 </div>
 <div class="tabbed-block">
 <ul>
-<li>Ability for users to enter a new password, after having coming from the magic link provided via email to their registered address.</li>
+<li>Ability for users to enter a new password, after having come from the magic link provided via email to their registered address.</li>
 </ul>
 </div>
 </div>
@@ -911,9 +907,9 @@
 <ul>
 <li>The ability for users to control: type, method and frequency of notifications they receive. </li>
 </ul>
-<div class="admonition info">
+<div class="admonition note">
 <p class="admonition-title">Please Note</p>
-<p>This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required to provide this functionality. </p>
+<p>This is a low priority as automated notifications are not part of the minimal viable product. Additional database tables will also be required for storing a users nominated preferences to provide this functionality. </p>
 </div>
 </div>
 </div>
@@ -926,7 +922,7 @@
 <div class="tabbed-block">
 <ul>
 <li>A interface that lists the different botanical groups available within the application. Where each group is a dropdown that can be select to expand/collapse. When expanded it displays the families within that group below a recommend rotate years info section.<ul>
-<li>Each heading within the dropdown is to be a navigation link to a page informing on that family in detail.</li>
+<li>Each heading within the dropdown is a navigation link to a page informing on that family in detail.</li>
 </ul>
 </li>
 </ul>
@@ -950,9 +946,9 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ul>
-<li>A interface that presents the user with a overview of a specific varieties grow guide. This interface is to double up as the form for creating/editing the grow guide also.<ul>
-<li>For guides a user own there is to be a button that unlocks the guide for editing.<ul>
-<li>This mode will require a method of ensuring users pass validation per field of the form and a method of handling submissions failures in a friendly way.</li>
+<li>A interface that presents the user with a overview of a specific varieties grow guide. This interface doubles up as the form for creating/editing the grow guide also.<ul>
+<li>For guides a user own there is a button that unlocks the guide for editing.<ul>
+<li>This mode includes methods of ensuring users pass validation per field of the form and a method of handling submissions failures in a friendly way.</li>
 </ul>
 </li>
 </ul>
@@ -966,7 +962,7 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ul>
-<li>A interfaces that lists all the publicly available grow guides for users to browse and use. As initial offering this screen should organize the available grow guides into botanical groups that are alphabetically sorted and the guides within each group are to be alphabetized again.</li>
+<li>A interfaces that lists all the publicly available grow guides for users to browse and use. As an initial offering this screen organizes the available grow guides into botanical groups that are alphabetically sorted and the guides within each group are alphabetized again.</li>
 </ul>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
@@ -987,7 +983,7 @@
 <div class="tabbed-block">
 <ul>
 <li>
-<p>The interface that is to be considered the home page. This view will display, based on a users active varieties, their weekly tasks and where appropriate these weekly tasks are to be broken down into there specific days.</p>
+<p>The interface that is considered the home page. This view displays, based on a users active varieties, their weekly tasks and where appropriate these weekly tasks are to be broken down into there specific days.</p>
 <ul>
 <li>
 <p><strong>Weekly Tasks:</strong></p>
@@ -997,7 +993,7 @@
 <li>What varieties can be harvested.</li>
 <li>What varieties need to be pruned.</li>
 <li>What varieties can be dug up and composted.<ul>
-<li>This task will be based of when a variety has reached the end of its harvest period and lifecycle.</li>
+<li>This task is based of when a variety has reached the end of its harvest period and lifecycle.</li>
 </ul>
 </li>
 </ul>
@@ -1006,18 +1002,18 @@
 <p><strong>Daily Tasks:</strong></p>
 <ul>
 <li>What varieties need to be fed this week on what day.<ul>
-<li>Varieties that are to be fed, need to be grouped by feed type and this feed type highlighted.</li>
+<li>Varieties that are to be fed, are grouped by feed type and this feed type highlighted.</li>
 </ul>
 </li>
 <li>What varieties need to be watered this week on what day.
     ???+ tip "Future Improvement"
-        Long term this task be dictated via a live weather feed based on the users allotment postal/zip code.</li>
+        Long term this task will be dictated via a live weather feed based on the users allotment postal/zip code.</li>
 </ul>
 </li>
 </ul>
 </li>
 <li>
-<p>Each user is to be able to select a desired week in order to view the past or future, with the default load week to be the present week.</p>
+<p>Each user is able to select a desired week in order to view the past or future, with the default load week set to the present week.</p>
 </li>
 </ul>
 </div>
@@ -1028,7 +1024,7 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <ul>
-<li>This view will display a high level overview based on a users active varieties, their monthly tasks, grouped by season.<ul>
+<li>This view displays a high level overview based on a users active varieties, their monthly tasks, grouped by season.<ul>
 <li>These tasks are to include:<ul>
 <li>What varieties can be sown.</li>
 <li>What varieties can be transplanted.</li>
@@ -1039,7 +1035,7 @@
 </li>
 </ul>
 </li>
-<li>Each user is to be able to select a month in order to view the past or future, with the default load month to be the present.</li>
+<li>Each user is able to select a month in order to view the past or future, with the default load month set to the present.</li>
 </ul>
 </div>
 </div>
@@ -1151,7 +1147,7 @@
 <h3 id="components">Components</h3>
 <div class="admonition example">
 <p class="admonition-title">Container-Presenter Pattern</p>
-<p>In order to keep the components listed below clean and separate logic from presentation, the container presenter pattern is to be utilized. Allowing for a "smart" container component to handle state, API calls and business logic with a "dumb" presenter component created in order to display data. This pattern also prevents re-renders when only the UI changes, improving performance.</p>
+<p>In order to keep the components listed below clean and separate logic from presentation, the container presenter pattern is utilized. Allowing for a "smart" container component to handle state, API calls and business logic with a "dumb" presenter component created in order to display data. This pattern also prevents re-renders when only the UI changes, improving performance.</p>
 <ol>
 <li>Header</li>
 <li>Footer</li>
@@ -1168,24 +1164,24 @@
 <p class="admonition-title">Factory Pattern</p>
 <p><strong>Form Component</strong></p>
 <ul>
-<li>In order to ensure form validation is correct, inline with the applications data integrity principles, a reusable validation schema (Factory) is to be defined in a separate file. Within the form component itself this schema is to be utilized via Zod and React Hook Form in order to ensure consistent and reusable logic with minimal re-renders.</li>
+<li>In order to ensure form validation is correct, inline with the applications data integrity principles, a reusable validation schema (Factory) is defined in a separate file. Within the form component itself this schema is then utilized via Zod and React Hook Form in order to ensure consistent and reusable logic with minimal re-renders.</li>
 </ul>
 </div>
 <hr />
 <h3 id="api-communication">API Communication</h3>
 <div class="admonition example">
 <p class="admonition-title">Repository Pattern</p>
-<p>In order to separate API logic from UI, allowing for cleaner components, easier endpoint switching and the reduction of redundant calls. API logic is to be stored in its own separate service, within these services Axios is to be used to handle data retrieval from the server. React Query is to then be implemented when retrieving data through the service in order to cache queries.</p>
+<p>In order to separate API logic from UI, allowing for cleaner components, easier endpoint switching and the reduction of redundant calls. API logic is stored in its own separate service, within these services Axios is used to handle data retrieval from the server. React Query is then utilized when retrieving data through the service in order to cache queries.</p>
 </div>
 <div class="admonition example">
 <p class="admonition-title">Cache-Aside Pattern</p>
-<p>In order to provide offline capabilities within the application Workbox is to be used to cache API responses on top of React Query. Improving performance and allowing for a progressive web application.</p>
+<p>In order to provide offline capabilities within the application Workbox is used to cache API responses on top of React Query. Improving performance and allowing for a progressive web application.</p>
 </div>
 <hr />
 <h3 id="client-side-authentication">Client Side Authentication</h3>
 <div class="admonition example">
 <p class="admonition-title">Observer &amp; Provider Pattern</p>
-<p>As user authentication is the only required global state ContextAPI is to be used in order to setup a auth provider. React Query can then observe this provider in order to update application state.</p>
+<p>As user authentication is the only required global state the ContextAPI used in order to setup a auth provider. React Query then observes this provider in order to update application state.</p>
 </div>
 <hr />
 <h3 id="folder-structure">Folder Structure</h3>
@@ -1193,63 +1189,58 @@
 <p class="admonition-title">Feature-Based Folder Structure</p>
 <p>Due to the application having clearly defined interfaces that can be grouped into features, a feature based folder structure makes sense, allowing related logic to be kept together.</p>
 <div class="language-text highlight"><span class="filename">Vite & React Application</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/frontend
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    /public
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        - Static assets that are served directly, i.e. a Favicon.
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    /src
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        /assets
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            - Resources that are imported directly into the code, i.e. a logo.
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        /components
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            /layouts
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>                - Contains components that dictate page layouts.
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            /ui
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                - Contains UI components to use as interface building blocks.
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    /config
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        - Vite specific configuration files.
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    /public
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        - Static assets that are served directly, i.e. a Favicon.
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    /src
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        /assets
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            - Resources that are imported directly into the code, i.e. a logo.
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        /components
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            - Contains components that dictate page layouts.
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>            - Contains UI components to use as interface building blocks.
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        /features
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            /user
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                - LoginForm.tsx
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>                - LoginSchema.ts
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>                - RegisterForm.tsx
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>                - RegisterSchema.ts
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                - UserService.test.ts
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                - UserService.tsx
-</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /hooks
-</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - useLogout.tsx
-</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        /lib
-</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            - utils.ts
-</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        /mocks
-</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            - handlers.ts
-</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            - server.ts
-</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>        /routes
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>            - AppRoutes.tsx
-</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>            - ProtectedRoutes.tsx
-</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>        /services
-</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>            - api.test.ts
-</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>            - api.ts
-</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>        /store
-</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>            /auth
-</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                - AuthContext.tsx
-</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>                - authDB.ts
-</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>                - AuthProvider.tsx
-</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>            /theme
-</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>                - ThemeContext.tsx
-</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>                - ThemeProvider.tsx
-</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        /types
-</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>            - Common interfaces &amp; types, i.e. NavigationTypes.ts
-</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>        - App.tsx
-</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>        - global.css
-</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        - main.tsc
-</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        - ServiceWorker.ts
-</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>        - setupTests.ts
-</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>        - vite-env.d.ts
-</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    - .env
-</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    - components.json
-</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    - index.html
-</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    - package-lock.json
-</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    - package.json
-</span><span id="__span-0-54"><a id="__codelineno-0-54" name="__codelineno-0-54" href="#__codelineno-0-54"></a>    - tsconfig.app.json
-</span><span id="__span-0-55"><a id="__codelineno-0-55" name="__codelineno-0-55" href="#__codelineno-0-55"></a>    - tsconfig.json
-</span><span id="__span-0-56"><a id="__codelineno-0-56" name="__codelineno-0-56" href="#__codelineno-0-56"></a>    - tsconfig.node.json
-</span><span id="__span-0-57"><a id="__codelineno-0-57" name="__codelineno-0-57" href="#__codelineno-0-57"></a>    - vite.config.ts
-</span><span id="__span-0-58"><a id="__codelineno-0-58" name="__codelineno-0-58" href="#__codelineno-0-58"></a>    - vitest.config.ts
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            - The frontend applications interfaces and the services that serve them.
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            - Related test files.
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        /hooks
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>            - useLogout.tsx
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        /mocks
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>            - handlers.ts
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>            - server.ts
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        /routes
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>            - AppRoutes.tsx
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>            - ProtectedRoute.tsx
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>            - PublicRoute.tsx
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        /services
+</span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>            - api.ts
+</span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            - apiCache.ts
+</span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>            - apiConfig.ts
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>            - errorMonitoring.ts
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>        /store
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>            /auth
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>                - AuthContext.tsx
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>                - authDB.ts
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>                - AuthProvider.tsx
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>            /theme
+</span><span id="__span-0-35"><a id="__codelineno-0-35" name="__codelineno-0-35" href="#__codelineno-0-35"></a>                - ThemeContext.tsx
+</span><span id="__span-0-36"><a id="__codelineno-0-36" name="__codelineno-0-36" href="#__codelineno-0-36"></a>                - ThemeProvider.tsx
+</span><span id="__span-0-37"><a id="__codelineno-0-37" name="__codelineno-0-37" href="#__codelineno-0-37"></a>        /types
+</span><span id="__span-0-38"><a id="__codelineno-0-38" name="__codelineno-0-38" href="#__codelineno-0-38"></a>            - Common interfaces &amp; types, i.e. NavigationTypes.ts
+</span><span id="__span-0-39"><a id="__codelineno-0-39" name="__codelineno-0-39" href="#__codelineno-0-39"></a>        /utils
+</span><span id="__span-0-40"><a id="__codelineno-0-40" name="__codelineno-0-40" href="#__codelineno-0-40"></a>            - Utility files used across the frontend application, i.e. errorUtils.ts
+</span><span id="__span-0-41"><a id="__codelineno-0-41" name="__codelineno-0-41" href="#__codelineno-0-41"></a>        - App.tsx
+</span><span id="__span-0-42"><a id="__codelineno-0-42" name="__codelineno-0-42" href="#__codelineno-0-42"></a>        - global.css
+</span><span id="__span-0-43"><a id="__codelineno-0-43" name="__codelineno-0-43" href="#__codelineno-0-43"></a>        - main.tsc
+</span><span id="__span-0-44"><a id="__codelineno-0-44" name="__codelineno-0-44" href="#__codelineno-0-44"></a>        - ServiceWorker.ts
+</span><span id="__span-0-45"><a id="__codelineno-0-45" name="__codelineno-0-45" href="#__codelineno-0-45"></a>        - setupTests.ts
+</span><span id="__span-0-46"><a id="__codelineno-0-46" name="__codelineno-0-46" href="#__codelineno-0-46"></a>        - vite-env.d.ts
+</span><span id="__span-0-47"><a id="__codelineno-0-47" name="__codelineno-0-47" href="#__codelineno-0-47"></a>    - .env
+</span><span id="__span-0-48"><a id="__codelineno-0-48" name="__codelineno-0-48" href="#__codelineno-0-48"></a>    - index.html
+</span><span id="__span-0-49"><a id="__codelineno-0-49" name="__codelineno-0-49" href="#__codelineno-0-49"></a>    - package-lock.json
+</span><span id="__span-0-50"><a id="__codelineno-0-50" name="__codelineno-0-50" href="#__codelineno-0-50"></a>    - package.json
+</span><span id="__span-0-51"><a id="__codelineno-0-51" name="__codelineno-0-51" href="#__codelineno-0-51"></a>    - tsconfig.app.json
+</span><span id="__span-0-52"><a id="__codelineno-0-52" name="__codelineno-0-52" href="#__codelineno-0-52"></a>    - tsconfig.json
+</span><span id="__span-0-53"><a id="__codelineno-0-53" name="__codelineno-0-53" href="#__codelineno-0-53"></a>    - tsconfig.node.json
 </span></code></pre></div>
 </div>
 <hr />

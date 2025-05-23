@@ -366,13 +366,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#routes-required" class="md-nav__link">
+  <a href="#routes" class="md-nav__link">
     <span class="md-ellipsis">
-      Routes Required
+      Routes
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Routes Required">
+    <nav class="md-nav" aria-label="Routes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -685,13 +685,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#routes-required" class="md-nav__link">
+  <a href="#routes" class="md-nav__link">
     <span class="md-ellipsis">
-      Routes Required
+      Routes
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Routes Required">
+    <nav class="md-nav" aria-label="Routes">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -904,7 +904,7 @@
 <p>Testing the happy pathway is to be prioritized and deemed sufficient unless a bug is discovered that steers the application away from intended functionality. In this instance a test confirming the bug is no longer present is to be written first before a resolution is implemented, following Test Driven Development (TDD) principles and allowing for an automated check that the ensures the application does not regress in the future.</p>
 </div>
 <hr />
-<h2 id="routes-required">Routes Required</h2>
+<h2 id="routes">Routes</h2>
 <h3 id="user-tables">User Tables</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">User</label><label for="__tabbed_1_2">User Allotment</label></div>
 <div class="tabbed-content">
@@ -912,7 +912,7 @@
 <p>Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>This will also require the supporting routes like: login/logout, password reset and email confirmation.</p>
+<p>Supporting routes like: login &amp; logout, password reset and email confirmation are also provided when interacting with the User table.</p>
 </div>
 </div>
 <div class="tabbed-block">
@@ -922,7 +922,7 @@
 </div>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
-<p>The ability for users to be able to trigger a cascading delete of all their related data would also be desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.</p>
+<p>The ability for users to be able to trigger a cascading delete of all their related data is desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.</p>
 </details>
 <hr />
 <h3 id="disease-pest-family-tables">Disease, Pest &amp; Family Tables</h3>
@@ -946,14 +946,14 @@
 </ol>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
-<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling. </p>
+<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects database administrator(s) and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators panel in the UI later on is desirable though as this will allow for more efficient scaling. </p>
 </details>
 <hr />
 <h3 id="grow-guide-tables">Grow Guide Tables</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="2:5"><input checked="checked" id="__tabbed_2_1" name="__tabbed_2" type="radio" /><input id="__tabbed_2_2" name="__tabbed_2" type="radio" /><input id="__tabbed_2_3" name="__tabbed_2" type="radio" /><input id="__tabbed_2_4" name="__tabbed_2" type="radio" /><input id="__tabbed_2_5" name="__tabbed_2" type="radio" /><div class="tabbed-labels"><label for="__tabbed_2_1">Grow Guides</label><label for="__tabbed_2_2">Activate Guide</label><label for="__tabbed_2_3">Publish Guide</label><label for="__tabbed_2_4">Feed Day's</label><label for="__tabbed_2_5">Supporting Tables</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>The Variety table is the main table users will interact with and the data within it forms the backbone off the application. It will utilize the applications authentication solution to allow users to perform complete CRUD operations on the data contained within it. Only a authenticated Users who's ID matches the owner column of a pre exiting row can alter any data within that row. The complexities of this table that the server side service would need to accommodate include:</p>
+<p>The Variety table is the main table users interact with and the data within it forms the backbone off the application. It utilizes the applications authentication solution to allow users to perform complete CRUD operations on the data contained within it. Only a authenticated User, who's ID matches the owner column of a pre exiting row, can alter any data within that row. The complexities of this table that the server side service accommodates include:</p>
 <ol>
 <li>If either one of the following pairs exists the other must also:<ol>
 <li>Transplant Week Start &amp; Transplant Week End</li>
@@ -964,18 +964,18 @@
 <li>Feed ID - Feed Week Start - Feed Frequency</li>
 </ol>
 </li>
-<li>When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.</li>
+<li>When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day is performed.</li>
 </ol>
 </div>
 <div class="tabbed-block">
-<p>Users will require the ability to set the grow guides they own to active and/or inactive. This action will require a route that can read, create and delete entries from the User Active Varieties junction table.</p>
+<p>Users have the ability to set the grow guides they own to active and/or inactive. This action utilizes a route that can read, create and delete entries from the User Active Varieties junction table.</p>
 </div>
 <div class="tabbed-block">
-<p>Users will also require the ability to make guides they own public/private.
-    - The ability for users to copy public guides will also be required.</p>
+<p>Users have the ability to make guides they own public/private.
+    - The ability for users to copy public guides is also provided.</p>
 </div>
 <div class="tabbed-block">
-<p>Users will require the ability to alter the day they give a nominated feed type. This will require a read and update route that manipulates entries in the User Feed Day table.</p>
+<p>Users have the ability to alter the day they give a nominated feed type. This utilizes a read and update route that manipulates entries in the User Feed Day table.</p>
 </div>
 <div class="tabbed-block">
 <p>Ability to read from the following tables found within the database:</p>
@@ -992,7 +992,7 @@
 </ol>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
-<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects data base administrators and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators section later on is desirable though as this will allow for more efficient scaling.</p>
+<p>There is only a requirement for read routes on these tables as the data stored within them is to be owned by the projects database administrator(s) and can be updated manually at the database layer via SQL if required. The ability to abstract this out into an administrators panel in the UI later on is desirable though as this will allow for more efficient scaling. </p>
 </details>
 </div>
 </div>
@@ -1006,22 +1006,22 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="3:2"><input checked="checked" id="__tabbed_3_1" name="__tabbed_3" type="radio" /><input id="__tabbed_3_2" name="__tabbed_3" type="radio" /><div class="tabbed-labels"><label for="__tabbed_3_1">Weekly &amp; Daily</label><label for="__tabbed_3_2">Monthly &amp; Seasonal</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>A route will be required that uses the Weeks table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of weekly tasks.</p>
+<p>A route that uses the Weeks table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of weekly tasks.</p>
 <p>The Day table is then joined in order to provide users with a list of daily todos across a specific week.</p>
 </div>
 <div class="tabbed-block">
-<p>A route will be required that uses the Month table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of monthly tasks.</p>
+<p>A route that uses the Month table, joined to the Variety Table which is then joined to the: User Active Varieties, Feed Table and the Frequency table in order to provide users with a list of monthly tasks.</p>
 <p>This level can then be referenced against the Season and Country Season tables in order to provide a list of seasonal tasks.</p>
 </div>
 </div>
 </div>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
-<p>These todos, whilst surfaced in the application for users to interact with, will also eventually be able to be sent out as a notification via Email or Push Notifications.</p>
+<p>These todos, whilst surfaced in the application for users to interact with, will also eventually be able to be sent out as notifications via Email or Push Notification.</p>
 </details>
 <hr />
 <h2 id="general-data-integrity-rules">General Data Integrity Rules</h2>
-<p>A method for ensuring no special characters, aside from hyphens and a single space are used, as well as all characters are lower case will be required. That is to be applied to most text based columns, aside from those designated to store notes.</p>
+<p>A method for ensuring no special characters, aside from hyphens and a single space are used, as well as all characters are lower case os provided. That is to be applied to most text based columns, aside from those designated to store notes.</p>
 <div class="admonition danger">
 <p class="admonition-title">Please Note</p>
 <p>Notes columns are not idea in relational databases and it is to be an ongoing effort to look at the content users are storing within these columns in an effort to provide a more efficient solution.</p>
@@ -1037,7 +1037,7 @@
 <p><u><strong>Design</strong></u></p>
 <p>A Repository class is created for each aggregate or related table group.</p>
 <div class="admonition example">
-<p class="admonition-title"><em>Required Repositories include:</em></p>
+<p class="admonition-title"><em>The systems Repositories include:</em></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="4:4"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">User</label><label for="__tabbed_4_2">Family</label><label for="__tabbed_4_3">Disease &amp; Pests</label><label for="__tabbed_4_4">Grow Guide</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1100,7 +1100,7 @@
 <p><u><strong>Design</strong></u></p>
 <p>Unit of Work classes are created to manage transactions and ensure multiple database operations occur as a single unit.</p>
 <div class="admonition example">
-<p class="admonition-title"><em>Required classes include:</em></p>
+<p class="admonition-title"><em>The systems classes include:</em></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="5:4"><input checked="checked" id="__tabbed_5_1" name="__tabbed_5" type="radio" /><input id="__tabbed_5_2" name="__tabbed_5" type="radio" /><input id="__tabbed_5_3" name="__tabbed_5" type="radio" /><input id="__tabbed_5_4" name="__tabbed_5" type="radio" /><div class="tabbed-labels"><label for="__tabbed_5_1">User Management</label><label for="__tabbed_5_2">Grow Guide Management</label><label for="__tabbed_5_3">ToDo Management</label><label for="__tabbed_5_4">Family Information</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1151,7 +1151,7 @@
 <p><u><strong>Design</strong></u></p>
 <p>The Factory pattern is used to simplify the creation of complex domain objects with all required fields validated and constraints applied.</p>
 <div class="admonition example">
-<p class="admonition-title"><em>The required Factories include:</em></p>
+<p class="admonition-title"><em>The systems Factories include:</em></p>
 <div class="tabbed-set tabbed-alternate" data-tabs="6:2"><input checked="checked" id="__tabbed_6_1" name="__tabbed_6" type="radio" /><input id="__tabbed_6_2" name="__tabbed_6" type="radio" /><div class="tabbed-labels"><label for="__tabbed_6_1">User</label><label for="__tabbed_6_2">Grow Guide</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
@@ -1173,7 +1173,7 @@
 </div>
 <div class="admonition note">
 <p class="admonition-title">Please Note</p>
-<p>Data input for the remaining tables is handled via a database admin currently Factories are not required until an admin panel is introduced in to the application.</p>
+<p>Data input for the remaining tables is handled via a database admin currently factories are not required until an admin panel is introduced in to the application.</p>
 </div>
 </div>
 <hr />
@@ -1194,7 +1194,7 @@
 <p>Service Layer (Unit of Work):</p>
 <ul>
 <li>Starts a <strong>Unit of Work</strong> to manage the transaction.</li>
-<li>Invokes the <strong>Domain Layer</strong> (e.g., Factories) to validate and prepare domain objects.</li>
+<li>Invokes the <strong>Domain Layer</strong> (i.e. Factories) to validate and prepare domain objects.</li>
 <li>Coordinates operations across multiple <strong>Repositories</strong> via the <strong>Unit of Work</strong>.</li>
 </ul>
 </li>
@@ -1211,8 +1211,8 @@
 <li>Encapsulates database access logic.</li>
 <li>Executes SQL queries or ORM operations to persist the validated objects.</li>
 </ul>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
+<div class="admonition danger">
+<p class="admonition-title">info</p>
 <p>Does not handle transactions or business logic.</p>
 </div>
 </li>
@@ -1276,7 +1276,7 @@
 <h3 id="folder-structure">Folder Structure</h3>
 <div class="admonition example">
 <p class="admonition-title">Pattern-Based Folder Structure</p>
-<p>Due to the server-side being a FastAPI application that has a well defined architecture that makes use of specified design patterns the following folder structure makes sense, allowing related logic to be kept together.</p>
+<p>Due to the server-side being a FastAPI application that has a well defined architecture that makes use of specified design patterns the following folder structure is implemented, allowing related logic to be kept together.</p>
 <div class="language-text highlight"><span class="filename">FastAPI & Python Application</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>/app
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    /api
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        /core
@@ -1304,7 +1304,13 @@
 </span><span id="__span-0-25"><a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a>        /v1
 </span><span id="__span-0-26"><a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>            - Contains the API Endpoints.
 </span><span id="__span-0-27"><a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>    - main.py
-</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    - settings.yaml
+</span><span id="__span-0-28"><a id="__codelineno-0-28" name="__codelineno-0-28" href="#__codelineno-0-28"></a>    - .env
+</span><span id="__span-0-29"><a id="__codelineno-0-29" name="__codelineno-0-29" href="#__codelineno-0-29"></a>/migrations
+</span><span id="__span-0-30"><a id="__codelineno-0-30" name="__codelineno-0-30" href="#__codelineno-0-30"></a>    - Database migrations version controlled with `Alembic`
+</span><span id="__span-0-31"><a id="__codelineno-0-31" name="__codelineno-0-31" href="#__codelineno-0-31"></a>/tests
+</span><span id="__span-0-32"><a id="__codelineno-0-32" name="__codelineno-0-32" href="#__codelineno-0-32"></a>    - Integration &amp; Unit test suites ran with `Pytest`
+</span><span id="__span-0-33"><a id="__codelineno-0-33" name="__codelineno-0-33" href="#__codelineno-0-33"></a>- pyproject.toml
+</span><span id="__span-0-34"><a id="__codelineno-0-34" name="__codelineno-0-34" href="#__codelineno-0-34"></a>- uv.lock
 </span></code></pre></div>
 </div>
 <hr />

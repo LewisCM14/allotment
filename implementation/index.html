@@ -601,15 +601,20 @@
   <h1>Implementation</h1>
 
 <h2 id="implementation">Implementation</h2>
-<p>The application is to be implemented following the Walking Skeleton approach, allowing for a minimal end-to-end version to be completed early before then expanding upon it, the sequence of development is laid out below.</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<ul>
+<li>This whole section of the documentation is for reference when building the entire application from the ground up and details a logical approach to developing and integrating each of its constituents.</li>
+</ul>
+</div>
+<p>The application is designed to be implemented following the Walking Skeleton approach, allowing for a minimal end-to-end version to be completed early before then expanding upon it, a logical sequence of development is laid out below.</p>
 <hr />
 <h3 id="preliminary">Preliminary</h3>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <ul>
 <li>A Linux based operation system will be required that has PostgreSQL &amp; pgAdmin installed alongside UV and NPM for package management of Python and JavaScript libraries respectively. </li>
-<li>The system will also require Docker in order to run and manage containers</li>
-<li>A GitHub and Fly.io account will also be required for version control and hosting of the application.</li>
+<li>A GitHub and Render account will also be required for version control and hosting of the application.</li>
 <li>A code editor will also be required.</li>
 </ul>
 </div>
@@ -620,10 +625,10 @@
 <p><strong>Scaffold Code Repository Structure</strong></p>
 <ul>
 <li>
-<p>The code is to be placed under version control in GitHub with a repository that includes the backend and frontend folders as well as a deployments folder to hold infrastructure as code files plus a documentation folder to house supporting documentation, like this design document.</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>The design document is to be a MKDocs application hosted via GitHub pages.</p>
+<p>The code is to be placed under version control in GitHub with a repository that includes the backend and frontend folders as well as a <code>.github/workflows</code> folder to hold infrastructure as code files plus a docs folder to house supporting documentation.</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>i.e. this design document, which is a MKDocs application hosted via GitHub pages.</p>
 </div>
 </li>
 </ul>
@@ -631,7 +636,7 @@
 <li>
 <p><strong>Server Side Initial Setup</strong></p>
 <ul>
-<li>A Minimal FastAPI application is to be implemented with a heath check endpoint.<ul>
+<li>A Minimal FastAPI application is to be implemented with a health check endpoint.<ul>
 <li>Pydantic, Ruff and MyPy can be integrated at this point.</li>
 </ul>
 </li>
@@ -640,7 +645,7 @@
 <li>
 <p><strong>Database Integration</strong></p>
 <ul>
-<li>SQLAlchemy is to be used to setup and migrate the database schema for the User table to a PostgreSQL database.<ul>
+<li>SQLAlchemy is to be used to setup and migrate the database schema for the User table to a PostgreSQL database used for development.<ul>
 <li>Pytest can be utilized at this point to allow for the automated integration testing of the server and database layers.</li>
 </ul>
 </li>
@@ -679,36 +684,28 @@
 <p><strong>User Password Reset Interface</strong></p>
 <ul>
 <li>
-<p>As the skeleton of the application offers little in terms of user functionality a password reset method should be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.</p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
-<p>Gmail SMTP will be sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.</p>
+<p>As the skeleton of the application offers little in terms of user functionality a password reset method is to be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.</p>
+<div class="admonition tip">
+<p class="admonition-title">Future Improvement</p>
+<p>Gmail SMTP is sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.</p>
 </div>
 </li>
 </ul>
 </li>
 <li>
-<p><strong>Containerization</strong></p>
+<p><strong>CI/CD</strong></p>
 <ul>
-<li>Both the front &amp; backend are to be containerized using Docker. With a <code>docker-compose.yml</code> configured for local development.</li>
-</ul>
-</li>
 <li>
-<p><strong>CI</strong></p>
-<ul>
-<li>GitHub actions are to be setup in order to automate builds.</li>
-</ul>
+<p>GitHub actions are to be setup in order to automate builds and release pipelines to production. These pipelines are to ensure Docker containers, that have passed all required validations, are registered on GitHub and then deployed to a hosting provider that offers managed PostgreSQL solutions.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
+<p>Further detail on the required validations can be found in the <code>CONTRIBUTING.md</code> file at the root of the repository.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
+<p>The current hosting provider is Render.</p>
+</div>
 </li>
-<li>
-<p><strong>Deployment</strong></p>
-<ul>
-<li>The application is to be deployed to Fly.io</li>
-</ul>
-</li>
-<li>
-<p><strong>CD</strong></p>
-<ul>
-<li>GitHub actions are to be setup in order to automate deployments</li>
 </ul>
 </li>
 </ol>

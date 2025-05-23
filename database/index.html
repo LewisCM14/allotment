@@ -657,8 +657,8 @@
 <h2 id="database-requirements">Database Requirements</h2>
 <p>The aim for the database layer of the application is to enforce data consistency and integrity as granular as possible. Whilst offering scalability in terms of ease of integration of new features, as well as scalability in terms of user base growth.</p>
 <p>The solution must also allow for modularity in the applications architecture such that new database technologies can be dropped in/out with minimal disruption to the other layers. </p>
-<div class="admonition info">
-<p class="admonition-title">Info</p>
+<div class="admonition note">
+<p class="admonition-title">Please Note</p>
 <p>This is important as a goal of the project is to deliver the ability to learn new technologies by using them to replace components of the application following the original design laid out in this document as a blueprint.</p>
 </div>
 <p><u><strong>Requirements:</strong></u></p>
@@ -670,33 +670,33 @@
 <p><a class="glightbox" href="../erd.svg" data-type="image" data-width="100%" data-height="auto" data-desc-position="bottom"><img alt="Database Diagram" loading="lazy" src="../erd.svg" /></a></p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p><em>Unless stated otherwise below, all <code>VARCHAR</code> fields will require a constraint that ensures no special characters are used aside from hyphens and a single space. As well as all characters are stored in lowercase.</em></p>
+<p><em>Unless stated otherwise below, all <code>VARCHAR</code> fields have a constraint that ensures no special characters are used aside from a hyphen and a single space in between words. As well as all characters being stored in lowercase.</em></p>
 </div>
 <h3 id="disease-pests">Disease &amp; Pests</h3>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:11"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><input id="__tabbed_1_5" name="__tabbed_1" type="radio" /><input id="__tabbed_1_6" name="__tabbed_1" type="radio" /><input id="__tabbed_1_7" name="__tabbed_1" type="radio" /><input id="__tabbed_1_8" name="__tabbed_1" type="radio" /><input id="__tabbed_1_9" name="__tabbed_1" type="radio" /><input id="__tabbed_1_10" name="__tabbed_1" type="radio" /><input id="__tabbed_1_11" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Pest</label><label for="__tabbed_1_2">Disease</label><label for="__tabbed_1_3">Symptom</label><label for="__tabbed_1_4">Intervention</label><label for="__tabbed_1_5">Pest Treatment</label><label for="__tabbed_1_6">Pest Prevention</label><label for="__tabbed_1_7">Disease Treatment</label><label for="__tabbed_1_8">Disease Prevention</label><label for="__tabbed_1_9">Disease Symptom</label><label for="__tabbed_1_10">Family Pest</label><label for="__tabbed_1_11">Family Disease</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Holds the various types of pests.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+<li>The default <code>VARCHAR</code> constraint is not applied to the notes field.</li>
 </ul>
 </div>
 </div>
 <div class="tabbed-block">
 <p>Holds the various types of diseases.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+<li>The default <code>VARCHAR</code> constraint is not applied to the notes field.</li>
 </ul>
 </div>
 </div>
 <div class="tabbed-block">
 <p>Holds the various types of symptoms different diseases can exhibit.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
 <li>The symptom field will not require the default <code>VARCHAR</code> constraint applied.</li>
 </ul>
@@ -704,10 +704,10 @@
 </div>
 <div class="tabbed-block">
 <p>Holds methods of intervention used to treat or prevent the various disease and pests.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
+<li>The default <code>VARCHAR</code> constraint is not applied to the notes field.</li>
 </ul>
 </div>
 </div>
@@ -742,7 +742,7 @@
 <p>Holds the name and if applicable, the maximum years before crop rotation is required, for the different botanical groups, i.e. Nightshade, Brassicas etc.</p>
 </div>
 <div class="tabbed-block">
-<p>Holds the common name for varieties of fruit and vegetables, i.e. Tomatoes, Broccoli etc. Linking to the Botanical Group table via ID.</p>
+<p>Holds the common name for varieties of fruit and vegetables, i.e. Tomatoes, Broccoli, etc. Linking to the Botanical Group table via ID.</p>
 </div>
 <div class="tabbed-block">
 <p>A junction table that uses a composite primary key for linking what families <strong>should not</strong> be planted near each other. </p>
@@ -758,12 +758,12 @@
 <div class="tabbed-content">
 <div class="tabbed-block">
 <p>Holds the minimum amount of unique user information required to provide the applications functionality.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The user email &amp; password fields will not require the default <code>VARCHAR</code> constraint applied.</li>
-<li>The User First Name field will need the <code>VARCHAR</code> constraint applied with an additional rule, preventing the used of numbers also.</li>
-<li>When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables will be required for data consistency.</li>
+<li>The user email &amp; password fields do not require the default <code>VARCHAR</code> constraint.</li>
+<li>The User first name field requires the <code>VARCHAR</code> constraint applied with an additional rule, preventing the use of numbers also.</li>
+<li>When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables is required for data consistency.</li>
 </ul>
 </div>
 <details class="tip" open="open">
@@ -786,11 +786,11 @@
 </div>
 <div class="tabbed-block">
 <p>A junction table that uses a composite primary key for storing what grow guides users are currently following.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
 <li>There is currently no method of preventing users from following multiple guides for same specific variety of plant, it is down to users themselves to monitor this.</li>
-<li>A trigger will be required at the database layer that when users activate varieties the User Feed Day table is checked to ensure they have a nominated day for the guides applicable feed. If there is no nominated day a default is to be added that can then be updated later on within the Users Preferences page later on. This ensures data consistency at both the database and backend layers.</li>
+<li>A trigger is required at the database layer that when users activate varieties the User Feed Day table is checked to ensure they have a nominated day for the guides applicable feed. If there is no nominated day a default is added that can then be updated later within the Users Preferences page. This ensures data consistency at both the database and backend layers.</li>
 </ul>
 </div>
 </div>
@@ -804,13 +804,13 @@
 <div class="tabbed-set tabbed-alternate" data-tabs="4:11"><input checked="checked" id="__tabbed_4_1" name="__tabbed_4" type="radio" /><input id="__tabbed_4_2" name="__tabbed_4" type="radio" /><input id="__tabbed_4_3" name="__tabbed_4" type="radio" /><input id="__tabbed_4_4" name="__tabbed_4" type="radio" /><input id="__tabbed_4_5" name="__tabbed_4" type="radio" /><input id="__tabbed_4_6" name="__tabbed_4" type="radio" /><input id="__tabbed_4_7" name="__tabbed_4" type="radio" /><input id="__tabbed_4_8" name="__tabbed_4" type="radio" /><input id="__tabbed_4_9" name="__tabbed_4" type="radio" /><input id="__tabbed_4_10" name="__tabbed_4" type="radio" /><input id="__tabbed_4_11" name="__tabbed_4" type="radio" /><div class="tabbed-labels"><label for="__tabbed_4_1">Variety</label><label for="__tabbed_4_2">Lifecycle</label><label for="__tabbed_4_3">Planting Conditions</label><label for="__tabbed_4_4">Feed</label><label for="__tabbed_4_5">Variety Water Day</label><label for="__tabbed_4_6">Frequency</label><label for="__tabbed_4_7">Day</label><label for="__tabbed_4_8">Week</label><label for="__tabbed_4_9">Month</label><label for="__tabbed_4_10">Season</label><label for="__tabbed_4_11">Country Season</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<p>The predominate table end users interact with. Storing the grow guides. The application works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be linked to specific days as well as months &amp; seasons referred to.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<p>The predominate table end users interact with. Storing the grow guides. The application works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be linked to specific days, as well as months &amp; seasons referred to.</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The notes field will not require the default <code>VARCHAR</code> constraint applied.</li>
-<li>The first constraint this table will require, is that any time even a single column is altered the last updated column is set to the current datetime.</li>
-<li>The next constraint this table will require is that if either one of the following pairs exists the other must also:<ol>
+<li>The default <code>VARCHAR</code> constraint is not applied to the notes field.</li>
+<li>The first constraint this table requires, is that any time even a single column is altered the last updated column is set to the current datetime.</li>
+<li>The next constraint this table requires is that if either one of the following pairs exists the other must also:<ol>
 <li>Transplant Week Start &amp; Transplant Week End</li>
 <li>Prune Week Start &amp; Prune Week End</li>
 </ol>
@@ -819,16 +819,16 @@
 <li>Feed ID - Feed Week Start - Feed Frequency</li>
 </ol>
 </li>
-<li>The final constraint this table needs, is one that ensures the combination of Owner ID &amp; Variety Name is unique.</li>
+<li>The final constraint this table requires, is one that ensures the combination of Owner ID &amp; Variety Name is unique.</li>
 <li>When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.</li>
 </ul>
 </div>
 </div>
 <div class="tabbed-block">
-<p>A reference table for the possible lifecycle's available when creating grow guides i.e. Perennial, Annual etc.</p>
+<p>A reference table for the possible lifecycle's available when creating grow guides i.e. Perennial, Annual, etc.</p>
 </div>
 <div class="tabbed-block">
-<p>A reference table for the possible planting conditions available when creating grow guides i.e. Sunny, Sheltered etc.</p>
+<p>A reference table for the possible planting conditions available when creating grow guides i.e. Sunny, Sheltered, etc.</p>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
 <ul>
@@ -837,20 +837,20 @@
 </details>
 </div>
 <div class="tabbed-block">
-<p>A reference table for the possible plant feeds available when creating grow guides i.e. Bone Meal, Tomato Feed etc.</p>
+<p>A reference table for the possible plant feeds available when creating grow guides i.e. Bone Meal, Tomato Feed, etc.</p>
 </div>
 <div class="tabbed-block">
 <p>A junction table that uses a composite primary key for linking what day each variety detailed within a unique grow guide should be watered on.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>A trigger will be required at the database layer that ensures the amount of days nominated within this table, for a specific variety per week, is equal to that of the integer value stored in the column titled frequency days per year found in the Frequency table, that is linked within the Variety table via ID. To do this the amount of days in the Variety Water Day table will need to be multiplied by 52.</li>
+<li>A trigger is required at the database layer that ensures the amount of days nominated within this table, for a specific variety per week, is equal to that of the integer value stored in the column titled frequency days per year, found in the Frequency table, that is linked within the Variety table via ID. To do this the amount of days in the Variety Water Day table is multiplied by 52.</li>
 </ul>
 </div>
 <details class="tip" open="open">
 <summary>Future Improvement</summary>
 <ul>
-<li>This entire table will be dropped once live weather information is provided to users. In favour of using the Water Frequency columns on the Variety table to recommend to users when to water crops based on the weather in their Postal \ Zip code.</li>
+<li>This entire table will be de-prioritized once live weather information is provided to users. In favour of using the Water Frequency columns on the Variety table to recommend to users when to water crops based on the weather in their Postal \ Zip code.</li>
 </ul>
 </details>
 </div>
@@ -866,18 +866,18 @@
 </div>
 <div class="tabbed-block">
 <p>A table that holds the 52 weeks of the year and their corresponding start and end dates in the format of <code>01/01, 07/01</code> etc. The month each unique week starts in is also stored to allow for easy collection of month specific activities.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>A check constraint will be required  to ensure the start &amp; end date columns meet this format.</li>
-<li>There will be one week that has a potential 8 days within it in order to handle leap years.</li>
+<li>A check constraint is required to ensure the start &amp; end date columns meet the described format.</li>
+<li>There is one week that has a potential 8 days within it in order to handle leap years.</li>
 </ul>
 </div>
 </div>
 <div class="tabbed-block">
 <p>A reference table for the twelve possible months for use when creating grow guides. Also provides a clear entry point for collecting month specific information to provide to end users.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <p>The application predominantly works on the concept of users planning their allotment activities on a weekly basis, these weekly activities can then be distributed across the seven available days. Due to this the Month table links to the Week table via ID.</p>
 </div>
 </div>
@@ -886,10 +886,10 @@
 </div>
 <div class="tabbed-block">
 <p>A table that stores the start and end date for each season per unique country. These dates can then be referenced against the Week and User table for detailing seasonal activity to end users.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
+<div class="admonition info">
+<p class="admonition-title">Info</p>
 <ul>
-<li>The first check constraint this table will require is one to ensure the start &amp; end date columns meet the following format <code>01/01, 07/01</code>, as per the Week table.</li>
+<li>The first check constraint this table requires is one to ensure the start &amp; end date columns meet the following format <code>01/01, 07/01</code>, as per the Week table.</li>
 <li>The next check constraint required is one that ensures for each unique country added, all four corresponding seasons are added at the same time.<ul>
 <li>It is up to database admins to ensure the start &amp; end dates for these seasons are correct due to the large variation between countries, but infrequent requirement of data being added.</li>
 </ul>
@@ -901,7 +901,7 @@
 </div>
 <hr />
 <h2 id="database-adr">Database ADR</h2>
-<p>Decision record for the underlying database technology selected to support the project. When selecting the intended technology it is important to remember the proposed schema is heavily relational and the project has a requirement to run on Linux based systems with the desire to have the option to scale in support of 2.5 million unique users. The technology must also be free for commercial use.</p>
+<p>Decision record for the underlying database technology selected to support the project. When selecting the intended technology it is important to remember the proposed schema is heavily relational and the project has a requirement to run on Linux based systems with the desire to have the option to scale in support of 2.5 million unique active users. The technology must also be free for commercial use.</p>
 <div class="admonition success">
 <p class="admonition-title"><strong>Outcome</strong></p>
 <ul>
