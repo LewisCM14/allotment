@@ -29,10 +29,6 @@ class ErrorMonitoringService {
 			this.logEndpoint = "/api/v1/log-client-error";
 		}
 
-		if (!this.logEndpoint.startsWith("/")) {
-			this.logEndpoint = `/${this.logEndpoint}`;
-		}
-
 		if (this.isProduction) {
 			console.log(`ErrorMonitoringService: logging to ${this.logEndpoint}`);
 		}

@@ -138,13 +138,14 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     openssl rsa -pubout -in private.pem -out public.pem
     ```
 
-    Then format the keys for your `.env` file:
-    ```
-    echo "JWT_PRIVATE_KEY=$(cat private.pem | tr '\n' '\\n')"
-    echo "JWT_PUBLIC_KEY=$(cat public.pem | tr '\n' '\\n')"
+    Then format the keys for your `.env` file. These commands will print the required lines to your terminal:
+    ```bash
+    printf "JWT_PRIVATE_KEY=" && cat private.pem | tr '\n' '\\n' && printf "\n"
+    printf "JWT_PUBLIC_KEY=" && cat public.pem | tr '\n' '\\n' && printf "\n"
     ```
     
-    Copy the output from these commands and paste them into your `.env` file, replacing the existing JWT key variables.
+    Copy the complete output lines (e.g., `JWT_PRIVATE_KEY=...`) and paste them into your `.env` file, replacing the existing JWT key variables.
+    **Important**: Ensure no extra characters (like spaces or backslashes) are accidentally introduced at the beginning or end of the key values when pasting. The key value should start directly with `-----BEGIN...`.
     
     > You can now safely delete the temporary key files (`private.pem` and `public.pem`) as they're stored in your environment variables.
 

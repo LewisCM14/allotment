@@ -154,8 +154,11 @@ class Settings(BaseSettings):
     def set_jwt_keys(self) -> "Settings":
         """Process JWT keys after model initialization."""
         try:
-            private_key = self.JWT_PRIVATE_KEY.replace("\\n", "\n")
-            public_key = self.JWT_PUBLIC_KEY.replace("\\n", "\n")
+            jwt_private_key_str = str(self.JWT_PRIVATE_KEY).strip()
+            jwt_public_key_str = str(self.JWT_PUBLIC_KEY).strip()
+
+            private_key = jwt_private_key_str.replace("\\n", "\n")
+            public_key = jwt_public_key_str.replace("\\n", "\n")
 
             self.PRIVATE_KEY = private_key.encode("utf-8")
             self.PUBLIC_KEY = public_key.encode("utf-8")

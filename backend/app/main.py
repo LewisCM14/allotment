@@ -169,14 +169,11 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
 async def handle_log_client_error(
     error_log: ClientErrorLog, request: Request
 ) -> Dict[str, str]:
-    client_host = request.client.host if request.client else "unknown_client"
     logger.error(
-        f"Client-side error reported from {client_host}: {error_log.error}",
-        extra={
-            "client_error_info": error_log.model_dump(),
-            "client_ip": client_host,
-            "user_agent": request.headers.get("user-agent", "unknown_agent"),
-        },
+        "Client-side error reported",
+        operation="log_client_error",
+        client_error_message=error_log.error,
+        client_error_details=error_log.details,
     )
     return {"message": "Client error logged successfully"}
 

@@ -10,8 +10,10 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
+import { errorMonitor } from "@/services/errorMonitoring"; // Corrected path
 import { useAuth } from "@/store/auth/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -71,11 +73,16 @@ function LoginForm(_: React.ComponentProps<"div">) {
 
 			await login(result.tokens, result.firstName, userData);
 			navigate("/");
-		} catch (err) {
-			const errorMessage = AUTH_ERRORS.format(err);
-			setError(errorMessage);
-			console.error("Login failed:", err);
-			console.error("Formatted error:", errorMessage);
+		} catch (err: unknown) {
+			console.error("Login failed (raw error):", err);
+			if (err instanceof Error) {
+				setError(err.message);
+			} else {
+				setError("An unexpected error occurred. Please try again.");
+				errorMonitor.captureMessage("Login caught a non-Error throwable", {
+					errorDetails: String(err),
+				});
+			}
 		}
 	};
 
