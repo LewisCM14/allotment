@@ -10,17 +10,16 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { errorMonitor } from "@/services/errorMonitoring"; // Corrected path
+import { errorMonitor } from "@/services/errorMonitoring";
 import { useAuth } from "@/store/auth/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AxiosError } from "axios";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
-import { AUTH_ERRORS, loginUser } from "./UserService";
+import { loginUser } from "./UserService";
 
 function LoginForm(_: React.ComponentProps<"div">) {
 	const {

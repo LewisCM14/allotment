@@ -144,8 +144,9 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     printf "JWT_PUBLIC_KEY=" && cat public.pem | tr '\n' '\\n' && printf "\n"
     ```
     
-    Copy the complete output lines (e.g., `JWT_PRIVATE_KEY=...`) and paste them into your `.env` file, replacing the existing JWT key variables.
-    **Important**: Ensure no extra characters (like spaces or backslashes) are accidentally introduced at the beginning or end of the key values when pasting. The key value should start directly with `-----BEGIN...`.
+    Copy the complete output lines (e.g., `JWT_PRIVATE_KEY=...`) and paste them into your `.env` file for local development.
+
+    > When pasting the key into your environment variables file ensure no extra characters (like spaces, quotes, or backslashes) are accidentally introduced at the very beginning or end of the key's value. The key value itself should start directly with `-----BEGIN RSA PRIVATE KEY-----` (or `-----BEGIN PUBLIC KEY-----`) and end with `-----END RSA PRIVATE KEY-----` (or `-----END PUBLIC KEY-----`), with `\\n` representing the newlines.
     
     > You can now safely delete the temporary key files (`private.pem` and `public.pem`) as they're stored in your environment variables.
 
