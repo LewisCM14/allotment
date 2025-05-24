@@ -63,7 +63,6 @@ const api = axios.create({
 		"Content-Type": "application/json",
 		Accept: "application/json",
 		"X-Requested-With": "XMLHttpRequest", // Helps prevent CSRF
-		"X-Content-Type-Options": "nosniff", // Prevents MIME sniffing
 	},
 	withCredentials: true,
 });
