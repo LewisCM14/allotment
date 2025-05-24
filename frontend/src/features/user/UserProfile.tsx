@@ -9,7 +9,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/Card";
-import { requestVerificationEmail } from "@/features/user/UserService";
+import {
+	checkEmailVerificationStatus,
+	requestVerificationEmail,
+} from "@/features/user/UserService";
 import { useAuth } from "@/store/auth/AuthContext";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -32,22 +35,9 @@ export default function UserProfile() {
 
 		try {
 			setCheckingStatus(true);
-			const response = await fetch(
-				`${import.meta.env.VITE_API_URL}${import.meta.env.VITE_API_VERSION}/user/verification-status?user_email=${email}`,
-				{
-					method: "GET",
-					headers: {
-						Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-						"Content-Type": "application/json",
-					},
-				},
-			);
+			setError("");
 
-			if (!response.ok) {
-				throw new Error("Failed to fetch verification status");
-			}
-
-			const data = await response.json();
+			const data = await checkEmailVerificationStatus(email);
 
 			setIsEmailVerified(data.is_email_verified);
 			localStorage.setItem("is_email_verified", String(data.is_email_verified));
@@ -59,10 +49,18 @@ export default function UserProfile() {
 			}
 		} catch (err) {
 			console.error("Error checking verification status:", err);
+			const errorMessage =
+				err instanceof Error
+					? err.message
+					: "Could not refresh verification status.";
+			setError(errorMessage);
+			toast.error("Refresh failed", {
+				description: errorMessage,
+			});
 		} finally {
 			setCheckingStatus(false);
 		}
-	}, [user]);
+	}, [user?.user_email]);
 
 	useEffect(() => {
 		// Always set email if available
@@ -73,7 +71,7 @@ export default function UserProfile() {
 		if (!isEmailVerified) {
 			checkVerificationStatus();
 		}
-	}, [isEmailVerified, checkVerificationStatus, user]);
+	}, [isEmailVerified, checkVerificationStatus, user?.user_email]);
 
 	const handleRequestVerification = async () => {
 		const email = user?.user_email;

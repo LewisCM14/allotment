@@ -486,7 +486,7 @@ async def verify_email_token(
 
 
 @router.get(
-    "/users/{user_email}/email-verification-status",
+    "/users/verification-status",
     tags=["User"],
     response_model=VerificationStatusResponse,
     status_code=status.HTTP_200_OK,
@@ -494,7 +494,8 @@ async def verify_email_token(
     description="Returns the current email verification status for a user",
 )
 async def check_verification_status(
-    user_email: EmailStr, db: AsyncSession = Depends(get_db)
+    user_email: EmailStr = Query(...),
+    db: AsyncSession = Depends(get_db),  # Changed to Query parameter
 ) -> VerificationStatusResponse:
     """
     Check if a user's email is verified.

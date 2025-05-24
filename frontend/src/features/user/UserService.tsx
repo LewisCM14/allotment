@@ -31,6 +31,10 @@ export const AUTH_ERRORS = {
 	NETWORK_ERROR: "Network error. Please check your connection and try again.",
 	UNKNOWN_ERROR: "An unexpected error occurred. Please try again.",
 
+	// Email verification status specific error
+	FETCH_VERIFICATION_STATUS_FAILED:
+		"Failed to fetch verification status. Please try again.",
+
 	// Use the common error formatter
 	format: formatError,
 };
@@ -370,5 +374,27 @@ export const resetPassword = async (
 			}
 		}
 		return handleApiError(error, "Failed to reset password");
+	}
+};
+
+export const checkEmailVerificationStatus = async (
+	email: string,
+): Promise<{ is_email_verified: boolean }> => {
+	try {
+		const response = await api.get<{ is_email_verified: boolean }>(
+			"/users/verification-status",
+			{
+				params: { user_email: email },
+			},
+		);
+		return response.data;
+	} catch (error) {
+		console.error("Error checking verification status:", error);
+		if (axios.isAxiosError(error)) {
+			if (error.response?.status === 404) {
+				throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
+			}
+		}
+		throw new Error(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
 	}
 };

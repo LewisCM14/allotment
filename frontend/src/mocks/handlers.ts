@@ -254,6 +254,34 @@ const userHandlers = [
 	http.options(buildUrl("/users/password-resets/:token"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
+
+	http.get(buildUrl("/users/verification-status"), ({ request }) => {
+		const url = new URL(request.url);
+		const email = url.searchParams.get("user_email");
+
+		if (email === "verified@example.com") {
+			return HttpResponse.json({
+				is_email_verified: true,
+				user_id: "user-verified",
+			});
+		}
+		if (email === "notverified@example.com") {
+			return HttpResponse.json({
+				is_email_verified: false,
+				user_id: "user-not-verified",
+			});
+		}
+		if (email === "unknown@example.com") {
+			return HttpResponse.json({ detail: "User not found" }, { status: 404 });
+		}
+		return HttpResponse.json({
+			is_email_verified: false,
+			user_id: "user-default",
+		});
+	}),
+	http.options(buildUrl("/users/verification-status"), () => {
+		return new HttpResponse(null, { status: 204 });
+	}),
 ];
 
 export const handlers = [

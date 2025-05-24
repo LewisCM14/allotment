@@ -429,9 +429,8 @@ class TestEmailVerificationStatus:
         register_response = client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         assert register_response.json().get("is_email_verified") is False
-        # Update to use the correct path format with user_email in the path
         response = client.get(
-            f"{PREFIX}/users/{user_data['user_email']}/email-verification-status"
+            f"{PREFIX}/users/verification-status?user_email={user_data['user_email']}"
         )
 
         assert response.status_code == status.HTTP_200_OK
@@ -469,7 +468,7 @@ class TestEmailVerificationStatus:
         assert verify_response.status_code == status.HTTP_200_OK
 
         response = client.get(
-            f"{PREFIX}/users/{user_data['user_email']}/email-verification-status"
+            f"{PREFIX}/users/verification-status?user_email={user_data['user_email']}"
         )
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -481,7 +480,7 @@ class TestEmailVerificationStatus:
         """Test checking verification status for a non-existent user."""
         try:
             response = client.get(
-                f"{PREFIX}/users/nonexistent@example.com/email-verification-status"
+                f"{PREFIX}/users/verification-status?user_email=nonexistent@example.com"
             )
             # If no exception is raised, check the response
             assert response.status_code == status.HTTP_404_NOT_FOUND

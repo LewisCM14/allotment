@@ -5,6 +5,7 @@ import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
 import {
 	AUTH_ERRORS,
+	checkEmailVerificationStatus,
 	loginUser,
 	registerUser,
 	requestPasswordReset,
@@ -707,6 +708,82 @@ describe("UserService", () => {
 				AUTH_ERRORS.NETWORK_ERROR,
 			);
 			postSpy.mockRestore();
+		});
+	});
+
+	describe("checkEmailVerificationStatus", () => {
+		it("should return true if email is verified", async () => {
+			server.use(
+				http.get(buildUrl("/users/verification-status"), ({ request }) => {
+					const url = new URL(request.url);
+					if (url.searchParams.get("user_email") === "verified@example.com") {
+						return HttpResponse.json({ is_email_verified: true });
+					}
+					return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+				}),
+			);
+
+			const result = await checkEmailVerificationStatus("verified@example.com");
+			expect(result).toEqual({ is_email_verified: true });
+		});
+
+		it("should return false if email is not verified", async () => {
+			server.use(
+				http.get(buildUrl("/users/verification-status"), ({ request }) => {
+					const url = new URL(request.url);
+					if (
+						url.searchParams.get("user_email") === "notverified@example.com"
+					) {
+						return HttpResponse.json({ is_email_verified: false });
+					}
+					return HttpResponse.json({ detail: "Not found" }, { status: 404 });
+				}),
+			);
+
+			const result = await checkEmailVerificationStatus(
+				"notverified@example.com",
+			);
+			expect(result).toEqual({ is_email_verified: false });
+		});
+
+		it("should throw EMAIL_NOT_FOUND if user email is not found (404)", async () => {
+			server.use(
+				http.get(buildUrl("/users/verification-status"), () => {
+					return HttpResponse.json({ detail: "Not Found" }, { status: 404 });
+				}),
+			);
+
+			await expect(
+				checkEmailVerificationStatus("unknown@example.com"),
+			).rejects.toThrow(AUTH_ERRORS.EMAIL_NOT_FOUND);
+		});
+
+		it("should throw FETCH_VERIFICATION_STATUS_FAILED for other server errors", async () => {
+			server.use(
+				http.get(buildUrl("/users/verification-status"), () => {
+					return HttpResponse.json(
+						{ detail: "Internal Server Error" },
+						{ status: 500 },
+					);
+				}),
+			);
+
+			await expect(
+				checkEmailVerificationStatus("test@example.com"),
+			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+		}, 10000);
+
+		it("should throw FETCH_VERIFICATION_STATUS_FAILED for network errors", async () => {
+			const getSpy = vi.spyOn(apiModule.default, "get");
+			const networkError = new Error("Network Error");
+			Object.defineProperty(networkError, "isAxiosError", { value: true });
+			Object.defineProperty(networkError, "request", { value: {} });
+			getSpy.mockRejectedValueOnce(networkError);
+
+			await expect(
+				checkEmailVerificationStatus("test@example.com"),
+			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+			getSpy.mockRestore();
 		});
 	});
 });

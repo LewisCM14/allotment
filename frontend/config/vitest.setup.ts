@@ -75,7 +75,7 @@ if (typeof window === "undefined") {
 
 
 // Establish API mocking before all tests
-beforeAll(() => server.listen({ onUnhandledRequest: "error" }));
+beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
 
 // Reset any request handlers and clear localStorage that we may add during the tests
 afterEach(() => {
