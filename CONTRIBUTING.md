@@ -146,7 +146,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
     
     Copy the complete output lines (e.g., `JWT_PRIVATE_KEY=...`) and paste them into your `.env` file for local development.
 
-    > When pasting the key into your environment variables file ensure no extra characters (like spaces, quotes, or backslashes) are accidentally introduced at the very beginning or end of the key's value. The key value itself should start directly with `-----BEGIN RSA PRIVATE KEY-----` (or `-----BEGIN PUBLIC KEY-----`) and end with `-----END RSA PRIVATE KEY-----` (or `-----END PUBLIC KEY-----`), with `\\n` representing the newlines.
+    > When pasting the key into your environment variables file ensure no extra characters (like spaces, quotes, or backslashes) are accidentally introduced at the very beginning or end of the key's value. The key value itself should start directly with `-----BEGIN RSA PRIVATE KEY-----` (or `-----BEGIN PUBLIC KEY-----`) and end with `-----END RSA PRIVATE KEY-----` (or `-----END PUBLIC KEY-----`), with `\\n` representing the newlines. The application includes logic to correctly process these `\\n` sequences and also attempts to handle common misformattings where `\\n` might appear as a single backslash followed by a character.
     
     > You can now safely delete the temporary key files (`private.pem` and `public.pem`) as they're stored in your environment variables.
 

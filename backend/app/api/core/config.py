@@ -157,8 +157,21 @@ class Settings(BaseSettings):
             jwt_private_key_str = str(self.JWT_PRIVATE_KEY).strip()
             jwt_public_key_str = str(self.JWT_PUBLIC_KEY).strip()
 
-            private_key = jwt_private_key_str.replace("\\n", "\n")
-            public_key = jwt_public_key_str.replace("\\n", "\n")
+            def process_key_string(key_str: str) -> str:
+                # Define a unique placeholder that won't clash with Base64 characters or be affected by backslash replacement.
+                placeholder = "___PLACEHOLDER_FOR_ACTUAL_NEWLINE___"
+                # Step 1: Replace legitimate "\\n" sequences with the placeholder.
+                processed_str = key_str.replace("\\n", placeholder)
+                # Step 2: Replace any remaining single backslashes "\" with an actual newline "\n".
+                # This handles cases like "\M" becoming "\nM".
+                processed_str = processed_str.replace("\\", "\n")
+                # Step 3: Replace the placeholder back with actual newlines "\n".
+                processed_str = processed_str.replace(placeholder, "\n")
+
+                return processed_str
+
+            private_key = process_key_string(jwt_private_key_str)
+            public_key = process_key_string(jwt_public_key_str)
 
             self.PRIVATE_KEY = private_key.encode("utf-8")
             self.PUBLIC_KEY = public_key.encode("utf-8")
