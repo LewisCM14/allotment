@@ -2,9 +2,9 @@ import { Loader2 } from "lucide-react";
 import { StrictMode, Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./global.css";
-import { ThemeProvider } from "./store/theme/ThemeProvider.tsx";
+import { ThemeProvider } from "./store/theme/ThemeProvider";
 
-const App = lazy(() => import("./App.tsx"));
+const App = lazy(() => import("./App"));
 
 function Main() {
 	useEffect(() => {

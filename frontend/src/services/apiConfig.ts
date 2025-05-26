@@ -37,7 +37,7 @@ if (!configuredUrl) {
 // Automatically upgrade to HTTPS if the site is served over HTTPS but API URL is HTTP
 // This prevents mixed content errors.
 const getApiUrl = (): string => {
-	let url = configuredUrl; // Non-null assertion as we've provided a fallback
+	let url = configuredUrl;
 	if (
 		typeof window !== "undefined" &&
 		url.startsWith("http:") &&

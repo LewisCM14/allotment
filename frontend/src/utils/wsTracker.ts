@@ -19,3 +19,5 @@
 		for (const ws of __trackedSockets) ws.close();
 	});
 })();
+
+export {};

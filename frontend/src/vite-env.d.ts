@@ -37,9 +37,9 @@ declare module "*.avif*" {
 	export default src;
 }
 
-declare module "./utils/wsTracker.js" {
+declare module "./utils/wsTracker" {
 	const content: unknown;
 	export default content;
 }
 
-export {}; // Ensure this file is treated as a module
+export {};

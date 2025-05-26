@@ -17,5 +17,4 @@ interface IServiceWorkerGlobalScope {
 	dispatchEvent(event: Event): boolean;
 }
 
-declare const self: IServiceWorkerGlobalScope;
 declare const __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
