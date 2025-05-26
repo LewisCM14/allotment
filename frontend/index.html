@@ -7,7 +7,12 @@
   <title>Allotment</title>
   <link rel="icon" href="/favicon.ico" />
 
-  <link rel="preconnect" href="%VITE_API_URL%" crossorigin />
+  <script src="/env-config.js"></script>
+  <script>
+    if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
+      document.title = window.envConfig.VITE_APP_TITLE;
+    }
+  </script>
   <link rel="preload" as="style" href="/src/global.css" />
   <link rel="stylesheet" href="/src/global.css" />
 

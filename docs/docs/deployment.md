@@ -102,6 +102,9 @@ In order to ensure that the applications deployments are scalable and repeatable
         
         !!! info
             When running the application for local development, copies of these files are created and the _template_ suffix dropped in order to run the application. To prevent the leaking of secrets to the public these files have been added to the repositories global `.gitignore` file. More information on setting the project up locally can be found in the `CONTRIBUTING.md` file at the root of the repository.
+
+        !!! info
+            As the frontend is a Vite application that is built during the CD pipeline and the resulting container pushed to a registry, environment variables are injected at runtime. This is achieved by a script that generates a `env-config.js` file within the Docker container when it starts, making the variables available to the application.
     
     1. **Register The Hook in GitHub**
 
@@ -109,4 +112,4 @@ In order to ensure that the applications deployments are scalable and repeatable
 
 
 !!! note "Please Note"
-    The developer documentation, detailed in the `docs` folder of the repository, is a `MKDocs` application that is automatically deployed via a CI/CD action on GitHub to there static website hosting platform (GitHub Pages). The pipeline leverages `UV` to install the required dependencies and build the static website before pushing these files to a `gh-pages` branch that the site is configured to display from within the GitHub dashboard. 
+    The developer documentation, detailed in the `docs` folder of the repository, is a `MKDocs` application that is automatically deployed via a CI/CD action on GitHub to there static website hosting platform (GitHub Pages). The pipeline leverages `UV` to install the required dependencies and build the static website before pushing these files to a `gh-pages` branch that the site is configured to display from within the GitHub dashboard.

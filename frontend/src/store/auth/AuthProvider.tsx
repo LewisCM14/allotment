@@ -1,5 +1,6 @@
 import type { IUserData } from "@/features/user/UserService";
 import api from "@/services/api";
+import { API_VERSION } from "@/services/apiConfig";
 import { type ReactNode, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
@@ -140,7 +141,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 			}
 
 			const response = await api.post<ITokenPair>(
-				`${import.meta.env.VITE_API_VERSION}/user/auth/refresh`,
+				`${API_VERSION}/user/auth/refresh`,
 				{ refresh_token: refreshToken },
 			);
 

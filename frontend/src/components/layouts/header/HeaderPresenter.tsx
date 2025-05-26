@@ -19,7 +19,10 @@ export function HeaderPresenter({
 	closeMenu,
 	isAuthenticated,
 }: IHeaderPresenter) {
-	const appTitle = import.meta.env.VITE_APP_TITLE || "Allotment";
+	const appTitle =
+		window.envConfig?.VITE_APP_TITLE ||
+		import.meta.env.VITE_APP_TITLE ||
+		"Allotment";
 
 	return (
 		<header className="fixed top-0 left-0 w-full bg-card shadow-md z-50">

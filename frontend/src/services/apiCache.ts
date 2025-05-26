@@ -8,11 +8,6 @@ interface ICacheEntry<T> {
 	timestamp: number;
 }
 
-export interface CacheOptions {
-	duration?: number;
-	key?: string;
-}
-
 class ApiCache {
 	private cache = new Map<string, ICacheEntry<unknown>>();
 	private defaultDuration = 5 * 60 * 1000; // 5 minutes

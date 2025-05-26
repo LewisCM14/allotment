@@ -9,11 +9,11 @@ import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 
-interface PasswordResetRequest {
+interface IPasswordResetRequest {
 	user_email: string;
 }
 
-interface PasswordResetAction {
+interface IPasswordResetAction {
 	token: string;
 	new_password: string;
 }
@@ -180,7 +180,7 @@ const userHandlers = [
 	}),
 
 	http.post(buildUrl("/users/password-resets"), async ({ request }) => {
-		const body = (await request.json()) as PasswordResetRequest;
+		const body = (await request.json()) as IPasswordResetRequest;
 		const email = body.user_email;
 
 		if (email === "nonexistent@example.com") {
@@ -213,7 +213,7 @@ const userHandlers = [
 	http.post(
 		buildUrl("/users/password-resets/:token"),
 		async ({ params, request }) => {
-			const body = (await request.json()) as PasswordResetAction;
+			const body = (await request.json()) as IPasswordResetAction;
 			const token = params.token;
 
 			if (token === "invalid-token") {

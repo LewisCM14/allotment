@@ -20,7 +20,8 @@ export function FooterPresenter({
 	isAuthenticated,
 }: IFooterPresenter) {
 	const currentYear = new Date().getFullYear();
-	const contactEmail = import.meta.env.VITE_CONTACT_EMAIL;
+	const contactEmail =
+		window.envConfig?.VITE_CONTACT_EMAIL || import.meta.env.VITE_CONTACT_EMAIL;
 	const { theme, toggleTheme } = useTheme();
 
 	return (
