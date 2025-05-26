@@ -1,6 +1,21 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-pwa/client" />
 
+interface EnvConfig {
+	VITE_APP_TITLE?: string;
+	VITE_API_URL?: string;
+	VITE_API_VERSION?: string;
+	VITE_CONTACT_EMAIL?: string;
+	VITE_FORCE_AUTH?: string;
+	[key: string]: string | undefined; // Index signature for dynamic access
+}
+
+declare global {
+	interface Window {
+		envConfig?: EnvConfig;
+	}
+}
+
 declare module "*.png*" {
 	const src: string;
 	export default src;
@@ -27,14 +42,4 @@ declare module "./utils/wsTracker.js" {
 	export default content;
 }
 
-interface EnvConfig {
-	VITE_APP_TITLE: string;
-	VITE_API_URL: string;
-	VITE_API_VERSION: string;
-	VITE_CONTACT_EMAIL: string;
-	VITE_FORCE_AUTH: string; // Stored as string, parse to boolean in code
-}
-
-interface Window {
-	envConfig: EnvConfig;
-}
+export {}; // Ensure this file is treated as a module
