@@ -1,6 +1,6 @@
 ## Authentication Requirements
 
-The applications is to contain a minimal amount of personal data. But, whilst minimal, users: emails, postal codes and passwords still require strong protective measures in place and steps to prevent users grow guides from being tampered with must be taken.
+The application is to contain a minimal amount of personal data. But, whilst minimal, users: emails, postal codes and passwords still require strong protective measures in place and steps to prevent users grow guides from being tampered with must be taken.
 
 As with all other aspects of the application the solution must run on Linux based operating systems and be free for commercial use. Whilst integrating with the modular architecture and able to scale appropriately. It must also be able to run alongside FastAPI & PostgreSQL in a PWA that utilizes a modern front end framework for its user interface.
 

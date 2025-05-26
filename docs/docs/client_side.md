@@ -45,7 +45,7 @@ _High level interface functionality accompanied by low fidelity designs._
 === "User Registration Interface"
     - Ability for users to register an account within the application using an email address and password.
         - Users must also provide a first name and country code.
-        - Emails must be unique and singing up with an existing one triggers an error message for the user.
+        - Emails must be unique and signing up with an existing one triggers an error message for the user.
 
 === "User Login Interface"
     - Ability for users to sign into the application via email and password
@@ -180,8 +180,8 @@ There are several aspects to consider when deciding on the appropriate technolog
 
     _**UI Library:**_
 
-    - Tailwind CSS & ShadCN
-        - Tailwind provides utility first CSS, keeping styling modular and scalable. Its pairing with ShadCN allows for the provision of accessible, modern UI components.
+    - Tailwind CSS & Shadcn
+        - Tailwind provides utility first CSS, keeping styling modular and scalable. Its pairing with Shadcn allows for the provision of accessible, modern UI components.
 
     _**State Management:**_
 
@@ -216,7 +216,7 @@ There are several aspects to consider when deciding on the appropriate technolog
     _**UI Library:**_
 
     1. MUI (Material UI)
-        - MUI is a feature rich component library created by Google that provides a polished UI out the box. However, it is extremely heavyweight and less customable compared to Tailwind & ShadCN.
+        - MUI is a feature rich component library created by Google that provides a polished UI out the box. However, it is extremely heavyweight and less customable compared to Tailwind & Shadcn.
 
     _**State Management:**_
 

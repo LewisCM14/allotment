@@ -415,7 +415,7 @@ Decision record for the server side technologies selected to support the project
 
         - Python is well suited for Domain-Drive-Design (DDD) and can be written to provide strong typing support. The team are also familiar with the language already.
 
-        - FastAPI is a high performance asynchronous framework, that automatically generates API documentation and can handle many concurrent users and provides strong typing support via Pydantic. SQLAlchemy, Authlib and Redis can be used to handle PostgreSQL and 2 & multiple methods of user authentication as well as caching support. Celery can also be used to support background tasks. However it does not provide an out the box admin panel, this is not a strict requirement currently though.
+        - FastAPI is a high-performance web framework, that automatically generates API documentation and can handle many concurrent users and provides strong typing support via Pydantic. SQLAlchemy, Authlib and Redis can be used to handle PostgreSQL and 2 & multiple methods of user authentication as well as caching support. Celery can also be used to support background tasks. However it does not provide an out the box admin panel, this is not a strict requirement currently though.
 
 ??? abstract "**Alternatives**"
 

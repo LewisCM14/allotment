@@ -1,6 +1,6 @@
 ## Deployments Requirements
 
-The application is to priorities the ability to vertically scale over horizontally in order to retain the ability to efficiently deploy to private and/or dedicated severs if desired in the future. However, the initial method of deploying the system to production is to be one that is robust and repeatable, allowing for a seamless CI/CD experience to a cloud based environment that offers managed PostgreSQL. Affording the application the ability to scale in user base and application reach.
+The application is to prioritize the ability to vertically scale over horizontally in order to retain the ability to efficiently deploy to private and/or dedicated servers if desired in the future. However, the initial method of deploying the system to production is to be one that is robust and repeatable, allowing for a seamless CI/CD experience to a cloud based environment that offers managed PostgreSQL. Affording the application the ability to scale in user base and application reach.
 
 <u>**Requirements:**</u>
 
@@ -14,7 +14,7 @@ The application is to priorities the ability to vertically scale over horizontal
 
 ## Deployment ADR
 
-Whilst the application is to prioritize vertical scaling over horizontal, in order to retain the ability to efficiently deploy to private and/or dedicated severs if desired, the current intended deployment scenario is one that use a cloud based hosting provider that offers managed Postgres and the ability to to run Docker containers.
+Whilst the application is to prioritize vertical scaling over horizontal, in order to retain the ability to efficiently deploy to private and/or dedicated servers if desired, the current intended deployment scenario is one that use a cloud based hosting provider that offers managed Postgres and the ability to to run Docker containers.
 
 !!! success "Outcome"
 

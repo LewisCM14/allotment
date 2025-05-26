@@ -22,7 +22,7 @@ The application is designed to be implemented following the Walking Skeleton app
     - The code is to be placed under version control in GitHub with a repository that includes the backend and frontend folders as well as a `.github/workflows` folder to hold infrastructure as code files plus a docs folder to house supporting documentation.
         
         !!! note "Please Note"
-            i.e. this design document, which is a MKDocs application hosted via GitHub pages.
+            i.e. this design document, which is a MkDocs application hosted via GitHub pages.
 
 1. **Server Side Initial Setup**
     - A Minimal FastAPI application is to be implemented with a health check endpoint.
@@ -37,7 +37,7 @@ The application is designed to be implemented following the Walking Skeleton app
         - This is also an ideal time to setup structlog as a logging system.
 
 1. **Client Side Initial Setup**
-    - A React application is to be initialized with TypeScript & Vite using React Router to create an initial dashboard, allowing for the introduction of Tailwind CSS and ShadCN UI components.
+    - A React application is to be initialized with TypeScript & Vite using React Router to create an initial dashboard, allowing for the introduction of Tailwind CSS and Shadcn UI components.
         - Biome can be integrated at this point
 
 1. **User Registration & Login** + **User Logout Interface**
