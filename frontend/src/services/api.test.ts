@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { server } from "../mocks/server";
 import api, { handleApiError } from "./api";
+import { errorMonitor } from "./errorMonitoring";
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -73,6 +74,14 @@ describe("API Service", () => {
 });
 
 describe("API interceptors", () => {
+	beforeEach(() => {
+		localStorage.clear();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it("should add authorization header when token is present", async () => {
 		localStorage.setItem("access_token", "test-token");
 
@@ -98,6 +107,9 @@ describe("API interceptors", () => {
 			value: false,
 			configurable: true,
 		});
+		const captureExceptionSpy = vi
+			.spyOn(errorMonitor, "captureException")
+			.mockImplementation(() => {});
 
 		await expect(api.get("/any-endpoint")).rejects.toThrow(
 			"You are offline. Please check your connection.",

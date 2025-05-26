@@ -3,6 +3,8 @@
  * Captures and logs errors for debugging and monitoring
  */
 
+import { API_VERSION } from "./apiConfig";
+
 interface IErrorContext {
 	url?: string;
 	method?: string;
@@ -15,7 +17,7 @@ class ErrorMonitoringService {
 	private logEndpoint: string;
 
 	constructor() {
-		const apiVersionPath = import.meta.env.VITE_API_VERSION;
+		const apiVersionPath = API_VERSION;
 
 		if (typeof apiVersionPath === "string" && apiVersionPath.startsWith("/")) {
 			const cleanedApiVersionPath = apiVersionPath.endsWith("/")
