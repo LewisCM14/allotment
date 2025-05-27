@@ -290,7 +290,6 @@
 	}
 
 	@media (max-width: 768px) {
-
 		html,
 		body {
 			overscroll-behavior-y: auto;
@@ -306,7 +305,6 @@
 	}
 
 	@media (min-width: 769px) {
-
 		html,
 		body {
 			overflow: hidden;
