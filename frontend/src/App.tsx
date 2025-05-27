@@ -13,7 +13,7 @@ function App() {
 		<BrowserRouter>
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
-					<div className="flex flex-col h-screen overflow-hidden">
+					<div className="flex flex-col h-screen">
 						<Header />
 						<div className="flex-1 flex flex-col items-center md:justify-center overflow-y-auto pt-16 md:pt-24 pb-16 overscroll-y-auto">
 							<div className="w-full md:max-w-screen-xl px-4 sm:px-6 lg:px-8">
