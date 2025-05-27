@@ -25,7 +25,7 @@ export function HeaderPresenter({
 		"Allotment";
 
 	return (
-		<header className="fixed top-0 left-0 w-full bg-card shadow-md z-50 touch-none md:touch-auto">
+		<header className="fixed top-0 left-0 w-full bg-card shadow-md z-50">
 			<div className="mx-auto flex justify-between items-center p-4">
 				<h1 className="text-xl font-bold text-card-foreground flex items-center space-x-2">
 					<img
@@ -87,7 +87,7 @@ export function HeaderPresenter({
 			{isOpen && isAuthenticated && (
 				<nav
 					data-header-menu
-					className="md:hidden bg-card shadow-md p-4 flex flex-col space-y-2 touch-manipulation"
+					className="md:hidden bg-card shadow-md p-4 flex flex-col space-y-2"
 				>
 					{navLinks.map((link) => (
 						<a

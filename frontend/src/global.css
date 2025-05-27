@@ -282,14 +282,31 @@
 		overscroll-behavior-x: contain;
 	}
 
+	header[class*="fixed"],
+	footer[class*="fixed"] {
+		position: fixed !important;
+		transform: translate3d(0, 0, 0);
+		backface-visibility: hidden;
+	}
+
 	@media (max-width: 768px) {
+
 		html,
 		body {
 			overscroll-behavior-y: auto;
 		}
+
+		header[class*="fixed"] {
+			top: 0 !important;
+		}
+
+		footer[class*="fixed"] {
+			bottom: 0 !important;
+		}
 	}
 
 	@media (min-width: 769px) {
+
 		html,
 		body {
 			overflow: hidden;
