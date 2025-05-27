@@ -271,15 +271,29 @@
 		font-family: var(--font-heading);
 	}
 
-	html,
-	body {
+	html {
 		height: 100%;
-		overflow: hidden;
-		overscroll-behavior-y: contain;
 	}
 
 	body {
 		@apply bg-background text-foreground;
 		font-family: var(--font-body);
+		height: 100%;
+		overscroll-behavior-x: contain;
+	}
+
+	@media (max-width: 768px) {
+		html,
+		body {
+			overscroll-behavior-y: auto;
+		}
+	}
+
+	@media (min-width: 769px) {
+		html,
+		body {
+			overflow: hidden;
+			overscroll-behavior-y: contain;
+		}
 	}
 }

@@ -13,9 +13,9 @@ function App() {
 		<BrowserRouter>
 			<QueryClientProvider client={queryClient}>
 				<AuthProvider>
-					<div className="flex flex-col h-screen">
+					<div className="flex flex-col min-h-screen md:h-screen">
 						<Header />
-						<div className="flex-1 flex items-start md:items-center justify-center overflow-y-auto pt-16 md:pt-24 pb-16 overscroll-y-contain">
+						<div className="flex-1 flex items-start md:items-center justify-center pt-16 md:pt-24 pb-16 md:pb-16 md:overflow-y-auto md:overscroll-y-contain">
 							<AppRoutes />
 						</div>
 						<Footer />

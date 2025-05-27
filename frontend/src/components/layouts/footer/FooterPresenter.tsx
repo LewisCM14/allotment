@@ -29,7 +29,7 @@ export function FooterPresenter({
 			{isOpen && isAuthenticated && (
 				<nav
 					data-menu
-					className="fixed bottom-16 left-0 w-full bg-card shadow-md p-4 flex flex-col space-y-2 z-50"
+					className="fixed bottom-16 left-0 w-full bg-card shadow-md p-4 flex flex-col space-y-2 z-50 touch-manipulation"
 				>
 					{navLinks.map((link) => (
 						<a
@@ -44,7 +44,7 @@ export function FooterPresenter({
 				</nav>
 			)}
 
-			<footer className="fixed bottom-0 left-0 w-full bg-card shadow-md z-50">
+			<footer className="fixed bottom-0 left-0 w-full bg-card shadow-md z-50 touch-none md:touch-auto">
 				<div className="mx-auto p-4 flex items-center justify-between">
 					<div className="w-1/3 flex items-center gap-4">
 						{isAuthenticated && (
@@ -53,7 +53,7 @@ export function FooterPresenter({
 								aria-label="Toggle user menu"
 								onClick={onMenuClick}
 								data-menu-button
-								className="cursor-pointer hover:bg-accent/10"
+								className="cursor-pointer hover:bg-accent/10 touch-manipulation"
 							>
 								<User size={24} />
 							</Button>
