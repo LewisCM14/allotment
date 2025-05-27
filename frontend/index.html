@@ -7,12 +7,6 @@
   <title>Allotment</title>
   <link rel="icon" href="/favicon.ico" />
 
-  <script src="/env-config.js"></script>
-  <script>
-    if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
-      document.title = window.envConfig.VITE_APP_TITLE;
-    }
-  </script>
   <link rel="preload" as="style" href="/src/global.css" />
   <link rel="stylesheet" href="/src/global.css" />
 
@@ -32,6 +26,18 @@
 </head>
 
 <body>
+  <script>
+    (function () {
+      var script = document.createElement('script');
+      script.src = '/env-config.js';
+      script.onload = function () {
+        if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
+          document.title = window.envConfig.VITE_APP_TITLE;
+        }
+      };
+      document.head.appendChild(script);
+    })();
+  </script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx" defer></script>
 </body>
