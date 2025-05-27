@@ -285,8 +285,10 @@
 	header[class*="fixed"],
 	footer[class*="fixed"] {
 		position: fixed !important;
-		transform: translate3d(0, 0, 0);
-		backface-visibility: hidden;
+		transform: translate3d(0, 0, 0) !important;
+		backface-visibility: hidden !important;
+		will-change: transform;
+		z-index: 9999 !important;
 	}
 
 	@media (max-width: 768px) {
@@ -297,10 +299,31 @@
 
 		header[class*="fixed"] {
 			top: 0 !important;
+			position: fixed !important;
+			transform: translateZ(0) !important;
 		}
 
 		footer[class*="fixed"] {
 			bottom: 0 !important;
+			position: fixed !important;
+			transform: translateZ(0) !important;
+		}
+
+		@supports (-webkit-overflow-scrolling: touch) {
+			header[class*="fixed"],
+			footer[class*="fixed"] {
+				position: -webkit-sticky !important;
+				position: sticky !important;
+				transform: translate3d(0, 0, 0) !important;
+			}
+
+			header[class*="fixed"] {
+				top: 0 !important;
+			}
+
+			footer[class*="fixed"] {
+				bottom: 0 !important;
+			}
 		}
 	}
 
