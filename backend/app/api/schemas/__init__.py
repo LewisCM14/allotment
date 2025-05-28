@@ -1,3 +1,7 @@
+from app.api.schemas.family.family_schema import (
+    BotanicalGroupSchema,
+    FamilyBaseSchema,
+)
 from app.api.schemas.user.user_schema import (
     EmailRequest,
     MessageResponse,
@@ -22,4 +26,6 @@ __all__ = [
     "PasswordResetAction",
     "MessageResponse",
     "VerificationStatusResponse",
+    "BotanicalGroupSchema",
+    "FamilyBaseSchema",
 ]
