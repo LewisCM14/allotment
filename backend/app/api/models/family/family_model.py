@@ -6,17 +6,18 @@ Family Models
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING, List
 
 from sqlalchemy import (
     CheckConstraint,
     Column,
     ForeignKey,
-    Integer,
     String,
     Table,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
@@ -30,13 +31,13 @@ family_antagonists_assoc = Table(
     Base.metadata,
     Column(
         "family_id",
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("family.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "antagonist_family_id",
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("family.id", ondelete="CASCADE"),
         primary_key=True,
     ),
@@ -47,13 +48,13 @@ family_companions_assoc = Table(
     Base.metadata,
     Column(
         "family_id",
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("family.id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "companion_family_id",
-        Integer,
+        UUID(as_uuid=True),
         ForeignKey("family.id", ondelete="CASCADE"),
         primary_key=True,
     ),
@@ -65,12 +66,20 @@ class Family(Base):
 
     __tablename__ = "family"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        nullable=False,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
-    botanical_group_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("botanical_group.id", ondelete="RESTRICT"), nullable=False
+    botanical_group_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("botanical_group.id", ondelete="RESTRICT"),
+        nullable=False,
     )
 
     botanical_group: Mapped["BotanicalGroup"] = relationship(

@@ -5,9 +5,11 @@ Botanical Group Model
 
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING, List
 
 from sqlalchemy import CheckConstraint, Integer, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
@@ -21,7 +23,13 @@ class BotanicalGroup(Base):
 
     __tablename__ = "botanical_group"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        nullable=False,
+        index=True,
+    )
     name: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )

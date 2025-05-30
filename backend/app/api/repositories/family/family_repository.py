@@ -27,7 +27,7 @@ class FamilyRepository:
             .order_by(BotanicalGroup.name)
         )
         result = await self.db.execute(query)
-        return list(result.scalars().all())
+        return list(result.unique().scalars().all())
 
     async def get_family_by_id(self, family_id: int) -> Family | None:
         """
