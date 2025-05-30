@@ -3,6 +3,7 @@ Testing Configuration
 """
 
 import asyncio
+import uuid
 
 import pytest
 from fastapi.testclient import TestClient
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 
 from app.api.core.database import Base, get_db
+from app.api.models.family.botanical_group_model import BotanicalGroup
+from app.api.models.family.family_model import Family
 from app.main import app
 
 # Use a shared in-memory database with a named URI
@@ -112,3 +115,33 @@ def mock_email_service(mocker, email_service_path: str, success: bool = True):
     else:
         mock_send.side_effect = Exception("SMTP connection failed")
     return mock_send
+
+
+@pytest.fixture
+async def seed_family_data():
+    """Seed the test database with a botanical group and a family."""
+    async with TestingSessionLocal() as session:
+        # Create a botanical group
+        group_id = uuid.uuid4()
+        group = BotanicalGroup(
+            id=group_id,
+            name="testgroup",
+            recommended_rotation_years=2,
+        )
+        session.add(group)
+        await session.flush()
+        # Create a family
+        family_id = uuid.uuid4()
+        family = Family(
+            id=family_id,
+            name="testfamily",
+            botanical_group_id=group_id,
+        )
+        session.add(family)
+        await session.commit()
+        yield {
+            "botanical_group_id": group_id,
+            "family_id": family_id,
+            "group_name": "testgroup",
+            "family_name": "testfamily",
+        }
