@@ -17,7 +17,9 @@ const NotFound = React.lazy(() => import("../components/NotFound"));
 const SetNewPassword = React.lazy(
 	() => import("../features/user/SetNewPassword"),
 );
-// const HomePage = React.lazy(() => import("../features/home/HomePage"));
+const BotanicalGroupsPage = React.lazy(
+	() => import("../features/family/BotanicalGroupsPage"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -72,6 +74,14 @@ const AppRoutes = () => {
 						<ProtectedRoute>
 							{/* Replace this with your home component */}
 							<div>Home Page</div>
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/botanical_groups"
+					element={
+						<ProtectedRoute>
+							<BotanicalGroupsPage />
 						</ProtectedRoute>
 					}
 				/>

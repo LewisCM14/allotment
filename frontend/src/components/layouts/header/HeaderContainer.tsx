@@ -5,7 +5,7 @@ import { HeaderPresenter } from "./HeaderPresenter";
 
 const navLinks: INavLink[] = [
 	{ href: "/guides", label: "Grow Guides" },
-	{ href: "/families", label: "Families" },
+	{ href: "/botanical_groups", label: "Families" },
 	{ href: "/public-guides", label: "Public Guides" },
 ];
 
