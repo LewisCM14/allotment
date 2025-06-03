@@ -6,8 +6,8 @@ import { server } from "../../mocks/server";
 import * as apiModule from "../../services/api";
 import {
 	FAMILY_SERVICE_ERRORS,
-	getBotanicalGroups,
 	type IBotanicalGroup,
+	getBotanicalGroups,
 } from "./FamilyService";
 
 describe("FamilyService", () => {
