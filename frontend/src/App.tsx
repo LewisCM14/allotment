@@ -15,11 +15,13 @@ function App() {
 				<AuthProvider>
 					<div className="flex flex-col h-screen">
 						<Header />
-						<div className="flex-1 flex flex-col items-center md:justify-center overflow-y-auto pt-16 md:pt-24 pb-16 overscroll-y-auto">
-							<div className="w-full md:max-w-screen-xl px-4 sm:px-6 lg:px-8">
-								<AppRoutes />
+						<main className="flex-1 overflow-y-auto">
+							<div className="min-h-full flex flex-col items-center pt-20 pb-20 md:pt-24 md:pb-24">
+								<div className="w-full md:max-w-screen-xl px-4 sm:px-6 lg:px-8 flex flex-col md:justify-center md:min-h-[calc(100vh-10rem)] lg:min-h-[calc(100vh-12rem)]">
+									<AppRoutes />
+								</div>
 							</div>
-						</div>
+						</main>
 						<Footer />
 					</div>
 					<Toaster />

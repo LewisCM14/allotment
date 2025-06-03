@@ -3,6 +3,7 @@ import {
 	AccordionItem,
 	AccordionTrigger,
 } from "@/components/ui/Accordion";
+import { ArrowRight } from "lucide-react";
 import type * as React from "react";
 import type { IBotanicalGroup } from "./familyService";
 
@@ -17,27 +18,40 @@ export function BotanicalGroupAccordionItemPresenter({
 		<AccordionItem value={group.id}>
 			<AccordionTrigger>
 				<div className="flex flex-col items-start text-left">
-					<span className="text-lg font-semibold">{group.name}</span>
-					{group.recommended_rotation_years !== null && (
-						<span className="text-sm text-muted-foreground">
-							Recommended Rotation: {group.recommended_rotation_years} year(s)
-						</span>
-					)}
+					<span className="text-lg font-semibold capitalize">{group.name}</span>
+					<span className="text-sm text-muted-foreground">
+						Recommended Rotation:{" "}
+						{group.recommended_rotation_years !== null
+							? `${group.recommended_rotation_years} year(s)`
+							: "Perennial"}
+					</span>
 				</div>
 			</AccordionTrigger>
 			<AccordionContent>
 				{group.families.length > 0 ? (
-					<ul className="list-disc pl-6 space-y-1">
-						{group.families.map((family) => (
-							<li key={family.id} className="text-sm">
-								{family.name}
-								{/* Future: Link to family detail page, e.g., using React Router's Link */}
-								{/* <Link to={`/families/${family.id}`} className="text-primary hover:underline ml-2">Details</Link> */}
-							</li>
+					<div className="space-y-1">
+						{group.families.map((family, idx) => (
+							<button
+								key={family.id}
+								type="button"
+								className={[
+									"group flex items-center justify-between w-full text-base text-foreground capitalize px-4 py-3 cursor-pointer transition-all rounded-md",
+									"hover:bg-accent hover:shadow-sm hover:text-interactive-foreground",
+									"focus:bg-accent focus:outline-none focus:text-interactive-foreground",
+									idx !== group.families.length - 1
+										? "border-b border-border/20"
+										: "",
+								].join(" ")}
+								aria-label={`View details for ${family.name}`}
+							>
+								<span className="truncate">{family.name}</span>
+								<ArrowRight className="size-5 text-muted-foreground group-hover:text-interactive-foreground group-focus:text-interactive-foreground transition-colors ml-2 flex-shrink-0" />
+								{/* Future: Link to family detail page */}
+							</button>
 						))}
-					</ul>
+					</div>
 				) : (
-					<p className="text-sm text-muted-foreground">
+					<p className="text-sm text-muted-foreground pl-6">
 						No families listed for this group.
 					</p>
 				)}

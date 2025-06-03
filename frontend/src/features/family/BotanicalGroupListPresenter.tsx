@@ -44,7 +44,7 @@ export function BotanicalGroupListPresenter({
 	}
 
 	return (
-		<div className="container mx-auto py-8 px-4">
+		<div className="w-full">
 			<h1 className="text-3xl font-bold mb-6 text-center">Botanical Groups</h1>
 			<BotanicalGroupAccordionList groups={botanicalGroups} />
 		</div>
