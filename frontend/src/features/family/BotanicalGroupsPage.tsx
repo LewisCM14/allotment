@@ -2,8 +2,8 @@ import axios from "axios";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import { BotanicalGroupListPresenter } from "./BotanicalGroupListPresenter";
-import type { IBotanicalGroup } from "./familyService";
-import { getBotanicalGroups } from "./familyService";
+import type { IBotanicalGroup } from "./FamilyService";
+import { getBotanicalGroups } from "./FamilyService";
 
 export default function BotanicalGroupsPage() {
 	const [botanicalGroups, setBotanicalGroups] = useState<IBotanicalGroup[]>([]);

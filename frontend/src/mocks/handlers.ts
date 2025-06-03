@@ -284,8 +284,53 @@ const userHandlers = [
 	}),
 ];
 
-export const handlers = [
-	...authHandlers,
-	...userHandlers,
-	// ...other groups of handlers
+const familyHandlers = [
+	// Mock the botanical groups endpoint
+	http.get(buildUrl("/families/botanical-groups/"), ({ request }) => {
+		const url = new URL(request.url);
+
+		if (url.searchParams.get("abort") === "true") {
+			return HttpResponse.json(
+				{ detail: "Request cancelled" },
+				{ status: 499 },
+			);
+		}
+
+		// Successful response
+		return HttpResponse.json([
+			{
+				id: "group-1",
+				name: "Brassicaceae",
+				recommended_rotation_years: 3,
+				families: [
+					{ id: "family-1", name: "Cabbage" },
+					{ id: "family-2", name: "Broccoli" },
+				],
+			},
+			{
+				id: "group-2",
+				name: "Solanaceae",
+				recommended_rotation_years: 4,
+				families: [
+					{ id: "family-3", name: "Tomatoes" },
+					{ id: "family-4", name: "Potatoes" },
+				],
+			},
+			{
+				id: "group-3",
+				name: "Leguminosae",
+				recommended_rotation_years: null,
+				families: [
+					{ id: "family-5", name: "Peas" },
+					{ id: "family-6", name: "Beans" },
+				],
+			},
+		]);
+	}),
+
+	http.options(buildUrl("/families/botanical-groups/"), () => {
+		return new HttpResponse(null, { status: 204 });
+	}),
 ];
+
+export const handlers = [...authHandlers, ...userHandlers, ...familyHandlers];

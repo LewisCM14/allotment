@@ -1,7 +1,7 @@
 import { Accordion } from "@/components/ui/Accordion";
 import type * as React from "react";
 import { BotanicalGroupAccordionItemContainer } from "./BotanicalGroupAccordionItemContainer";
-import type { IBotanicalGroup } from "./familyService";
+import type { IBotanicalGroup } from "./FamilyService";
 interface BotanicalGroupAccordionListProps {
 	groups: IBotanicalGroup[];
 }

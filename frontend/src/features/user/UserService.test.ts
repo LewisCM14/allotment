@@ -483,6 +483,9 @@ describe("UserService", () => {
 						{ status: 422 },
 					);
 				}),
+				http.options(buildUrl("/users/email-verifications/:token"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(verifyEmail("any-token")).rejects.toThrow(
 				"Validation issue",

@@ -2,7 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
 import { BotanicalGroupAccordionList } from "./BotanicalGroupAccordionList";
-import type { IBotanicalGroup } from "./familyService";
+import type { IBotanicalGroup } from "./FamilyService";
 
 interface BotanicalGroupListPresenterProps {
 	botanicalGroups: IBotanicalGroup[];

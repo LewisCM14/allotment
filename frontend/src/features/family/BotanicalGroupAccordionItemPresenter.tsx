@@ -5,7 +5,7 @@ import {
 } from "@/components/ui/Accordion";
 import { ArrowRight } from "lucide-react";
 import type * as React from "react";
-import type { IBotanicalGroup } from "./familyService";
+import type { IBotanicalGroup } from "./FamilyService";
 
 interface BotanicalGroupAccordionItemPresenterProps {
 	group: IBotanicalGroup;

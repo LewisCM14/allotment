@@ -57,7 +57,7 @@ export async function getBotanicalGroups(
 				throw new Error(FAMILY_SERVICE_ERRORS.NETWORK_ERROR);
 			}
 		}
-		handleApiError(error, FAMILY_SERVICE_ERRORS.FETCH_BOTANICAL_GROUPS_FAILED);
+
 		throw new Error(FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
 	}
 }
