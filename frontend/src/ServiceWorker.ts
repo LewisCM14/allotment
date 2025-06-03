@@ -41,6 +41,23 @@ registerRoute(
 	}),
 );
 
+// Botanical groups data
+registerRoute(
+	({ url }) => url.pathname === `${API_VERSION}/families/botanical-groups/`,
+	new StaleWhileRevalidate({
+		cacheName: "botanical-groups-cache",
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 18,
+				maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200],
+			}),
+		],
+	}),
+);
+
 // Other API responses with network-first strategy
 registerRoute(
 	({ url }) => url.pathname.startsWith(API_VERSION),

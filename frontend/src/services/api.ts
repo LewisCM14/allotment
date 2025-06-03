@@ -266,6 +266,11 @@ api.interceptors.response.use(
 
 		const originalRequest = error.config;
 
+		// Do not log or retry if the request was canceled
+		if (axios.isCancel(error)) {
+			return Promise.reject(error);
+		}
+
 		// Handle retry logic for network errors and certain status codes
 		if (
 			error.code === "ECONNABORTED" ||
@@ -336,7 +341,8 @@ api.interceptors.response.use(
 		}
 
 		// Log other errors to monitoring
-		if (error.response?.status !== 401) {
+		if (error.response?.status !== 401 && !axios.isCancel(error)) {
+			// Added !axios.isCancel(error) here too for safety
 			errorMonitor.captureException(error, {
 				url: error.config?.url,
 				method: error.config?.method,
