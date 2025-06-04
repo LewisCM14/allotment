@@ -8,7 +8,7 @@ Family Unit of Work
 from __future__ import annotations
 
 from types import TracebackType
-from typing import List, Optional, Type
+from typing import Any, Dict, List, Optional, Type
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,11 +27,12 @@ class FamilyUnitOfWork:
     """Unit of Work for managing family-related transactions."""
 
     def __init__(self, db: AsyncSession):
+        """Initialize the unit of work with a database session."""
         self.db = db
         self.family_repo = FamilyRepository(db)
         self.request_id = request_id_ctx_var.get()
 
-    async def __aenter__(self) -> FamilyUnitOfWork:
+    async def __aenter__(self) -> "FamilyUnitOfWork":
         """Enter the runtime context for the Unit of Work."""
         logger.debug(
             "Starting family unit of work",
@@ -46,7 +47,7 @@ class FamilyUnitOfWork:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        """Exit the runtime context for the Unit of Work."""
+        """Exit the runtime context for the Unit of Work, handling commit/rollback."""
         log_context = {"request_id": self.request_id}
 
         if exc_type:
@@ -76,6 +77,14 @@ class FamilyUnitOfWork:
                 **log_context,
             )
 
+    async def get_family_info(self, family_id: Any) -> Optional[Dict[str, Any]]:
+        """
+        Fetch family information by family ID, including pests, diseases, interventions, and symptoms.
+        """
+        return await self.family_repo.get_family_info(family_id)
+
     async def get_all_botanical_groups_with_families(self) -> List[BotanicalGroup]:
-        """Retrieves all botanical groups with their families via the repository."""
+        """
+        Retrieves all botanical groups with their families via the repository.
+        """
         return await self.family_repo.get_all_botanical_groups_with_families()

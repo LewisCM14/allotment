@@ -1,6 +1,11 @@
 from app.api.schemas.family.family_schema import (
     BotanicalGroupSchema,
+    DiseaseSchema,
     FamilyBaseSchema,
+    FamilyInfoSchema,
+    InterventionSchema,
+    PestSchema,
+    SymptomSchema,
 )
 from app.api.schemas.user.user_schema import (
     EmailRequest,
@@ -28,4 +33,9 @@ __all__ = [
     "VerificationStatusResponse",
     "BotanicalGroupSchema",
     "FamilyBaseSchema",
+    "PestSchema",
+    "SymptomSchema",
+    "InterventionSchema",
+    "DiseaseSchema",
+    "FamilyInfoSchema",
 ]
