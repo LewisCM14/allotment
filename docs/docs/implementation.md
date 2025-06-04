@@ -68,12 +68,12 @@ The application is designed to be implemented following the Walking Skeleton app
 1. **Botanical Group List Interface**
     
     ??? info
-        Will require the implementation of the Botanical Group table.
+        Will require the implementation of the Family tables: Family, Botanical Group, Antagonist & companion.
 
 1. **Family Information Interface**
 
     ??? info
-        Will require the implementation of the Family and the Disease & Pest group of tables.
+        Will require the implementation of the Disease & Pest group of tables.
 
 1. **User Allotment Interface**
 
