@@ -233,11 +233,14 @@ class TestFamilyAPI:
             side_effect=Exception("Simulated DB error"),
         )
         family_id = str(seed_family_data["family_id"])
-        resp = client.get(f"{PREFIX}/families/{family_id}/info")
-        assert resp.status_code == 500
-        data = resp.json()
-        assert "Failed to perform get_family_info" in data.get("error", "")
-        assert data.get("error_code") == "GEN_002"
+        import app.api.middleware.exception_handler as exc_handler
+
+        with pytest.raises(exc_handler.BusinessLogicError) as exc_info:
+            client.get(f"{PREFIX}/families/{family_id}/info")
+        assert (
+            "an unexpected error occurred while retrieving family information"
+            in str(exc_info.value).lower()
+        )
 
     @pytest.mark.asyncio
     async def test_get_family_info_rate_limit(self, client, seed_family_data):

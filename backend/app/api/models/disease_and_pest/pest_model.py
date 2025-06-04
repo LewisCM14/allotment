@@ -27,7 +27,6 @@ class Pest(Base):
         index=True,
         nullable=False,
     )
-    # ...add relationships to interventions, families, etc. as needed...
 
     __table_args__ = (UniqueConstraint("name", name="uq_pest_name"),)
 
