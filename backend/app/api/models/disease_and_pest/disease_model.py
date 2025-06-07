@@ -2,13 +2,90 @@
 Models the Disease & Family Disease Tables
 """
 
-import uuid
+from __future__ import annotations
 
-from sqlalchemy import String, UniqueConstraint
+import uuid
+from typing import TYPE_CHECKING, List
+
+from sqlalchemy import Column, ForeignKey, String, Table, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
+
+if TYPE_CHECKING:
+    from app.api.models.disease_and_pest.intervention_model import Intervention
+    from app.api.models.disease_and_pest.symptom_model import Symptom
+    from app.api.models.family.family_model import Family
+
+# Association tables
+disease_treatment = Table(
+    "disease_treatment",
+    Base.metadata,
+    Column(
+        "disease_id",
+        UUID(as_uuid=True),
+        ForeignKey("disease.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "intervention_id",
+        UUID(as_uuid=True),
+        ForeignKey("intervention.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+disease_prevention = Table(
+    "disease_prevention",
+    Base.metadata,
+    Column(
+        "disease_id",
+        UUID(as_uuid=True),
+        ForeignKey("disease.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "intervention_id",
+        UUID(as_uuid=True),
+        ForeignKey("intervention.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+disease_symptom = Table(
+    "disease_symptom",
+    Base.metadata,
+    Column(
+        "disease_id",
+        UUID(as_uuid=True),
+        ForeignKey("disease.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "symptom_id",
+        UUID(as_uuid=True),
+        ForeignKey("symptom.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
+
+family_disease = Table(
+    "family_disease",
+    Base.metadata,
+    Column(
+        "family_id",
+        UUID(as_uuid=True),
+        ForeignKey("family.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "disease_id",
+        UUID(as_uuid=True),
+        ForeignKey("disease.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
 
 
 class Disease(Base):
@@ -23,4 +100,19 @@ class Disease(Base):
     name: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
+
+    # Relationships
+    treatments: Mapped[List["Intervention"]] = relationship(
+        "Intervention", secondary=disease_treatment, back_populates="treats_diseases"
+    )
+    preventions: Mapped[List["Intervention"]] = relationship(
+        "Intervention", secondary=disease_prevention, back_populates="prevents_diseases"
+    )
+    symptoms: Mapped[List["Symptom"]] = relationship(
+        "Symptom", secondary=disease_symptom, back_populates="diseases"
+    )
+    families: Mapped[List["Family"]] = relationship(
+        "Family", secondary=family_disease, back_populates="diseases"
+    )
+
     __table_args__ = (UniqueConstraint("name", name="uq_disease_name"),)

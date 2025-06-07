@@ -5,27 +5,37 @@ Family Repository
 """
 
 import uuid
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
-from app.api.models.disease_and_pest.association_tables import (
+from app.api.models.disease_and_pest.disease_model import (
+    Disease,
     disease_prevention,
     disease_symptom,
     disease_treatment,
     family_disease,
+)
+from app.api.models.disease_and_pest.intervention_model import Intervention
+from app.api.models.disease_and_pest.pest_model import (
+    Pest,
     family_pest,
     pest_prevention,
     pest_treatment,
 )
-from app.api.models.disease_and_pest.disease_model import Disease
-from app.api.models.disease_and_pest.intervention_model import Intervention
-from app.api.models.disease_and_pest.pest_model import Pest
 from app.api.models.disease_and_pest.symptom_model import Symptom
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
+from app.api.schemas.family.family_schema import (
+    BotanicalGroupInfoSchema,
+    DiseaseSchema,
+    FamilyInfoSchema,
+    InterventionSchema,
+    PestSchema,
+    SymptomSchema,
+)
 
 
 class FamilyRepository:
@@ -63,22 +73,31 @@ class FamilyRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_family_info(self, family_id: Any) -> Optional[Dict[str, Any]]:
+    async def get_family_info(self, family_id: Any) -> Optional[FamilyInfoSchema]:
         """
         Retrieves detailed information for a specific family, including pests, diseases,
-        their symptoms, treatments, preventions, and all interventions and symptoms.
+        their symptoms, treatments, preventions, and botanical group information.
         """
-        # Ensure family_id is a UUID object
         if isinstance(family_id, str):
             try:
                 family_id = uuid.UUID(family_id)
             except ValueError:
                 return None
 
-        # Fetch family
-        family = await self.db.get(Family, family_id)
+        # Fetch family with botanical group
+        query = (
+            select(Family)
+            .options(joinedload(Family.botanical_group))
+            .where(Family.id == family_id)
+        )
+        result = await self.db.execute(query)
+        family = result.scalar_one_or_none()
+
         if family is None:
             return None
+
+        pest_info_list: List[PestSchema] = []
+        disease_info_list: List[DiseaseSchema] = []
 
         # Fetch pests for this family
         pests = (
@@ -94,9 +113,8 @@ class FamilyRepository:
         )
 
         # For each pest, fetch treatments and preventions
-        pest_info = []
         for pest in pests:
-            treatments = (
+            treatments_result = (
                 (
                     await self.db.execute(
                         select(Intervention)
@@ -110,7 +128,7 @@ class FamilyRepository:
                 .scalars()
                 .all()
             )
-            preventions = (
+            preventions_result = (
                 (
                     await self.db.execute(
                         select(Intervention)
@@ -124,13 +142,21 @@ class FamilyRepository:
                 .scalars()
                 .all()
             )
-            pest_info.append(
-                {
-                    "id": pest.id,
-                    "name": pest.name,
-                    "treatments": treatments,
-                    "preventions": preventions,
-                }
+            pest_info_list.append(
+                PestSchema(
+                    id=pest.id,
+                    name=pest.name,
+                    treatments=[
+                        InterventionSchema.model_validate(t) for t in treatments_result
+                    ]
+                    if treatments_result
+                    else None,
+                    preventions=[
+                        InterventionSchema.model_validate(p) for p in preventions_result
+                    ]
+                    if preventions_result
+                    else None,
+                )
             )
 
         # Fetch diseases for this family
@@ -147,9 +173,8 @@ class FamilyRepository:
         )
 
         # For each disease, fetch symptoms, treatments, preventions
-        disease_info = []
         for disease in diseases:
-            symptoms = (
+            symptoms_result = (
                 (
                     await self.db.execute(
                         select(Symptom)
@@ -162,7 +187,7 @@ class FamilyRepository:
                 .scalars()
                 .all()
             )
-            treatments = (
+            treatments_result = (
                 (
                     await self.db.execute(
                         select(Intervention)
@@ -176,7 +201,7 @@ class FamilyRepository:
                 .scalars()
                 .all()
             )
-            preventions = (
+            preventions_result = (
                 (
                     await self.db.execute(
                         select(Intervention)
@@ -190,25 +215,34 @@ class FamilyRepository:
                 .scalars()
                 .all()
             )
-            disease_info.append(
-                {
-                    "id": disease.id,
-                    "name": disease.name,
-                    "symptoms": symptoms,
-                    "treatments": treatments,
-                    "preventions": preventions,
-                }
+            disease_info_list.append(
+                DiseaseSchema(
+                    id=disease.id,
+                    name=disease.name,
+                    symptoms=[SymptomSchema.model_validate(s) for s in symptoms_result]
+                    if symptoms_result
+                    else None,
+                    treatments=[
+                        InterventionSchema.model_validate(t) for t in treatments_result
+                    ]
+                    if treatments_result
+                    else None,
+                    preventions=[
+                        InterventionSchema.model_validate(p) for p in preventions_result
+                    ]
+                    if preventions_result
+                    else None,
+                )
             )
 
-        # Fetch all interventions and symptoms for reference
-        interventions = (await self.db.execute(select(Intervention))).scalars().all()
-        symptoms = (await self.db.execute(select(Symptom))).scalars().all()
-
-        return {
-            "id": family.id,
-            "name": family.name,
-            "pests": pest_info,
-            "diseases": disease_info,
-            "interventions": interventions,
-            "symptoms": symptoms,
-        }
+        return FamilyInfoSchema(
+            id=family.id,
+            name=family.name,
+            botanical_group=BotanicalGroupInfoSchema(
+                id=family.botanical_group.id,
+                name=family.botanical_group.name,
+                recommended_rotation_years=family.botanical_group.recommended_rotation_years,
+            ),
+            pests=pest_info_list if pest_info_list else None,
+            diseases=disease_info_list if disease_info_list else None,
+        )

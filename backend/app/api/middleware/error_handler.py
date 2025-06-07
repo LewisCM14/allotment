@@ -26,6 +26,8 @@ from authlib.jose.errors import (
     JoseError,
 )
 from fastapi import status
+from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -121,24 +123,27 @@ def translate_db_exceptions(
 async def safe_operation(
     operation_name: str,
     log_context: Dict[str, Any],
-    error_code: int = status.HTTP_400_BAD_REQUEST,
+    error_code: int = status.HTTP_500_INTERNAL_SERVER_ERROR,
 ) -> AsyncGenerator[None, None]:
     """Context manager for safely executing operations with standardized error handling"""
     try:
         yield
+    except (RequestValidationError, ValidationError):
+        raise
     except BaseApplicationError:
         raise
     except Exception as e:
         error_type = type(e).__name__
+        sanitized_error = sanitize_error_message(str(e))
         logger.error(
             f"Error during {operation_name}",
             error_type=error_type,
-            error_details=str(e),
+            error_details=sanitized_error,
             exc_info=True,
             **log_context,
         )
         raise BusinessLogicError(
-            message=f"Failed to perform {operation_name}: {str(e)}",
+            message=f"An unexpected error occurred while {operation_name.replace('_', ' ')}.",
             status_code=error_code,
         )
 

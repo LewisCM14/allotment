@@ -40,6 +40,16 @@ class TestCustomExceptions:
         assert error.error_code == GENERAL_BUSINESS_RULE_VIOLATION
         assert error.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_business_logic_error_with_500_status(self):
+        """Test BusinessLogicError with 500 status code."""
+        error = BusinessLogicError(
+            message="Internal server error",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        assert error.message == "Internal server error"
+        assert error.error_code == GENERAL_BUSINESS_RULE_VIOLATION
+        assert error.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
     def test_user_not_found_error(self):
         """Test UserNotFoundError attributes."""
         error = UserNotFoundError()

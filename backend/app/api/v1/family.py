@@ -3,8 +3,7 @@ Family Endpoints
 - Defines API endpoints for family and botanical group operations.
 """
 
-from typing import Any, List
-from uuid import UUID
+from typing import List
 
 import structlog
 from fastapi import APIRouter, Depends, Request, status
@@ -14,13 +13,10 @@ from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.exception_handler import (
-    BaseApplicationError,
-    BusinessLogicError,
     ResourceNotFoundError,
 )
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
-    sanitize_error_message,
 )
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.schemas.family.family_schema import BotanicalGroupSchema, FamilyInfoSchema
@@ -66,16 +62,10 @@ async def list_botanical_groups_with_families(
             **log_context,
         )
         return botanical_groups
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"Failed to list botanical groups: {type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
-        raise
     except Exception as exc:
+        from app.api.middleware.exception_handler import BusinessLogicError
+        from app.api.middleware.logging_middleware import sanitize_error_message
+
         sanitized_error = sanitize_error_message(str(exc))
         logger.error(
             "Unhandled exception during listing botanical groups",
@@ -100,9 +90,9 @@ async def get_family_info(
     request: Request,
     family_id: str,
     db: AsyncSession = Depends(get_db),
-) -> Any:
+) -> FamilyInfoSchema:
     """
-    Retrieve all information for a specific family, including pests, diseases, interventions, and symptoms.
+    Retrieve all information for a specific family, including pests, diseases, interventions, symptoms, and botanical group.
     """
     log_context = {
         "request_id": request_id_ctx_var.get(),
@@ -116,35 +106,20 @@ async def get_family_info(
             with log_timing(
                 "get_family_info_from_uow", request_id=log_context["request_id"]
             ):
-                result = await uow.get_family_info(family_id)
-        logger.info("Successfully retrieved family info", **log_context)
-        if result is None:
-            try:
-                family_uuid_for_response = UUID(family_id)
-            except ValueError:
-                raise ResourceNotFoundError(
-                    resource_id=family_id, resource_type="Family"
-                )
+                result = await uow.get_family_details(family_id)
 
-            return FamilyInfoSchema(
-                id=family_uuid_for_response,
-                name="",
-                pests=[],
-                diseases=[],
-                interventions=[],
-                symptoms=[],
-            )
+        if result is None:
+            logger.info("Family not found", **log_context)
+            raise ResourceNotFoundError(resource_id=family_id, resource_type="Family")
+
+        logger.info("Successfully retrieved family info", **log_context)
         return result
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"Failed to get family info: {type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
+    except ResourceNotFoundError:
         raise
     except Exception as exc:
+        from app.api.middleware.exception_handler import BusinessLogicError
+        from app.api.middleware.logging_middleware import sanitize_error_message
+
         sanitized_error = sanitize_error_message(str(exc))
         logger.error(
             "Unhandled exception during family info retrieval",

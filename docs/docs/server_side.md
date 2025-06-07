@@ -175,20 +175,9 @@ A Repository class is created for each aggregate or related table group.
         **Family Repository**
 
         - To encapsulate the: Family, Botanical Group, Family Antagonist & Family Companion tables.
-
-    === "Disease & Pests"
-        
-        **Pest Repository**
-
-        - To encapsulate the: Pest, Pest Treatment, Pest Prevention and Family Pest tables.
-        
-        **Disease Repository**
-
-        - To encapsulate the: Disease, Disease Treatment, Disease Prevention, Symptom, Disease Symptom and Family Disease tables.
-        
-        **Intervention Repository**
-
-        - To encapsulate the Intervention table.
+        - To encapsulate a Families relation to the:
+            - Pest, Pest Treatment, Pest Prevention and Family Pest tables.
+            - Disease, Disease Treatment, Disease Prevention, Symptom, Disease Symptom and Family Disease tables.
 
     === "Grow Guide"
 

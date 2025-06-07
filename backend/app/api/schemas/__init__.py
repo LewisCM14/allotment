@@ -1,4 +1,5 @@
 from app.api.schemas.family.family_schema import (
+    BotanicalGroupInfoSchema,
     BotanicalGroupSchema,
     DiseaseSchema,
     FamilyBaseSchema,
@@ -31,6 +32,7 @@ __all__ = [
     "PasswordResetAction",
     "MessageResponse",
     "VerificationStatusResponse",
+    "BotanicalGroupInfoSchema",
     "BotanicalGroupSchema",
     "FamilyBaseSchema",
     "PestSchema",

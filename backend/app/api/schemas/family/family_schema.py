@@ -4,7 +4,7 @@ Family Schemas
 - These schemas are used for request validation and response serialization.
 """
 
-from typing import List
+from typing import List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict, Field
@@ -37,8 +37,8 @@ class PestSchema(SecureBaseModel):
 
     id: UUID
     name: str
-    treatments: List["InterventionSchema"] = Field(default_factory=list)
-    preventions: List["InterventionSchema"] = Field(default_factory=list)
+    treatments: Optional[List["InterventionSchema"]] = Field(default=None)
+    preventions: Optional[List["InterventionSchema"]] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -66,22 +66,31 @@ class DiseaseSchema(SecureBaseModel):
 
     id: UUID
     name: str
-    symptoms: List[SymptomSchema] = Field(default_factory=list)
-    treatments: List[InterventionSchema] = Field(default_factory=list)
-    preventions: List[InterventionSchema] = Field(default_factory=list)
+    symptoms: Optional[List[SymptomSchema]] = Field(default=None)
+    treatments: Optional[List[InterventionSchema]] = Field(default=None)
+    preventions: Optional[List[InterventionSchema]] = Field(default=None)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BotanicalGroupInfoSchema(SecureBaseModel):
+    """Schema for BotanicalGroup information within family details."""
+
+    id: UUID
+    name: str
+    recommended_rotation_years: int | None = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class FamilyInfoSchema(SecureBaseModel):
-    """Schema for detailed family information, including pests, diseases, interventions, and symptoms."""
+    """Schema for detailed family information, including pests, diseases, and botanical group."""
 
     id: UUID
     name: str
-    pests: List[PestSchema] = Field(default_factory=list)
-    diseases: List[DiseaseSchema] = Field(default_factory=list)
-    interventions: List[InterventionSchema] = Field(default_factory=list)
-    symptoms: List[SymptomSchema] = Field(default_factory=list)
+    botanical_group: BotanicalGroupInfoSchema
+    pests: Optional[List[PestSchema]] = Field(default=None)
+    diseases: Optional[List[DiseaseSchema]] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -54,7 +54,7 @@ class TestRegisterUser:
             (
                 {
                     "user_email": "invalid-email",
-                    "user_password": "SecurePass123!",
+                    "user_password": "SecurePass123!@",
                     "user_first_name": "Test",
                     "user_country_code": "GB",
                 },
@@ -64,7 +64,7 @@ class TestRegisterUser:
             (
                 {
                     "user_email": "testuser@example.com",
-                    "user_password": "SecurePass123!",
+                    "user_password": "SecurePass123!@",
                     "user_first_name": "John Doe 3",
                     "user_country_code": "GB",
                 },
@@ -74,7 +74,7 @@ class TestRegisterUser:
             (
                 {
                     "user_email": "testuser@example.com",
-                    "user_password": "SecurePass123!",
+                    "user_password": "SecurePass123!@",
                     "user_first_name": "Test",
                     "user_country_code": "GBR",
                 },
@@ -94,24 +94,8 @@ class TestRegisterUser:
     )
     def test_user_registration_validation(self, client, test_input, expected_status):
         """Test that invalid users cannot be created."""
-        try:
-            response = client.post(f"{PREFIX}/users", json=test_input)
-            assert response.status_code == expected_status
-        except Exception as e:
-            assert (
-                "ValidationError" in str(type(e))
-                or "field:" in str(e)
-                or any(
-                    keyword in str(e).lower()
-                    for keyword in ["invalid", "must contain", "cannot"]
-                )
-            )
-            is_validation_error = "ValidationError" in str(type(e))
-            has_status_code = "422" in str(e) or "Unprocessable Entity" in str(e)
-
-            assert is_validation_error or has_status_code, (
-                f"Expected ValidationError or status code 422, got: {e}"
-            )
+        response = client.post(f"{PREFIX}/users", json=test_input)
+        assert response.status_code == expected_status
 
     @pytest.mark.asyncio
     async def test_duplicate_email_registration(self, client, mocker):
@@ -131,18 +115,13 @@ class TestRegisterUser:
         assert response.status_code == status.HTTP_201_CREATED
 
         # Attempt duplicate registration
-        try:
-            response = client.post(f"{PREFIX}/users", json=user_data)
-            # If no exception is raised, check the response
-            assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert response.json()["detail"][0]["msg"] == "Email already registered"
-            assert response.json()["detail"][0]["type"] == "email_already_registered"
-        except Exception as e:
-            # Check if exception is of expected type
-            from app.api.middleware.exception_handler import EmailAlreadyRegisteredError
-
-            assert isinstance(e, EmailAlreadyRegisteredError)
-            assert str(e) == "Email already registered"
+        response = client.post(f"{PREFIX}/users", json=user_data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.json()["detail"][0]["msg"] == "Email already registered"
+        assert response.json()["detail"][0]["type"] in [
+            "emailalreadyregisterederror",
+            "email_already_registered",
+        ]
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize("email_service_available", [True, False])
@@ -214,24 +193,19 @@ class TestUserLogin:
 
     def test_login_invalid_credentials(self, client):
         """Test login with incorrect password."""
-        try:
-            response = client.post(
-                f"{PREFIX}/auth/token",
-                json={
-                    "user_email": "testuser@example.com",
-                    "user_password": "WrongPassword!",
-                },
-            )
-            # If no exception is raised, check the response
-            assert response.status_code == 401
-            assert response.json()["detail"][0]["msg"] == "Invalid email or password"
-            assert response.json()["detail"][0]["type"] == "authentication_error"
-        except Exception as e:
-            # Check if exception is of expected type
-            from app.api.middleware.exception_handler import AuthenticationError
-
-            assert isinstance(e, AuthenticationError)
-            assert str(e) == "Invalid email or password"
+        response = client.post(
+            f"{PREFIX}/auth/token",
+            json={
+                "user_email": "testuser@example.com",
+                "user_password": "WrongPassword!",
+            },
+        )
+        assert response.status_code == 401
+        assert response.json()["detail"][0]["msg"] == "Invalid email or password"
+        assert response.json()["detail"][0]["type"] in [
+            "authenticationerror",
+            "authentication_error",
+        ]
 
 
 class TestTokenRefresh:
@@ -274,22 +248,16 @@ class TestTokenRefresh:
     def test_refresh_with_invalid_token(self, client):
         """Test refreshing with an invalid refresh token."""
         invalid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-
-        try:
-            response = client.post(
-                f"{PREFIX}/auth/token/refresh",
-                json={"refresh_token": invalid_token},
-            )
-            # If we get here, there was no exception and we can check the response
-            assert response.status_code == status.HTTP_401_UNAUTHORIZED
-            assert response.json()["detail"][0]["msg"] == "Invalid token signature"
-            assert response.json()["detail"][0]["type"] == "invalid_token"
-        except Exception as e:
-            # Verify that it's the correct exception type and message
-            from app.api.middleware.exception_handler import InvalidTokenError
-
-            assert isinstance(e, InvalidTokenError)
-            assert "Invalid token" in str(e)  # More flexible assertion
+        response = client.post(
+            f"{PREFIX}/auth/token/refresh",
+            json={"refresh_token": invalid_token},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Invalid token" in response.json()["detail"][0]["msg"]
+        assert response.json()["detail"][0]["type"] in [
+            "invalidtokenerror",
+            "invalid_token",
+        ]
 
     def test_refresh_with_access_token(self, client, mocker):
         """Test refreshing with an access token instead of refresh token."""
@@ -310,24 +278,19 @@ class TestTokenRefresh:
         tokens = register_response.json()
         access_token = tokens["access_token"]
 
-        try:
-            response = client.post(
-                f"{PREFIX}/auth/token/refresh",
-                json={"refresh_token": access_token},
-            )
-            # If we get here, there was no exception and we can check the response
-            assert response.status_code == status.HTTP_401_UNAUTHORIZED
-            assert (
-                response.json()["detail"][0]["msg"]
-                == "Invalid token type: expected refresh token"
-            )
-            assert response.json()["detail"][0]["type"] == "invalid_token"
-        except Exception as e:
-            # Verify that it's the correct exception type and message
-            from app.api.middleware.exception_handler import InvalidTokenError
-
-            assert isinstance(e, InvalidTokenError)
-            assert str(e) == "Invalid token type: expected refresh token"
+        response = client.post(
+            f"{PREFIX}/auth/token/refresh",
+            json={"refresh_token": access_token},
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert (
+            response.json()["detail"][0]["msg"]
+            == "Invalid token type: expected refresh token"
+        )
+        assert response.json()["detail"][0]["type"] in [
+            "invalidtokenerror",
+            "invalid_token",
+        ]
 
 
 class TestVerifyEmail:
@@ -478,20 +441,15 @@ class TestEmailVerificationStatus:
     @pytest.mark.asyncio
     async def test_check_verification_status_nonexistent_user(self, client):
         """Test checking verification status for a non-existent user."""
-        try:
-            response = client.get(
-                f"{PREFIX}/users/verification-status?user_email=nonexistent@example.com"
-            )
-            # If no exception is raised, check the response
-            assert response.status_code == status.HTTP_404_NOT_FOUND
-            assert response.json()["detail"][0]["msg"] == "User not found"
-            assert response.json()["detail"][0]["type"] == "user_not_found"
-        except Exception as e:
-            # Check if exception is of expected type
-            from app.api.middleware.exception_handler import UserNotFoundError
-
-            assert isinstance(e, UserNotFoundError)
-            assert str(e) == "User not found"
+        response = client.get(
+            f"{PREFIX}/users/verification-status?user_email=nonexistent@example.com"
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json()["detail"][0]["msg"] == "User not found"
+        assert response.json()["detail"][0]["type"] in [
+            "usernotfounderror",
+            "user_not_found",
+        ]
 
 
 class TestPasswordResetFlow:

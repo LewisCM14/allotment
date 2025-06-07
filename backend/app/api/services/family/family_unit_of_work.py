@@ -8,7 +8,7 @@ Family Unit of Work
 from __future__ import annotations
 
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, List, Optional, Type
 
 import structlog
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +19,7 @@ from app.api.middleware.logging_middleware import (
 )
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.repositories.family.family_repository import FamilyRepository
+from app.api.schemas.family.family_schema import FamilyInfoSchema
 
 logger = structlog.get_logger()
 
@@ -77,14 +78,20 @@ class FamilyUnitOfWork:
                 **log_context,
             )
 
-    async def get_family_info(self, family_id: Any) -> Optional[Dict[str, Any]]:
-        """
-        Fetch family information by family ID, including pests, diseases, interventions, and symptoms.
-        """
-        return await self.family_repo.get_family_info(family_id)
-
     async def get_all_botanical_groups_with_families(self) -> List[BotanicalGroup]:
         """
         Retrieves all botanical groups with their families via the repository.
         """
         return await self.family_repo.get_all_botanical_groups_with_families()
+
+    async def get_family_details(self, family_id: Any) -> Optional[FamilyInfoSchema]:
+        """
+        Retrieves detailed information for a specific family.
+
+        Args:
+            family_id: The ID of the family to retrieve.
+
+        Returns:
+            A Pydantic schema containing detailed family information, or None if not found.
+        """
+        return await self.family_repo.get_family_info(family_id)

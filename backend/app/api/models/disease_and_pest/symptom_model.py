@@ -2,13 +2,19 @@
 Models the Disease & Disease Symptom Tables
 """
 
+from __future__ import annotations
+
 import uuid
+from typing import TYPE_CHECKING, List
 
 from sqlalchemy import String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
+
+if TYPE_CHECKING:
+    from app.api.models.disease_and_pest.disease_model import Disease
 
 
 class Symptom(Base):
@@ -23,4 +29,10 @@ class Symptom(Base):
     name: Mapped[str] = mapped_column(
         String(255), unique=True, index=True, nullable=False
     )
+
+    # Relationships
+    diseases: Mapped[List["Disease"]] = relationship(
+        "Disease", secondary="disease_symptom", back_populates="symptoms"
+    )
+
     __table_args__ = (UniqueConstraint("name", name="uq_symptom_name"),)
