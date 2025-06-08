@@ -107,6 +107,10 @@ def upgrade() -> None:
         {"name": "blight"},
         {"name": "downy mildew"},
         {"name": "club root"},
+        {"name": "powdery mildew"},
+        {"name": "botrytis"},
+        {"name": "rust"},
+        {"name": "blossom end rot"},
     ]
     disease_ids = {disease["name"]: uuid.uuid4() for disease in diseases}
     op.bulk_insert(
@@ -121,6 +125,9 @@ def upgrade() -> None:
         {"name": "caterpillars"},
         {"name": "whiteflies"},
         {"name": "spider mites"},
+        {"name": "gooseberry sawfly"},
+        {"name": "leek moth"},
+        {"name": "root fly"},
     ]
     pest_ids = {pest["name"]: uuid.uuid4() for pest in pests}
     op.bulk_insert(
@@ -130,6 +137,16 @@ def upgrade() -> None:
 
     symptoms = [
         {"name": "yellowing leaves"},
+        {"name": "wilting foliage"},
+        {"name": "spotted leaves"},
+        {"name": "stunted growth"},
+        {"name": "rotting fruit"},
+        {"name": "distorted leaves"},
+        {"name": "white powdery coating"},
+        {"name": "leaf curling"},
+        {"name": "black spots"},
+        {"name": "mildew smell"},
+        {"name": "dry leaf edges"},
     ]
     symptom_ids = {symptom["name"]: uuid.uuid4() for symptom in symptoms}
     op.bulk_insert(
@@ -143,9 +160,21 @@ def upgrade() -> None:
         {"name": "crop rotation"},
         {"name": "companion planting"},
         {"name": "pesticide"},
-        {"name": "herbicide"},
         {"name": "manual removal"},
         {"name": "slug pellets"},
+        {"name": "insecticidal soap"},
+        {"name": "mulching"},
+        {"name": "cabbage collars"},
+        {"name": "cloches"},
+        {"name": "pruning"},
+        {"name": "fleece protection"},
+        {"name": "consistent watering"},
+        {"name": "support structures"},
+        {"name": "thinning leaves"},
+        {"name": "biological control"},
+        {"name": "neem oil"},
+        {"name": "sulfur fungicide"},
+        {"name": "bacillus thuringiensis"},
     ]
     intervention_ids = {intervention["name"]: uuid.uuid4() for intervention in interventions}
     op.bulk_insert(
@@ -154,130 +183,173 @@ def upgrade() -> None:
     )
 
     disease_prevention_data = [
-        {
-            "disease_id": disease_ids["club root"],
-            "intervention_id": intervention_ids["crop rotation"]
-        }
+        {"disease_id": disease_ids["club root"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["downy mildew"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["downy mildew"], "intervention_id": intervention_ids["mulching"]},
+        {"disease_id": disease_ids["downy mildew"], "intervention_id": intervention_ids["cloches"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["mulching"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["sulfur fungicide"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["support structures"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["blight"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["blight"], "intervention_id": intervention_ids["mulching"]},
+        {"disease_id": disease_ids["blight"], "intervention_id": intervention_ids["cloches"]},
+        {"disease_id": disease_ids["blight"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["rust"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["rust"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["blossom end rot"], "intervention_id": intervention_ids["consistent watering"]},
+        {"disease_id": disease_ids["blossom end rot"], "intervention_id": intervention_ids["mulching"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["pruning"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["thinning leaves"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["support structures"]},
     ]
     if disease_prevention_data:
         op.bulk_insert(disease_prevention_table, disease_prevention_data)
 
-        
     disease_treatment_data = [
-        {
-            "disease_id": disease_ids["downy mildew"],
-            "intervention_id": intervention_ids["fungicide"]
-        }
+        {"disease_id": disease_ids["blight"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["downy mildew"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["neem oil"]},
+        {"disease_id": disease_ids["powdery mildew"], "intervention_id": intervention_ids["sulfur fungicide"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["pruning"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["botrytis"], "intervention_id": intervention_ids["thinning leaves"]},
+        {"disease_id": disease_ids["rust"], "intervention_id": intervention_ids["fungicide"]},
+        {"disease_id": disease_ids["club root"], "intervention_id": intervention_ids["crop rotation"]},
+        {"disease_id": disease_ids["blossom end rot"], "intervention_id": intervention_ids["consistent watering"]},
+        {"disease_id": disease_ids["blossom end rot"], "intervention_id": intervention_ids["mulching"]},
     ]
     if disease_treatment_data:
         op.bulk_insert(disease_treatment_table, disease_treatment_data)
 
     disease_symptom_data = [
-        {
-            "disease_id": disease_ids["blight"],
-            "symptom_id": symptom_ids["yellowing leaves"]
-        }
+        {"disease_id": disease_ids["blight"], "symptom_id": symptom_ids["yellowing leaves"]},
+        {"disease_id": disease_ids["blight"], "symptom_id": symptom_ids["black spots"]},
+        {"disease_id": disease_ids["blight"], "symptom_id": symptom_ids["wilting foliage"]},
+        {"disease_id": disease_ids["downy mildew"], "symptom_id": symptom_ids["spotted leaves"]},
+        {"disease_id": disease_ids["downy mildew"], "symptom_id": symptom_ids["yellowing leaves"]},
+        {"disease_id": disease_ids["downy mildew"], "symptom_id": symptom_ids["wilting foliage"]},
+        {"disease_id": disease_ids["club root"], "symptom_id": symptom_ids["stunted growth"]},
+        {"disease_id": disease_ids["club root"], "symptom_id": symptom_ids["wilting foliage"]},
+        {"disease_id": disease_ids["powdery mildew"], "symptom_id": symptom_ids["white powdery coating"]},
+        {"disease_id": disease_ids["powdery mildew"], "symptom_id": symptom_ids["leaf curling"]},
+        {"disease_id": disease_ids["powdery mildew"], "symptom_id": symptom_ids["dry leaf edges"]},
+        {"disease_id": disease_ids["botrytis"], "symptom_id": symptom_ids["rotting fruit"]},
+        {"disease_id": disease_ids["botrytis"], "symptom_id": symptom_ids["black spots"]},
+        {"disease_id": disease_ids["botrytis"], "symptom_id": symptom_ids["wilting foliage"]},
+        {"disease_id": disease_ids["rust"], "symptom_id": symptom_ids["spotted leaves"]},
+        {"disease_id": disease_ids["rust"], "symptom_id": symptom_ids["yellowing leaves"]},
+        {"disease_id": disease_ids["rust"], "symptom_id": symptom_ids["distorted leaves"]},
+        {"disease_id": disease_ids["blossom end rot"], "symptom_id": symptom_ids["rotting fruit"]},
+        {"disease_id": disease_ids["blossom end rot"], "symptom_id": symptom_ids["black spots"]},
+        {"disease_id": disease_ids["blossom end rot"], "symptom_id": symptom_ids["dry leaf edges"]},
     ]
     if disease_symptom_data:
         op.bulk_insert(disease_symptom_table, disease_symptom_data)
 
     pest_prevention_data = [
-        {
-            "pest_id": pest_ids["birds"],
-            "intervention_id": intervention_ids["netting"]
-        }
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["slug pellets"]},
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["manual removal"]}, 
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["mulching"]},
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["cabbage collars"]},
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["birds"], "intervention_id": intervention_ids["netting"]},
+        {"pest_id": pest_ids["birds"], "intervention_id": intervention_ids["cabbage collars"]},
+        {"pest_id": pest_ids["root fly"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["root fly"], "intervention_id": intervention_ids["cabbage collars"]},
+        {"pest_id": pest_ids["leek moth"], "intervention_id": intervention_ids["fleece protection"]},
+        {"pest_id": pest_ids["leek moth"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["biological control"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["pesticide"]},
+        {"pest_id": pest_ids["whiteflies"], "intervention_id": intervention_ids["biological control"]},
+        {"pest_id": pest_ids["whiteflies"], "intervention_id": intervention_ids["pesticide"]},
+        {"pest_id": pest_ids["whiteflies"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["manual removal"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["netting"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["biological control"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["pesticide"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["fleece protection"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["bacillus thuringiensis"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["spider mites"], "intervention_id": intervention_ids["biological control"]},
+        {"pest_id": pest_ids["spider mites"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["gooseberry sawfly"], "intervention_id": intervention_ids["companion planting"]},
+        {"pest_id": pest_ids["gooseberry sawfly"], "intervention_id": intervention_ids["netting"]},
     ]
     if pest_prevention_data:
         op.bulk_insert(pest_prevention_table, pest_prevention_data)
 
     pest_treatment_data = [
-        {
-            "pest_id": pest_ids["slugs"],
-            "intervention_id": intervention_ids["slug pellets"]
-        }
+        {"pest_id": pest_ids["gooseberry sawfly"], "intervention_id": intervention_ids["insecticidal soap"]},
+        {"pest_id": pest_ids["leek moth"], "intervention_id": intervention_ids["fleece protection"]},
+        {"pest_id": pest_ids["root fly"], "intervention_id": intervention_ids["fleece protection"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["insecticidal soap"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["neem oil"]},
+        {"pest_id": pest_ids["spider mites"], "intervention_id": intervention_ids["pruning"]},
+        {"pest_id": pest_ids["spider mites"], "intervention_id": intervention_ids["neem oil"]},
+        {"pest_id": pest_ids["slugs"], "intervention_id": intervention_ids["manual removal"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["manual removal"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["bacillus thuringiensis"]},
+        {"pest_id": pest_ids["aphids"], "intervention_id": intervention_ids["pesticide"]},
+        {"pest_id": pest_ids["whiteflies"], "intervention_id": intervention_ids["pesticide"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["insecticidal soap"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["neem oil"]},
+        {"pest_id": pest_ids["caterpillars"], "intervention_id": intervention_ids["pesticide"]},
     ]
     if pest_treatment_data:
         op.bulk_insert(pest_treatment_table, pest_treatment_data)
 
     connection = op.get_bind()
-    family_table_for_query = sa.Table(
+    family_table = sa.Table(
         "family",
         sa.MetaData(),
         sa.Column("id", sa.UUID, primary_key=True),
-        sa.Column("name", sa.String, unique=True),
+        sa.Column("name", sa.String),
     )
-    
-    families_from_db_result = connection.execute(sa.select(family_table_for_query.c.id, family_table_for_query.c.name)).fetchall()
-    family_name_to_id = {name: id for id, name in families_from_db_result}
+    family_rows = connection.execute(sa.select(family_table.c.id, family_table.c.name)).fetchall()
+    family_name_to_id = {name: id for id, name in family_rows}
 
     family_disease_seed_data = []
-    if "tomato" in family_name_to_id and "blight" in disease_ids:
-        family_disease_seed_data.append({
-            "family_id": family_name_to_id["tomato"],
-            "disease_id": disease_ids["blight"]
-        })
-
-    if "potato" in family_name_to_id and "blight" in disease_ids:
-        family_disease_seed_data.append({
-            "family_id": family_name_to_id["potato"],
-            "disease_id": disease_ids["blight"]
-        })
-
-    if "broccoli" in family_name_to_id and "club root" in disease_ids:
-        family_disease_seed_data.append({
-            "family_id": family_name_to_id["broccoli"],
-            "disease_id": disease_ids["club root"]
-        })
-
-    if "cauliflower" in family_name_to_id and "club root" in disease_ids:
-        family_disease_seed_data.append({
-            "family_id": family_name_to_id["cauliflower"],
-            "disease_id": disease_ids["club root"]
-        })
-
-    if "lettuce" in family_name_to_id and "downy mildew" in disease_ids:
-        family_disease_seed_data.append({
-            "family_id": family_name_to_id["lettuce"],
-            "disease_id": disease_ids["downy mildew"]
-        })
-    
-    if family_disease_seed_data:
-        op.bulk_insert(family_disease_table, family_disease_seed_data)
-
+    disease_links = {
+        "blight": ["tomato", "potato", "sweet pepper"],
+        "downy mildew": ["lettuce", "onion", "celery", "cucumber"],
+        "club root": ["broccoli", "cauliflower", "brussels sprout", "radish", "carrot", "parsnip", "beetroot"],
+        "powdery mildew": ["pumpkin", "squash", "cucumber", "rosemary", "lettuce", "lavender", "sage", "thyme", "basil"],
+        "botrytis": ["strawberry", "raspberry", "blackberry", "blueberry"],
+        "rust": ["runner bean", "sugar snap pea", "spinach", "lettuce"],
+        "blossom end rot": ["tomato", "sweet pepper", "pumpkin", "squash"],
+    }
+    for disease, families in disease_links.items():
+        for fam in families:
+            if fam in family_name_to_id:
+                family_disease_seed_data.append({
+                    "family_id": family_name_to_id[fam],
+                    "disease_id": disease_ids[disease]
+                })
+    op.bulk_insert(family_disease_table, family_disease_seed_data)
 
     family_pest_seed_data = []
-
-    if "broccoli" in family_name_to_id and "caterpillars" in pest_ids:
-        family_pest_seed_data.append({
-            "family_id": family_name_to_id["broccoli"],
-            "pest_id": pest_ids["caterpillars"]
-        })
-    if "cauliflower" in family_name_to_id and "caterpillars" in pest_ids:
-        family_pest_seed_data.append({
-            "family_id": family_name_to_id["cauliflower"],
-            "pest_id": pest_ids["caterpillars"]
-        })
-
-    if "lettuce" in family_name_to_id and "slugs" in pest_ids:
-        family_pest_seed_data.append({
-            "family_id": family_name_to_id["lettuce"],
-            "pest_id": pest_ids["slugs"]
-        })
-
-    if "tomato" in family_name_to_id and "whiteflies" in pest_ids:
-        family_pest_seed_data.append({
-            "family_id": family_name_to_id["tomato"],
-            "pest_id": pest_ids["whiteflies"]
-        })
-
-    if "sweet pepper" in family_name_to_id and "aphids" in pest_ids:
-        family_pest_seed_data.append({
-            "family_id": family_name_to_id["sweet pepper"],
-            "pest_id": pest_ids["aphids"]
-        })
-
-    if family_pest_seed_data:
-        op.bulk_insert(family_pest_table, family_pest_seed_data)
+    pest_links = {
+        "caterpillars": ["broccoli", "cauliflower", "brussels sprout", "lettuce", "tomato"],
+        "slugs": ["spinach", "beetroot", "pumpkin", "parsley", "lettuce", "strawberry", "rosemary", "lavender", "sage", "thyme", "basil"],
+        "aphids": [ "gooseberry", "raspberry", "sweet pepper", "potato", "cucumber", "broccoli", "cauliflower", "brussels sprout"],
+        "whiteflies": ["tomato", "sweet pepper", "lettuce", "cucumber"],
+        "birds": ["garlic", "strawberry", "broccoli", "cauliflower", "brussels sprout", "peas", "beans", "lettuce", "cherry"],
+        "gooseberry sawfly": ["gooseberry", "redcurrant", "blackcurrant"],
+        "leek moth": ["leek", "onion", "shallot", "garlic"],
+        "root fly": ["carrot", "parsnip", "onion", "leek", "beetroot"],
+        "spider mites": ["tomato", "sweet pepper", "strawberry"],
+    }
+    for pest, families in pest_links.items():
+        for fam in families:
+            if fam in family_name_to_id:
+                family_pest_seed_data.append({
+                    "family_id": family_name_to_id[fam],
+                    "pest_id": pest_ids[pest]
+                })
+    op.bulk_insert(family_pest_table, family_pest_seed_data)
 
 
 def downgrade() -> None:
