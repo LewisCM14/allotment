@@ -163,6 +163,9 @@ def upgrade() -> None:
         {"name": "pumpkin", "botanical_group": "gourd"},
         {"name": "cucumber", "botanical_group": "gourd"},
         {"name": "rosemary", "botanical_group": "mediterranean herb"},
+        {"name": "lavender", "botanical_group": "mediterranean herb"},
+        {"name": "sage", "botanical_group": "mediterranean herb"},
+        {"name": "thyme", "botanical_group": "mediterranean herb"},
         {"name": "blueberry", "botanical_group": "ericaceae"},
         {"name": "cranberry", "botanical_group": "ericaceae"},
         {"name": "strawberry", "botanical_group": "rosaceae"},
@@ -172,6 +175,9 @@ def upgrade() -> None:
         {"name": "jostaberry", "botanical_group": "ribes"},
         {"name": "redcurrant", "botanical_group": "ribes"},
         {"name": "blackcurrant", "botanical_group": "ribes"},
+        {"name": "borage", "botanical_group": "daisy"},
+        {"name": "marigolds", "botanical_group": "daisy"},
+        {"name": "daffodils", "botanical_group": "asparagaceae"},
     ]
     family_ids = {f["name"]: uuid.uuid4() for f in families}
     op.bulk_insert(
@@ -248,6 +254,54 @@ def upgrade() -> None:
         {
             "family_id": family_ids["blueberry"],
             "companion_family_id": family_ids["cranberry"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["strawberry"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["squash"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["thyme"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["thyme"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["brussels sprout"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["strawberry"],
         },
     ]
     if family_companions_seed_data:
@@ -353,6 +407,34 @@ def upgrade() -> None:
         {
             "family_id": family_ids["blueberry"],
             "antagonist_family_id": family_ids["sweet pepper"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "antagonist_family_id": family_ids["onion"], 
+        },
+        {
+            "family_id": family_ids["sage"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
         },
     ]
     if family_antagonists_seed_data:
