@@ -426,7 +426,7 @@ def upgrade() -> None:
         },
         {
             "family_id": family_ids["borage"],
-            "antagonist_family_id": family_ids["onion"], 
+            "antagonist_family_id": family_ids["onion"],
         },
         {
             "family_id": family_ids["sage"],

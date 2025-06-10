@@ -5,6 +5,7 @@ Family Repository
 """
 
 import uuid
+from collections import defaultdict
 from typing import Any, List, Optional
 
 from sqlalchemy import select
@@ -32,6 +33,7 @@ from app.api.schemas.family.family_schema import (
     BotanicalGroupInfoSchema,
     DiseaseSchema,
     FamilyInfoSchema,
+    FamilyRelationSchema,
     InterventionSchema,
     PestSchema,
     SymptomSchema,
@@ -76,22 +78,31 @@ class FamilyRepository:
     async def get_family_info(self, family_id: Any) -> Optional[FamilyInfoSchema]:
         """
         Retrieves detailed information for a specific family, including pests, diseases,
-        their symptoms, treatments, preventions, and botanical group information.
+        their symptoms, treatments, preventions, botanical group information,
+        antagonist families, and companion families.
         """
         if isinstance(family_id, str):
             try:
-                family_id = uuid.UUID(family_id)
+                family_id_uuid = uuid.UUID(family_id)
             except ValueError:
                 return None
+        elif isinstance(family_id, uuid.UUID):
+            family_id_uuid = family_id
+        else:
+            return None  # Or raise an error for unsupported type
 
-        # Fetch family with botanical group
+        # Fetch family with botanical group, antagonises, and companion_to relationships
         query = (
             select(Family)
-            .options(joinedload(Family.botanical_group))
-            .where(Family.id == family_id)
+            .options(
+                joinedload(Family.botanical_group),
+                joinedload(Family.antagonises),
+                joinedload(Family.companion_to),
+            )
+            .where(Family.id == family_id_uuid)
         )
         result = await self.db.execute(query)
-        family = result.scalar_one_or_none()
+        family = result.unique().scalar_one_or_none()
 
         if family is None:
             return None
@@ -100,140 +111,129 @@ class FamilyRepository:
         disease_info_list: List[DiseaseSchema] = []
 
         # Fetch pests for this family
-        pests = (
-            (
-                await self.db.execute(
-                    select(Pest)
-                    .join(family_pest, Pest.id == family_pest.c.pest_id)
-                    .where(family_pest.c.family_id == family_id)
-                )
-            )
-            .scalars()
-            .all()
+        family_pests_result = await self.db.execute(
+            select(Pest)
+            .join(family_pest, Pest.id == family_pest.c.pest_id)
+            .where(family_pest.c.family_id == family_id_uuid)
         )
+        pests = list(family_pests_result.scalars().all())
 
-        # For each pest, fetch treatments and preventions
-        for pest in pests:
-            treatments_result = (
-                (
-                    await self.db.execute(
-                        select(Intervention)
-                        .join(
-                            pest_treatment,
-                            Intervention.id == pest_treatment.c.intervention_id,
-                        )
-                        .where(pest_treatment.c.pest_id == pest.id)
+        if pests:
+            pest_ids = [pest.id for pest in pests]
+
+            pest_treatments_map = defaultdict(list)
+            treatments_query = (
+                select(pest_treatment.c.pest_id, Intervention)
+                .join(Intervention, Intervention.id == pest_treatment.c.intervention_id)
+                .where(pest_treatment.c.pest_id.in_(pest_ids))
+            )
+            treatments_result = await self.db.execute(treatments_query)
+            for p_id, intervention_obj in treatments_result.all():
+                pest_treatments_map[p_id].append(intervention_obj)
+
+            pest_preventions_map = defaultdict(list)
+            preventions_query = (
+                select(pest_prevention.c.pest_id, Intervention)
+                .join(
+                    Intervention, Intervention.id == pest_prevention.c.intervention_id
+                )
+                .where(pest_prevention.c.pest_id.in_(pest_ids))
+            )
+            preventions_result = await self.db.execute(preventions_query)
+            for p_id, intervention_obj in preventions_result.all():
+                pest_preventions_map[p_id].append(intervention_obj)
+
+            for pest in pests:
+                treatments = pest_treatments_map.get(pest.id, [])
+                preventions = pest_preventions_map.get(pest.id, [])
+                pest_info_list.append(
+                    PestSchema(
+                        id=pest.id,
+                        name=pest.name,
+                        treatments=[
+                            InterventionSchema.model_validate(t) for t in treatments
+                        ]
+                        if treatments
+                        else None,
+                        preventions=[
+                            InterventionSchema.model_validate(p) for p in preventions
+                        ]
+                        if preventions
+                        else None,
                     )
                 )
-                .scalars()
-                .all()
-            )
-            preventions_result = (
-                (
-                    await self.db.execute(
-                        select(Intervention)
-                        .join(
-                            pest_prevention,
-                            Intervention.id == pest_prevention.c.intervention_id,
-                        )
-                        .where(pest_prevention.c.pest_id == pest.id)
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            pest_info_list.append(
-                PestSchema(
-                    id=pest.id,
-                    name=pest.name,
-                    treatments=[
-                        InterventionSchema.model_validate(t) for t in treatments_result
-                    ]
-                    if treatments_result
-                    else None,
-                    preventions=[
-                        InterventionSchema.model_validate(p) for p in preventions_result
-                    ]
-                    if preventions_result
-                    else None,
-                )
-            )
 
         # Fetch diseases for this family
-        diseases = (
-            (
-                await self.db.execute(
-                    select(Disease)
-                    .join(family_disease, Disease.id == family_disease.c.disease_id)
-                    .where(family_disease.c.family_id == family_id)
-                )
-            )
-            .scalars()
-            .all()
+        family_diseases_result = await self.db.execute(
+            select(Disease)
+            .join(family_disease, Disease.id == family_disease.c.disease_id)
+            .where(family_disease.c.family_id == family_id_uuid)
         )
+        diseases = list(family_diseases_result.scalars().all())
 
-        # For each disease, fetch symptoms, treatments, preventions
-        for disease in diseases:
-            symptoms_result = (
-                (
-                    await self.db.execute(
-                        select(Symptom)
-                        .join(
-                            disease_symptom, Symptom.id == disease_symptom.c.symptom_id
-                        )
-                        .where(disease_symptom.c.disease_id == disease.id)
+        if diseases:
+            disease_ids = [disease.id for disease in diseases]
+
+            disease_symptoms_map = defaultdict(list)
+            symptoms_query = (
+                select(disease_symptom.c.disease_id, Symptom)
+                .join(Symptom, Symptom.id == disease_symptom.c.symptom_id)
+                .where(disease_symptom.c.disease_id.in_(disease_ids))
+            )
+            symptoms_result = await self.db.execute(symptoms_query)
+            for d_id, symptom_obj in symptoms_result.all():
+                disease_symptoms_map[d_id].append(symptom_obj)
+
+            disease_treatments_map = defaultdict(list)
+            disease_treatments_query = (
+                select(disease_treatment.c.disease_id, Intervention)
+                .join(
+                    Intervention, Intervention.id == disease_treatment.c.intervention_id
+                )
+                .where(disease_treatment.c.disease_id.in_(disease_ids))
+            )
+            disease_treatments_result = await self.db.execute(disease_treatments_query)
+            for d_id, intervention_obj in disease_treatments_result.all():
+                disease_treatments_map[d_id].append(intervention_obj)
+
+            disease_preventions_map = defaultdict(list)
+            disease_preventions_query = (
+                select(disease_prevention.c.disease_id, Intervention)
+                .join(
+                    Intervention,
+                    Intervention.id == disease_prevention.c.intervention_id,
+                )
+                .where(disease_prevention.c.disease_id.in_(disease_ids))
+            )
+            disease_preventions_result = await self.db.execute(
+                disease_preventions_query
+            )
+            for d_id, intervention_obj in disease_preventions_result.all():
+                disease_preventions_map[d_id].append(intervention_obj)
+
+            for disease in diseases:
+                symptoms = disease_symptoms_map.get(disease.id, [])
+                treatments = disease_treatments_map.get(disease.id, [])
+                preventions = disease_preventions_map.get(disease.id, [])
+                disease_info_list.append(
+                    DiseaseSchema(
+                        id=disease.id,
+                        name=disease.name,
+                        symptoms=[SymptomSchema.model_validate(s) for s in symptoms]
+                        if symptoms
+                        else None,
+                        treatments=[
+                            InterventionSchema.model_validate(t) for t in treatments
+                        ]
+                        if treatments
+                        else None,
+                        preventions=[
+                            InterventionSchema.model_validate(p) for p in preventions
+                        ]
+                        if preventions
+                        else None,
                     )
                 )
-                .scalars()
-                .all()
-            )
-            treatments_result = (
-                (
-                    await self.db.execute(
-                        select(Intervention)
-                        .join(
-                            disease_treatment,
-                            Intervention.id == disease_treatment.c.intervention_id,
-                        )
-                        .where(disease_treatment.c.disease_id == disease.id)
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            preventions_result = (
-                (
-                    await self.db.execute(
-                        select(Intervention)
-                        .join(
-                            disease_prevention,
-                            Intervention.id == disease_prevention.c.intervention_id,
-                        )
-                        .where(disease_prevention.c.disease_id == disease.id)
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            disease_info_list.append(
-                DiseaseSchema(
-                    id=disease.id,
-                    name=disease.name,
-                    symptoms=[SymptomSchema.model_validate(s) for s in symptoms_result]
-                    if symptoms_result
-                    else None,
-                    treatments=[
-                        InterventionSchema.model_validate(t) for t in treatments_result
-                    ]
-                    if treatments_result
-                    else None,
-                    preventions=[
-                        InterventionSchema.model_validate(p) for p in preventions_result
-                    ]
-                    if preventions_result
-                    else None,
-                )
-            )
 
         return FamilyInfoSchema(
             id=family.id,
@@ -245,4 +245,18 @@ class FamilyRepository:
             ),
             pests=pest_info_list if pest_info_list else None,
             diseases=disease_info_list if disease_info_list else None,
+            antagonises=[
+                FamilyRelationSchema.model_validate(ant)
+                for ant in family.antagonises
+                if ant is not None
+            ]
+            if family.antagonises and any(a is not None for a in family.antagonises)
+            else None,
+            companion_to=[
+                FamilyRelationSchema.model_validate(comp)
+                for comp in family.companion_to
+                if comp is not None
+            ]
+            if family.companion_to and any(c is not None for c in family.companion_to)
+            else None,
         )

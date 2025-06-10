@@ -18,7 +18,6 @@ from app.api.middleware.exception_handler import (
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
-from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.schemas.family.family_schema import BotanicalGroupSchema, FamilyInfoSchema
 from app.api.services.family.family_unit_of_work import FamilyUnitOfWork
 
@@ -36,7 +35,7 @@ logger = structlog.get_logger()
 async def list_botanical_groups_with_families(
     request: Request,
     db: AsyncSession = Depends(get_db),
-) -> List[BotanicalGroup]:
+) -> List[BotanicalGroupSchema]:
     """
     Retrieve all botanical groups along with their families and recommended rotation years.
     This data is used to populate the dropdown menu in the families tab.
@@ -53,15 +52,13 @@ async def list_botanical_groups_with_families(
                 "get_all_botanical_groups_from_uow",
                 request_id=log_context["request_id"],
             ):
-                botanical_groups: List[
-                    BotanicalGroup
-                ] = await uow.get_all_botanical_groups_with_families()
+                botanical_groups = await uow.get_all_botanical_groups_with_families()
         logger.info(
             "Successfully retrieved botanical groups",
             count=len(botanical_groups),
             **log_context,
         )
-        return botanical_groups
+        return [BotanicalGroupSchema.model_validate(bg) for bg in botanical_groups]
     except Exception as exc:
         from app.api.middleware.exception_handler import BusinessLogicError
         from app.api.middleware.logging_middleware import sanitize_error_message

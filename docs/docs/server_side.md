@@ -253,7 +253,7 @@ Unit of Work classes are created to manage transactions and ensure multiple data
 
         **Family Page**
             
-        - For family information pages (coordinating Family, Disease, Pest, and Intervention repositories).
+        - For family information pages (coordinating Family, Disease, Pest, Intervention, Antagonist & Companion Family repositories).
 
 ---
 

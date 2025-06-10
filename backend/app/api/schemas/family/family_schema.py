@@ -21,6 +21,15 @@ class FamilyBaseSchema(SecureBaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class FamilyRelationSchema(SecureBaseModel):
+    """Schema for representing related families (antagonists/companions)."""
+
+    id: UUID
+    name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class BotanicalGroupSchema(SecureBaseModel):
     """Schema for BotanicalGroup, including its families."""
 
@@ -91,6 +100,8 @@ class FamilyInfoSchema(SecureBaseModel):
     botanical_group: BotanicalGroupInfoSchema
     pests: Optional[List[PestSchema]] = Field(default=None)
     diseases: Optional[List[DiseaseSchema]] = Field(default=None)
+    antagonises: Optional[List[FamilyRelationSchema]] = Field(default=None)
+    companion_to: Optional[List[FamilyRelationSchema]] = Field(default=None)
 
     model_config = ConfigDict(from_attributes=True)
 

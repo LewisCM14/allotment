@@ -10,7 +10,13 @@ from fastapi import status
 from app.api.core.config import settings
 from app.api.schemas.family.family_schema import (
     BotanicalGroupInfoSchema,
+    BotanicalGroupSchema,
+    DiseaseSchema,
     FamilyInfoSchema,
+    FamilyRelationSchema,
+    InterventionSchema,
+    PestSchema,
+    SymptomSchema,
 )
 
 PREFIX = settings.API_PREFIX
@@ -107,6 +113,34 @@ class TestListBotanicalGroups:
         finally:
             limiter.enabled = original_limiter_enabled
             limiter._storage.reset()
+
+    @pytest.mark.asyncio
+    async def test_invalid_uuid_format(self, client):
+        """Test that invalid UUID format returns a proper error response."""
+        invalid_id = "not-a-uuid"
+        response = client.get(f"{PREFIX}/families/{invalid_id}/info")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        error_detail = response.json()["detail"][0]
+        assert "not found" in error_detail["msg"].lower()
+        assert error_detail["type"] == "resourcenotfounderror"
+
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "order_by,expected_first",
+        [
+            ("name", "testgroup"),
+        ],
+    )
+    async def test_botanical_groups_ordering(
+        self, client, seed_family_data, order_by, expected_first
+    ):
+        """Test that botanical groups are returned in the correct order."""
+        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert len(data) > 0
+
+        assert data[0]["name"] == expected_first
 
 
 class TestGetFamilyInfo:
@@ -295,3 +329,153 @@ class TestGetFamilyInfo:
         finally:
             limiter.enabled = original_limiter_enabled
             limiter._storage.reset()
+
+    @pytest.mark.asyncio
+    async def test_family_full_relations(self, client, mocker):
+        """Test family info when all relationships are populated."""
+        family_id = str(uuid.uuid4())
+        botanical_group_id = str(uuid.uuid4())
+
+        mock_data = FamilyInfoSchema(
+            id=uuid.UUID(family_id),
+            name="Complete Family",
+            botanical_group=BotanicalGroupInfoSchema(
+                id=uuid.UUID(botanical_group_id),
+                name="Complete Group",
+                recommended_rotation_years=3,
+            ),
+            pests=[
+                PestSchema(
+                    id=uuid.UUID(str(uuid.uuid4())),
+                    name="test pest",
+                    treatments=[
+                        InterventionSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="treatment 1"
+                        ),
+                        InterventionSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="treatment 2"
+                        ),
+                    ],
+                    preventions=[
+                        InterventionSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="prevention 1"
+                        ),
+                    ],
+                )
+            ],
+            diseases=[
+                DiseaseSchema(
+                    id=uuid.UUID(str(uuid.uuid4())),
+                    name="test disease",
+                    symptoms=[
+                        SymptomSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="symptom 1"
+                        ),
+                    ],
+                    treatments=[
+                        InterventionSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="disease treatment"
+                        ),
+                    ],
+                    preventions=[
+                        InterventionSchema(
+                            id=uuid.UUID(str(uuid.uuid4())), name="disease prevention"
+                        ),
+                    ],
+                )
+            ],
+            antagonises=[
+                FamilyRelationSchema(
+                    id=uuid.UUID(str(uuid.uuid4())), name="antagonist 1"
+                ),
+            ],
+            companion_to=[
+                FamilyRelationSchema(
+                    id=uuid.UUID(str(uuid.uuid4())), name="companion 1"
+                ),
+                FamilyRelationSchema(
+                    id=uuid.UUID(str(uuid.uuid4())), name="companion 2"
+                ),
+            ],
+        )
+
+        mocker.patch(
+            "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_family_details",
+            return_value=mock_data,
+        )
+
+        response = client.get(f"{PREFIX}/families/{family_id}/info")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+
+        assert data["pests"][0]["treatments"][0]["name"] == "treatment 1"
+        assert data["diseases"][0]["symptoms"][0]["name"] == "symptom 1"
+        assert data["antagonises"][0]["name"] == "antagonist 1"
+        assert len(data["companion_to"]) == 2
+
+
+class TestFamilyAPIPerformance:
+    """Tests focused on API performance and optimization."""
+
+    @pytest.mark.asyncio
+    async def test_response_headers(self, client, seed_family_data):
+        """Test that responses include proper headers for caching."""
+        family_id = str(seed_family_data["family_id"])
+        response = client.get(f"{PREFIX}/families/{family_id}/info")
+        assert response.status_code == status.HTTP_200_OK
+
+        assert "X-Request-ID" in response.headers
+
+    @pytest.mark.asyncio
+    async def test_large_response_handling(self, client, mocker):
+        """Test handling of large response data."""
+        large_data = []
+        for i in range(50):
+            group_id = uuid.uuid4()
+            families = []
+            for j in range(10):
+                families.append({"id": str(uuid.uuid4()), "name": f"family_{i}_{j}"})
+
+            large_data.append(
+                {
+                    "id": str(group_id),
+                    "name": f"botanical_group_{i}",
+                    "recommended_rotation_years": i % 5,
+                    "families": families,
+                }
+            )
+
+        mocker.patch(
+            "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
+            return_value=[BotanicalGroupSchema.model_validate(g) for g in large_data],
+        )
+
+        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        assert response.status_code == status.HTTP_200_OK
+
+        data = response.json()
+        assert len(data) == 50
+        assert len(data[0]["families"]) == 10
+
+
+class TestInputValidation:
+    """Tests for input validation edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_malformed_uuid(self, client):
+        """Test handling of malformed UUIDs."""
+        malformed_uuid = "12345-not-uuid"
+        response = client.get(f"{PREFIX}/families/{malformed_uuid}/info")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_empty_botanical_groups_response(self, client, mocker):
+        """Test empty response handling."""
+        mocker.patch(
+            "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
+            return_value=[],
+        )
+
+        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == []
