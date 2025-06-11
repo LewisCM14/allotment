@@ -20,6 +20,9 @@ const SetNewPassword = React.lazy(
 const BotanicalGroupsPage = React.lazy(
 	() => import("../features/family/BotanicalGroupsPage"),
 );
+const FamilyInfoPage = React.lazy(
+	() => import("../features/family/FamilyInfoPage"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -82,6 +85,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<BotanicalGroupsPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/family/:familyId"
+					element={
+						<ProtectedRoute>
+							<FamilyInfoPage />
 						</ProtectedRoute>
 					}
 				/>

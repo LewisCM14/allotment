@@ -232,6 +232,9 @@ describe("UserService", () => {
 						{ status: 400 },
 					);
 				}),
+				http.options(buildUrl("/users/"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(
 				registerUser("bad@example.com", "password", "Bad", "XX"),
@@ -762,17 +765,8 @@ describe("UserService", () => {
 		});
 
 		it("should throw FETCH_VERIFICATION_STATUS_FAILED for other server errors", async () => {
-			server.use(
-				http.get(buildUrl("/users/verification-status"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal Server Error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
 			await expect(
-				checkEmailVerificationStatus("test@example.com"),
+				checkEmailVerificationStatus("server-error@example.com"),
 			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
 		}, 10000);
 

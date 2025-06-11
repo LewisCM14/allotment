@@ -13,25 +13,18 @@ export default function BotanicalGroupsPage() {
 	useEffect(() => {
 		const controller = new AbortController();
 		const signal = controller.signal;
-		let caughtError: Error | null = null;
 
 		async function fetchData() {
 			try {
 				setError(null);
-				caughtError = null;
 				const data = await getBotanicalGroups(signal);
-				setBotanicalGroups(data);
+				setBotanicalGroups(data ?? []);
 			} catch (err) {
-				if (axios.isCancel(err)) {
-					if (err instanceof Error) caughtError = err;
-				} else {
+				if (!axios.isCancel(err)) {
 					setError(err as Error);
-					caughtError = err as Error;
 				}
 			} finally {
-				if (!axios.isCancel(caughtError)) {
-					setIsLoading(false);
-				}
+				setIsLoading(false);
 			}
 		}
 		fetchData();

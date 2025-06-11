@@ -55,9 +55,10 @@ describe("FamilyService", () => {
 
 			const result = await getBotanicalGroups();
 
+			expect(result).not.toBeNull();
 			expect(result).toEqual(mockBotanicalGroups);
-			expect(result).toHaveLength(2);
-			expect(result[0].families).toHaveLength(2);
+			expect(result?.length).toBe(2);
+			expect(result?.[0].families).toHaveLength(2);
 		});
 
 		it("should handle empty botanical groups response", async () => {
@@ -219,8 +220,78 @@ describe("FamilyService", () => {
 
 			const result = await getBotanicalGroups();
 
-			expect(result[0].recommended_rotation_years).toBeNull();
-			expect(result[0].name).toBe("Mixed Group");
+			expect(result).not.toBeNull();
+			expect(result?.[0].recommended_rotation_years).toBeNull();
+			expect(result?.[0].name).toBe("Mixed Group");
+		});
+	});
+
+	describe("getFamilyDetails", () => {
+		beforeEach(() => {
+			server.use(
+				http.get(buildUrl("/families/:id"), ({ params }) => {
+					const { id } = params;
+					if (id === "family-1") {
+						return HttpResponse.json({
+							id: "family-1",
+							name: "Cabbage",
+							botanical_group: "Brassicaceae",
+							recommended_rotation_years: 3,
+							companion_families: ["Beans", "Peas"],
+							antagonist_families: ["Tomatoes"],
+							common_pests: ["Cabbage worm", "Aphids"],
+							common_diseases: ["Clubroot", "Black rot"],
+						});
+					}
+					if (id === "family-404") {
+						return HttpResponse.json(
+							{ detail: "Family not found" },
+							{ status: 404 },
+						);
+					}
+					if (id === "family-xyz") {
+						return HttpResponse.json({
+							id: "family-xyz",
+							name: "Unknown Family",
+						});
+					}
+					return HttpResponse.json(
+						{ detail: "Unhandled mock" },
+						{ status: 500 },
+					);
+				}),
+			);
+		});
+
+		it("should fetch family details successfully", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const result = await getFamilyDetails("family-1");
+			expect(result).toMatchObject({
+				id: "family-1",
+				name: "Cabbage",
+				botanical_group: "Brassicaceae",
+				recommended_rotation_years: 3,
+				companion_families: expect.arrayContaining(["Beans", "Peas"]),
+				antagonist_families: expect.arrayContaining(["Tomatoes"]),
+				common_pests: expect.any(Array),
+				common_diseases: expect.any(Array),
+			});
+		});
+
+		it("should handle not found error", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			await expect(getFamilyDetails("family-404")).rejects.toThrow(
+				"Family not found",
+			);
+		});
+
+		it("should handle unknown family gracefully", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const result = await getFamilyDetails("family-xyz");
+			expect(result).toMatchObject({
+				id: "family-xyz",
+				name: "Unknown Family",
+			});
 		});
 	});
 });

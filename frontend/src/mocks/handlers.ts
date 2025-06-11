@@ -274,6 +274,12 @@ const userHandlers = [
 		if (email === "unknown@example.com") {
 			return HttpResponse.json({ detail: "User not found" }, { status: 404 });
 		}
+		if (email === "server-error@example.com") {
+			return HttpResponse.json(
+				{ detail: "Internal Server Error" },
+				{ status: 500 },
+			);
+		}
 		return HttpResponse.json({
 			is_email_verified: false,
 			user_id: "user-default",
@@ -329,6 +335,52 @@ const familyHandlers = [
 	}),
 
 	http.options(buildUrl("/families/botanical-groups/"), () => {
+		return new HttpResponse(null, { status: 204 });
+	}),
+
+	// Add handler for family details route
+	http.get(buildUrl("/families/:familyId/"), ({ params }) => {
+		const { familyId } = params;
+		if (familyId === "family-1") {
+			return HttpResponse.json({
+				id: "family-1",
+				name: "Cabbage",
+				botanical_group: "Brassicaceae",
+				recommended_rotation_years: 3,
+				companion_families: ["Beans", "Peas"],
+				antagonist_families: ["Tomatoes"],
+				common_pests: [
+					{ name: "Cabbage White Butterfly", treatment: "Netting" },
+				],
+				common_diseases: [
+					{
+						name: "Clubroot",
+						symptoms: "Swollen roots",
+						treatment: "Lime soil",
+						prevention: "Crop rotation",
+					},
+				],
+			});
+		}
+		if (familyId === "family-404") {
+			return new HttpResponse(JSON.stringify({ detail: "Family not found" }), {
+				status: 404,
+				headers: { "Content-Type": "application/json" },
+			});
+		}
+		// Default mock for other families
+		return HttpResponse.json({
+			id: familyId,
+			name: "Unknown Family",
+			botanical_group: "Unknown",
+			recommended_rotation_years: null,
+			companion_families: [],
+			antagonist_families: [],
+			common_pests: [],
+			common_diseases: [],
+		});
+	}),
+	http.options(buildUrl("/families/:familyId/"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 ];
