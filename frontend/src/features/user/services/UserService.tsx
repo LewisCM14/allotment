@@ -1,7 +1,7 @@
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { formatError } from "@/utils/errorUtils";
 import axios from "axios";
-import api, { handleApiError } from "../../services/api";
+import api, { handleApiError } from "../../../services/api";
 
 export const AUTH_ERRORS = {
 	// Login specific errors

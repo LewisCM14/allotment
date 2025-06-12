@@ -12,7 +12,7 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/Popover";
-import type { RegisterFormData } from "@/features/user/RegisterSchema";
+import type { RegisterFormData } from "@/features/user/forms/RegisterSchema";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
 	memo,

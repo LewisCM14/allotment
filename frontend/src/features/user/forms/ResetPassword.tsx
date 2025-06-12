@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { type ResetFormData, resetSchema } from "./ResetPasswordSchema";
-import { AUTH_ERRORS, requestPasswordReset } from "./UserService";
+import { AUTH_ERRORS, requestPasswordReset } from "../services/UserService";
 
 export default function ResetPassword() {
 	const {

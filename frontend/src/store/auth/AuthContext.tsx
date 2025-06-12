@@ -1,4 +1,4 @@
-import type { IUserData } from "@/features/user/UserService";
+import type { IUserData } from "@/features/user/services/UserService";
 import { createContext, useContext } from "react";
 
 export interface ITokenPair {

@@ -2,8 +2,8 @@ import type {
 	ILoginRequest,
 	ILoginResponse,
 	IRegisterRequest,
-} from "@/features/user/UserService";
-import { AUTH_ERRORS } from "@/features/user/UserService";
+} from "@/features/user/services/UserService";
+import { AUTH_ERRORS } from "@/features/user/services/UserService";
 import type { IRefreshRequest } from "@/services/api";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import type { ITokenPair } from "@/store/auth/AuthContext";

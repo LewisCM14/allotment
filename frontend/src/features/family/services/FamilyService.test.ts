@@ -25,6 +25,14 @@ describe("FamilyService", () => {
 	});
 
 	describe("getBotanicalGroups", () => {
+		beforeEach(() => {
+			server.use(
+				http.options(buildUrl("/families/botanical-groups/"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
+			);
+		});
+
 		it("should fetch botanical groups successfully", async () => {
 			const mockBotanicalGroups: IBotanicalGroup[] = [
 				{
@@ -98,6 +106,9 @@ describe("FamilyService", () => {
 			server.use(
 				http.get(buildUrl("/families/botanical-groups/"), () => {
 					return HttpResponse.json({ detail: "Forbidden" }, { status: 403 });
+				}),
+				http.options(buildUrl("/families/botanical-groups/"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 
@@ -259,6 +270,9 @@ describe("FamilyService", () => {
 						{ detail: "Unhandled mock" },
 						{ status: 500 },
 					);
+				}),
+				http.options(buildUrl("/families/:id"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 		});
