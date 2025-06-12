@@ -456,10 +456,10 @@ describe("UserService", () => {
 			server.use(
 				http.post(
 					buildUrl("/users/email-verifications/:token"),
-					async ({ params }) => {
+					({ params }) => {
 						if (params.token === "expired-token") {
 							return HttpResponse.json(
-								{ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED },
+								{ detail: "Token has expired" },
 								{ status: 410 },
 							);
 						}

@@ -8,7 +8,7 @@ import uuid
 from collections import defaultdict
 from typing import Any, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
@@ -29,6 +29,12 @@ from app.api.models.disease_and_pest.pest_model import (
 from app.api.models.disease_and_pest.symptom_model import Symptom
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
+from app.api.models.family.family_model import (
+    family_antagonists_assoc as family_antagonist,
+)
+from app.api.models.family.family_model import (
+    family_companions_assoc as family_companion,
+)
 from app.api.schemas.family.family_schema import (
     BotanicalGroupInfoSchema,
     DiseaseSchema,
@@ -235,6 +241,46 @@ class FamilyRepository:
                     )
                 )
 
+        antagonist_query = (
+            select(Family)
+            .join(
+                family_antagonist,
+                (Family.id == family_antagonist.c.family_id)
+                | (Family.id == family_antagonist.c.antagonist_family_id),
+            )
+            .where(
+                or_(
+                    family_antagonist.c.family_id == family_id_uuid,
+                    family_antagonist.c.antagonist_family_id == family_id_uuid,
+                )
+            )
+        )
+        antagonist_result = await self.db.execute(antagonist_query)
+        antagonist_families = set()
+        for fam in antagonist_result.unique().scalars().all():
+            if fam.id != family_id_uuid:
+                antagonist_families.add(fam)
+
+        companion_query = (
+            select(Family)
+            .join(
+                family_companion,
+                (Family.id == family_companion.c.family_id)
+                | (Family.id == family_companion.c.companion_family_id),
+            )
+            .where(
+                or_(
+                    family_companion.c.family_id == family_id_uuid,
+                    family_companion.c.companion_family_id == family_id_uuid,
+                )
+            )
+        )
+        companion_result = await self.db.execute(companion_query)
+        companion_families = set()
+        for fam in companion_result.unique().scalars().all():
+            if fam.id != family_id_uuid:
+                companion_families.add(fam)
+
         return FamilyInfoSchema(
             id=family.id,
             name=family.name,
@@ -246,17 +292,13 @@ class FamilyRepository:
             pests=pest_info_list if pest_info_list else None,
             diseases=disease_info_list if disease_info_list else None,
             antagonises=[
-                FamilyRelationSchema.model_validate(ant)
-                for ant in family.antagonises
-                if ant is not None
+                FamilyRelationSchema.model_validate(ant) for ant in antagonist_families
             ]
-            if family.antagonises and any(a is not None for a in family.antagonises)
+            if antagonist_families
             else None,
             companion_to=[
-                FamilyRelationSchema.model_validate(comp)
-                for comp in family.companion_to
-                if comp is not None
+                FamilyRelationSchema.model_validate(comp) for comp in companion_families
             ]
-            if family.companion_to and any(c is not None for c in family.companion_to)
+            if companion_families
             else None,
         )

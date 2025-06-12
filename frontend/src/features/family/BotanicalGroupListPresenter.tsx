@@ -8,12 +8,14 @@ interface BotanicalGroupListPresenterProps {
 	botanicalGroups: IBotanicalGroup[];
 	isLoading: boolean;
 	error: Error | null;
+	isSuccess: boolean;
 }
 
 export function BotanicalGroupListPresenter({
 	botanicalGroups,
 	isLoading,
 	error,
+	isSuccess,
 }: BotanicalGroupListPresenterProps) {
 	if (isLoading) {
 		return (
@@ -35,7 +37,7 @@ export function BotanicalGroupListPresenter({
 		);
 	}
 
-	if (botanicalGroups.length === 0) {
+	if (isSuccess && botanicalGroups.length === 0) {
 		return (
 			<div className="text-center py-8">
 				<p className="text-muted-foreground">No botanical groups found.</p>

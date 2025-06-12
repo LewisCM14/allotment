@@ -7,9 +7,15 @@ interface Props {
 	data: IFamilyInfo | null;
 	isLoading: boolean;
 	error: Error | null;
+	isSuccess: boolean;
 }
 
-export function FamilyInfoPresenter({ data, isLoading, error }: Props) {
+export function FamilyInfoPresenter({
+	data,
+	isLoading,
+	error,
+	isSuccess,
+}: Props) {
 	if (isLoading) {
 		return (
 			<div className="flex justify-center items-center h-64">
@@ -28,6 +34,18 @@ export function FamilyInfoPresenter({ data, isLoading, error }: Props) {
 			</Alert>
 		);
 	}
+
+	if (isSuccess && !data) {
+		return (
+			<Alert className="my-4">
+				<AlertTitle>Not Found</AlertTitle>
+				<AlertDescription>
+					The requested family information could not be found.
+				</AlertDescription>
+			</Alert>
+		);
+	}
+
 	if (!data) return null;
 
 	return (

@@ -53,7 +53,7 @@ export interface IFamilyInfo {
 
 export async function getBotanicalGroups(
 	signal?: AbortSignal,
-): Promise<IBotanicalGroup[] | null> {
+): Promise<IBotanicalGroup[]> {
 	const cacheKey = "botanicalGroups";
 	const isTest = import.meta.env.MODE === "test";
 	if (!isTest) {
@@ -69,26 +69,22 @@ export async function getBotanicalGroups(
 			},
 		);
 
-		if (Array.isArray(response.data) && response.data.length === 0) {
-			return [];
+		if (Array.isArray(response.data)) {
+			const groups = response.data.map((group) => ({
+				...group,
+				recommended_rotation_years:
+					group.recommended_rotation_years === null
+						? null
+						: group.recommended_rotation_years,
+			}));
+
+			if (groups.length > 0 && !isTest) {
+				apiCache.set(cacheKey, groups);
+			}
+			return groups;
 		}
 
-		if (!Array.isArray(response.data)) {
-			return null;
-		}
-
-		const groups = response.data.map((group) => ({
-			...group,
-			recommended_rotation_years:
-				group.recommended_rotation_years === null
-					? null
-					: group.recommended_rotation_years,
-		}));
-
-		if (groups.length > 0 && !isTest) {
-			apiCache.set(cacheKey, groups);
-		}
-		return groups;
+		return [];
 	} catch (error) {
 		if (axios.isCancel(error)) {
 			throw error;
@@ -142,7 +138,7 @@ export async function getFamilyInfo(
 export async function getFamilyDetails(familyId: string, signal?: AbortSignal) {
 	try {
 		const response = await api.get(
-			`/families/${familyId}/`,
+			`/families/${familyId}`,
 			signal ? { signal } : undefined,
 		);
 

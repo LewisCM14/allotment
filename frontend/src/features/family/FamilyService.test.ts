@@ -199,7 +199,7 @@ describe("FamilyService", () => {
 			);
 
 			const result = await getBotanicalGroups();
-			expect(result).toBeNull();
+			expect(result).toEqual([]);
 		});
 
 		it("should handle botanical group with null rotation years", async () => {
@@ -212,17 +212,17 @@ describe("FamilyService", () => {
 				},
 			];
 
-			server.use(
-				http.get(buildUrl("/families/botanical-groups/"), () => {
-					return HttpResponse.json(mockBotanicalGroups);
-				}),
-			);
+			const getSpy = vi.spyOn(apiModule.default, "get");
+			getSpy.mockResolvedValueOnce({ data: mockBotanicalGroups });
 
 			const result = await getBotanicalGroups();
 
+			expect(getSpy).toHaveBeenCalled();
 			expect(result).not.toBeNull();
 			expect(result?.[0].recommended_rotation_years).toBeNull();
 			expect(result?.[0].name).toBe("Mixed Group");
+
+			getSpy.mockRestore();
 		});
 	});
 
