@@ -119,30 +119,34 @@ export function FamilyInfoPresenter({
 					<ul className="space-y-3">
 						{data.diseases.map((disease) => (
 							<li key={disease.id} className="border rounded p-3">
-								<div className="font-medium capitalize">{disease.name}</div>
-								<div>
-									<strong>Symptoms:</strong>{" "}
-									{disease.symptoms && disease.symptoms.length > 0 ? (
-										disease.symptoms.map((s) => s.name).join(", ")
-									) : (
-										<span className="text-muted-foreground">None listed</span>
-									)}
-								</div>
-								<div>
-									<strong>Treatments:</strong>{" "}
-									{disease.treatments && disease.treatments.length > 0 ? (
-										disease.treatments.map((t) => t.name).join(", ")
-									) : (
-										<span className="text-muted-foreground">None listed</span>
-									)}
-								</div>
-								<div>
-									<strong>Preventions:</strong>{" "}
-									{disease.preventions && disease.preventions.length > 0 ? (
-										disease.preventions.map((p) => p.name).join(", ")
-									) : (
-										<span className="text-muted-foreground">None listed</span>
-									)}
+								<h3 className="text-lg font-bold capitalize mb-2 text-foreground bg-accent/20 p-1 rounded">
+									{disease.name}
+								</h3>
+								<div className="grid gap-1">
+									<div>
+										<strong className="text-sm">Symptoms:</strong>{" "}
+										{disease.symptoms && disease.symptoms.length > 0 ? (
+											disease.symptoms.map((s) => s.name).join(", ")
+										) : (
+											<span className="text-muted-foreground">None listed</span>
+										)}
+									</div>
+									<div>
+										<strong className="text-sm">Treatments:</strong>{" "}
+										{disease.treatments && disease.treatments.length > 0 ? (
+											disease.treatments.map((t) => t.name).join(", ")
+										) : (
+											<span className="text-muted-foreground">None listed</span>
+										)}
+									</div>
+									<div>
+										<strong className="text-sm">Preventions:</strong>{" "}
+										{disease.preventions && disease.preventions.length > 0 ? (
+											disease.preventions.map((p) => p.name).join(", ")
+										) : (
+											<span className="text-muted-foreground">None listed</span>
+										)}
+									</div>
 								</div>
 							</li>
 						))}
@@ -157,22 +161,26 @@ export function FamilyInfoPresenter({
 					<ul className="space-y-3">
 						{data.pests.map((pest) => (
 							<li key={pest.id} className="border rounded p-3">
-								<div className="font-medium capitalize">{pest.name}</div>
-								<div>
-									<strong>Treatments:</strong>{" "}
-									{pest.treatments && pest.treatments.length > 0 ? (
-										pest.treatments.map((t) => t.name).join(", ")
-									) : (
-										<span className="text-muted-foreground">None listed</span>
-									)}
-								</div>
-								<div>
-									<strong>Preventions:</strong>{" "}
-									{pest.preventions && pest.preventions.length > 0 ? (
-										pest.preventions.map((p) => p.name).join(", ")
-									) : (
-										<span className="text-muted-foreground">None listed</span>
-									)}
+								<h3 className="text-lg font-bold capitalize mb-2 text-foreground bg-accent/20 p-1 rounded">
+									{pest.name}
+								</h3>
+								<div className="grid gap-1">
+									<div>
+										<strong className="text-sm">Treatments:</strong>{" "}
+										{pest.treatments && pest.treatments.length > 0 ? (
+											pest.treatments.map((t) => t.name).join(", ")
+										) : (
+											<span className="text-muted-foreground">None listed</span>
+										)}
+									</div>
+									<div>
+										<strong className="text-sm">Preventions:</strong>{" "}
+										{pest.preventions && pest.preventions.length > 0 ? (
+											pest.preventions.map((p) => p.name).join(", ")
+										) : (
+											<span className="text-muted-foreground">None listed</span>
+										)}
+									</div>
 								</div>
 							</li>
 						))}
