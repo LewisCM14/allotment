@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getBotanicalGroups } from "../FamilyService";
-import type { IBotanicalGroup } from "../FamilyService";
+import { getBotanicalGroups } from "../services/FamilyService";
+import type { IBotanicalGroup } from "../services/FamilyService";
 
 export function useBotanicalGroups() {
 	return useQuery<IBotanicalGroup[], Error>({

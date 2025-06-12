@@ -1,6 +1,6 @@
 import { useParams } from "react-router-dom";
-import { FamilyInfoPresenter } from "./FamilyInfoPresenter";
-import { useFamilyInfo } from "./hooks/useFamilyInfo";
+import { FamilyInfoPresenter } from "../components/FamilyInfoPresenter";
+import { useFamilyInfo } from "../hooks/useFamilyInfo";
 
 export default function FamilyInfoPage() {
 	const { familyId } = useParams<{ familyId: string }>();

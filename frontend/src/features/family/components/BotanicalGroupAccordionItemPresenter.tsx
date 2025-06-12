@@ -6,7 +6,7 @@ import {
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import type * as React from "react";
-import type { IBotanicalGroup } from "./FamilyService";
+import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupAccordionItemPresenterProps {
 	group: IBotanicalGroup;

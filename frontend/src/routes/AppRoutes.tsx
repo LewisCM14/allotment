@@ -18,10 +18,10 @@ const SetNewPassword = React.lazy(
 	() => import("../features/user/SetNewPassword"),
 );
 const BotanicalGroupsPage = React.lazy(
-	() => import("../features/family/BotanicalGroupsPage"),
+	() => import("../features/family/pages/BotanicalGroupsPage"),
 );
 const FamilyInfoPage = React.lazy(
-	() => import("../features/family/FamilyInfoPage"),
+	() => import("../features/family/pages/FamilyInfoPage"),
 );
 
 const AppRoutes = () => {

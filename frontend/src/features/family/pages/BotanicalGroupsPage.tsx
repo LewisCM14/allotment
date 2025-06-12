@@ -1,6 +1,6 @@
 import type * as React from "react";
-import { BotanicalGroupListPresenter } from "./BotanicalGroupListPresenter";
-import { useBotanicalGroups } from "./hooks/useBotanicalGroups";
+import { BotanicalGroupListPresenter } from "../components/BotanicalGroupListPresenter";
+import { useBotanicalGroups } from "../hooks/useBotanicalGroups";
 
 export default function BotanicalGroupsPage() {
 	const {

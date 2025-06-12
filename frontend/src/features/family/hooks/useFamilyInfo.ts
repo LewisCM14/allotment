@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { getFamilyInfo } from "../FamilyService";
-import type { IFamilyInfo } from "../FamilyService";
+import { getFamilyInfo } from "../services/FamilyService";
+import type { IFamilyInfo } from "../services/FamilyService";
 
 export function useFamilyInfo(familyId?: string) {
 	return useQuery<IFamilyInfo, Error>({

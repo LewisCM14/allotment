@@ -525,6 +525,9 @@ describe("UserService", () => {
 						{ status: 404 },
 					);
 				}),
+				http.options(buildUrl("/users/password-resets"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(
 				requestPasswordReset("nonexistent@example.com"),

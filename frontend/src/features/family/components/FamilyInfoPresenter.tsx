@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Loader2 } from "lucide-react";
-import type { IFamilyInfo } from "./FamilyService";
+import type { IFamilyInfo } from "../services/FamilyService";
 import { Link } from "react-router-dom";
 
 interface Props {
