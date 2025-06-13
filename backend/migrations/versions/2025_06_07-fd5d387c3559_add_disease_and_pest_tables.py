@@ -619,7 +619,7 @@ def upgrade() -> None:
     family_disease_seed_data = []
     disease_links = {
         "blight": ["tomato", "potato", "sweet pepper"],
-        "downy mildew": ["lettuce", "onion", "celery", "cucumber"],
+        "downy mildew": ["lettuce", "onion", "shallot", "celery", "cucumber", "parsley", "leek", "garlic"],
         "club root": [
             "broccoli",
             "cauliflower",
@@ -628,6 +628,7 @@ def upgrade() -> None:
             "carrot",
             "parsnip",
             "beetroot",
+            "asparagus",
         ],
         "powdery mildew": [
             "pumpkin",
@@ -639,9 +640,24 @@ def upgrade() -> None:
             "sage",
             "thyme",
             "basil",
+            "blackcurrant",
+            "redcurrant",
+            "jostaberry",
+            "blackberry",
+            "parsley",
         ],
-        "botrytis": ["strawberry", "raspberry", "blackberry", "blueberry"],
-        "rust": ["runner bean", "sugar snap pea", "spinach", "lettuce"],
+        "botrytis": ["strawberry", "raspberry", "blackberry", "blueberry", "leek", "garlic"],
+        "rust": [
+            "runner bean",
+            "sugar snap pea",
+            "spinach",
+            "lettuce",
+            "asparagus",
+            "sweetcorn",
+            "blackberry",
+            "leek",
+            "garlic",
+        ],
         "blossom end rot": ["tomato", "sweet pepper", "pumpkin", "squash"],
     }
     for disease, families in disease_links.items():
@@ -676,6 +692,11 @@ def upgrade() -> None:
             "sage",
             "thyme",
             "basil",
+            "asparagus",
+            "radish",
+            "runner bean",
+            "celery",
+            "sugar snap pea",
         ],
         "aphids": [
             "gooseberry",
@@ -686,8 +707,20 @@ def upgrade() -> None:
             "broccoli",
             "cauliflower",
             "brussels sprout",
+            "asparagus",
+            "radish",
+            "sweetcorn",
+            "lettuce",
+            "blueberry",
+            "squash",
+            "blackcurrant",
+            "redcurrant",
+            "jostaberry",
+            "blackberry",
+            "celery",
+            "sugar snap pea",
         ],
-        "whiteflies": ["tomato", "sweet pepper", "lettuce", "cucumber"],
+        "whiteflies": ["tomato", "sweet pepper", "lettuce", "cucumber", "celery"],
         "birds": [
             "garlic",
             "strawberry",
@@ -697,12 +730,17 @@ def upgrade() -> None:
             "peas",
             "beans",
             "lettuce",
-            "cherry",
         ],
         "gooseberry sawfly": ["gooseberry", "redcurrant", "blackcurrant"],
         "leek moth": ["leek", "onion", "shallot", "garlic"],
-        "root fly": ["carrot", "parsnip", "onion", "leek", "beetroot"],
-        "spider mites": ["tomato", "sweet pepper", "strawberry"],
+        "root fly": ["carrot", "parsnip", "onion", "shallot", "leek", "beetroot"],
+        "spider mites": [
+            "tomato",
+            "sweet pepper",
+            "strawberry",
+            "squash",
+            "runner bean",
+        ],
     }
     for pest, families in pest_links.items():
         for fam in families:
