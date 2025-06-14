@@ -619,7 +619,16 @@ def upgrade() -> None:
     family_disease_seed_data = []
     disease_links = {
         "blight": ["tomato", "potato", "sweet pepper"],
-        "downy mildew": ["lettuce", "onion", "shallot", "celery", "cucumber", "parsley", "leek", "garlic"],
+        "downy mildew": [
+            "lettuce",
+            "onion",
+            "shallot",
+            "celery",
+            "cucumber",
+            "parsley",
+            "leek",
+            "garlic",
+        ],
         "club root": [
             "broccoli",
             "cauliflower",
@@ -646,7 +655,14 @@ def upgrade() -> None:
             "blackberry",
             "parsley",
         ],
-        "botrytis": ["strawberry", "raspberry", "blackberry", "blueberry", "leek", "garlic"],
+        "botrytis": [
+            "strawberry",
+            "raspberry",
+            "blackberry",
+            "blueberry",
+            "leek",
+            "garlic",
+        ],
         "rust": [
             "runner bean",
             "sugar snap pea",
