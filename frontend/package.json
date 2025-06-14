@@ -10,7 +10,7 @@
     "lint": "npx @biomejs/biome lint --write ./src",
     "lint:unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
     "format": "npx @biomejs/biome format --write ./src",
-    "ci:check": "npx @biomejs/biome check ./src",
+    "ci:check": "npx @biomejs/biome lint ./src && npx @biomejs/biome format ./src",
     "preview": "vite preview -c config/vite.config.ts",
     "test": "vitest run --config config/vitest.config.ts",
     "test:watch": "vitest --config config/vitest.config.ts"
