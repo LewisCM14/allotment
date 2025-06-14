@@ -308,8 +308,6 @@ There are several aspects to consider when deciding on the appropriate technolog
             /features
                 - The frontend applications interfaces and the services that serve them.
                 - Related test files.
-            /hooks
-                - useLogout.tsx
             /mocks
                 - handlers.ts
                 - server.ts

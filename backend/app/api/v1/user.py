@@ -21,7 +21,7 @@ from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.factories.user_factory import ValidationError
+from app.api.factories.user_factory import UserFactoryValidationError
 from app.api.middleware.error_handler import (
     safe_operation,
     translate_token_exceptions,
@@ -663,14 +663,14 @@ async def reset_password(
 
         logger.info("Password reset successful", **log_context)
         return MessageResponse(message="Password has been reset successfully")
-    except ValidationError as e:
+    except UserFactoryValidationError as e:
         logger.warning(
             "Password validation failed during reset",
             error=str(e),
             field=e.field,
             **log_context,
         )
-        raise HTTPException(status_code=e.status_code, detail=e.message)
+        raise e
     except InvalidTokenError as e:
         logger.warning("Invalid reset token", error=str(e), **log_context)
         raise HTTPException(status_code=e.status_code, detail=e.error_code)

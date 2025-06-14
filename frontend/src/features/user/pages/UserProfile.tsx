@@ -12,7 +12,7 @@ import {
 import {
 	checkEmailVerificationStatus,
 	requestVerificationEmail,
-} from "@/features/user/UserService";
+} from "@/features/user/services/UserService";
 import { useAuth } from "@/store/auth/AuthContext";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";

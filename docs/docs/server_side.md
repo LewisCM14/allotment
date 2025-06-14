@@ -175,20 +175,9 @@ A Repository class is created for each aggregate or related table group.
         **Family Repository**
 
         - To encapsulate the: Family, Botanical Group, Family Antagonist & Family Companion tables.
-
-    === "Disease & Pests"
-        
-        **Pest Repository**
-
-        - To encapsulate the: Pest, Pest Treatment, Pest Prevention and Family Pest tables.
-        
-        **Disease Repository**
-
-        - To encapsulate the: Disease, Disease Treatment, Disease Prevention, Symptom, Disease Symptom and Family Disease tables.
-        
-        **Intervention Repository**
-
-        - To encapsulate the Intervention table.
+        - To encapsulate a Families relation to the:
+            - Pest, Pest Treatment, Pest Prevention and Family Pest tables.
+            - Disease, Disease Treatment, Disease Prevention, Symptom, Disease Symptom and Family Disease tables.
 
     === "Grow Guide"
 
@@ -264,7 +253,7 @@ Unit of Work classes are created to manage transactions and ensure multiple data
 
         **Family Page**
             
-        - For family information pages (coordinating Family, Disease, Pest, and Intervention repositories).
+        - For family information pages (coordinating Family, Disease, Pest, Intervention, Antagonist & Companion Family repositories).
 
 ---
 

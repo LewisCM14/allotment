@@ -1,4 +1,4 @@
-import { useLogout } from "@/hooks/useLogout";
+import { useLogout } from "@/features/user/hooks/useLogout";
 import { useAuth } from "@/store/auth/AuthContext";
 import type { INavLink } from "@/types/NavigationTypes";
 import { useCallback, useEffect, useState } from "react";

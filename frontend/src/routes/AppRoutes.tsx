@@ -4,21 +4,28 @@ import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
-const LoginForm = React.lazy(() => import("../features/user/LoginForm"));
-const RegisterForm = React.lazy(() => import("../features/user/RegisterForm"));
+const LoginForm = React.lazy(() => import("../features/user/forms/LoginForm"));
+const RegisterForm = React.lazy(
+	() => import("../features/user/forms/RegisterForm"),
+);
 const ResetPassword = React.lazy(
-	() => import("../features/user/ResetPassword"),
+	() => import("../features/user/forms/ResetPassword"),
 );
 const EmailVerificationPage = React.lazy(
-	() => import("../features/user/EmailVerification"),
+	() => import("../features/user/pages/EmailVerification"),
 );
-const UserProfile = React.lazy(() => import("../features/user/UserProfile"));
+const UserProfile = React.lazy(
+	() => import("../features/user/pages/UserProfile"),
+);
 const NotFound = React.lazy(() => import("../components/NotFound"));
 const SetNewPassword = React.lazy(
-	() => import("../features/user/SetNewPassword"),
+	() => import("../features/user/forms/SetNewPassword"),
 );
 const BotanicalGroupsPage = React.lazy(
-	() => import("../features/family/BotanicalGroupsPage"),
+	() => import("../features/family/pages/BotanicalGroupsPage"),
+);
+const FamilyInfoPage = React.lazy(
+	() => import("../features/family/pages/FamilyInfoPage"),
 );
 
 const AppRoutes = () => {
@@ -82,6 +89,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<BotanicalGroupsPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/family/:familyId"
+					element={
+						<ProtectedRoute>
+							<FamilyInfoPage />
 						</ProtectedRoute>
 					}
 				/>

@@ -1,7 +1,7 @@
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { formatError } from "@/utils/errorUtils";
 import axios from "axios";
-import api, { handleApiError } from "../../services/api";
+import api, { handleApiError } from "../../../services/api";
 
 export const AUTH_ERRORS = {
 	// Login specific errors
@@ -84,7 +84,16 @@ export const registerUser = async (
 
 		const response = await api.post<ITokenPair>("/users/", requestData);
 		return response.data;
-	} catch (error) {
+	} catch (error: unknown) {
+		if (
+			error &&
+			typeof error === "object" &&
+			"response" in error &&
+			error.response &&
+			(error.response as { status?: number }).status === 409
+		) {
+			throw new Error(AUTH_ERRORS.EMAIL_EXISTS);
+		}
 		if (axios.isAxiosError(error)) {
 			if (error.response) {
 				switch (error.response.status) {

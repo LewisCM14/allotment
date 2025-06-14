@@ -1,4 +1,4 @@
-import type { IUserData } from "@/features/user/UserService";
+import type { IUserData } from "@/features/user/services/UserService";
 import api from "@/services/api";
 import { API_VERSION } from "@/services/apiConfig";
 import { type ReactNode, useEffect, useState } from "react";

@@ -20,7 +20,7 @@ import {
 	type SetNewPasswordFormData,
 	setNewPasswordSchema,
 } from "./SetNewPasswordSchema";
-import { AUTH_ERRORS, resetPassword } from "./UserService";
+import { AUTH_ERRORS, resetPassword } from "../services/UserService";
 
 export default function SetNewPassword(_: React.ComponentProps<"div">) {
 	const [searchParams] = useSearchParams();

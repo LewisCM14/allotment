@@ -163,6 +163,9 @@ def upgrade() -> None:
         {"name": "pumpkin", "botanical_group": "gourd"},
         {"name": "cucumber", "botanical_group": "gourd"},
         {"name": "rosemary", "botanical_group": "mediterranean herb"},
+        {"name": "lavender", "botanical_group": "mediterranean herb"},
+        {"name": "sage", "botanical_group": "mediterranean herb"},
+        {"name": "thyme", "botanical_group": "mediterranean herb"},
         {"name": "blueberry", "botanical_group": "ericaceae"},
         {"name": "cranberry", "botanical_group": "ericaceae"},
         {"name": "strawberry", "botanical_group": "rosaceae"},
@@ -172,6 +175,9 @@ def upgrade() -> None:
         {"name": "jostaberry", "botanical_group": "ribes"},
         {"name": "redcurrant", "botanical_group": "ribes"},
         {"name": "blackcurrant", "botanical_group": "ribes"},
+        {"name": "borage", "botanical_group": "daisy"},
+        {"name": "marigolds", "botanical_group": "daisy"},
+        {"name": "daffodils", "botanical_group": "asparagaceae"},
     ]
     family_ids = {f["name"]: uuid.uuid4() for f in families}
     op.bulk_insert(
@@ -249,11 +255,408 @@ def upgrade() -> None:
             "family_id": family_ids["blueberry"],
             "companion_family_id": family_ids["cranberry"],
         },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["strawberry"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "companion_family_id": family_ids["squash"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["thyme"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["thyme"],
+            "companion_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["brussels sprout"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "companion_family_id": family_ids["strawberry"],
+        },
+        {
+            "family_id": family_ids["basil"],
+            "companion_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["tomato"],
+            "companion_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["parsley"],
+            "companion_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "companion_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "companion_family_id": family_ids["sweetcorn"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "companion_family_id": family_ids["radish"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["thyme"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "companion_family_id": family_ids["lavender"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["thyme"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "companion_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "companion_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["basil"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["lettuce"],
+        },
+        {
+            "family_id": family_ids["sweet pepper"],
+            "companion_family_id": family_ids["spinach"],
+        },
+        {
+            "family_id": family_ids["gooseberry"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["gooseberry"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["gooseberry"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["blackcurrant"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["blackcurrant"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["blackcurrant"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["blackcurrant"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["redcurrant"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["redcurrant"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["redcurrant"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["redcurrant"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "companion_family_id": family_ids["sage"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {"family_id": family_ids["parsnip"], "companion_family_id": family_ids["leek"]},
+        {
+            "family_id": family_ids["parsnip"],
+            "companion_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "companion_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "companion_family_id": family_ids["radish"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "companion_family_id": family_ids["shallot"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "companion_family_id": family_ids["strawberry"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "companion_family_id": family_ids["garlic"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "companion_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "companion_family_id": family_ids["shallot"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "companion_family_id": family_ids["marigolds"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "companion_family_id": family_ids["strawberry"],
+        },
     ]
     if family_companions_seed_data:
         op.bulk_insert(family_companion_table, family_companions_seed_data)
 
     family_antagonists_seed_data = [
+        {
+            "family_id": family_ids["parsley"],
+            "antagonist_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["parsley"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["celery"],
+            "antagonist_family_id": family_ids["parsnip"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["raspberry"],
+            "antagonist_family_id": family_ids["blackberry"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["blackberry"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["parsnip"],
+            "antagonist_family_id": family_ids["carrot"],
+        },
+        {
+            "family_id": family_ids["carrot"],
+            "antagonist_family_id": family_ids["celery"],
+        },
+        {
+            "family_id": family_ids["beetroot"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["beetroot"],
+            "antagonist_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["jostaberry"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "antagonist_family_id": family_ids["sweet pepper"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "antagonist_family_id": family_ids["cucumber"],
+        },
+        {
+            "family_id": family_ids["rosemary"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["squash"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["squash"],
+            "antagonist_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["squash"],
+            "antagonist_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["squash"],
+            "antagonist_family_id": family_ids["brussels sprout"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "antagonist_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "antagonist_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["pumpkin"],
+            "antagonist_family_id": family_ids["carrot"],
+        },
         {
             "family_id": family_ids["garlic"],
             "antagonist_family_id": family_ids["sugar snap pea"],
@@ -352,6 +755,90 @@ def upgrade() -> None:
         },
         {
             "family_id": family_ids["blueberry"],
+            "antagonist_family_id": family_ids["sweet pepper"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["marigolds"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["lavender"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["borage"],
+            "antagonist_family_id": family_ids["onion"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "antagonist_family_id": family_ids["runner bean"],
+        },
+        {
+            "family_id": family_ids["sage"],
+            "antagonist_family_id": family_ids["sugar snap pea"],
+        },
+        {
+            "family_id": family_ids["onion"],
+            "antagonist_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["garlic"],
+            "antagonist_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["shallot"],
+            "antagonist_family_id": family_ids["asparagus"],
+        },
+        {
+            "family_id": family_ids["potato"],
+            "antagonist_family_id": family_ids["radish"],
+        },
+        {
+            "family_id": family_ids["sweetcorn"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["sweetcorn"],
+            "antagonist_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["sweetcorn"],
+            "antagonist_family_id": family_ids["cauliflower"],
+        },
+        {
+            "family_id": family_ids["sweetcorn"],
+            "antagonist_family_id": family_ids["brussels sprout"],
+        },
+        {
+            "family_id": family_ids["lettuce"],
+            "antagonist_family_id": family_ids["parsley"],
+        },
+        {
+            "family_id": family_ids["lettuce"],
+            "antagonist_family_id": family_ids["celery"],
+        },
+        {
+            "family_id": family_ids["lettuce"],
+            "antagonist_family_id": family_ids["broccoli"],
+        },
+        {
+            "family_id": family_ids["cranberry"],
+            "antagonist_family_id": family_ids["tomato"],
+        },
+        {
+            "family_id": family_ids["cranberry"],
+            "antagonist_family_id": family_ids["potato"],
+        },
+        {
+            "family_id": family_ids["cranberry"],
             "antagonist_family_id": family_ids["sweet pepper"],
         },
     ]

@@ -1,6 +1,6 @@
 import type * as React from "react";
 import { BotanicalGroupAccordionItemPresenter } from "./BotanicalGroupAccordionItemPresenter";
-import type { IBotanicalGroup } from "./FamilyService";
+import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupAccordionItemContainerProps {
 	group: IBotanicalGroup;

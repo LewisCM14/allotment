@@ -1,3 +1,0 @@
-"""
-Models the Intervention Table
-"""

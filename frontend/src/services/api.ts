@@ -1,4 +1,4 @@
-import { AUTH_ERRORS } from "@/features/user/UserService";
+import { AUTH_ERRORS } from "@/features/user/services/UserService";
 import { apiCache } from "@/services/apiCache";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import { errorMonitor } from "@/services/errorMonitoring";

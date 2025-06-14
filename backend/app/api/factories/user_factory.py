@@ -12,7 +12,11 @@ from typing import Any, Dict
 import structlog
 
 from app.api.core.logging import log_timing
-from app.api.middleware.exception_handler import BusinessLogicError
+from app.api.middleware.error_codes import GENERAL_VALIDATION_ERROR
+from app.api.middleware.exception_handler import (
+    BaseApplicationError,
+    BusinessLogicError,
+)
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -23,18 +27,16 @@ from app.api.schemas.user.user_schema import UserCreate
 logger = structlog.get_logger()
 
 
-class ValidationError(Exception):
-    """Exception for validation errors with HTTP status details."""
+class UserFactoryValidationError(BaseApplicationError):
+    """Exception for user factory validation errors with HTTP status details."""
 
     def __init__(self, message: str, field: str, status_code: int = 422) -> None:
-        self.message = message
         self.field = field
-        self.status_code = status_code
-        self.detail = f"{message} (field: {field}, status_code: {status_code})"
-        super().__init__(self.detail)
-
-    def __str__(self) -> str:
-        return self.detail
+        super().__init__(
+            status_code=status_code,
+            message=f"{message} (Field: {field})",
+            error_code=GENERAL_VALIDATION_ERROR,
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert the error to a JSON-serializable dict."""
@@ -42,6 +44,7 @@ class ValidationError(Exception):
             "detail": self.message,
             "field": self.field,
             "status_code": self.status_code,
+            "error_code": self.error_code,
         }
 
 
@@ -77,7 +80,7 @@ class UserFactory:
                 logger.info("User object created successfully", **safe_context)
                 return user
 
-        except ValidationError as e:
+        except UserFactoryValidationError as e:
             logger.error(
                 "User validation failed",
                 error=sanitize_error_message(str(e)),
@@ -116,7 +119,7 @@ class UserFactory:
                     min_length=2,
                     **context,
                 )
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "First name must be at least 2 characters long", field
                 )
             if len(first_name) > 50:
@@ -126,17 +129,17 @@ class UserFactory:
                     max_length=50,
                     **context,
                 )
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "First name cannot be longer than 50 characters", field
                 )
             if not re.match(r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$", first_name):
                 logger.debug("First name contains invalid characters", **context)
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "First name can only contain letters, spaces, and hyphens", field
                 )
 
             logger.debug("First name validation passed", **context)
-        except ValidationError:
+        except UserFactoryValidationError:
             raise
 
     @staticmethod
@@ -157,12 +160,12 @@ class UserFactory:
                     expected=2,
                     **context,
                 )
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "Country code must be exactly 2 characters", field
                 )
 
             logger.debug("Country code validation passed", **context)
-        except ValidationError:
+        except UserFactoryValidationError:
             raise
 
     @staticmethod
@@ -178,12 +181,12 @@ class UserFactory:
         try:
             if len(password) < 8:
                 logger.debug("Password too short", min_length=8, **context)
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "Password must be at least 8 characters long", field
                 )
             if len(password) > 30:
                 logger.debug("Password too long", max_length=30, **context)
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     "Password cannot be longer than 30 characters", field
                 )
 
@@ -207,12 +210,12 @@ class UserFactory:
                     requirement_count=len(requirements),
                     **context,
                 )
-                raise ValidationError(
+                raise UserFactoryValidationError(
                     f"Password must contain {', '.join(requirements)}", field
                 )
 
             logger.debug("Password validation passed", **context)
-        except ValidationError:
+        except UserFactoryValidationError:
             raise
         except Exception as e:
             logger.error(

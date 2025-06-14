@@ -2,7 +2,7 @@ import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { verifyEmail } from "@/features/user/UserService";
+import { verifyEmail } from "@/features/user/services/UserService";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";

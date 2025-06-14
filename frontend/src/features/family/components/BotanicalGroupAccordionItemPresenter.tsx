@@ -4,8 +4,9 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/Accordion";
 import { ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import type * as React from "react";
-import type { IBotanicalGroup } from "./FamilyService";
+import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupAccordionItemPresenterProps {
 	group: IBotanicalGroup;
@@ -14,6 +15,7 @@ interface BotanicalGroupAccordionItemPresenterProps {
 export function BotanicalGroupAccordionItemPresenter({
 	group,
 }: BotanicalGroupAccordionItemPresenterProps) {
+	const navigate = useNavigate();
 	return (
 		<AccordionItem value={group.id}>
 			<AccordionTrigger>
@@ -34,6 +36,7 @@ export function BotanicalGroupAccordionItemPresenter({
 							<button
 								key={family.id}
 								type="button"
+								onClick={() => navigate(`/family/${family.id}`)}
 								className={[
 									"group flex items-center justify-between w-full text-base text-foreground capitalize px-4 py-3 cursor-pointer transition-all rounded-md",
 									"hover:bg-accent hover:shadow-sm hover:text-interactive-foreground",
@@ -46,7 +49,6 @@ export function BotanicalGroupAccordionItemPresenter({
 							>
 								<span className="truncate">{family.name}</span>
 								<ArrowRight className="size-5 text-muted-foreground group-hover:text-interactive-foreground group-focus:text-interactive-foreground transition-colors ml-2 flex-shrink-0" />
-								{/* Future: Link to family detail page */}
 							</button>
 						))}
 					</div>

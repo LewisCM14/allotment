@@ -23,8 +23,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.api.core.database import Base
 
 if TYPE_CHECKING:
-    from .botanical_group_model import BotanicalGroup
+    from app.api.models.disease_and_pest.disease_model import Disease
+    from app.api.models.disease_and_pest.pest_model import Pest
 
+    from .botanical_group_model import BotanicalGroup
 
 family_antagonists_assoc = Table(
     "family_antagonist",
@@ -120,6 +122,14 @@ class Family(Base):
         primaryjoin=id == family_companions_assoc.c.companion_family_id,
         secondaryjoin=id == family_companions_assoc.c.family_id,
         back_populates="companion_to",
+    )
+
+    # Diseases and pests relationships
+    diseases: Mapped[List["Disease"]] = relationship(
+        "Disease", secondary="family_disease", back_populates="families"
+    )
+    pests: Mapped[List["Pest"]] = relationship(
+        "Pest", secondary="family_pest", back_populates="families"
     )
 
     __table_args__ = (

@@ -10,13 +10,19 @@ from typing import AsyncGenerator, Dict, Optional
 import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import safe_operation
-from app.api.middleware.exception_handler import ExceptionHandlingMiddleware
+from app.api.middleware.exception_handler import (
+    BaseApplicationError,
+    BusinessLogicError,
+    ExceptionHandlingMiddleware,
+    ResourceNotFoundError,
+)
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
     request_id_ctx_var,
@@ -70,6 +76,61 @@ app = FastAPI(
     description="API for managing allotments",
     lifespan=lifespan,
 )
+
+
+@app.exception_handler(BusinessLogicError)
+async def business_logic_error_handler(
+    request: Request, exc: BusinessLogicError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": [
+                {
+                    "msg": exc.message,
+                    "type": exc.__class__.__name__.lower(),
+                    "code": getattr(exc, "error_code", None),
+                }
+            ]
+        },
+    )
+
+
+@app.exception_handler(ResourceNotFoundError)
+async def resource_not_found_error_handler(
+    request: Request, exc: ResourceNotFoundError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": [
+                {
+                    "msg": exc.message,
+                    "type": exc.__class__.__name__.lower(),
+                    "code": getattr(exc, "error_code", None),
+                }
+            ]
+        },
+    )
+
+
+@app.exception_handler(BaseApplicationError)
+async def base_application_error_handler(
+    request: Request, exc: BaseApplicationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "detail": [
+                {
+                    "msg": exc.message,
+                    "type": exc.__class__.__name__.lower(),
+                    "code": getattr(exc, "error_code", None),
+                }
+            ]
+        },
+    )
+
 
 # Exception Handling Middleware
 logger.debug("Adding exception handling middleware")

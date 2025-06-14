@@ -79,3 +79,14 @@ class TestSafeOperation:
                 raise ValueError("Test error")
 
         assert "Error during test_operation" in caplog.text
+
+    @pytest.mark.asyncio
+    async def test_safe_operation_success(self):
+        """Test that safe_operation allows successful operations to complete."""
+        log_context = {"operation": "test_operation"}
+        result = None
+
+        async with safe_operation("test_operation", log_context):
+            result = "success"
+
+        assert result == "success"

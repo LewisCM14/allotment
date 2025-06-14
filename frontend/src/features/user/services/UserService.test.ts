@@ -1,8 +1,8 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildUrl } from "../../mocks/handlers";
-import { server } from "../../mocks/server";
-import * as apiModule from "../../services/api";
+import { buildUrl } from "../../../mocks/handlers";
+import { server } from "../../../mocks/server";
+import * as apiModule from "../../../services/api";
 import {
 	AUTH_ERRORS,
 	checkEmailVerificationStatus,
@@ -232,6 +232,9 @@ describe("UserService", () => {
 						{ status: 400 },
 					);
 				}),
+				http.options(buildUrl("/users/"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
 			);
 			await expect(
 				registerUser("bad@example.com", "password", "Bad", "XX"),
@@ -453,10 +456,10 @@ describe("UserService", () => {
 			server.use(
 				http.post(
 					buildUrl("/users/email-verifications/:token"),
-					async ({ params }) => {
+					({ params }) => {
 						if (params.token === "expired-token") {
 							return HttpResponse.json(
-								{ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED },
+								{ detail: "Token has expired" },
 								{ status: 410 },
 							);
 						}
@@ -521,6 +524,9 @@ describe("UserService", () => {
 						{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
 						{ status: 404 },
 					);
+				}),
+				http.options(buildUrl("/users/password-resets"), () => {
+					return new HttpResponse(null, { status: 204 });
 				}),
 			);
 			await expect(
@@ -762,17 +768,8 @@ describe("UserService", () => {
 		});
 
 		it("should throw FETCH_VERIFICATION_STATUS_FAILED for other server errors", async () => {
-			server.use(
-				http.get(buildUrl("/users/verification-status"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal Server Error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
 			await expect(
-				checkEmailVerificationStatus("test@example.com"),
+				checkEmailVerificationStatus("server-error@example.com"),
 			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
 		}, 10000);
 
