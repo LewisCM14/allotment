@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
-# Install UV
+# Install UV securely (uses HTTPS)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
@@ -23,7 +23,17 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=cache,target=/root/.cache/pip \
     uv pip install --system -e .
 
-COPY . .
+# Copy only the application source code and necessary files
+COPY app/ ./app/
+COPY alembic.ini ./
+COPY migrations/ ./migrations/
+
+
+# Create a non-root user and group
+RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
+
+# Set ownership of the app directory
+RUN chown -R appuser:appuser /app
 
 # Explicitly set the default port for the service
 # Render will override this with its own PORT environment variable
@@ -38,6 +48,9 @@ EXPOSE 8000
 
 # Create entrypoint script to run migrations
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chown appuser:appuser /docker-entrypoint.sh
+
+# Switch to non-root user
+USER appuser
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
