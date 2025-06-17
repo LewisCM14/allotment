@@ -15,6 +15,7 @@ COPY tsconfig.json ./
 COPY tsconfig.app.json ./
 COPY tsconfig.node.json ./
 COPY components.json ./
+COPY index.html ./
 
 # Build the application
 RUN npm run build
