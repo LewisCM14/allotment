@@ -47,3 +47,7 @@ dist-ssr
 # dev
 
 dev/*
+
+# SonarQube scanner reports
+.scannerwork/
+.scannerwork/report-task.txt

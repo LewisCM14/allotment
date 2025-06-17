@@ -1,14 +1,20 @@
 # Build stage
-FROM node:22.14.0-slim as build
+FROM node:22.14.0-slim AS build
 
 WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 
-# Copy source code
-COPY . .
+# Copy source code and config files
+COPY src/ ./src/
+COPY public/ ./public/
+COPY config/vite.config.ts ./config/vite.config.ts
+COPY tsconfig.json ./
+COPY tsconfig.app.json ./
+COPY tsconfig.node.json ./
+COPY components.json ./
 
 # Build the application
 RUN npm run build
@@ -19,12 +25,19 @@ FROM nginx:stable-alpine
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
 
+# Set ownership of static files to nginx user
+RUN chown -R nginx:nginx /usr/share/nginx/html
+
 # Copy nginx config as a template
 COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 
 # Copy and set entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh && chown nginx:nginx /docker-entrypoint.sh
+
+# Switch to non-root user
+USER nginx
+
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Add healthcheck
