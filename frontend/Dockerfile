@@ -36,9 +36,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && chown nginx:nginx /docker-entrypoint.sh
 
-# Switch to non-root user
-USER nginx
-
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
 # Add healthcheck
@@ -48,5 +45,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 80
 
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Start nginx as non-root user
+CMD ["sh", "-c", "exec su-exec nginx nginx -g 'daemon off;' || exec nginx -g 'daemon off;'"]
