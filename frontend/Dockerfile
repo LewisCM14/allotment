@@ -46,4 +46,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 EXPOSE 80
 
 # Start nginx as non-root user
-CMD ["sh", "-c", "exec su-exec nginx nginx -g 'daemon off;' || exec nginx -g 'daemon off;'"]
+CMD ["nginx", "-g", "daemon off;"]
