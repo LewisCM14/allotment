@@ -9,6 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
     && rm -rf /var/lib/apt/lists/* \
+    \
+    # The following curl command uses HTTPS and is considered safe for installing UV.
     && curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ENV PATH="/root/.local/bin:$PATH"
@@ -27,12 +29,8 @@ COPY app/ ./app/
 COPY alembic.ini ./
 COPY migrations/ ./migrations/
 
-
-# Create a non-root user and group
-RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser
-
-# Set ownership of the app directory
-RUN chown -R appuser:appuser /app
+# Create a non-root user and group, and set ownership of the app directory
+RUN groupadd -r appuser && useradd --no-log-init -r -g appuser appuser && chown -R appuser:appuser /app
 
 # Explicitly set the default port for the service
 # Render will override this with its own PORT environment variable
