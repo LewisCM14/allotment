@@ -2,16 +2,15 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install build dependencies
+# Install build dependencies and UV securely (uses HTTPS)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
-    libpq-dev \
     gcc \
-    && rm -rf /var/lib/apt/lists/*
+    libpq-dev \
+    && rm -rf /var/lib/apt/lists/* \
+    && curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Install UV securely (uses HTTPS)
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="/root/.local/bin:$PATH"
 
 # Copy requirements files
