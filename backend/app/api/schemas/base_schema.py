@@ -13,6 +13,8 @@ from app.api.middleware.logging_middleware import SENSITIVE_FIELDS
 
 logger = structlog.get_logger()
 
+REDACTED_VALUE = "[REDACTED]"
+
 
 class SecureBaseModel(BaseModel):
     """Base model with secure logging capabilities.
@@ -37,10 +39,10 @@ class SecureBaseModel(BaseModel):
         data = self.dict()
         for field in SENSITIVE_FIELDS:
             if field in data:
-                data[field] = "[REDACTED]"
+                data[field] = REDACTED_VALUE
             for key in list(data.keys()):
                 if any(sensitive in key.lower() for sensitive in SENSITIVE_FIELDS):
-                    data[key] = "[REDACTED]"
+                    data[key] = REDACTED_VALUE
         return data
 
     @classmethod
@@ -48,7 +50,7 @@ class SecureBaseModel(BaseModel):
     def validate_fields(cls, values: Mapping[str, Any]) -> Dict[str, Any]:
         """Log validation attempts without exposing sensitive data."""
         safe_values = {
-            k: ("[REDACTED]" if any(s in k.lower() for s in SENSITIVE_FIELDS) else v)
+            k: (REDACTED_VALUE if any(s in k.lower() for s in SENSITIVE_FIELDS) else v)
             for k, v in values.items()
         }
 

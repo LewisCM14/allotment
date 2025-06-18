@@ -8,28 +8,38 @@ from pydantic import ConfigDict, EmailStr, Field
 
 from app.api.schemas.base_schema import SecureBaseModel
 
+# Constants for user schemas
+USER_EMAIL_DESC = "User's email address"
+USER_EMAIL_EXAMPLE = "user@example.com"
+USER_PASSWORD_EXAMPLE = "SecurePass123!"
+NEW_PASSWORD_EXAMPLE = "NewSecurePass123!"
+JWT_EXAMPLE = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+FIRST_NAME_EXAMPLE = "John"
+USER_ID_EXAMPLE = "123e4567-e89b-12d3-a456-426614174000"
+NEW_PASSWORD_DESC = "New password"
+
 
 class UserCreate(SecureBaseModel):
     """Schema for user registration."""
 
     user_email: EmailStr = Field(
         ...,
-        description="User's email address",
-        examples=["user@example.com"],
+        description=USER_EMAIL_DESC,
+        examples=[USER_EMAIL_EXAMPLE],
     )
     user_password: str = Field(
         ...,
         min_length=8,
         max_length=30,
         description="Password must be between 8 and 30 characters",
-        examples=["SecurePass123!"],
+        examples=[USER_PASSWORD_EXAMPLE],
     )
     user_first_name: str = Field(
         ...,
         min_length=2,
         max_length=50,
         description="First name must be between 2 and 50 characters",
-        examples=["John"],
+        examples=[FIRST_NAME_EXAMPLE],
     )
     user_country_code: str = Field(
         ...,
@@ -42,9 +52,9 @@ class UserCreate(SecureBaseModel):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_email": "user@example.com",
-                "user_password": "SecurePass123!",
-                "user_first_name": "John",
+                "user_email": USER_EMAIL_EXAMPLE,
+                "user_password": USER_PASSWORD_EXAMPLE,
+                "user_first_name": FIRST_NAME_EXAMPLE,
                 "user_country_code": "GB",
             }
         }
@@ -56,22 +66,22 @@ class UserLogin(SecureBaseModel):
 
     user_email: EmailStr = Field(
         ...,
-        description="User's email address",
-        examples=["user@example.com"],
+        description=USER_EMAIL_DESC,
+        examples=[USER_EMAIL_EXAMPLE],
     )
     user_password: str = Field(
         ...,
         min_length=8,
         max_length=30,
         description="User's password",
-        examples=["SecurePass123!"],
+        examples=[USER_PASSWORD_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_email": "user@example.com",
-                "user_password": "SecurePass123!",
+                "user_email": USER_EMAIL_EXAMPLE,
+                "user_password": USER_PASSWORD_EXAMPLE,
             }
         }
     )
@@ -83,12 +93,12 @@ class TokenResponse(SecureBaseModel):
     access_token: str = Field(
         ...,
         description="JWT access token",
-        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+        examples=[JWT_EXAMPLE],
     )
     refresh_token: str = Field(
         ...,
         description="JWT refresh token for obtaining new access tokens",
-        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+        examples=[JWT_EXAMPLE],
     )
     token_type: str = Field(
         default="bearer",
@@ -98,7 +108,7 @@ class TokenResponse(SecureBaseModel):
     user_first_name: str | None = Field(
         default=None,
         description="User's first name",
-        examples=["John"],
+        examples=[FIRST_NAME_EXAMPLE],
     )
     is_email_verified: bool = Field(
         default=False,
@@ -108,18 +118,18 @@ class TokenResponse(SecureBaseModel):
     user_id: str = Field(
         ...,
         description="The unique ID of the user",
-        examples=["123e4567-e89b-12d3-a456-426614174000"],
+        examples=[USER_ID_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                "access_token": JWT_EXAMPLE,
+                "refresh_token": JWT_EXAMPLE,
                 "token_type": "bearer",
-                "user_first_name": "John",
+                "user_first_name": FIRST_NAME_EXAMPLE,
                 "is_email_verified": True,
-                "user_id": "123e4567-e89b-12d3-a456-426614174000",
+                "user_id": USER_ID_EXAMPLE,
             }
         }
     )
@@ -131,13 +141,13 @@ class RefreshRequest(SecureBaseModel):
     refresh_token: str = Field(
         ...,
         description="JWT refresh token to exchange for a new access token",
-        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+        examples=[JWT_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "refresh_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
+                "refresh_token": JWT_EXAMPLE,
             }
         }
     )
@@ -172,14 +182,14 @@ class VerificationStatusResponse(SecureBaseModel):
     user_id: str = Field(
         ...,
         description="The unique ID of the user",
-        examples=["123e4567-e89b-12d3-a456-426614174000"],
+        examples=[USER_ID_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "is_email_verified": True,
-                "user_id": "123e4567-e89b-12d3-a456-426614174000",
+                "user_id": USER_ID_EXAMPLE,
             }
         }
     )
@@ -190,14 +200,14 @@ class PasswordResetRequest(SecureBaseModel):
 
     user_email: EmailStr = Field(
         ...,
-        description="User's email address",
-        examples=["user@example.com"],
+        description=USER_EMAIL_DESC,
+        examples=[USER_EMAIL_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_email": "user@example.com",
+                "user_email": USER_EMAIL_EXAMPLE,
             }
         }
     )
@@ -208,14 +218,14 @@ class EmailRequest(SecureBaseModel):
 
     user_email: EmailStr = Field(
         ...,
-        description="User's email address",
-        examples=["user@example.com"],
+        description=USER_EMAIL_DESC,
+        examples=[USER_EMAIL_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "user_email": "user@example.com",
+                "user_email": USER_EMAIL_EXAMPLE,
             }
         }
     )
@@ -228,14 +238,14 @@ class PasswordUpdate(SecureBaseModel):
         ...,
         min_length=8,
         max_length=30,
-        description="New password",
-        examples=["NewSecurePass123!"],
+        description=NEW_PASSWORD_DESC,
+        examples=[NEW_PASSWORD_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "new_password": "NewSecurePass123!",
+                "new_password": NEW_PASSWORD_EXAMPLE,
             }
         }
     )
@@ -247,21 +257,21 @@ class PasswordResetAction(SecureBaseModel):
     token: str = Field(
         ...,
         description="JWT reset token",
-        examples=["eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."],
+        examples=[JWT_EXAMPLE],
     )
     new_password: str = Field(
         ...,
         min_length=8,
         max_length=30,
-        description="New password",
-        examples=["NewSecurePass123!"],
+        description=NEW_PASSWORD_DESC,
+        examples=[NEW_PASSWORD_EXAMPLE],
     )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-                "new_password": "NewSecurePass123!",
+                "token": JWT_EXAMPLE,
+                "new_password": NEW_PASSWORD_EXAMPLE,
             }
         }
     )

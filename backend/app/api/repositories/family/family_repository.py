@@ -81,23 +81,24 @@ class FamilyRepository:
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_family_info(self, family_id: Any) -> Optional[FamilyInfoSchema]:
-        """
-        Retrieves detailed information for a specific family, including pests, diseases,
-        their symptoms, treatments, preventions, botanical group information,
-        antagonist families, and companion families.
-        """
+    def _validate_family_id(self, family_id: Any) -> Optional[uuid.UUID]:
+        """Validates and converts family_id to UUID."""
+        if isinstance(family_id, uuid.UUID):
+            return family_id
         if isinstance(family_id, str):
             try:
-                family_id_uuid = uuid.UUID(family_id)
+                return uuid.UUID(family_id)
             except ValueError:
                 return None
-        elif isinstance(family_id, uuid.UUID):
-            family_id_uuid = family_id
-        else:
-            return None  # Or raise an error for unsupported type
+        return None
 
-        # Fetch family with botanical group, antagonises, and companion_to relationships
+    async def _fetch_family_by_uuid(
+        self, family_id_uuid: uuid.UUID
+    ) -> Optional[Family]:
+        """
+        Fetches a family by its UUID with related botanical group,
+        antagonises, and companion_to.
+        """
         query = (
             select(Family)
             .options(
@@ -108,178 +109,181 @@ class FamilyRepository:
             .where(Family.id == family_id_uuid)
         )
         result = await self.db.execute(query)
-        family = result.unique().scalar_one_or_none()
+        return result.unique().scalar_one_or_none()
 
-        if family is None:
-            return None
+    async def _map_interventions_to_items(
+        self,
+        item_ids: List[uuid.UUID],
+        association_table: Any,
+        item_id_column_name: str,
+    ) -> defaultdict[uuid.UUID, List[Intervention]]:
+        """
+        Maps interventions to items (pests or diseases) using an
+        association table.
+        """
+        item_id_column = getattr(association_table.c, item_id_column_name)
+        query = (
+            select(item_id_column, Intervention)
+            .join(Intervention, Intervention.id == association_table.c.intervention_id)
+            .where(item_id_column.in_(item_ids))
+        )
+        result = await self.db.execute(query)
+        interventions_map = defaultdict(list)
+        for item_id, intervention_obj in result.all():
+            interventions_map[item_id].append(intervention_obj)
+        return interventions_map
 
-        pest_info_list: List[PestSchema] = []
-        disease_info_list: List[DiseaseSchema] = []
+    async def _map_symptoms_to_diseases(
+        self, disease_ids: List[uuid.UUID]
+    ) -> defaultdict[uuid.UUID, List[Symptom]]:
+        """Maps symptoms to diseases."""
+        symptoms_map: defaultdict[uuid.UUID, List[Symptom]] = defaultdict(list)
+        if not disease_ids:
+            return symptoms_map
+        symptoms_query = (
+            select(disease_symptom.c.disease_id, Symptom)
+            .join(Symptom, Symptom.id == disease_symptom.c.symptom_id)
+            .where(disease_symptom.c.disease_id.in_(disease_ids))
+        )
+        symptoms_result = await self.db.execute(symptoms_query)
+        for d_id, symptom_obj in symptoms_result.all():
+            symptoms_map[d_id].append(symptom_obj)
+        return symptoms_map
 
-        # Fetch pests for this family
+    async def _fetch_pests_for_family(
+        self, family_id_uuid: uuid.UUID
+    ) -> List[PestSchema]:
+        """Fetches pests and their details for a given family."""
         family_pests_result = await self.db.execute(
             select(Pest)
             .join(family_pest, Pest.id == family_pest.c.pest_id)
             .where(family_pest.c.family_id == family_id_uuid)
         )
         pests = list(family_pests_result.scalars().all())
+        if not pests:
+            return []
 
-        if pests:
-            pest_ids = [pest.id for pest in pests]
+        pest_ids = [pest.id for pest in pests]
+        treatments_map = await self._map_interventions_to_items(
+            pest_ids, pest_treatment, "pest_id"
+        )
+        preventions_map = await self._map_interventions_to_items(
+            pest_ids, pest_prevention, "pest_id"
+        )
 
-            pest_treatments_map = defaultdict(list)
-            treatments_query = (
-                select(pest_treatment.c.pest_id, Intervention)
-                .join(Intervention, Intervention.id == pest_treatment.c.intervention_id)
-                .where(pest_treatment.c.pest_id.in_(pest_ids))
+        return [
+            PestSchema(
+                id=pest.id,
+                name=pest.name,
+                treatments=[
+                    InterventionSchema.model_validate(t)
+                    for t in treatments_map.get(pest.id, [])
+                ]
+                or None,
+                preventions=[
+                    InterventionSchema.model_validate(p)
+                    for p in preventions_map.get(pest.id, [])
+                ]
+                or None,
             )
-            treatments_result = await self.db.execute(treatments_query)
-            for p_id, intervention_obj in treatments_result.all():
-                pest_treatments_map[p_id].append(intervention_obj)
+            for pest in pests
+        ]
 
-            pest_preventions_map = defaultdict(list)
-            preventions_query = (
-                select(pest_prevention.c.pest_id, Intervention)
-                .join(
-                    Intervention, Intervention.id == pest_prevention.c.intervention_id
-                )
-                .where(pest_prevention.c.pest_id.in_(pest_ids))
-            )
-            preventions_result = await self.db.execute(preventions_query)
-            for p_id, intervention_obj in preventions_result.all():
-                pest_preventions_map[p_id].append(intervention_obj)
-
-            for pest in pests:
-                treatments = pest_treatments_map.get(pest.id, [])
-                preventions = pest_preventions_map.get(pest.id, [])
-                pest_info_list.append(
-                    PestSchema(
-                        id=pest.id,
-                        name=pest.name,
-                        treatments=[
-                            InterventionSchema.model_validate(t) for t in treatments
-                        ]
-                        if treatments
-                        else None,
-                        preventions=[
-                            InterventionSchema.model_validate(p) for p in preventions
-                        ]
-                        if preventions
-                        else None,
-                    )
-                )
-
-        # Fetch diseases for this family
+    async def _fetch_diseases_for_family(
+        self, family_id_uuid: uuid.UUID
+    ) -> List[DiseaseSchema]:
+        """Fetches diseases and their details for a given family."""
         family_diseases_result = await self.db.execute(
             select(Disease)
             .join(family_disease, Disease.id == family_disease.c.disease_id)
             .where(family_disease.c.family_id == family_id_uuid)
         )
         diseases = list(family_diseases_result.scalars().all())
+        if not diseases:
+            return []
 
-        if diseases:
-            disease_ids = [disease.id for disease in diseases]
+        disease_ids = [disease.id for disease in diseases]
+        symptoms_map = await self._map_symptoms_to_diseases(disease_ids)
+        treatments_map = await self._map_interventions_to_items(
+            disease_ids, disease_treatment, "disease_id"
+        )
+        preventions_map = await self._map_interventions_to_items(
+            disease_ids, disease_prevention, "disease_id"
+        )
 
-            disease_symptoms_map = defaultdict(list)
-            symptoms_query = (
-                select(disease_symptom.c.disease_id, Symptom)
-                .join(Symptom, Symptom.id == disease_symptom.c.symptom_id)
-                .where(disease_symptom.c.disease_id.in_(disease_ids))
+        return [
+            DiseaseSchema(
+                id=disease.id,
+                name=disease.name,
+                symptoms=[
+                    SymptomSchema.model_validate(s)
+                    for s in symptoms_map.get(disease.id, [])
+                ]
+                or None,
+                treatments=[
+                    InterventionSchema.model_validate(t)
+                    for t in treatments_map.get(disease.id, [])
+                ]
+                or None,
+                preventions=[
+                    InterventionSchema.model_validate(p)
+                    for p in preventions_map.get(disease.id, [])
+                ]
+                or None,
             )
-            symptoms_result = await self.db.execute(symptoms_query)
-            for d_id, symptom_obj in symptoms_result.all():
-                disease_symptoms_map[d_id].append(symptom_obj)
+            for disease in diseases
+        ]
 
-            disease_treatments_map = defaultdict(list)
-            disease_treatments_query = (
-                select(disease_treatment.c.disease_id, Intervention)
-                .join(
-                    Intervention, Intervention.id == disease_treatment.c.intervention_id
-                )
-                .where(disease_treatment.c.disease_id.in_(disease_ids))
-            )
-            disease_treatments_result = await self.db.execute(disease_treatments_query)
-            for d_id, intervention_obj in disease_treatments_result.all():
-                disease_treatments_map[d_id].append(intervention_obj)
+    async def _fetch_related_families(
+        self,
+        family_id_uuid: uuid.UUID,
+        association_table: Any,
+        related_column_name: str,
+    ) -> set[Family]:
+        """Fetches related (antagonist or companion) families."""
+        family_id_col = association_table.c.family_id
+        related_family_id_col = getattr(association_table.c, related_column_name)
 
-            disease_preventions_map = defaultdict(list)
-            disease_preventions_query = (
-                select(disease_prevention.c.disease_id, Intervention)
-                .join(
-                    Intervention,
-                    Intervention.id == disease_prevention.c.intervention_id,
-                )
-                .where(disease_prevention.c.disease_id.in_(disease_ids))
-            )
-            disease_preventions_result = await self.db.execute(
-                disease_preventions_query
-            )
-            for d_id, intervention_obj in disease_preventions_result.all():
-                disease_preventions_map[d_id].append(intervention_obj)
-
-            for disease in diseases:
-                symptoms = disease_symptoms_map.get(disease.id, [])
-                treatments = disease_treatments_map.get(disease.id, [])
-                preventions = disease_preventions_map.get(disease.id, [])
-                disease_info_list.append(
-                    DiseaseSchema(
-                        id=disease.id,
-                        name=disease.name,
-                        symptoms=[SymptomSchema.model_validate(s) for s in symptoms]
-                        if symptoms
-                        else None,
-                        treatments=[
-                            InterventionSchema.model_validate(t) for t in treatments
-                        ]
-                        if treatments
-                        else None,
-                        preventions=[
-                            InterventionSchema.model_validate(p) for p in preventions
-                        ]
-                        if preventions
-                        else None,
-                    )
-                )
-
-        antagonist_query = (
+        query = (
             select(Family)
             .join(
-                family_antagonist,
-                (Family.id == family_antagonist.c.family_id)
-                | (Family.id == family_antagonist.c.antagonist_family_id),
+                association_table,
+                (Family.id == family_id_col) | (Family.id == related_family_id_col),
             )
             .where(
                 or_(
-                    family_antagonist.c.family_id == family_id_uuid,
-                    family_antagonist.c.antagonist_family_id == family_id_uuid,
+                    family_id_col == family_id_uuid,
+                    related_family_id_col == family_id_uuid,
                 )
             )
         )
-        antagonist_result = await self.db.execute(antagonist_query)
-        antagonist_families = set()
-        for fam in antagonist_result.unique().scalars().all():
-            if fam.id != family_id_uuid:
-                antagonist_families.add(fam)
+        result = await self.db.execute(query)
+        return {
+            fam for fam in result.unique().scalars().all() if fam.id != family_id_uuid
+        }
 
-        companion_query = (
-            select(Family)
-            .join(
-                family_companion,
-                (Family.id == family_companion.c.family_id)
-                | (Family.id == family_companion.c.companion_family_id),
-            )
-            .where(
-                or_(
-                    family_companion.c.family_id == family_id_uuid,
-                    family_companion.c.companion_family_id == family_id_uuid,
-                )
-            )
+    async def get_family_info(self, family_id: Any) -> Optional[FamilyInfoSchema]:
+        """
+        Retrieves detailed information for a specific family, including pests, diseases,
+        their symptoms, treatments, preventions, botanical group information,
+        antagonist families, and companion families.
+        """
+        family_id_uuid = self._validate_family_id(family_id)
+        if not family_id_uuid:
+            return None
+
+        family = await self._fetch_family_by_uuid(family_id_uuid)
+        if not family:
+            return None
+
+        pests = await self._fetch_pests_for_family(family_id_uuid)
+        diseases = await self._fetch_diseases_for_family(family_id_uuid)
+        antagonises = await self._fetch_related_families(
+            family_id_uuid, family_antagonist, "antagonist_family_id"
         )
-        companion_result = await self.db.execute(companion_query)
-        companion_families = set()
-        for fam in companion_result.unique().scalars().all():
-            if fam.id != family_id_uuid:
-                companion_families.add(fam)
+        companion_to = await self._fetch_related_families(
+            family_id_uuid, family_companion, "companion_family_id"
+        )
 
         return FamilyInfoSchema(
             id=family.id,
@@ -289,16 +293,14 @@ class FamilyRepository:
                 name=family.botanical_group.name,
                 recommended_rotation_years=family.botanical_group.recommended_rotation_years,
             ),
-            pests=pest_info_list if pest_info_list else None,
-            diseases=disease_info_list if disease_info_list else None,
+            pests=pests or None,
+            diseases=diseases or None,
             antagonises=[
-                FamilyRelationSchema.model_validate(ant) for ant in antagonist_families
+                FamilyRelationSchema.model_validate(ant) for ant in antagonises
             ]
-            if antagonist_families
-            else None,
+            or None,
             companion_to=[
-                FamilyRelationSchema.model_validate(comp) for comp in companion_families
+                FamilyRelationSchema.model_validate(comp) for comp in companion_to
             ]
-            if companion_families
-            else None,
+            or None,
         )

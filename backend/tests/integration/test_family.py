@@ -22,6 +22,54 @@ from app.api.schemas.family.family_schema import (
 PREFIX = settings.API_PREFIX
 
 
+def _assert_has_id_and_name(item: dict):
+    """Assert that a dictionary has 'id' (string) and 'name' (string) keys."""
+    assert "id" in item and isinstance(item["id"], str)
+    assert "name" in item and isinstance(item["name"], str)
+
+
+def _validate_interventions(interventions: list | None):
+    """Validate a list of interventions (treatments/preventions)."""
+    assert isinstance(interventions, (list, type(None)))
+    if interventions:
+        for intervention in interventions:
+            _assert_has_id_and_name(intervention)
+
+
+def _validate_symptoms(symptoms: list | None):
+    """Validate a list of symptoms."""
+    assert isinstance(symptoms, (list, type(None)))
+    if symptoms:
+        for symptom in symptoms:
+            _assert_has_id_and_name(symptom)
+
+
+def _validate_pests(pests: list | None):
+    """Validate the structure of a list of pests."""
+    assert isinstance(pests, (list, type(None)))
+    if pests:
+        for pest in pests:
+            _assert_has_id_and_name(pest)
+            assert "treatments" in pest
+            _validate_interventions(pest.get("treatments"))
+            assert "preventions" in pest
+            _validate_interventions(pest.get("preventions"))
+
+
+def _validate_diseases(diseases: list | None):
+    """Validate the structure of a list of diseases."""
+    assert isinstance(diseases, (list, type(None)))
+    if diseases:
+        for disease in diseases:
+            _assert_has_id_and_name(disease)
+            assert "symptoms" in disease
+            _validate_symptoms(disease.get("symptoms"))
+            assert "treatments" in disease
+            _validate_interventions(disease.get("treatments"))
+            assert "preventions" in disease
+            _validate_interventions(disease.get("preventions"))
+
+
 class TestListBotanicalGroups:
     @pytest.mark.asyncio
     async def test_success(self, client, seed_family_data):
@@ -184,69 +232,15 @@ class TestGetFamilyInfo:
         resp = client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert "id" in data and isinstance(data["id"], str)
-        assert "name" in data and isinstance(data["name"], str)
-        assert "pests" in data
-        assert isinstance(data["pests"], (list, type(None)))
-        assert "diseases" in data
-        assert isinstance(data["diseases"], (list, type(None)))
+
+        # Validate base family info
+        _assert_has_id_and_name(data)
         assert "botanical_group" in data and isinstance(data["botanical_group"], dict)
-        assert "id" in data["botanical_group"] and isinstance(
-            data["botanical_group"]["id"], str
-        )
+        _assert_has_id_and_name(data["botanical_group"])
 
-        if data.get("pests") is not None:
-            for pest in data.get("pests", []):
-                assert "id" in pest and isinstance(pest["id"], str)
-                assert "name" in pest and isinstance(pest["name"], str)
-                assert "treatments" in pest
-                assert isinstance(pest["treatments"], (list, type(None)))
-                assert "preventions" in pest
-                assert isinstance(pest["preventions"], (list, type(None)))
-
-                if pest.get("treatments") is not None:
-                    for treatment in pest["treatments"]:
-                        assert "id" in treatment and isinstance(treatment["id"], str)
-                        assert "name" in treatment and isinstance(
-                            treatment["name"], str
-                        )
-
-                if pest.get("preventions") is not None:
-                    for prevention in pest["preventions"]:
-                        assert "id" in prevention and isinstance(prevention["id"], str)
-                        assert "name" in prevention and isinstance(
-                            prevention["name"], str
-                        )
-
-        if data.get("diseases") is not None:
-            for disease in data.get("diseases", []):
-                assert "id" in disease and isinstance(disease["id"], str)
-                assert "name" in disease and isinstance(disease["name"], str)
-                assert "symptoms" in disease
-                assert isinstance(disease["symptoms"], (list, type(None)))
-                assert "treatments" in disease
-                assert isinstance(disease["treatments"], (list, type(None)))
-                assert "preventions" in disease
-                assert isinstance(disease["preventions"], (list, type(None)))
-
-                if disease.get("symptoms") is not None:
-                    for symptom in disease["symptoms"]:
-                        assert "id" in symptom and isinstance(symptom["id"], str)
-                        assert "name" in symptom and isinstance(symptom["name"], str)
-
-                if disease.get("treatments") is not None:
-                    for treatment in disease["treatments"]:
-                        assert "id" in treatment and isinstance(treatment["id"], str)
-                        assert "name" in treatment and isinstance(
-                            treatment["name"], str
-                        )
-
-                if disease.get("preventions") is not None:
-                    for prevention in disease["preventions"]:
-                        assert "id" in prevention and isinstance(prevention["id"], str)
-                        assert "name" in prevention and isinstance(
-                            prevention["name"], str
-                        )
+        # Validate nested structures
+        _validate_pests(data.get("pests"))
+        _validate_diseases(data.get("diseases"))
 
     @pytest.mark.asyncio
     async def test_empty_relations(self, client, seed_family_data, mocker):
