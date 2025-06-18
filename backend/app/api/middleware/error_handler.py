@@ -177,7 +177,6 @@ def handle_route_exceptions(
             status_code=error.status_code,
             **log_context,
         )
-        raise
     else:
         sanitized_error = sanitize_error_message(str(error))
         logger.error(
@@ -220,4 +219,5 @@ async def validate_user_exists(
     except ValueError as e:
         if "invalid literal for uuid" in str(e):
             raise InvalidTokenError("Invalid user ID format")
+        raise
         raise
