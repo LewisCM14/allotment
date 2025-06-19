@@ -51,6 +51,52 @@ export interface IFamilyInfo {
 	companion_to?: Array<{ id: string; name: string }>;
 }
 
+const processBotanicalGroupsResponse = (
+	response: { data: unknown },
+	cacheKey: string,
+	isTest: boolean,
+): IBotanicalGroup[] => {
+	if (!Array.isArray(response.data)) {
+		return [];
+	}
+
+	const groups = (response.data as IBotanicalGroup[]).map((group) => ({
+		...group,
+		recommended_rotation_years:
+			group.recommended_rotation_years === null
+				? null
+				: group.recommended_rotation_years,
+	}));
+
+	if (groups.length > 0 && !isTest) {
+		apiCache.set(cacheKey, groups);
+	}
+	return groups;
+};
+
+const handleGetBotanicalGroupsError = (error: unknown): Error => {
+	if (axios.isCancel(error)) {
+		throw error;
+	}
+	if (axios.isAxiosError(error)) {
+		if (error.response) {
+			switch (error.response.status) {
+				case 500:
+					return new Error(FAMILY_SERVICE_ERRORS.SERVER_ERROR);
+				default:
+					return new Error(
+						FAMILY_SERVICE_ERRORS.format(error.response.data) ||
+							FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR,
+					);
+			}
+		}
+		if (error.request) {
+			return new Error(FAMILY_SERVICE_ERRORS.NETWORK_ERROR);
+		}
+	}
+	return new Error(FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
+};
+
 export async function getBotanicalGroups(
 	signal?: AbortSignal,
 ): Promise<IBotanicalGroup[]> {
@@ -68,46 +114,9 @@ export async function getBotanicalGroups(
 				signal,
 			},
 		);
-
-		if (Array.isArray(response.data)) {
-			const groups = response.data.map((group) => ({
-				...group,
-				recommended_rotation_years:
-					group.recommended_rotation_years === null
-						? null
-						: group.recommended_rotation_years,
-			}));
-
-			if (groups.length > 0 && !isTest) {
-				apiCache.set(cacheKey, groups);
-			}
-			return groups;
-		}
-
-		return [];
+		return processBotanicalGroupsResponse(response, cacheKey, isTest);
 	} catch (error) {
-		if (axios.isCancel(error)) {
-			throw error;
-		}
-
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 500:
-						throw new Error(FAMILY_SERVICE_ERRORS.SERVER_ERROR);
-					default:
-						throw new Error(
-							FAMILY_SERVICE_ERRORS.format(error.response.data) ||
-								FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(FAMILY_SERVICE_ERRORS.NETWORK_ERROR);
-			}
-		}
-
-		throw new Error(FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
+		throw handleGetBotanicalGroupsError(error);
 	}
 }
 

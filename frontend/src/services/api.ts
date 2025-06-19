@@ -105,55 +105,61 @@ const checkOnlineStatus = (): boolean => {
 	return navigator.onLine;
 };
 
+const handleOnlineStatus = () => {
+	if (!checkOnlineStatus()) {
+		throw new Error("You are offline. Please check your connection.");
+	}
+};
+
+const handleRequestCancellation = (config: AxiosRequestConfig) => {
+	if (!config.url) return;
+	const requestKey = config.url + JSON.stringify(config.params || {});
+
+	if (pendingRequests.has(requestKey)) {
+		pendingRequests.get(requestKey)?.abort();
+	}
+
+	const controller = new AbortController();
+	config.signal = controller.signal;
+	pendingRequests.set(requestKey, controller);
+};
+
+const addAuthToken = (config: AxiosRequestConfig) => {
+	const token = localStorage.getItem("access_token");
+	if (token) {
+		config.headers ??= {};
+		config.headers.Authorization = `Bearer ${token}`;
+	}
+};
+
+const normalizeUrl = (config: AxiosRequestConfig) => {
+	if (!config.url || config.url.startsWith("http")) {
+		return;
+	}
+
+	if (!config.url.startsWith(API_VERSION)) {
+		const apiVersionClean = API_VERSION.endsWith("/")
+			? API_VERSION.slice(0, -1)
+			: API_VERSION;
+		const pathClean = config.url.startsWith("/")
+			? config.url
+			: `/${config.url}`;
+		config.url = apiVersionClean + pathClean;
+	}
+
+	if (API_URL && !config.url.startsWith("http")) {
+		const apiUrlClean = API_URL.endsWith("/") ? API_URL.slice(0, -1) : API_URL;
+		config.url = apiUrlClean + config.url;
+	}
+};
+
 // Request interceptor
 api.interceptors.request.use(
 	(config) => {
-		// Check if online
-		if (!checkOnlineStatus()) {
-			return Promise.reject(
-				new Error("You are offline. Please check your connection."),
-			);
-		}
-
-		// Handle request cancellation for duplicate requests
-		if (config.url) {
-			const requestKey = config.url + JSON.stringify(config.params || {});
-
-			// Cancel any existing requests with same URL and params
-			if (pendingRequests.has(requestKey)) {
-				pendingRequests.get(requestKey)?.abort();
-			}
-
-			// Create new abort controller
-			const controller = new AbortController();
-			config.signal = controller.signal;
-			pendingRequests.set(requestKey, controller);
-		}
-
-		// Add auth token
-		const token = localStorage.getItem("access_token");
-		if (token) config.headers.Authorization = `Bearer ${token}`;
-
-		// URL normalization
-		if (config.url && !config.url.startsWith("http")) {
-			if (!config.url.startsWith(API_VERSION)) {
-				const apiVersionClean = API_VERSION.endsWith("/")
-					? API_VERSION.slice(0, -1)
-					: API_VERSION;
-				const pathClean = config.url.startsWith("/")
-					? config.url
-					: `/${config.url}`;
-				config.url = apiVersionClean + pathClean;
-			}
-
-			if (API_URL && !config.url.startsWith("http")) {
-				const apiUrlClean = API_URL.endsWith("/")
-					? API_URL.slice(0, -1)
-					: API_URL;
-				config.url = apiUrlClean + config.url;
-			}
-		}
-
+		handleOnlineStatus();
+		handleRequestCancellation(config);
+		addAuthToken(config);
+		normalizeUrl(config);
 		return config;
 	},
 	(error) => {
@@ -208,6 +214,81 @@ const refreshAccessToken = async (): Promise<string | null> => {
 		localStorage.removeItem("access_token");
 		localStorage.removeItem("refresh_token");
 		return null;
+	}
+};
+
+const shouldRetryRequest = (error: AxiosError): boolean => {
+	if (!error.config) return false;
+	const { code, response } = error;
+	return (
+		code === "ECONNABORTED" ||
+		code === "ERR_NETWORK" ||
+		(!!response && response.status >= 500 && response.status < 600)
+	);
+};
+
+const handleRequestRetry = async (error: AxiosError) => {
+	if (!error.config) {
+		return Promise.reject(error);
+	}
+	const originalRequest = error.config;
+	originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+
+	if (originalRequest._retryCount > MAX_RETRIES) {
+		return Promise.reject(error);
+	}
+
+	const delay = RETRY_DELAY_MS * 2 ** (originalRequest._retryCount - 1);
+
+	errorMonitor.captureMessage(
+		`Retrying request (${originalRequest._retryCount}/${MAX_RETRIES})`,
+		{
+			url: originalRequest.url,
+			method: originalRequest.method,
+			status: error.response?.status,
+		},
+	);
+
+	await new Promise((resolve) => setTimeout(resolve, delay));
+	return api(originalRequest);
+};
+
+const handleTokenRefresh = async (error: AxiosError) => {
+	if (!error.config) {
+		return Promise.reject(error);
+	}
+	const originalRequest = error.config;
+	if (isRefreshing) {
+		return new Promise((resolve, reject) => {
+			failedQueue.push({ resolve, reject, config: originalRequest });
+		});
+	}
+
+	originalRequest._retry = true;
+	isRefreshing = true;
+
+	try {
+		const newToken = await refreshAccessToken();
+		isRefreshing = false;
+
+		if (newToken) {
+			processQueue(null, newToken);
+			originalRequest.headers.Authorization = `Bearer ${newToken}`;
+			return api(originalRequest);
+		}
+		processQueue(error, null);
+		return Promise.reject(error);
+	} catch (refreshError) {
+		isRefreshing = false;
+		processQueue(error, null);
+
+		errorMonitor.captureException(refreshError, {
+			context: "token_refresh_failed",
+			originalUrl: originalRequest.url,
+		});
+
+		window.location.href = "/login";
+		return Promise.reject(refreshError);
 	}
 };
 
@@ -271,73 +352,12 @@ api.interceptors.response.use(
 			return Promise.reject(error);
 		}
 
-		// Handle retry logic for network errors and certain status codes
-		if (
-			error.code === "ECONNABORTED" ||
-			error.code === "ERR_NETWORK" ||
-			(error.response?.status >= 500 && error.response?.status < 600)
-		) {
-			// Initialize retry count if not exists
-			originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-
-			if (originalRequest._retryCount <= MAX_RETRIES) {
-				// Exponential backoff
-				const delay = RETRY_DELAY_MS * 2 ** (originalRequest._retryCount - 1);
-
-				// Log retry attempt
-				errorMonitor.captureMessage(
-					`Retrying request (${originalRequest._retryCount}/${MAX_RETRIES})`,
-					{
-						url: originalRequest.url,
-						method: originalRequest.method,
-						status: error.response?.status,
-					},
-				);
-
-				// Wait and retry
-				await new Promise((resolve) => setTimeout(resolve, delay));
-				return api(originalRequest);
-			}
+		if (shouldRetryRequest(error)) {
+			return handleRequestRetry(error);
 		}
 
-		// Handle token refresh for 401 responses
-		if (error.response?.status === 401 && !originalRequest._retry) {
-			if (isRefreshing) {
-				// Add to queue if already refreshing
-				return new Promise((resolve, reject) => {
-					failedQueue.push({ resolve, reject, config: originalRequest });
-				});
-			}
-
-			originalRequest._retry = true;
-			isRefreshing = true;
-
-			try {
-				const newToken = await refreshAccessToken();
-				isRefreshing = false;
-
-				if (newToken) {
-					processQueue(null, newToken);
-					originalRequest.headers.Authorization = `Bearer ${newToken}`;
-					return api(originalRequest);
-				}
-				processQueue(error, null);
-				return Promise.reject(error);
-			} catch (refreshError) {
-				isRefreshing = false;
-				processQueue(error, null);
-
-				// Log auth failure
-				errorMonitor.captureException(refreshError, {
-					context: "token_refresh_failed",
-					originalUrl: originalRequest.url,
-				});
-
-				// Redirect to login
-				window.location.href = "/login";
-
-				return Promise.reject(refreshError);
-			}
+		if (error.response?.status === 401 && !originalRequest?._retry) {
+			return handleTokenRefresh(error);
 		}
 
 		// Log other errors to monitoring
