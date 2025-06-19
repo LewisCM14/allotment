@@ -6,6 +6,28 @@ import { ThemeProvider } from "./store/theme/ThemeProvider";
 
 const App = lazy(() => import("./App"));
 
+const onOfflineReady = () => {
+	import("sonner").then(({ toast }) =>
+		toast.success("App ready to work offline", {
+			description: "You can use the app even without an internet connection",
+			duration: 3000,
+		}),
+	);
+};
+
+const handlePwaRegistration = () => {
+	import("virtual:pwa-register").then(({ registerSW }) => {
+		const updateSW = registerSW({
+			onNeedRefresh() {
+				if (confirm("New content available. Reload?")) {
+					updateSW();
+				}
+			},
+			onOfflineReady,
+		});
+	});
+};
+
 function Main() {
 	useEffect(() => {
 		const loadWs = () => import("./utils/wsTracker");
@@ -18,29 +40,10 @@ function Main() {
 
 	useEffect(() => {
 		if (import.meta.env.PROD) {
-			const registerPWA = () =>
-				import("virtual:pwa-register").then(({ registerSW }) => {
-					const updateSW = registerSW({
-						onNeedRefresh() {
-							if (confirm("New content available. Reload?")) {
-								updateSW();
-							}
-						},
-						onOfflineReady() {
-							import("sonner").then(({ toast }) =>
-								toast.success("App ready to work offline", {
-									description:
-										"You can use the app even without an internet connection",
-									duration: 3000,
-								}),
-							);
-						},
-					});
-				});
 			if (window.requestIdleCallback) {
-				window.requestIdleCallback(registerPWA);
+				window.requestIdleCallback(handlePwaRegistration);
 			} else {
-				setTimeout(registerPWA, 0);
+				setTimeout(handlePwaRegistration, 0);
 			}
 		}
 	}, []);

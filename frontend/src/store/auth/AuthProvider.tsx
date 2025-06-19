@@ -24,47 +24,55 @@ export function AuthProvider({ children }: IAuthProvider) {
 	const [hasLoggedOut, setHasLoggedOut] = useState(false);
 
 	useEffect(() => {
-		const loadAuthState = async () => {
-			const localAccessToken = localStorage.getItem("access_token");
-			const localRefreshToken = localStorage.getItem("refresh_token");
-			const localFirstName = localStorage.getItem("first_name");
-			const localEmail = localStorage.getItem("user_email");
-			const localUserId = localStorage.getItem("user_id");
-			const localEmailVerified = localStorage.getItem("is_email_verified");
+		const loadAuthFromLocalStorage = () => {
+			const accessToken = localStorage.getItem("access_token");
+			const refreshToken = localStorage.getItem("refresh_token");
+			if (!accessToken || !refreshToken) return false;
 
-			if (localAccessToken && localRefreshToken) {
-				setAccessToken(localAccessToken);
-				setRefreshToken(localRefreshToken);
-				setIsAuthenticated(true);
-				if (localFirstName) {
-					setFirstName(localFirstName);
-				}
+			setAccessToken(accessToken);
+			setRefreshToken(refreshToken);
+			setIsAuthenticated(true);
 
-				if (localEmail && localFirstName) {
+			const firstName = localStorage.getItem("first_name");
+			if (firstName) {
+				setFirstName(firstName);
+				const email = localStorage.getItem("user_email");
+				const userId = localStorage.getItem("user_id");
+				const emailVerified = localStorage.getItem("is_email_verified");
+				if (email) {
 					setUser({
-						user_id: localUserId || "",
-						user_first_name: localFirstName,
-						user_email: localEmail,
-						isEmailVerified: localEmailVerified === "true",
+						user_id: userId ?? "",
+						user_first_name: firstName,
+						user_email: email,
+						isEmailVerified: emailVerified === "true",
 					});
 				}
-			} else {
-				const indexedDBAuth = await loadAuthFromIndexedDB();
+			}
+			return true;
+		};
 
-				if (indexedDBAuth.access_token && indexedDBAuth.refresh_token) {
-					setAccessToken(indexedDBAuth.access_token);
-					setRefreshToken(indexedDBAuth.refresh_token);
-					setIsAuthenticated(indexedDBAuth.isAuthenticated);
-					if (indexedDBAuth.firstName) {
-						setFirstName(indexedDBAuth.firstName);
-					}
+		const loadAuthFromDbAndSync = async () => {
+			const dbAuth = await loadAuthFromIndexedDB();
+			if (!dbAuth.access_token || !dbAuth.refresh_token) return;
 
-					localStorage.setItem("access_token", indexedDBAuth.access_token);
-					localStorage.setItem("refresh_token", indexedDBAuth.refresh_token);
-					if (indexedDBAuth.firstName) {
-						localStorage.setItem("first_name", indexedDBAuth.firstName);
-					}
-				}
+			setAccessToken(dbAuth.access_token);
+			setRefreshToken(dbAuth.refresh_token);
+			setIsAuthenticated(dbAuth.isAuthenticated);
+			if (dbAuth.firstName) {
+				setFirstName(dbAuth.firstName);
+			}
+
+			localStorage.setItem("access_token", dbAuth.access_token);
+			localStorage.setItem("refresh_token", dbAuth.refresh_token);
+			if (dbAuth.firstName) {
+				localStorage.setItem("first_name", dbAuth.firstName);
+			}
+		};
+
+		const loadAuthState = async () => {
+			const loadedFromLocal = loadAuthFromLocalStorage();
+			if (!loadedFromLocal) {
+				await loadAuthFromDbAndSync();
 			}
 
 			if (import.meta.env.DEV && import.meta.env.VITE_FORCE_AUTH === "true") {
