@@ -143,6 +143,55 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 		}
 	}, [isDropdownOpen, countryOptions, isLoading]);
 
+	const handleSelect = useCallback(
+		(field: any, currentValue: string) => {
+			field.onChange(currentValue);
+			setIsDropdownOpen(false);
+			popoverStateRef.current.isOpen = false;
+		},
+		[],
+	);
+
+	const handleOpenChange = useCallback((isOpen: boolean) => {
+		popoverStateRef.current.isOpen = isOpen;
+		if (isDropdownOpen !== isOpen) {
+			setIsDropdownOpen(isOpen);
+		}
+		if (isOpen) {
+			setSearchValue("");
+			requestAnimationFrame(() => {
+				inputRef.current?.focus();
+			});
+		}
+	}, [isDropdownOpen]);
+
+	const getSelectedCountryLabel = useCallback(
+		(fieldValue: string) => {
+			if (!fieldValue) return "";
+			return (
+				countryOptions.find((c) => c.value === fieldValue)?.label || ""
+			);
+		},
+		[countryOptions],
+	);
+
+	const rowRenderer = useCallback(
+		(fieldValue: string, handleSelectFn: (field: any, value: string) => void, field: any) =>
+			({ index, style }: { index: number; style: React.CSSProperties }) => {
+				const country = filteredOptions[index];
+				if (!country) return null;
+				return (
+					<CountryItemRenderer
+						country={country}
+						style={style}
+						isSelected={fieldValue === country.value}
+						onSelect={(value) => handleSelectFn(field, value)}
+					/>
+				);
+			},
+		[filteredOptions],
+	);
+
 	return (
 		<>
 			<Label htmlFor="country_code">Country</Label>
@@ -150,69 +199,12 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 				control={control}
 				name="country_code"
 				render={({ field }) => {
-					// Memoize handlers to prevent recreating them on each render
-					const handleSelect = useCallback(
-						(currentValue: string) => {
-							field.onChange(currentValue);
-							setIsDropdownOpen(false);
-							popoverStateRef.current.isOpen = false;
-						},
-						[field],
-					);
-
-					const handleOpenChange = useCallback((isOpen: boolean) => {
-						// Store state in ref for event handlers
-						popoverStateRef.current.isOpen = isOpen;
-
-						// Only update state if value actually changed
-						if (isDropdownOpen !== isOpen) {
-							setIsDropdownOpen(isOpen);
-						}
-
-						if (isOpen) {
-							setSearchValue("");
-							// Focus with RAF for better performance
-							requestAnimationFrame(() => {
-								inputRef.current?.focus();
-							});
-						}
-					}, []);
-
-					// Extract the current selected country label
-					// biome-ignore lint/correctness/useExhaustiveDependencies: countryOptions needed for functionality
-					const selectedCountryLabel = useMemo(() => {
-						if (!field.value) return "";
-						return (
-							countryOptions.find((c) => c.value === field.value)?.label || ""
-						);
-					}, [field.value, countryOptions]);
-
-					// Optimized row renderer for react-window
-					// biome-ignore lint/correctness/useExhaustiveDependencies: filteredOptions needed for functionality
-					const rowRenderer = useCallback(
-						({
-							index,
-							style,
-						}: { index: number; style: React.CSSProperties }) => {
-							const country = filteredOptions[index];
-							if (!country) return null;
-
-							return (
-								<CountryItemRenderer
-									country={country}
-									style={style}
-									isSelected={field.value === country.value}
-									onSelect={handleSelect}
-								/>
-							);
-						},
-						[field.value, handleSelect, filteredOptions],
-					);
-
+					const selectedCountryLabel = getSelectedCountryLabel(field.value);
+					const renderRow = rowRenderer(field.value, handleSelect, field);
 					return (
 						<Popover open={isDropdownOpen} onOpenChange={handleOpenChange}>
 							<PopoverTrigger asChild>
-								<Button // biome-ignore lint/a11y/useSemanticElements: This is a valid ARIA pattern for a custom combobox
+								<Button
 									variant="outline"
 									role="combobox"
 									aria-expanded={isDropdownOpen}
@@ -222,8 +214,6 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 									<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
 								</Button>
 							</PopoverTrigger>
-
-							{/* Only render content when dropdown is open */}
 							{isDropdownOpen && (
 								<PopoverContent
 									className="w-full p-0"
@@ -256,7 +246,7 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 													overscanCount={OVERSCAN_COUNT}
 													className="scrollbar-thin"
 												>
-													{rowRenderer}
+													{renderRow}
 												</List>
 											</CommandGroup>
 										)}
