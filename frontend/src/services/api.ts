@@ -163,8 +163,13 @@ api.interceptors.request.use(
 		return config;
 	},
 	(error) => {
-		errorMonitor.captureException(error, { context: "request_interceptor" });
-		return Promise.reject(error);
+		if (error instanceof Error) {
+			errorMonitor.captureException(error, { context: "request_interceptor" });
+			return Promise.reject(error);
+		}
+		const err = new Error(String(error));
+		errorMonitor.captureException(err, { context: "request_interceptor" });
+		return Promise.reject(err);
 	},
 );
 
@@ -255,7 +260,9 @@ const handleRequestRetry = async (error: AxiosError) => {
 
 const handleTokenRefresh = async (error: AxiosError) => {
 	if (!error.config) {
-		return Promise.reject(error);
+		return Promise.reject(
+			error instanceof Error ? error : new Error(String(error)),
+		);
 	}
 	const originalRequest = error.config;
 	if (isRefreshing) {
@@ -277,7 +284,9 @@ const handleTokenRefresh = async (error: AxiosError) => {
 			return api(originalRequest);
 		}
 		processQueue(error, null);
-		return Promise.reject(error);
+		return Promise.reject(
+			error instanceof Error ? error : new Error(String(error)),
+		);
 	} catch (refreshError) {
 		isRefreshing = false;
 		processQueue(error, null);
@@ -288,7 +297,11 @@ const handleTokenRefresh = async (error: AxiosError) => {
 		});
 
 		window.location.href = "/login";
-		return Promise.reject(refreshError);
+		return Promise.reject(
+			refreshError instanceof Error
+				? refreshError
+				: new Error(String(refreshError)),
+		);
 	}
 };
 
@@ -349,7 +362,9 @@ api.interceptors.response.use(
 
 		// Do not log or retry if the request was canceled
 		if (axios.isCancel(error)) {
-			return Promise.reject(error);
+			return Promise.reject(
+				error instanceof Error ? error : new Error(String(error)),
+			);
 		}
 
 		if (shouldRetryRequest(error)) {
@@ -370,7 +385,9 @@ api.interceptors.response.use(
 			});
 		}
 
-		return Promise.reject(error);
+		return Promise.reject(
+			error instanceof Error ? error : new Error(String(error)),
+		);
 	},
 );
 

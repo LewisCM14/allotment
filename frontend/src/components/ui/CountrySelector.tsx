@@ -23,7 +23,12 @@ import {
 	useState,
 	useTransition,
 } from "react";
-import { type Control, Controller, type FieldError } from "react-hook-form";
+import {
+	type Control,
+	Controller,
+	type FieldError,
+	type ControllerRenderProps,
+} from "react-hook-form";
 import { FixedSizeList as List } from "react-window";
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -144,7 +149,10 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 	}, [isDropdownOpen, countryOptions, isLoading]);
 
 	const handleSelect = useCallback(
-		(field: any, currentValue: string) => {
+		(
+			field: ControllerRenderProps<RegisterFormData, "country_code">,
+			currentValue: string,
+		) => {
 			field.onChange(currentValue);
 			setIsDropdownOpen(false);
 			popoverStateRef.current.isOpen = false;
@@ -152,31 +160,39 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 		[],
 	);
 
-	const handleOpenChange = useCallback((isOpen: boolean) => {
-		popoverStateRef.current.isOpen = isOpen;
-		if (isDropdownOpen !== isOpen) {
-			setIsDropdownOpen(isOpen);
-		}
-		if (isOpen) {
-			setSearchValue("");
-			requestAnimationFrame(() => {
-				inputRef.current?.focus();
-			});
-		}
-	}, [isDropdownOpen]);
+	const handleOpenChange = useCallback(
+		(isOpen: boolean) => {
+			popoverStateRef.current.isOpen = isOpen;
+			if (isDropdownOpen !== isOpen) {
+				setIsDropdownOpen(isOpen);
+			}
+			if (isOpen) {
+				setSearchValue("");
+				requestAnimationFrame(() => {
+					inputRef.current?.focus();
+				});
+			}
+		},
+		[isDropdownOpen],
+	);
 
 	const getSelectedCountryLabel = useCallback(
 		(fieldValue: string) => {
 			if (!fieldValue) return "";
-			return (
-				countryOptions.find((c) => c.value === fieldValue)?.label || ""
-			);
+			return countryOptions.find((c) => c.value === fieldValue)?.label || "";
 		},
 		[countryOptions],
 	);
 
 	const rowRenderer = useCallback(
-		(fieldValue: string, handleSelectFn: (field: any, value: string) => void, field: any) =>
+		(
+			fieldValue: string,
+			handleSelectFn: (
+				field: ControllerRenderProps<RegisterFormData, "country_code">,
+				value: string,
+			) => void,
+			field: ControllerRenderProps<RegisterFormData, "country_code">,
+		) =>
 			({ index, style }: { index: number; style: React.CSSProperties }) => {
 				const country = filteredOptions[index];
 				if (!country) return null;
@@ -206,7 +222,6 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
-									role="combobox"
 									aria-expanded={isDropdownOpen}
 									className="w-full justify-between"
 								>
