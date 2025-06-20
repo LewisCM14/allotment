@@ -18,7 +18,6 @@ import {
 	memo,
 	useCallback,
 	useEffect,
-	useMemo,
 	useRef,
 	useState,
 	useTransition,
@@ -112,6 +111,41 @@ const CountryItemRenderer = memo(
 
 CountryItemRenderer.displayName = "CountryItemRenderer";
 
+interface CountryListRowRendererProps {
+	filteredOptions: Array<{ value: string; label: string }>;
+	fieldValue: string;
+	handleSelectFn: (
+		field: ControllerRenderProps<RegisterFormData, "country_code">,
+		value: string,
+	) => void;
+	field: ControllerRenderProps<RegisterFormData, "country_code">;
+	index: number;
+	style: React.CSSProperties;
+}
+
+const CountryListRowRenderer = memo(
+	({
+		filteredOptions,
+		fieldValue,
+		handleSelectFn,
+		field,
+		index,
+		style,
+	}: CountryListRowRendererProps) => {
+		const country = filteredOptions[index];
+		if (!country) return null;
+		return (
+			<CountryItemRenderer
+				country={country}
+				style={style}
+				isSelected={fieldValue === country.value}
+				onSelect={(value) => handleSelectFn(field, value)}
+			/>
+		);
+	},
+);
+CountryListRowRenderer.displayName = "CountryListRowRenderer";
+
 const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { options: countryOptions, isLoading } = useCountryOptions();
@@ -179,33 +213,9 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 	const getSelectedCountryLabel = useCallback(
 		(fieldValue: string) => {
 			if (!fieldValue) return "";
-			return countryOptions.find((c) => c.value === fieldValue)?.label || "";
+			return countryOptions.find((c) => c.value === fieldValue)?.label ?? "";
 		},
 		[countryOptions],
-	);
-
-	const rowRenderer = useCallback(
-		(
-			fieldValue: string,
-			handleSelectFn: (
-				field: ControllerRenderProps<RegisterFormData, "country_code">,
-				value: string,
-			) => void,
-			field: ControllerRenderProps<RegisterFormData, "country_code">,
-		) =>
-			({ index, style }: { index: number; style: React.CSSProperties }) => {
-				const country = filteredOptions[index];
-				if (!country) return null;
-				return (
-					<CountryItemRenderer
-						country={country}
-						style={style}
-						isSelected={fieldValue === country.value}
-						onSelect={(value) => handleSelectFn(field, value)}
-					/>
-				);
-			},
-		[filteredOptions],
 	);
 
 	return (
@@ -216,7 +226,6 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 				name="country_code"
 				render={({ field }) => {
 					const selectedCountryLabel = getSelectedCountryLabel(field.value);
-					const renderRow = rowRenderer(field.value, handleSelect, field);
 					return (
 						<Popover open={isDropdownOpen} onOpenChange={handleOpenChange}>
 							<PopoverTrigger asChild>
@@ -261,7 +270,16 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 													overscanCount={OVERSCAN_COUNT}
 													className="scrollbar-thin"
 												>
-													{renderRow}
+													{({ index, style }) => (
+														<CountryListRowRenderer
+															filteredOptions={filteredOptions}
+															fieldValue={field.value}
+															handleSelectFn={handleSelect}
+															field={field}
+															index={index}
+															style={style}
+														/>
+													)}
 												</List>
 											</CommandGroup>
 										)}
