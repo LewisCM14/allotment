@@ -17,10 +17,11 @@ export default function Footer() {
 		{
 			href: "#",
 			label: "Sign Out",
-			onClick: async (e) => {
+			onClick: (e) => {
 				e.preventDefault();
-				await logout();
-				closeMenu();
+				logout().then(() => {
+					closeMenu();
+				});
 			},
 		},
 	];
