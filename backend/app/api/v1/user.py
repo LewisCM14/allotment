@@ -211,7 +211,6 @@ async def login(
                 db_session=db,
                 user_model=User,
                 user_email=user.user_email,
-                log_context=log_context,
             )
         except UserNotFoundError:
             logger.warning(
@@ -341,7 +340,6 @@ async def refresh_token(
         db_session=db,
         user_model=User,
         user_id=str(uuid_user_id),
-        log_context=log_context,
     )
     log_context["email"] = user.user_email
     access_token = create_token(user_id=str(user.user_id), token_type="access")
@@ -389,7 +387,7 @@ async def request_verification_email(
     }
     logger.debug("Verification email requested", **log_context)
     user = await validate_user_exists(
-        db_session=db, user_model=User, user_email=user_email, log_context=log_context
+        db_session=db, user_model=User, user_email=user_email
     )
     log_context["user_id"] = str(user.user_id)
     try:
@@ -514,7 +512,7 @@ async def check_verification_status(
     }
     logger.debug("Checking email verification status", **log_context)
     user = await validate_user_exists(
-        db_session=db, user_model=User, user_email=user_email, log_context=log_context
+        db_session=db, user_model=User, user_email=user_email
     )
     log_context["user_id"] = str(user.user_id)
     log_context["verification_status"] = str(user.is_email_verified)
