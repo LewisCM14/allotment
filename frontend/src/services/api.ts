@@ -362,13 +362,12 @@ api.interceptors.response.use(
 
 		// Do not log or retry if the request was canceled
 		if (axios.isCancel(error)) {
-			return Promise.reject(
-				error instanceof Error
-					? error
-					: new Error(
-							typeof error === "object" ? JSON.stringify(error) : String(error),
-						),
-			);
+			const message =
+				typeof error === "object" && error
+					? JSON.stringify(error)
+					: String(error);
+			const cancelError = error instanceof Error ? error : new Error(message);
+			return Promise.reject(cancelError);
 		}
 
 		if (shouldRetryRequest(error)) {
