@@ -10,7 +10,6 @@ from typing import Any, Dict, Optional, Type
 
 import structlog
 from authlib.jose import jwt
-from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -111,7 +110,7 @@ class UserUnitOfWork:
             try:
                 user = UserFactory.create_user(user_data)
                 self.db.add(user)
-            except (RequestValidationError, ValidationError):
+            except ValidationError:
                 raise
             except Exception as exc:
                 logger.error("Error creating user", error=str(exc), **safe_context)
