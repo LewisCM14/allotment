@@ -196,7 +196,6 @@ async def validate_user_exists(
     user_model: Any,
     user_email: Optional[str] = None,
     user_id: Optional[str] = None,
-    log_context: Optional[Dict[str, Any]] = None,
 ) -> Any:
     """Validate that a user exists."""
     try:
@@ -219,5 +218,4 @@ async def validate_user_exists(
     except ValueError as e:
         if "invalid literal for uuid" in str(e):
             raise InvalidTokenError("Invalid user ID format")
-        raise
         raise

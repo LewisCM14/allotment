@@ -111,36 +111,33 @@ class UserFactory:
             "request_id": request_id_ctx_var.get(),
         }
 
-        try:
-            if len(first_name) < 2:
-                logger.debug(
-                    "First name too short",
-                    length=len(first_name),
-                    min_length=2,
-                    **context,
-                )
-                raise UserFactoryValidationError(
-                    "First name must be at least 2 characters long", field
-                )
-            if len(first_name) > 50:
-                logger.debug(
-                    "First name too long",
-                    length=len(first_name),
-                    max_length=50,
-                    **context,
-                )
-                raise UserFactoryValidationError(
-                    "First name cannot be longer than 50 characters", field
-                )
-            if not re.match(r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$", first_name):
-                logger.debug("First name contains invalid characters", **context)
-                raise UserFactoryValidationError(
-                    "First name can only contain letters, spaces, and hyphens", field
-                )
+        if len(first_name) < 2:
+            logger.debug(
+                "First name too short",
+                length=len(first_name),
+                min_length=2,
+                **context,
+            )
+            raise UserFactoryValidationError(
+                "First name must be at least 2 characters long", field
+            )
+        if len(first_name) > 50:
+            logger.debug(
+                "First name too long",
+                length=len(first_name),
+                max_length=50,
+                **context,
+            )
+            raise UserFactoryValidationError(
+                "First name cannot be longer than 50 characters", field
+            )
+        if not re.match(r"^[a-zA-Z]+(?:[- ][a-zA-Z]+)*$", first_name):
+            logger.debug("First name contains invalid characters", **context)
+            raise UserFactoryValidationError(
+                "First name can only contain letters, spaces, and hyphens", field
+            )
 
-            logger.debug("First name validation passed", **context)
-        except UserFactoryValidationError:
-            raise
+        logger.debug("First name validation passed", **context)
 
     @staticmethod
     def validate_country_code(country_code: str) -> None:
@@ -152,21 +149,18 @@ class UserFactory:
             "request_id": request_id_ctx_var.get(),
         }
 
-        try:
-            if len(country_code) != 2:
-                logger.debug(
-                    "Invalid country code length",
-                    length=len(country_code),
-                    expected=2,
-                    **context,
-                )
-                raise UserFactoryValidationError(
-                    "Country code must be exactly 2 characters", field
-                )
+        if len(country_code) != 2:
+            logger.debug(
+                "Invalid country code length",
+                length=len(country_code),
+                expected=2,
+                **context,
+            )
+            raise UserFactoryValidationError(
+                "Country code must be exactly 2 characters", field
+            )
 
-            logger.debug("Country code validation passed", **context)
-        except UserFactoryValidationError:
-            raise
+        logger.debug("Country code validation passed", **context)
 
     @staticmethod
     def validate_password(password: str) -> None:
@@ -178,49 +172,37 @@ class UserFactory:
             "request_id": request_id_ctx_var.get(),
         }
 
-        try:
-            if len(password) < 8:
-                logger.debug("Password too short", min_length=8, **context)
-                raise UserFactoryValidationError(
-                    "Password must be at least 8 characters long", field
-                )
-            if len(password) > 30:
-                logger.debug("Password too long", max_length=30, **context)
-                raise UserFactoryValidationError(
-                    "Password cannot be longer than 30 characters", field
-                )
+        if len(password) < 8:
+            logger.debug("Password too short", min_length=8, **context)
+            raise UserFactoryValidationError(
+                "Password must be at least 8 characters long", field
+            )
+        if len(password) > 30:
+            logger.debug("Password too long", max_length=30, **context)
+            raise UserFactoryValidationError(
+                "Password cannot be longer than 30 characters", field
+            )
 
-            # Check password complexity requirements
-            complexity_checks = {
-                "uppercase letter": any(c.isupper() for c in password),
-                "lowercase letter": any(c.islower() for c in password),
-                "digit": any(c.isdigit() for c in password),
-                "special character": any(not c.isalnum() for c in password),
-            }
+        # Check password complexity requirements
+        complexity_checks = {
+            "uppercase letter": any(c.isupper() for c in password),
+            "lowercase letter": any(c.islower() for c in password),
+            "digit": any(c.isdigit() for c in password),
+            "special character": any(not c.isalnum() for c in password),
+        }
 
-            # Collect missing requirements
-            requirements = [
-                req for req, passed in complexity_checks.items() if not passed
-            ]
+        # Collect missing requirements
+        requirements = [req for req, passed in complexity_checks.items() if not passed]
 
-            if requirements:
-                logger.debug(
-                    "Password missing requirements",
-                    missing_requirements=requirements,
-                    requirement_count=len(requirements),
-                    **context,
-                )
-                raise UserFactoryValidationError(
-                    f"Password must contain {', '.join(requirements)}", field
-                )
-
-            logger.debug("Password validation passed", **context)
-        except UserFactoryValidationError:
-            raise
-        except Exception as e:
-            logger.error(
-                "Unexpected error during password validation",
-                error=sanitize_error_message(str(e)),
+        if requirements:
+            logger.debug(
+                "Password missing requirements",
+                missing_requirements=requirements,
+                requirement_count=len(requirements),
                 **context,
             )
-            raise
+            raise UserFactoryValidationError(
+                f"Password must contain {', '.join(requirements)}", field
+            )
+
+        logger.debug("Password validation passed", **context)
