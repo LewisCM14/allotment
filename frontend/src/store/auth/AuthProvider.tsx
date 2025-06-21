@@ -1,7 +1,13 @@
 import type { IUserData } from "@/features/user/services/UserService";
 import api from "@/services/api";
 import { API_VERSION } from "@/services/apiConfig";
-import { type ReactNode, useEffect, useState } from "react";
+import {
+	type ReactNode,
+	useCallback,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 import { toast } from "sonner";
 import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
 import {
@@ -91,58 +97,88 @@ export function AuthProvider({ children }: IAuthProvider) {
 		}
 	}, [hasLoggedOut]);
 
-	const login = async (
-		tokenPair: ITokenPair,
-		userFirstName?: string,
-		userData?: IUserData,
-	) => {
-		setAccessToken(tokenPair.access_token);
-		setRefreshToken(tokenPair.refresh_token);
-		setIsAuthenticated(true);
-		setHasLoggedOut(false);
+	const login = useCallback(
+		async (
+			tokenPair: ITokenPair,
+			userFirstName?: string,
+			userData?: IUserData,
+		) => {
+			setAccessToken(tokenPair.access_token);
+			setRefreshToken(tokenPair.refresh_token);
+			setIsAuthenticated(true);
+			setHasLoggedOut(false);
 
-		localStorage.setItem("access_token", tokenPair.access_token);
-		localStorage.setItem("refresh_token", tokenPair.refresh_token);
+			localStorage.setItem("access_token", tokenPair.access_token);
+			localStorage.setItem("refresh_token", tokenPair.refresh_token);
 
-		if (userFirstName) {
-			setFirstName(userFirstName);
-			localStorage.setItem("first_name", userFirstName);
-			if (userData) {
-				const userObj: IUser = {
-					user_id: userData.user_id || "",
-					user_first_name: userFirstName,
-					user_email: userData.user_email || "",
-					isEmailVerified: userData.is_email_verified || false,
-				};
-				setUser(userObj);
+			if (userFirstName) {
+				setFirstName(userFirstName);
+				localStorage.setItem("first_name", userFirstName);
+				if (userData) {
+					const userObj: IUser = {
+						user_id: userData.user_id || "",
+						user_first_name: userFirstName,
+						user_email: userData.user_email || "",
+						isEmailVerified: userData.is_email_verified || false,
+					};
+					setUser(userObj);
 
-				localStorage.setItem("user_email", userObj.user_email);
-				localStorage.setItem("user_id", userObj.user_id);
-				localStorage.setItem(
-					"is_email_verified",
-					String(userObj.isEmailVerified),
-				);
+					localStorage.setItem("user_email", userObj.user_email);
+					localStorage.setItem("user_id", userObj.user_id);
+					localStorage.setItem(
+						"is_email_verified",
+						String(userObj.isEmailVerified),
+					);
+				}
+
+				await saveAuthToIndexedDB({
+					...tokenPair,
+					firstName: userFirstName,
+					isAuthenticated: true,
+				});
+
+				toast.success(`Welcome, ${userFirstName}!`, {
+					description: "You've successfully logged in",
+					duration: 3000,
+				});
+			} else {
+				await saveAuthToIndexedDB({
+					...tokenPair,
+					isAuthenticated: true,
+				});
 			}
+		},
+		[],
+	);
 
-			await saveAuthToIndexedDB({
-				...tokenPair,
-				firstName: userFirstName,
-				isAuthenticated: true,
-			});
+	const logout = useCallback(async () => {
+		const currentFirstName = firstName;
 
-			toast.success(`Welcome, ${userFirstName}!`, {
-				description: "You've successfully logged in",
+		if (currentFirstName) {
+			toast.success(`Goodbye, ${currentFirstName}`, {
+				description: "You've been successfully logged out",
 				duration: 3000,
 			});
-		} else {
-			await saveAuthToIndexedDB({
-				...tokenPair,
-				isAuthenticated: true,
-			});
 		}
-	};
 
-	const refreshAccessToken = async (): Promise<boolean> => {
+		setAccessToken(null);
+		setRefreshToken(null);
+		setFirstName(null);
+		setUser(null);
+		setIsAuthenticated(false);
+		setHasLoggedOut(true);
+
+		localStorage.removeItem("access_token");
+		localStorage.removeItem("refresh_token");
+		localStorage.removeItem("first_name");
+		localStorage.removeItem("user_email");
+		localStorage.removeItem("user_id");
+		localStorage.removeItem("is_email_verified");
+
+		await clearAuthFromIndexedDB();
+	}, [firstName]);
+
+	const refreshAccessToken = useCallback(async (): Promise<boolean> => {
 		try {
 			if (!refreshToken) {
 				return false;
@@ -170,52 +206,37 @@ export function AuthProvider({ children }: IAuthProvider) {
 			logout();
 			return false;
 		}
-	};
-
-	const logout = async () => {
-		const currentFirstName = firstName;
-
-		if (currentFirstName) {
-			toast.success(`Goodbye, ${currentFirstName}`, {
-				description: "You've been successfully logged out",
-				duration: 3000,
-			});
-		}
-
-		setAccessToken(null);
-		setRefreshToken(null);
-		setFirstName(null);
-		setUser(null);
-		setIsAuthenticated(false);
-		setHasLoggedOut(true);
-
-		localStorage.removeItem("access_token");
-		localStorage.removeItem("refresh_token");
-		localStorage.removeItem("first_name");
-		localStorage.removeItem("user_email");
-		localStorage.removeItem("user_id");
-		localStorage.removeItem("is_email_verified");
-
-		await clearAuthFromIndexedDB();
-	};
+	}, [refreshToken, firstName, logout]);
 
 	if (isLoading) {
 		return null;
 	}
 
+	const authContextValue = useMemo(
+		() => ({
+			accessToken,
+			refreshToken,
+			isAuthenticated,
+			firstName,
+			user,
+			login,
+			logout,
+			refreshAccessToken,
+		}),
+		[
+			accessToken,
+			refreshToken,
+			isAuthenticated,
+			firstName,
+			user,
+			login,
+			logout,
+			refreshAccessToken,
+		],
+	);
+
 	return (
-		<AuthContext.Provider
-			value={{
-				accessToken,
-				refreshToken,
-				isAuthenticated,
-				firstName,
-				user,
-				login,
-				logout,
-				refreshAccessToken,
-			}}
-		>
+		<AuthContext.Provider value={authContextValue}>
 			{children}
 		</AuthContext.Provider>
 	);

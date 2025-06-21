@@ -16,7 +16,7 @@ export const registerSchema = z
 				"Password must contain at least one number",
 			)
 			.refine(
-				(password) => /[!@#$%^&*\(\)-_=+\[\]{}|;:'",.\\<>\/?`~]/.test(password),
+				(password) => /[!@#$%^&*()\-_=+\[\]{}|;:'",.\\<>/`~?]/.test(password),
 				"Password must contain at least one special character",
 			),
 		password_confirm: z.string().min(1, "Please confirm your password"),

@@ -84,6 +84,13 @@ export default function RegisterForm(_: React.ComponentProps<"div">) {
 		}
 	};
 
+	let buttonText = "Register";
+	if (isSubmitting) {
+		buttonText = "Registering...";
+	} else if (isOffline) {
+		buttonText = "Offline";
+	}
+
 	return (
 		<PageLayout variant="default">
 			<Card className="w-full">
@@ -217,11 +224,7 @@ export default function RegisterForm(_: React.ComponentProps<"div">) {
 									disabled={isSubmitting || isOffline}
 									className="w-full"
 								>
-									{isSubmitting
-										? "Registering..."
-										: isOffline
-											? "Offline"
-											: "Register"}
+									{buttonText}
 								</Button>
 							</div>
 						</div>

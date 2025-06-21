@@ -85,6 +85,16 @@ function LoginForm(_: React.ComponentProps<"div">) {
 		}
 	};
 
+	const getButtonText = () => {
+		if (isSubmitting) {
+			return "Logging in...";
+		}
+		if (isOffline) {
+			return "Offline";
+		}
+		return "Login";
+	};
+
 	return (
 		<PageLayout variant="default">
 			<Card className="w-full">
@@ -169,11 +179,7 @@ function LoginForm(_: React.ComponentProps<"div">) {
 									disabled={isSubmitting || isOffline}
 									className="w-full"
 								>
-									{isSubmitting
-										? "Logging in..."
-										: isOffline
-											? "Offline"
-											: "Login"}
+									{getButtonText()}
 								</Button>
 							</div>
 						</div>

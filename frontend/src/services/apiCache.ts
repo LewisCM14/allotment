@@ -9,8 +9,8 @@ interface ICacheEntry<T> {
 }
 
 class ApiCache {
-	private cache = new Map<string, ICacheEntry<unknown>>();
-	private defaultDuration = 5 * 60 * 1000; // 5 minutes
+	private readonly cache = new Map<string, ICacheEntry<unknown>>();
+	private readonly defaultDuration = 5 * 60 * 1000; // 5 minutes
 
 	set<T>(key: string, data: T, duration?: number): void {
 		this.cache.set(key, {
