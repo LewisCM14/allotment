@@ -13,8 +13,8 @@ interface IErrorContext {
 }
 
 class ErrorMonitoringService {
-	private isProduction = import.meta.env.PROD;
-	private logEndpoint: string;
+	private readonly isProduction = import.meta.env.PROD;
+	private readonly logEndpoint: string;
 
 	constructor() {
 		const apiVersionPath = API_VERSION;

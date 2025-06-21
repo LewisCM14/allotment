@@ -11,17 +11,12 @@ const getEnvVariable = (
 	key: string,
 	defaultValue?: string,
 ): string | undefined => {
-	if (
-		typeof window !== "undefined" &&
-		window.envConfig &&
-		typeof window.envConfig[key] !== "undefined"
-	) {
-		return window.envConfig[key];
-	}
-	if (import.meta.env && typeof import.meta.env[key] !== "undefined") {
-		return String(import.meta.env[key]);
-	}
-	return defaultValue;
+	const runtimeVar =
+		typeof window !== "undefined" ? window.envConfig?.[key] : undefined;
+	const buildTimeVar =
+		import.meta.env?.[key] != null ? String(import.meta.env[key]) : undefined;
+
+	return runtimeVar ?? buildTimeVar ?? defaultValue;
 };
 
 // --- API URL Configuration ---
