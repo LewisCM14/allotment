@@ -218,6 +218,47 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 		[countryOptions],
 	);
 
+	const renderCommandContent = useCallback(
+		(field: ControllerRenderProps<RegisterFormData, "country_code">) => {
+			if (isLoading) {
+				return <div className="py-6 text-center">Loading countries…</div>;
+			}
+
+			if (isPending) {
+				return <div className="py-6 text-center">Searching…</div>;
+			}
+
+			if (filteredOptions.length === 0) {
+				return <CommandEmpty>No country found.</CommandEmpty>;
+			}
+
+			return (
+				<CommandGroup className="overflow-hidden p-0">
+					<List
+						height={Math.min(LIST_HEIGHT, filteredOptions.length * ITEM_HEIGHT)}
+						width="100%"
+						itemCount={filteredOptions.length}
+						itemSize={ITEM_HEIGHT}
+						overscanCount={OVERSCAN_COUNT}
+						className="scrollbar-thin"
+					>
+						{({ index, style }) => (
+							<CountryListRowRenderer
+								filteredOptions={filteredOptions}
+								fieldValue={field.value}
+								handleSelectFn={handleSelect}
+								field={field}
+								index={index}
+								style={style}
+							/>
+						)}
+					</List>
+				</CommandGroup>
+			);
+		},
+		[isLoading, isPending, filteredOptions, handleSelect],
+	);
+
 	return (
 		<>
 			<Label htmlFor="country_code">Country</Label>
@@ -251,38 +292,7 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 											ref={inputRef}
 											className="border-none focus:ring-0"
 										/>
-										{isLoading ? (
-											<div className="py-6 text-center">Loading countries…</div>
-										) : isPending ? (
-											<div className="py-6 text-center">Searching…</div>
-										) : filteredOptions.length === 0 ? (
-											<CommandEmpty>No country found.</CommandEmpty>
-										) : (
-											<CommandGroup className="overflow-hidden p-0">
-												<List
-													height={Math.min(
-														LIST_HEIGHT,
-														filteredOptions.length * ITEM_HEIGHT,
-													)}
-													width="100%"
-													itemCount={filteredOptions.length}
-													itemSize={ITEM_HEIGHT}
-													overscanCount={OVERSCAN_COUNT}
-													className="scrollbar-thin"
-												>
-													{({ index, style }) => (
-														<CountryListRowRenderer
-															filteredOptions={filteredOptions}
-															fieldValue={field.value}
-															handleSelectFn={handleSelect}
-															field={field}
-															index={index}
-															style={style}
-														/>
-													)}
-												</List>
-											</CommandGroup>
-										)}
+										{renderCommandContent(field)}
 									</Command>
 								</PopoverContent>
 							)}
