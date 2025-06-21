@@ -208,10 +208,6 @@ export function AuthProvider({ children }: IAuthProvider) {
 		}
 	}, [refreshToken, firstName, logout]);
 
-	if (isLoading) {
-		return null;
-	}
-
 	const authContextValue = useMemo(
 		() => ({
 			accessToken,
@@ -234,6 +230,10 @@ export function AuthProvider({ children }: IAuthProvider) {
 			refreshAccessToken,
 		],
 	);
+
+	if (isLoading) {
+		return null;
+	}
 
 	return (
 		<AuthContext.Provider value={authContextValue}>
