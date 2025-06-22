@@ -5,11 +5,11 @@ import type { INavLink } from "@/types/NavigationTypes";
 import { User } from "lucide-react";
 
 interface IFooterPresenter {
-	isOpen: boolean;
-	navLinks: INavLink[];
-	onMenuClick: () => void;
-	closeMenu: () => void;
-	isAuthenticated: boolean;
+	readonly isOpen: boolean;
+	readonly navLinks: INavLink[];
+	readonly onMenuClick: () => void;
+	readonly closeMenu: () => void;
+	readonly isAuthenticated: boolean;
 }
 
 export function FooterPresenter({
@@ -21,7 +21,7 @@ export function FooterPresenter({
 }: IFooterPresenter) {
 	const currentYear = new Date().getFullYear();
 	const contactEmail =
-		window.envConfig?.VITE_CONTACT_EMAIL || import.meta.env.VITE_CONTACT_EMAIL;
+		window.envConfig?.VITE_CONTACT_EMAIL ?? import.meta.env.VITE_CONTACT_EMAIL;
 	const { theme, toggleTheme } = useTheme();
 
 	return (
