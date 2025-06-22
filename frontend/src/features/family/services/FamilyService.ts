@@ -1,9 +1,9 @@
-import api, { handleApiError } from "@/services/api";
+import api from "@/services/api";
 import { formatError } from "@/utils/errorUtils";
 import axios from "axios";
-import { apiCache } from "@/services/apiCache"; // <-- import cache
+import { apiCache } from "@/services/apiCache";
 
-const API_PREFIX = import.meta.env.VITE_API_PREFIX || "/api/v1";
+const API_PREFIX = import.meta.env.VITE_API_PREFIX ?? "/api/v1";
 
 export const FAMILY_SERVICE_ERRORS = {
 	FETCH_BOTANICAL_GROUPS_FAILED:
@@ -62,10 +62,7 @@ const processBotanicalGroupsResponse = (
 
 	const groups = (response.data as IBotanicalGroup[]).map((group) => ({
 		...group,
-		recommended_rotation_years:
-			group.recommended_rotation_years === null
-				? null
-				: group.recommended_rotation_years,
+		recommended_rotation_years: group.recommended_rotation_years ?? null,
 	}));
 
 	if (groups.length > 0 && !isTest) {
@@ -80,15 +77,13 @@ const handleGetBotanicalGroupsError = (error: unknown): Error => {
 	}
 	if (axios.isAxiosError(error)) {
 		if (error.response) {
-			switch (error.response.status) {
-				case 500:
-					return new Error(FAMILY_SERVICE_ERRORS.SERVER_ERROR);
-				default:
-					return new Error(
-						FAMILY_SERVICE_ERRORS.format(error.response.data) ||
-							FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR,
-					);
+			if (error.response.status === 500) {
+				return new Error(FAMILY_SERVICE_ERRORS.SERVER_ERROR);
 			}
+			return new Error(
+				FAMILY_SERVICE_ERRORS.format(error.response.data) ??
+					FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR,
+			);
 		}
 		if (error.request) {
 			return new Error(FAMILY_SERVICE_ERRORS.NETWORK_ERROR);

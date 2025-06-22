@@ -2,8 +2,8 @@ import { cn } from "@/utils/utils";
 import { AlertCircle } from "lucide-react";
 
 interface IFormError {
-	message?: string;
-	className?: string;
+	readonly message?: string;
+	readonly className?: string;
 }
 
 export function FormError({ message, className }: IFormError) {

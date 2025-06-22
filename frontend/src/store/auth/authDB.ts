@@ -22,7 +22,7 @@ export async function loadAuthFromIndexedDB(): Promise<IAuthState> {
 		const db = await dbPromise;
 		const authState = await db.get("auth", "authState");
 		return (
-			authState || {
+			authState ?? {
 				access_token: "",
 				refresh_token: "",
 				isAuthenticated: false,

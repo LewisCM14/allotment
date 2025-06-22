@@ -24,7 +24,7 @@ export default function UserProfile() {
 	const [checkingStatus, setCheckingStatus] = useState(false);
 	const { user, firstName } = useAuth();
 	const [isEmailVerified, setIsEmailVerified] = useState(
-		user?.isEmailVerified ||
+		user?.isEmailVerified ??
 			localStorage.getItem("is_email_verified") === "true",
 	);
 
@@ -103,9 +103,9 @@ export default function UserProfile() {
 	};
 
 	const userName =
-		user?.user_first_name ||
-		firstName ||
-		localStorage.getItem("first_name") ||
+		user?.user_first_name ??
+		firstName ??
+		localStorage.getItem("first_name") ??
 		"Not provided";
 
 	return (
@@ -127,7 +127,7 @@ export default function UserProfile() {
 									Email
 								</h3>
 								<p className="text-lg text-foreground">
-									{user?.user_email || "Not available"}
+									{user?.user_email ?? "Not available"}
 								</p>
 								{isEmailVerified && (
 									<p className="text-primary text-sm mt-1">✓ Email verified</p>

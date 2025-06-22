@@ -84,7 +84,7 @@ extendedApi.cachedGet = async <T>(
 	config?: AxiosRequestConfig,
 ): Promise<T> => {
 	// Create a unique cache key based on URL and params
-	const cacheKey = `${url}:${JSON.stringify(config?.params || {})}`;
+	const cacheKey = `${url}:${JSON.stringify(config?.params ?? {})}`;
 
 	// Try to get from cache first
 	const cachedData = apiCache.get(cacheKey);
@@ -113,7 +113,7 @@ const handleOnlineStatus = () => {
 
 const handleRequestCancellation = (config: AxiosRequestConfig) => {
 	if (!config.url) return;
-	const requestKey = config.url + JSON.stringify(config.params || {});
+	const requestKey = config.url + JSON.stringify(config.params ?? {});
 
 	if (pendingRequests.has(requestKey)) {
 		pendingRequests.get(requestKey)?.abort();
@@ -216,8 +216,12 @@ const refreshAccessToken = async (): Promise<string | null> => {
 
 		return response.data.access_token;
 	} catch (error) {
+		// Clear tokens on refresh failure and log the error
 		localStorage.removeItem("access_token");
 		localStorage.removeItem("refresh_token");
+
+		errorMonitor.captureException(error, { context: "token_refresh_failed" });
+
 		return null;
 	}
 };
@@ -237,7 +241,7 @@ const handleRequestRetry = async (error: AxiosError) => {
 		return Promise.reject(error);
 	}
 	const originalRequest = error.config;
-	originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+	originalRequest._retryCount = (originalRequest._retryCount ?? 0) + 1;
 
 	if (originalRequest._retryCount > MAX_RETRIES) {
 		return Promise.reject(error);
@@ -315,7 +319,7 @@ api.interceptors.response.use(
 		// Clean up from the pending requests map
 		if (response.config.url) {
 			const requestKey =
-				response.config.url + JSON.stringify(response.config.params || {});
+				response.config.url + JSON.stringify(response.config.params ?? {});
 			pendingRequests.delete(requestKey);
 		}
 
@@ -354,7 +358,7 @@ api.interceptors.response.use(
 		// Clean up from the pending requests map
 		if (error.config?.url) {
 			const requestKey =
-				error.config.url + JSON.stringify(error.config.params || {});
+				error.config.url + JSON.stringify(error.config.params ?? {});
 			pendingRequests.delete(requestKey);
 		}
 

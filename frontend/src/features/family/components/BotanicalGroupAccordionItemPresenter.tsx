@@ -9,7 +9,7 @@ import type * as React from "react";
 import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupAccordionItemPresenterProps {
-	group: IBotanicalGroup;
+	readonly group: IBotanicalGroup;
 }
 
 export function BotanicalGroupAccordionItemPresenter({

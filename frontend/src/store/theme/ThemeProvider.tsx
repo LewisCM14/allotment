@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { type Theme, ThemeContext } from "./ThemeContext";
 
 interface IThemeProvider {
-	children: React.ReactNode;
+	readonly children: React.ReactNode;
 }
 
 export function ThemeProvider({ children }: IThemeProvider) {

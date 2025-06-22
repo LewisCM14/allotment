@@ -12,7 +12,7 @@ export const registerSchema = z
 				"Password must contain at least one uppercase letter",
 			)
 			.refine(
-				(password) => /[0-9]/.test(password),
+				(password) => /\d/.test(password),
 				"Password must contain at least one number",
 			)
 			.refine(

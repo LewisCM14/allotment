@@ -3,9 +3,9 @@ import * as Switch from "@radix-ui/react-switch";
 import { Moon, Sun } from "lucide-react";
 
 interface IToggleSwitch {
-	checked: boolean;
-	onCheckedChange: (checked: boolean) => void;
-	className?: string;
+	readonly checked: boolean;
+	readonly onCheckedChange: (checked: boolean) => void;
+	readonly className?: string;
 }
 
 export function ToggleSwitch({

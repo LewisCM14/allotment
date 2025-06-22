@@ -4,10 +4,10 @@ import type { IFamilyInfo } from "../services/FamilyService";
 import { Link } from "react-router-dom";
 
 interface Props {
-	data: IFamilyInfo | null;
-	isLoading: boolean;
-	error: Error | null;
-	isSuccess: boolean;
+	readonly data: IFamilyInfo | null;
+	readonly isLoading: boolean;
+	readonly error: Error | null;
+	readonly isSuccess: boolean;
 }
 
 export function FamilyInfoPresenter({

@@ -67,12 +67,21 @@ class ErrorMonitoringService {
 						"Content-Type": "application/json",
 					},
 					keepalive: true,
-				}).catch(() => {
-					// Silently fail
+				}).catch((fetchError) => {
+					// Log fetch errors locally if we're not in production
+					if (!this.isProduction) {
+						console.error(
+							"[ErrorMonitor] Failed to send error data:",
+							fetchError,
+						);
+					}
 				});
 			}
 		} catch (e) {
-			// Fail silently
+			// Log internal error handling failures, but only in non-production
+			if (!this.isProduction) {
+				console.error("[ErrorMonitor] Error in error handling:", e);
+			}
 		}
 	}
 
@@ -107,12 +116,21 @@ class ErrorMonitoringService {
 						"Content-Type": "application/json",
 					},
 					keepalive: true,
-				}).catch(() => {
-					// Silently fail
+				}).catch((fetchError) => {
+					// Log fetch errors locally if we're not in production
+					if (!this.isProduction) {
+						console.error(
+							"[ErrorMonitor] Failed to send message data:",
+							fetchError,
+						);
+					}
 				});
 			}
 		} catch (e) {
-			// Fail silently
+			// Log internal error handling failures, but only in non-production
+			if (!this.isProduction) {
+				console.error("[ErrorMonitor] Error in message handling:", e);
+			}
 		}
 	}
 }
