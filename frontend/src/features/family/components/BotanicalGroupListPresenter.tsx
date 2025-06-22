@@ -5,10 +5,10 @@ import { BotanicalGroupAccordionList } from "./BotanicalGroupAccordionList";
 import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupListPresenterProps {
-	botanicalGroups: IBotanicalGroup[];
-	isLoading: boolean;
-	error: Error | null;
-	isSuccess: boolean;
+	readonly botanicalGroups: IBotanicalGroup[];
+	readonly isLoading: boolean;
+	readonly error: Error | null;
+	readonly isSuccess: boolean;
 }
 
 export function BotanicalGroupListPresenter({

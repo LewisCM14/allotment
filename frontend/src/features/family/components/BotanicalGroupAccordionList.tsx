@@ -3,7 +3,7 @@ import type * as React from "react";
 import { BotanicalGroupAccordionItemContainer } from "./BotanicalGroupAccordionItemContainer";
 import type { IBotanicalGroup } from "../services/FamilyService";
 interface BotanicalGroupAccordionListProps {
-	groups: IBotanicalGroup[];
+	readonly groups: IBotanicalGroup[];
 }
 
 export function BotanicalGroupAccordionList({
