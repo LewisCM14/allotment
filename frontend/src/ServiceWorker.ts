@@ -161,7 +161,6 @@ self.addEventListener("message", (event) => {
 	}
 });
 
-// Add activate handler
 self.addEventListener("activate", (event) => {
 	event.waitUntil(self.clients.claim());
 });
@@ -171,14 +170,13 @@ self.addEventListener("install", (event) => {
 	// take control immediately
 	self.skipWaiting();
 
-	const installEvent = event as ExtendableEvent;
-	installEvent.waitUntil(
+	event.waitUntil(
 		caches.open("app-shell").then((cache) => {
 			return cache.addAll([
 				"/",
 				"/index.html",
 				"/offline.html",
-				"/manifest.webmanifest", // <-- was /manifest.json
+				"/manifest.webmanifest",
 			]);
 		}),
 	);
