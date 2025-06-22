@@ -53,19 +53,13 @@ interface IValidationErrorDetail {
 }
 
 // Helper function to format validation errors from the API
-const formatValidationErrors = (
-	details: IValidationErrorDetail[] | unknown,
-): string => {
+const formatValidationErrors = (details: unknown): string => {
 	if (!details || !Array.isArray(details)) return "";
 
-	try {
-		const messages = details
-			.map((err: IValidationErrorDetail) => err.msg || "Validation error")
-			.join(", ");
-		return messages || "Validation failed. Please check your inputs.";
-	} catch (e) {
-		return "Validation failed. Please check your inputs.";
-	}
+	const messages = (details as IValidationErrorDetail[])
+		.map((err: IValidationErrorDetail) => err.msg ?? "Validation error")
+		.join(", ");
+	return messages || "Validation failed. Please check your inputs.";
 };
 
 export const registerUser = async (
@@ -170,11 +164,11 @@ export const loginUser = async (
 				access_token,
 				refresh_token,
 			},
-			firstName: firstName || "User",
+			firstName: firstName ?? "User",
 			userData: {
 				user_email: email,
-				user_id: user_id || "",
-				is_email_verified: is_email_verified || false,
+				user_id: user_id ?? "",
+				is_email_verified: is_email_verified ?? false,
 			},
 		};
 	} catch (error) {
