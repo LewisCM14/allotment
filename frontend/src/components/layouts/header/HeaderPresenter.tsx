@@ -5,11 +5,11 @@ import type { INavLink } from "@/types/NavigationTypes";
 import { Menu } from "lucide-react";
 
 interface IHeaderPresenter {
-	isOpen: boolean;
-	navLinks: INavLink[];
-	onMenuClick: () => void;
-	closeMenu: () => void;
-	isAuthenticated: boolean;
+	readonly isOpen: boolean;
+	readonly navLinks: INavLink[];
+	readonly onMenuClick: () => void;
+	readonly closeMenu: () => void;
+	readonly isAuthenticated: boolean;
 }
 
 export function HeaderPresenter({
@@ -20,8 +20,8 @@ export function HeaderPresenter({
 	isAuthenticated,
 }: IHeaderPresenter) {
 	const appTitle =
-		window.envConfig?.VITE_APP_TITLE ||
-		import.meta.env.VITE_APP_TITLE ||
+		window.envConfig?.VITE_APP_TITLE ??
+		import.meta.env.VITE_APP_TITLE ??
 		"Allotment";
 
 	return (
