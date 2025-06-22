@@ -3,13 +3,11 @@ import { BotanicalGroupAccordionItemPresenter } from "./BotanicalGroupAccordionI
 import type { IBotanicalGroup } from "../services/FamilyService";
 
 interface BotanicalGroupAccordionItemContainerProps {
-	group: IBotanicalGroup;
+	readonly group: IBotanicalGroup;
 }
 
 export function BotanicalGroupAccordionItemContainer({
 	group,
 }: BotanicalGroupAccordionItemContainerProps) {
-	// In the future, this container could hold logic specific to an item,
-	// e.g., fetching more details for a family when clicked, handling item-specific state.
 	return <BotanicalGroupAccordionItemPresenter group={group} />;
 }
