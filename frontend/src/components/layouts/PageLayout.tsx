@@ -2,9 +2,9 @@ import { widthClasses } from "@/components/layouts/layoutConfig";
 import { cn } from "@/utils/utils";
 
 interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
-	children: React.ReactNode;
-	variant?: "default";
-	centered?: boolean;
+	readonly children: React.ReactNode;
+	readonly variant?: "default";
+	readonly centered?: boolean;
 }
 
 export function PageLayout({
