@@ -27,7 +27,6 @@ from authlib.jose.errors import (
 )
 from fastapi import status
 from fastapi.exceptions import RequestValidationError
-from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -69,8 +68,6 @@ def translate_token_exceptions(
             error_msg = str(e)
             if "key may not be safe" in error_msg or "Invalid key" in error_msg:
                 raise InvalidTokenError("Invalid token signature")
-            raise
-        except Exception:
             raise
 
     return wrapper
@@ -128,7 +125,7 @@ async def safe_operation(
     """Context manager for safely executing operations with standardized error handling"""
     try:
         yield
-    except (RequestValidationError, ValidationError):
+    except RequestValidationError:
         raise
     except BaseApplicationError:
         raise
