@@ -17,7 +17,7 @@ import {
 } from "./authDB";
 
 interface IAuthProvider {
-	children: ReactNode;
+	readonly children: ReactNode;
 }
 
 export function AuthProvider({ children }: IAuthProvider) {
@@ -202,7 +202,21 @@ export function AuthProvider({ children }: IAuthProvider) {
 			});
 
 			return true;
-		} catch (error) {
+		} catch (error: unknown) {
+			console.error("Failed to refresh access token:", error);
+
+			// Check if it's an API error with status code
+			if (error && typeof error === "object" && "response" in error) {
+				const apiError = error as { response?: { status?: number } };
+				if (apiError.response?.status === 401) {
+					toast.error("Your session has expired, please log in again");
+				} else {
+					toast.error("Failed to refresh authentication");
+				}
+			} else {
+				toast.error("Network error while refreshing authentication");
+			}
+
 			logout();
 			return false;
 		}
