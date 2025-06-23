@@ -30,6 +30,8 @@
 | Server | Pytest Asyncio | 0.25.3 | Pytest plugin for testing asyncio code. | Apache 2.0 |
 | Server | Pytest Mock | 3.14.0 | Pytest plugin for mocking objects during tests. | MIT |
 | Server | Pytest X-Dist | 3.6.1 | Pytest plugin for distributing tests across multiple CPUs. | MIT |
+| Server | Pytest-cov | 6.0.0 | Pytest plugin for measuring code coverage. | MIT |
+| Server | Coverage | 7.6.9 | Tool for measuring code coverage of Python programs. | Apache 2.0 |
 | Server | HTTPX | 0.28.1 | Asynchronous HTTP client for Python, used for testing APIs. | BSD |
 | Server | AIOSQLite | 0.21.0 | Asynchronous SQLite driver, for in-memory testing. | MIT |
 | Server | Ruff | 0.9.10 | Extremely fast Python linter and code formatter. | MIT |
@@ -92,6 +94,7 @@
 | Client | vite-plugin-compression | 0.3.1 | Vite plugin for compressing assets (e.g., gzip, brotli). | MIT |
 | Client | vite-plugin-pwa | 0.21.2 | Vite plugin for Progressive Web App generation. | MIT |
 | Client | vitest | 3.1.1 | Blazing fast unit test framework powered by Vite. | MIT |
+| Client | @vitest/coverage-v8 | 3.1.1 | Coverage provider for Vitest using V8's built-in code coverage. | MIT |
 ||||||
 | Deployment | Docker |  | Platform for developing, shipping, and running applications in containers. | Apache 2.0 |
 | Deployment | Render |  | Cloud platform for hosting web applications, databases, and static sites. | Proprietary |

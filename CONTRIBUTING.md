@@ -218,6 +218,11 @@ Tests
 pytest
 ```
 
+Tests with Coverage
+```
+pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
+```
+
 Run Tests in Parallel
 ```
 pytest --numprocesses=auto
@@ -255,6 +260,11 @@ npm run build
 Testing
 ```
 npm run test
+```
+
+Testing with Coverage
+```
+npm run test:coverage
 ```
 
 ---
