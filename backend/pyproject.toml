@@ -27,6 +27,8 @@ dev = [
     "fastapi[standard]", 
     "pytest",
     "pytest-xdist",
+    "pytest-cov",
+    "coverage[toml]",
     "ruff", 
     "mypy",
     "typing-extensions",
@@ -38,3 +40,37 @@ dev = [
     "httpx",
     "aiosqlite"
 ]
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/alembic/*",
+    "*/.venv/*",
+    "app/main.py"  # Exclude main.py as it's primarily startup code
+]
+branch = true
+concurrency = ["thread", "greenlet"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod"
+]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.coverage.html]
+directory = "htmlcov"

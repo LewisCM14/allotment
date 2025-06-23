@@ -2,6 +2,12 @@
 
 __pycache__/
 
+## Coverage Reports
+htmlcov/
+coverage.xml
+.coverage
+.coverage.*
+
 ## Settings & Keys
 settings.yml
 private.pem
@@ -12,6 +18,9 @@ app.log
 
 
 # Frontend
+
+## Coverage Reports
+coverage/
 
 ## Logs
 logs
