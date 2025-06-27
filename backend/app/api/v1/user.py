@@ -62,7 +62,7 @@ logger = structlog.get_logger()
 
 
 @router.post(
-    "/users",
+    "",
     tags=["User"],
     response_model=TokenResponse,
     status_code=status.HTTP_201_CREATED,
@@ -176,187 +176,7 @@ async def create_user(
 
 
 @router.post(
-    "/auth/token",
-    tags=["User"],
-    response_model=TokenResponse,
-    summary="Login user",
-    description="Authenticate user and return access token",
-)
-@limiter.limit("5/minute")
-async def login(
-    request: Request, user: UserLogin, db: AsyncSession = Depends(get_db)
-) -> TokenResponse:
-    """
-    Authenticate user and generate access token.
-
-    Args:
-        user: Login credentials
-        db: Database session
-
-    Returns:
-        TokenResponse: JWT access token with user_first_name
-
-    Raises:
-        AuthenticationError: Invalid credentials
-    """
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "user_login",
-        "email": user.user_email,
-    }
-    logger.info("Login attempt", **log_context)
-    try:
-        try:
-            db_user = await validate_user_exists(
-                db_session=db,
-                user_model=User,
-                user_email=user.user_email,
-            )
-        except UserNotFoundError:
-            logger.warning(
-                "Login failed - user not found",
-                email_exists=False,
-                **log_context,
-            )
-            raise AuthenticationError("Invalid email or password")
-
-        log_context["user_id"] = str(db_user.user_id)
-        async with safe_operation("user_authentication", log_context):
-            with log_timing(
-                "password_verification", request_id=log_context["request_id"]
-            ):
-                if not verify_password(user.user_password, db_user.user_password_hash):
-                    logger.warning(
-                        "Login failed - invalid password",
-                        email_exists=True,
-                        **log_context,
-                    )
-                    raise AuthenticationError("Invalid email or password")
-        with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            access_token = create_token(
-                user_id=str(db_user.user_id), token_type="access"
-            )
-            refresh_token = create_token(
-                user_id=str(db_user.user_id), token_type="refresh"
-            )
-            logger.debug("Tokens generated successfully", **log_context)
-        logger.info("Login successful", **log_context)
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            token_type="bearer",
-            user_first_name=db_user.user_first_name,
-            is_email_verified=db_user.is_email_verified,
-            user_id=str(db_user.user_id),
-        )
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"Login failed: {type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
-        raise
-    except Exception as exc:
-        sanitized_error = sanitize_error_message(str(exc))
-        logger.error(
-            "Unhandled exception during login",
-            error=sanitized_error,
-            error_type=type(exc).__name__,
-            **log_context,
-        )
-        raise BusinessLogicError(
-            message="An unexpected error occurred during login",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
-@router.post(
-    "/auth/token/refresh",
-    tags=["User"],
-    response_model=TokenResponse,
-    summary="Refresh access token",
-    description="Generate new access and refresh tokens using an existing refresh token",
-)
-@limiter.limit("10/minute")
-async def refresh_token(
-    request: Request, refresh_data: RefreshRequest, db: AsyncSession = Depends(get_db)
-) -> TokenResponse:
-    """
-    Refresh access and refresh tokens.
-
-    Args:
-        request: The incoming HTTP request
-        refresh_data: The refresh token data
-        db: Database session
-
-    Returns:
-        TokenResponse: New access and refresh tokens
-
-    Raises:
-        InvalidTokenError: Invalid or expired refresh token
-        UserNotFoundError: User not found
-    """
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "token_refresh",
-    }
-    logger.debug("Token refresh requested", **log_context)
-    # First validate token format before decoding to catch malformed tokens
-    token_parts = refresh_data.refresh_token.split(".")
-    if len(token_parts) != 3:
-        raise InvalidTokenError("Malformed JWT token format")
-
-    @translate_token_exceptions
-    async def decode_token() -> Dict[str, Any]:
-        decoded = jwt.decode(
-            refresh_data.refresh_token,
-            settings.PUBLIC_KEY,
-            claims_options={"exp": {"essential": True}},
-        )
-        return dict(decoded)
-
-    payload = await decode_token()
-    if payload.get("type") != "refresh":
-        logger.warning(
-            "Invalid token type for refresh",
-            expected="refresh",
-            received=payload.get("type"),
-            **log_context,
-        )
-        raise InvalidTokenError("Invalid token type: expected refresh token")
-    user_id = payload.get("sub")
-    if not user_id:
-        logger.warning("Missing subject in refresh token", **log_context)
-        raise InvalidTokenError("Invalid token - no user ID found")
-    log_context["user_id"] = user_id
-    try:
-        uuid_user_id = uuid.UUID(user_id)
-    except ValueError:
-        logger.error("Invalid UUID format in token", **log_context)
-        raise InvalidTokenError("Invalid user ID format")
-    user = await validate_user_exists(
-        db_session=db,
-        user_model=User,
-        user_id=str(uuid_user_id),
-    )
-    log_context["email"] = user.user_email
-    access_token = create_token(user_id=str(user.user_id), token_type="access")
-    new_refresh_token = create_token(user_id=str(user.user_id), token_type="refresh")
-    logger.info("Tokens refreshed successfully", **log_context)
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=new_refresh_token,
-        token_type="bearer",
-        user_first_name=user.user_first_name,
-        is_email_verified=user.is_email_verified,
-        user_id=str(user.user_id),
-    )
-
-
-@router.post(
-    "/users/email-verifications",
+    "/email-verifications",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
@@ -413,7 +233,7 @@ async def request_verification_email(
 
 
 @router.post(
-    "/users/email-verifications/{token}",
+    "/email-verifications/{token}",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
@@ -484,7 +304,7 @@ async def verify_email_token(
 
 
 @router.get(
-    "/users/verification-status",
+    "/verification-status",
     tags=["User"],
     response_model=VerificationStatusResponse,
     status_code=status.HTTP_200_OK,
@@ -524,7 +344,7 @@ async def check_verification_status(
 
 
 @router.post(
-    "/users/password-resets",
+    "/password-resets",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
@@ -613,7 +433,7 @@ async def request_password_reset(
 
 
 @router.post(
-    "/users/password-resets/{token}",
+    "/password-resets/{token}",
     tags=["User"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,

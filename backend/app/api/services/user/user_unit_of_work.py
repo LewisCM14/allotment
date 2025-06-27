@@ -6,7 +6,7 @@ User Unit of Work
 """
 
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import structlog
 from authlib.jose import jwt
@@ -30,11 +30,18 @@ from app.api.middleware.logging_middleware import (
 )
 from app.api.models import User
 from app.api.repositories.user.user_repository import UserRepository
+from app.api.schemas.user.user_allotment_schema import (
+    UserAllotmentCreate,
+    UserAllotmentUpdate,
+)
 from app.api.schemas.user.user_schema import UserCreate
 from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
 )
+
+if TYPE_CHECKING:
+    from app.api.models.user.user_model import UserAllotment
 
 logger = structlog.get_logger()
 
@@ -85,7 +92,8 @@ class UserUnitOfWork:
                 "Transaction rolled back", transaction="rollback", **log_context
             )
         else:
-            with log_timing("db_commit", **log_context):
+            # Commit transaction without passing context to avoid duplicate keyword errors
+            with log_timing("db_commit"):
                 await self.db.commit()
                 logger.debug(
                     "Transaction committed successfully",
@@ -276,3 +284,41 @@ class UserUnitOfWork:
             claims_options={"exp": {"essential": True}},
         )
         return dict(decoded)
+
+    @translate_db_exceptions
+    async def create_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentCreate
+    ) -> "UserAllotment":
+        """Create a new allotment for a user."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info("Creating user allotment via unit of work", operation="create_user_allotment_uow", **log_context)
+        with log_timing("uow_create_user_allotment", request_id=self.request_id):
+             allotment = await self.user_repo.create_user_allotment(
+                 user_id, allotment_data
+             )
+             return allotment
+
+    @translate_db_exceptions
+    async def get_user_allotment(self, user_id: str) -> "UserAllotment":
+        """Fetch a user's allotment by user_id."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info("Fetching user allotment via unit of work", operation="uow_get_user_allotment", **log_context)
+        with log_timing("uow_get_user_allotment", request_id=self.request_id):
+             allotment = await self.user_repo.get_user_allotment(user_id)
+             if not allotment:
+                 logger.warning("No allotment found", **log_context)
+                 raise Exception("Allotment not found")
+             return allotment
+
+    @translate_db_exceptions
+    async def update_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentUpdate
+    ) -> "UserAllotment":
+        """Update a user's allotment."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info("Updating user allotment via unit of work", operation="uow_update_user_allotment", **log_context)
+        with log_timing("uow_update_user_allotment", request_id=self.request_id):
+             allotment = await self.user_repo.update_user_allotment(
+                 user_id, allotment_data
+             )
+             return allotment
