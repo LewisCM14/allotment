@@ -6,7 +6,8 @@ User Allotment Schema
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
+from pydantic.config import ConfigDict
 
 
 class UserAllotmentBase(BaseModel):
@@ -20,7 +21,8 @@ class UserAllotmentBase(BaseModel):
         ..., ge=1.0, le=100.0, description="Length in meters (1-100)"
     )
 
-    @validator("allotment_postal_zip_code")
+    @field_validator("allotment_postal_zip_code")
+    @classmethod
     def validate_postal_code(cls, v: str) -> str:
         if not v.replace(" ", "").isalnum():
             raise ValueError("Postal code must be alphanumeric (spaces allowed)")
@@ -46,5 +48,4 @@ class UserAllotmentRead(BaseModel):
     allotment_width_meters: float
     allotment_length_meters: float
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

@@ -47,7 +47,7 @@ async def create_user_allotment(
     async with UserUnitOfWork(db) as uow:
         result = await uow.create_user_allotment(current_user.user_id, allotment)
     logger.info("User allotment created", **log_context)
-    return UserAllotmentRead.from_orm(result)
+    return UserAllotmentRead.model_validate(result)
 
 
 @router.get(
@@ -72,7 +72,8 @@ async def get_user_allotment(
     async with UserUnitOfWork(db) as uow:
         result = await uow.get_user_allotment(current_user.user_id)
     logger.info("User allotment fetched", **log_context)
-    return UserAllotmentRead.from_orm(result)
+    # Pydantic v2 migration: use model_validate instead of from_orm
+    return UserAllotmentRead.model_validate(result)
 
 
 @router.put(
@@ -98,4 +99,5 @@ async def update_user_allotment(
     async with UserUnitOfWork(db) as uow:
         result = await uow.update_user_allotment(current_user.user_id, allotment)
     logger.info("User allotment updated", **log_context)
-    return UserAllotmentRead.from_orm(result)
+    # Pydantic v2 migration: use model_validate instead of from_orm
+    return UserAllotmentRead.model_validate(result)
