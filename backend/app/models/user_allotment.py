@@ -1,20 +1,23 @@
 """
 User Allotment API Tests
 """
+
 import uuid
+from typing import Any
+
 import pytest
 from fastapi import status
+
 from app.api.core.config import settings
 from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
 
+
 class TestUserAllotment:
-    def test_create_user_allotment(self, client, mocker):
+    def test_create_user_allotment(self: Any, client: Any, mocker: Any) -> None:
         """Test creating a user allotment."""
-        _ = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         # Register a new user and obtain an access token
         reg_resp = client.post(
             f"{PREFIX}/users",
@@ -34,9 +37,7 @@ class TestUserAllotment:
             "allotment_width_meters": 10.0,
             "allotment_length_meters": 20.0,
         }
-        resp = client.post(
-            f"{PREFIX}/users/allotment", json=payload, headers=headers
-        )
+        resp = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
         assert resp.status_code == status.HTTP_201_CREATED
         data = resp.json()
         assert data["allotment_postal_zip_code"] == payload["allotment_postal_zip_code"]
@@ -45,11 +46,9 @@ class TestUserAllotment:
         assert "user_allotment_id" in data
         assert "user_id" in data
 
-    def test_get_and_update_user_allotment(self, client, mocker):
+    def test_get_and_update_user_allotment(self: Any, client: Any, mocker: Any) -> None:
         """Test retrieving and updating a user allotment."""
-        _ = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         reg_resp = client.post(
             f"{PREFIX}/users",
             json={
@@ -87,37 +86,59 @@ class TestUserAllotment:
         )
         assert upd_resp.status_code == status.HTTP_200_OK
         upd_data = upd_resp.json()
-        assert upd_data["allotment_width_meters"] == update_payload["allotment_width_meters"]
+        assert (
+            upd_data["allotment_width_meters"]
+            == update_payload["allotment_width_meters"]
+        )
         # other fields unchanged
         assert upd_data["allotment_length_meters"] == payload["allotment_length_meters"]
-        assert upd_data["allotment_postal_zip_code"] == payload["allotment_postal_zip_code"]
+        assert (
+            upd_data["allotment_postal_zip_code"]
+            == payload["allotment_postal_zip_code"]
+        )
 
     @pytest.mark.parametrize(
         "payload, expected_status",
         [
             (
-                {"allotment_postal_zip_code": "123", "allotment_width_meters": 10.0, "allotment_length_meters": 20.0}, 
-                status.HTTP_422_UNPROCESSABLE_ENTITY
-            ),
-            (
-                {"allotment_postal_zip_code": "12345", "allotment_width_meters": 0.5, "allotment_length_meters": 10.0},
+                {
+                    "allotment_postal_zip_code": "123",
+                    "allotment_width_meters": 10.0,
+                    "allotment_length_meters": 20.0,
+                },
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
             ),
             (
-                {"allotment_postal_zip_code": "12345", "allotment_width_meters": 10.0, "allotment_length_meters": 150.0},
+                {
+                    "allotment_postal_zip_code": "12345",
+                    "allotment_width_meters": 0.5,
+                    "allotment_length_meters": 10.0,
+                },
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
             ),
             (
-                {"allotment_postal_zip_code": "12#45", "allotment_width_meters": 10.0, "allotment_length_meters": 20.0},
+                {
+                    "allotment_postal_zip_code": "12345",
+                    "allotment_width_meters": 10.0,
+                    "allotment_length_meters": 150.0,
+                },
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            ),
+            (
+                {
+                    "allotment_postal_zip_code": "12#45",
+                    "allotment_width_meters": 10.0,
+                    "allotment_length_meters": 20.0,
+                },
                 status.HTTP_422_UNPROCESSABLE_ENTITY,
             ),
         ],
     )
-    def test_validation_errors_on_create(self, client, mocker, payload, expected_status):
+    def test_validation_errors_on_create(
+        self: Any, client: Any, mocker: Any, payload: Any, expected_status: Any
+    ) -> None:
         """Test validation errors when creating allotment with invalid data."""
-        _ = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         # Register user
         reg_resp = client.post(
             f"{PREFIX}/users",
@@ -131,16 +152,12 @@ class TestUserAllotment:
         token = reg_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        resp = client.post(
-            f"{PREFIX}/users/allotment", json=payload, headers=headers
-        )
+        resp = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
         assert resp.status_code == expected_status
 
-    def test_duplicate_user_allotment(self, client, mocker):
+    def test_duplicate_user_allotment(self: Any, client: Any, mocker: Any) -> None:
         """Test that duplicate allotment creation is rejected."""
-        _ = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         reg_resp = client.post(
             f"{PREFIX}/users",
             json={
@@ -154,7 +171,11 @@ class TestUserAllotment:
         token = reg_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        payload = {"allotment_postal_zip_code": "54321", "allotment_width_meters": 12.0, "allotment_length_meters": 24.0}
+        payload = {
+            "allotment_postal_zip_code": "54321",
+            "allotment_width_meters": 12.0,
+            "allotment_length_meters": 24.0,
+        }
         resp1 = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
         assert resp1.status_code == status.HTTP_201_CREATED
 

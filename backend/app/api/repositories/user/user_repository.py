@@ -180,14 +180,20 @@ class UserRepository:
                 user_id=user_id, **allotment_data.model_dump()
             )
             self.db.add(new_allotment)
-            logger.info("User allotment added to session", operation="create_user_allotment", **log_context)
+            logger.info(
+                "User allotment added to session",
+                operation="create_user_allotment",
+                **log_context,
+            )
             return new_allotment
 
     @translate_db_exceptions
     async def get_user_allotment(self, user_id: str) -> Optional[UserAllotment]:
         """Fetch a user's allotment by user_id."""
-        log_context = {"user_id": str(user_id), "request_id": self.request_id}
-        with log_timing("db_get_user_allotment", request_id=self.request_id, **log_context):
+        log_context = {"user_id": str(user_id)}
+        with log_timing(
+            "db_get_user_allotment", request_id=self.request_id, **log_context
+        ):
             query = select(UserAllotment).where(UserAllotment.user_id == user_id)
             result = await self.db.execute(query)
             return result.scalar_one_or_none()
@@ -198,7 +204,10 @@ class UserRepository:
     ) -> UserAllotment:
         """Update a user's allotment."""
         log_context = {"user_id": str(user_id), "request_id": self.request_id}
-        with log_timing("db_update_user_allotment", request_id=self.request_id, **log_context):
+        timing_context = {k: v for k, v in log_context.items() if k != "request_id"}
+        with log_timing(
+            "db_update_user_allotment", request_id=self.request_id, **timing_context
+        ):
             query = select(UserAllotment).where(UserAllotment.user_id == user_id)
             result = await self.db.execute(query)
             allotment = result.scalar_one_or_none()
@@ -214,6 +223,9 @@ class UserRepository:
                 setattr(allotment, key, value)
 
             self.db.add(allotment)
-            logger.info("User allotment updated in session", operation="update_user_allotment", **log_context)
-            return allotment
+            logger.info(
+                "User allotment updated in session",
+                operation="update_user_allotment",
+                **log_context,
+            )
             return allotment

@@ -92,14 +92,27 @@ class UserUnitOfWork:
                 "Transaction rolled back", transaction="rollback", **log_context
             )
         else:
-            # Commit transaction without passing context to avoid duplicate keyword errors
-            with log_timing("db_commit"):
-                await self.db.commit()
-                logger.debug(
-                    "Transaction committed successfully",
-                    transaction="commit",
-                    **log_context,
+            from sqlalchemy.exc import IntegrityError
+
+            from app.api.middleware.exception_handler import DatabaseIntegrityError
+
+            try:
+                with log_timing("db_commit"):
+                    await self.db.commit()
+                    logger.debug(
+                        "Transaction committed successfully",
+                        transaction="commit",
+                        **log_context,
+                    )
+            except IntegrityError as ie:
+                sanitized_error = sanitize_error_message(str(ie))
+                logger.error(
+                    "Database integrity error during commit",
+                    error=sanitized_error,
+                    error_type="IntegrityError",
+                    exc_info=True,
                 )
+                raise DatabaseIntegrityError(message="User already has an allotment")
 
     @translate_db_exceptions
     async def create_user(self, user_data: UserCreate) -> User:
@@ -291,24 +304,32 @@ class UserUnitOfWork:
     ) -> "UserAllotment":
         """Create a new allotment for a user."""
         log_context = {"user_id": str(user_id), "request_id": self.request_id}
-        logger.info("Creating user allotment via unit of work", operation="create_user_allotment_uow", **log_context)
+        logger.info(
+            "Creating user allotment via unit of work",
+            operation="create_user_allotment_uow",
+            **log_context,
+        )
         with log_timing("uow_create_user_allotment", request_id=self.request_id):
-             allotment = await self.user_repo.create_user_allotment(
-                 user_id, allotment_data
-             )
-             return allotment
+            allotment = await self.user_repo.create_user_allotment(
+                user_id, allotment_data
+            )
+            return allotment
 
     @translate_db_exceptions
     async def get_user_allotment(self, user_id: str) -> "UserAllotment":
         """Fetch a user's allotment by user_id."""
         log_context = {"user_id": str(user_id), "request_id": self.request_id}
-        logger.info("Fetching user allotment via unit of work", operation="uow_get_user_allotment", **log_context)
+        logger.info(
+            "Fetching user allotment via unit of work",
+            operation="uow_get_user_allotment",
+            **log_context,
+        )
         with log_timing("uow_get_user_allotment", request_id=self.request_id):
-             allotment = await self.user_repo.get_user_allotment(user_id)
-             if not allotment:
-                 logger.warning("No allotment found", **log_context)
-                 raise Exception("Allotment not found")
-             return allotment
+            allotment = await self.user_repo.get_user_allotment(user_id)
+            if not allotment:
+                logger.warning("No allotment found", **log_context)
+                raise Exception("Allotment not found")
+            return allotment
 
     @translate_db_exceptions
     async def update_user_allotment(
@@ -316,9 +337,13 @@ class UserUnitOfWork:
     ) -> "UserAllotment":
         """Update a user's allotment."""
         log_context = {"user_id": str(user_id), "request_id": self.request_id}
-        logger.info("Updating user allotment via unit of work", operation="uow_update_user_allotment", **log_context)
+        logger.info(
+            "Updating user allotment via unit of work",
+            operation="uow_update_user_allotment",
+            **log_context,
+        )
         with log_timing("uow_update_user_allotment", request_id=self.request_id):
-             allotment = await self.user_repo.update_user_allotment(
-                 user_id, allotment_data
-             )
-             return allotment
+            allotment = await self.user_repo.update_user_allotment(
+                user_id, allotment_data
+            )
+            return allotment

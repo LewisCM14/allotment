@@ -35,7 +35,6 @@ from app.api.middleware.error_codes import DB_QUERY_ERROR
 from app.api.middleware.exception_handler import (
     BaseApplicationError,
     BusinessLogicError,
-    DatabaseIntegrityError,
     EmailAlreadyRegisteredError,
     ExpiredTokenError,
     InvalidTokenError,
@@ -92,6 +91,13 @@ def translate_db_exceptions(
             error_msg = str(ie).lower()
             if "unique constraint" in error_msg and "email" in error_msg:
                 raise EmailAlreadyRegisteredError()
+            if (
+                "unique constraint" in error_msg
+                and "user_allotment.user_id" in error_msg
+            ):
+                from app.api.middleware.exception_handler import DatabaseIntegrityError
+
+                raise DatabaseIntegrityError(message="User already has an allotment")
 
             logger.error(
                 "Database integrity error",

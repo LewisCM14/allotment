@@ -4,7 +4,6 @@ User Allotment Schema
 """
 
 from typing import Optional
-from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
@@ -46,8 +45,6 @@ class UserAllotmentRead(BaseModel):
     allotment_postal_zip_code: str
     allotment_width_meters: float
     allotment_length_meters: float
-    created_at: datetime
-    updated_at: datetime
 
     class Config:
         from_attributes = True
