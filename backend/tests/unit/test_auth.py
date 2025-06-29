@@ -113,11 +113,12 @@ class TestTokenCreation:
         """Test creating a token with expires_delta."""
         user_id = str(uuid.uuid4())
         expires_delta = timedelta(minutes=30)
+        now = datetime.now(UTC)
         token = create_token(user_id=user_id, expires_delta=expires_delta)
 
         payload = jwt.decode(token, settings.PUBLIC_KEY)
 
-        expected_exp = datetime.now(UTC) + expires_delta
+        expected_exp = now + expires_delta
         assert abs(payload["exp"] - expected_exp.timestamp()) < 2
 
     @pytest.mark.asyncio
