@@ -2,6 +2,7 @@
 User Authentication API Tests
 """
 
+import pytest
 from fastapi import status
 
 from app.api.core.config import settings
@@ -11,13 +12,14 @@ PREFIX = settings.API_PREFIX
 
 
 class TestUserLogin:
-    def test_login_user(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_login_user(self, client, mocker):
         """Test user login with correct credentials."""
         _mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
 
-        client.post(
+        await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "testuser@example.com",
@@ -27,7 +29,7 @@ class TestUserLogin:
             },
         )
 
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/auth/token",
             json={
                 "user_email": "testuser@example.com",
@@ -43,9 +45,10 @@ class TestUserLogin:
         assert "user_first_name" in data
         assert data["user_first_name"] == "Test"
 
-    def test_login_invalid_credentials(self, client):
+    @pytest.mark.asyncio
+    async def test_login_invalid_credentials(self, client):
         """Test login with incorrect password."""
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/auth/token",
             json={
                 "user_email": "testuser@example.com",
@@ -61,13 +64,14 @@ class TestUserLogin:
 
 
 class TestTokenRefresh:
-    def test_refresh_token(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_refresh_token(self, client, mocker):
         """Test refreshing access token with valid refresh token."""
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
 
-        register_response = client.post(
+        register_response = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "refresh@example.com",
@@ -82,7 +86,7 @@ class TestTokenRefresh:
         refresh_token = tokens["refresh_token"]
 
         # 2. Use the refresh token to get a new access token
-        refresh_response = client.post(
+        refresh_response = await client.post(
             f"{PREFIX}/auth/token/refresh",
             json={"refresh_token": refresh_token},
         )
@@ -97,23 +101,25 @@ class TestTokenRefresh:
         assert new_tokens["access_token"] != tokens["access_token"]
         assert new_tokens["refresh_token"] != tokens["refresh_token"]
 
-    def test_refresh_with_invalid_token(self, client):
+    @pytest.mark.asyncio
+    async def test_refresh_with_invalid_token(self, client):
         """Test refreshing with an invalid refresh token."""
         invalid_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/auth/token/refresh",
             json={"refresh_token": invalid_token},
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Invalid token" in response.json()["detail"][0]["msg"]
 
-    def test_refresh_with_access_token(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_refresh_with_access_token(self, client, mocker):
         """Test refreshing with an access token instead of refresh token."""
         mock_email = mock_email_service(  # noqa: F841
             mocker, "app.api.v1.user.send_verification_email"
         )
 
-        register_response = client.post(
+        register_response = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "wrong_token@example.com",
@@ -126,7 +132,7 @@ class TestTokenRefresh:
         tokens = register_response.json()
         access_token = tokens["access_token"]
 
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/auth/token/refresh",
             json={"refresh_token": access_token},
         )

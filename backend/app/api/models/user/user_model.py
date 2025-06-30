@@ -53,6 +53,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def id(self) -> uuid.UUID:
+        return self.user_id
+
     def set_password(self, password: str) -> None:
         """Hash and store the password."""
         log_context = {

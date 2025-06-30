@@ -36,7 +36,7 @@ _previous_resources_state = {
 
 
 @router.get(
-    "/",
+    "",
     tags=["Health"],
     summary="Health check",
     description="Returns system health information",

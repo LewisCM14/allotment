@@ -2,14 +2,17 @@
 Health API Tests
 """
 
+import pytest
+
 from app.api.core.config import settings
 
 PREFIX = settings.API_PREFIX
 
 
-def test_health(client):
+@pytest.mark.asyncio
+async def test_health(client):
     """Test the /health endpoint"""
-    response = client.get(f"{PREFIX}/health")
+    response = await client.get(f"{PREFIX}/health")
 
     assert response.status_code == 200
 

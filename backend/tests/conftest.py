@@ -6,7 +6,7 @@ import asyncio
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -78,9 +78,10 @@ async def clear_tables():
 
 
 @pytest.fixture(name="client")
-def client_fixture():
-    """Create a test client."""
-    with TestClient(app) as client:
+async def client_fixture():
+    """Create an async test client."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
 
 

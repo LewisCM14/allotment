@@ -14,11 +14,12 @@ PREFIX = settings.API_PREFIX
 
 
 class TestUserAllotment:
-    def test_create_user_allotment(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_create_user_allotment(self, client, mocker):
         """Test creating a user allotment."""
         _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         # Register a new user and obtain an access token
-        reg_resp = client.post(
+        reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "allotment@example.com",
@@ -36,7 +37,9 @@ class TestUserAllotment:
             "allotment_width_meters": 10.0,
             "allotment_length_meters": 20.0,
         }
-        resp = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
+        resp = await client.post(
+            f"{PREFIX}/users/allotment", json=payload, headers=headers
+        )
         assert resp.status_code == status.HTTP_201_CREATED
         data = resp.json()
         assert data["allotment_postal_zip_code"] == payload["allotment_postal_zip_code"]
@@ -45,10 +48,11 @@ class TestUserAllotment:
         assert "user_allotment_id" in data
         assert "user_id" in data
 
-    def test_get_and_update_user_allotment(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_get_and_update_user_allotment(self, client, mocker):
         """Test retrieving and updating a user allotment."""
         _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
-        reg_resp = client.post(
+        reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "allotment2@example.com",
@@ -67,20 +71,20 @@ class TestUserAllotment:
             "allotment_width_meters": 5.5,
             "allotment_length_meters": 15.5,
         }
-        create_resp = client.post(
+        create_resp = await client.post(
             f"{PREFIX}/users/allotment", json=payload, headers=headers
         )
         assert create_resp.status_code == status.HTTP_201_CREATED
 
         # Get allotment
-        get_resp = client.get(f"{PREFIX}/users/allotment", headers=headers)
+        get_resp = await client.get(f"{PREFIX}/users/allotment", headers=headers)
         assert get_resp.status_code == status.HTTP_200_OK
         data = get_resp.json()
         assert data["allotment_postal_zip_code"] == payload["allotment_postal_zip_code"]
 
         # Update allotment
         update_payload = {"allotment_width_meters": 7.0}
-        upd_resp = client.put(
+        upd_resp = await client.put(
             f"{PREFIX}/users/allotment", json=update_payload, headers=headers
         )
         assert upd_resp.status_code == status.HTTP_200_OK
@@ -133,13 +137,14 @@ class TestUserAllotment:
             ),
         ],
     )
-    def test_validation_errors_on_create(
+    @pytest.mark.asyncio
+    async def test_validation_errors_on_create(
         self, client, mocker, payload, expected_status
     ):
         """Test validation errors when creating allotment with invalid data."""
         _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
         # Register user
-        reg_resp = client.post(
+        reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": f"val_{uuid.uuid4().hex}@example.com",
@@ -151,13 +156,16 @@ class TestUserAllotment:
         token = reg_resp.json()["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
-        resp = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
+        resp = await client.post(
+            f"{PREFIX}/users/allotment", json=payload, headers=headers
+        )
         assert resp.status_code == expected_status
 
-    def test_duplicate_user_allotment(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_duplicate_user_allotment(self, client, mocker):
         """Test that duplicate allotment creation is rejected."""
         _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
-        reg_resp = client.post(
+        reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "dup@example.com",
@@ -175,8 +183,12 @@ class TestUserAllotment:
             "allotment_width_meters": 12.0,
             "allotment_length_meters": 24.0,
         }
-        resp1 = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
+        resp1 = await client.post(
+            f"{PREFIX}/users/allotment", json=payload, headers=headers
+        )
         assert resp1.status_code == status.HTTP_201_CREATED
 
-        resp2 = client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
+        resp2 = await client.post(
+            f"{PREFIX}/users/allotment", json=payload, headers=headers
+        )
         assert resp2.status_code == status.HTTP_409_CONFLICT

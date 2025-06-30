@@ -74,7 +74,7 @@ class TestListBotanicalGroups:
     @pytest.mark.asyncio
     async def test_success(self, client, seed_family_data):
         """Test successful retrieval of botanical groups with families and correct data types."""
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert isinstance(data, list)
@@ -103,14 +103,14 @@ class TestListBotanicalGroups:
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
             return_value=[],
         )
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []
 
     @pytest.mark.asyncio
     async def test_schema_validation(self, client, seed_family_data):
         """Test that all botanical groups and families conform to schema."""
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) > 0, "Should have data from seed_family_data"
@@ -130,7 +130,7 @@ class TestListBotanicalGroups:
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
             side_effect=Exception("Simulated DB error"),
         )
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         error_detail = response.json()["detail"][0]
         assert (
@@ -153,10 +153,10 @@ class TestListBotanicalGroups:
                 return_value=[],
             )
             for i in range(20):
-                resp = client.get(f"{PREFIX}/families/botanical-groups/")
+                resp = await client.get(f"{PREFIX}/families/botanical-groups/")
                 assert resp.status_code == status.HTTP_200_OK, f"Request {i + 1} failed"
 
-            resp_limited = client.get(f"{PREFIX}/families/botanical-groups/")
+            resp_limited = await client.get(f"{PREFIX}/families/botanical-groups/")
             assert resp_limited.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         finally:
             limiter.enabled = original_limiter_enabled
@@ -166,7 +166,7 @@ class TestListBotanicalGroups:
     async def test_invalid_uuid_format(self, client):
         """Test that invalid UUID format returns a proper error response."""
         invalid_id = "not-a-uuid"
-        response = client.get(f"{PREFIX}/families/{invalid_id}/info")
+        response = await client.get(f"{PREFIX}/families/{invalid_id}/info")
         assert response.status_code == status.HTTP_404_NOT_FOUND
         error_detail = response.json()["detail"][0]
         assert "not found" in error_detail["msg"].lower()
@@ -183,7 +183,7 @@ class TestListBotanicalGroups:
         self, client, seed_family_data, order_by, expected_first
     ):
         """Test that botanical groups are returned in the correct order."""
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert len(data) > 0
@@ -196,7 +196,7 @@ class TestGetFamilyInfo:
     async def test_success(self, client, seed_family_data):
         """Test successful retrieval of detailed family info."""
         family_id = str(seed_family_data["family_id"])
-        resp = client.get(f"{PREFIX}/families/{family_id}/info")
+        resp = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
         assert data["id"] == family_id
@@ -219,7 +219,7 @@ class TestGetFamilyInfo:
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_family_details",
             return_value=None,
         )
-        resp = client.get(f"{PREFIX}/families/{non_existent_id}/info")
+        resp = await client.get(f"{PREFIX}/families/{non_existent_id}/info")
         assert resp.status_code == status.HTTP_404_NOT_FOUND
         error_detail = resp.json()["detail"][0]
         assert error_detail["msg"] == f"Family with id {non_existent_id} not found"
@@ -229,7 +229,7 @@ class TestGetFamilyInfo:
     async def test_schema_validation(self, client, seed_family_data):
         """Test that the family info endpoint returns data conforming to schema."""
         family_id = str(seed_family_data["family_id"])
-        resp = client.get(f"{PREFIX}/families/{family_id}/info")
+        resp = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
 
@@ -262,7 +262,7 @@ class TestGetFamilyInfo:
                 ),
             ),
         )
-        resp = client.get(f"{PREFIX}/families/{family_id_str}/info")
+        resp = await client.get(f"{PREFIX}/families/{family_id_str}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
         assert data["id"] == family_id_str
@@ -278,7 +278,7 @@ class TestGetFamilyInfo:
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_family_details",
             side_effect=Exception("Simulated DB error"),
         )
-        resp = client.get(f"{PREFIX}/families/{family_id_str}/info")
+        resp = await client.get(f"{PREFIX}/families/{family_id_str}/info")
         assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         error_detail = resp.json()["detail"][0]
         assert (
@@ -315,10 +315,10 @@ class TestGetFamilyInfo:
             )
 
             for i in range(20):
-                resp = client.get(f"{PREFIX}/families/{family_id_str}/info")
+                resp = await client.get(f"{PREFIX}/families/{family_id_str}/info")
                 assert resp.status_code == status.HTTP_200_OK, f"Request {i + 1} failed"
 
-            resp_limited = client.get(f"{PREFIX}/families/{family_id_str}/info")
+            resp_limited = await client.get(f"{PREFIX}/families/{family_id_str}/info")
             assert resp_limited.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         finally:
             limiter.enabled = original_limiter_enabled
@@ -398,7 +398,7 @@ class TestGetFamilyInfo:
             return_value=mock_data,
         )
 
-        response = client.get(f"{PREFIX}/families/{family_id}/info")
+        response = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
 
@@ -415,7 +415,7 @@ class TestFamilyAPIPerformance:
     async def test_response_headers(self, client, seed_family_data):
         """Test that responses include proper headers for caching."""
         family_id = str(seed_family_data["family_id"])
-        response = client.get(f"{PREFIX}/families/{family_id}/info")
+        response = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert response.status_code == status.HTTP_200_OK
 
         assert "X-Request-ID" in response.headers
@@ -444,7 +444,7 @@ class TestFamilyAPIPerformance:
             return_value=[BotanicalGroupSchema.model_validate(g) for g in large_data],
         )
 
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
 
         data = response.json()
@@ -459,7 +459,7 @@ class TestInputValidation:
     async def test_malformed_uuid(self, client):
         """Test handling of malformed UUIDs."""
         malformed_uuid = "12345-not-uuid"
-        response = client.get(f"{PREFIX}/families/{malformed_uuid}/info")
+        response = await client.get(f"{PREFIX}/families/{malformed_uuid}/info")
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
     @pytest.mark.asyncio
@@ -469,7 +469,6 @@ class TestInputValidation:
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
             return_value=[],
         )
-
-        response = client.get(f"{PREFIX}/families/botanical-groups/")
+        response = await client.get(f"{PREFIX}/families/botanical-groups/")
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == []

@@ -15,13 +15,14 @@ PREFIX = settings.API_PREFIX
 
 
 class TestRegisterUser:
-    def test_register_user(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_register_user(self, client, mocker):
         """Test user registration endpoint."""
         _mock_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
 
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/users",
             json={
                 "user_email": "test@example.com",
@@ -37,6 +38,7 @@ class TestRegisterUser:
         assert data["token_type"] == "bearer"
         _mock_email.assert_called_once()
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "test_input,expected_status",
         [
@@ -92,9 +94,11 @@ class TestRegisterUser:
             ),
         ],
     )
-    def test_user_registration_validation(self, client, test_input, expected_status):
+    async def test_user_registration_validation(
+        self, client, test_input, expected_status
+    ):
         """Test that invalid users cannot be created."""
-        response = client.post(f"{PREFIX}/users", json=test_input)
+        response = await client.post(f"{PREFIX}/users", json=test_input)
         assert response.status_code == expected_status
 
     @pytest.mark.asyncio
@@ -111,11 +115,11 @@ class TestRegisterUser:
             "user_country_code": "GB",
         }
 
-        response = client.post(f"{PREFIX}/users", json=user_data)
+        response = await client.post(f"{PREFIX}/users", json=user_data)
         assert response.status_code == status.HTTP_201_CREATED
 
         # Attempt duplicate registration
-        response = client.post(f"{PREFIX}/users", json=user_data)
+        response = await client.post(f"{PREFIX}/users", json=user_data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.json()["detail"][0]["msg"] == "Email already registered"
         assert response.json()["detail"][0]["type"] in [
@@ -141,7 +145,7 @@ class TestRegisterUser:
             "user_country_code": "GB",
         }
 
-        response = client.post(f"{PREFIX}/users", json=user_data)
+        response = await client.post(f"{PREFIX}/users", json=user_data)
         assert response.status_code == status.HTTP_201_CREATED
 
         user_id = response.json().get("user_id")
@@ -172,7 +176,7 @@ class TestVerifyEmail:
             "user_first_name": "Verify",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/users", json=user_data)
+        register_response = await client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
@@ -181,7 +185,9 @@ class TestVerifyEmail:
 
         token = create_token(user_id=user_id)
 
-        verify_response = client.post(f"{PREFIX}/users/email-verifications/{token}")
+        verify_response = await client.post(
+            f"{PREFIX}/users/email-verifications/{token}"
+        )
 
         assert verify_response.status_code == status.HTTP_200_OK
         assert verify_response.json()["message"] == "Email verified successfully"
@@ -201,13 +207,16 @@ class TestVerifyEmail:
         invalid_user_id = "00000000-0000-0000-0000-000000000000"
         invalid_token = create_token(user_id=invalid_user_id)
 
-        response = client.post(f"{PREFIX}/users/email-verifications/{invalid_token}")
+        response = await client.post(
+            f"{PREFIX}/users/email-verifications/{invalid_token}"
+        )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         mock_send_email.assert_not_called()
 
 
 class TestRequestVerificationEmail:
-    def test_send_verification_email_endpoint(self, client, mocker):
+    @pytest.mark.asyncio
+    async def test_send_verification_email_endpoint(self, client, mocker):
         """Test the endpoint to send verification email."""
         user_data = {
             "user_email": "verification@example.com",
@@ -219,7 +228,7 @@ class TestRequestVerificationEmail:
         mock_register_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-        register_response = client.post(f"{PREFIX}/users", json=user_data)
+        register_response = await client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
 
         mock_register_email.reset_mock()
@@ -227,7 +236,7 @@ class TestRequestVerificationEmail:
         mock_verify_email = mock_email_service(
             mocker, "app.api.v1.user.send_verification_email"
         )
-        response = client.post(
+        response = await client.post(
             f"{PREFIX}/users/email-verifications",
             json={"user_email": user_data["user_email"]},
         )
@@ -254,10 +263,10 @@ class TestEmailVerificationStatus:
             "user_first_name": "Status",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/users", json=user_data)
+        register_response = await client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         assert register_response.json().get("is_email_verified") is False
-        response = client.get(
+        response = await client.get(
             f"{PREFIX}/users/verification-status?user_email={user_data['user_email']}"
         )
 
@@ -283,7 +292,7 @@ class TestEmailVerificationStatus:
             "user_first_name": "Verified",
             "user_country_code": "GB",
         }
-        register_response = client.post(f"{PREFIX}/users", json=user_data)
+        register_response = await client.post(f"{PREFIX}/users", json=user_data)
         assert register_response.status_code == status.HTTP_201_CREATED
         user_id = register_response.json()["user_id"]
 
@@ -292,10 +301,12 @@ class TestEmailVerificationStatus:
 
         token = create_token(user_id=user_id)
 
-        verify_response = client.post(f"{PREFIX}/users/email-verifications/{token}")
+        verify_response = await client.post(
+            f"{PREFIX}/users/email-verifications/{token}"
+        )
         assert verify_response.status_code == status.HTTP_200_OK
 
-        response = client.get(
+        response = await client.get(
             f"{PREFIX}/users/verification-status?user_email={user_data['user_email']}"
         )
         assert response.status_code == status.HTTP_200_OK
@@ -306,7 +317,7 @@ class TestEmailVerificationStatus:
     @pytest.mark.asyncio
     async def test_check_verification_status_nonexistent_user(self, client):
         """Test checking verification status for a non-existent user."""
-        response = client.get(
+        response = await client.get(
             f"{PREFIX}/users/verification-status?user_email=nonexistent@example.com"
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -330,14 +341,14 @@ class TestPasswordResetFlow:
             "user_first_name": "NoVerify",
             "user_country_code": "GB",
         }
-        register = client.post(f"{PREFIX}/users", json=user_data)
+        register = await client.post(f"{PREFIX}/users", json=user_data)
         assert register.status_code == status.HTTP_201_CREATED
 
         # ignore the initial registration call
         _mock_verify.reset_mock()
 
         # now request reset
-        resp = client.post(
+        resp = await client.post(
             f"{PREFIX}/users/password-resets",
             json={"user_email": user_data["user_email"]},
         )
@@ -358,10 +369,10 @@ class TestPasswordResetFlow:
             "user_first_name": "DoVerify",
             "user_country_code": "GB",
         }
-        reg = client.post(f"{PREFIX}/users", json=user_data)
+        reg = await client.post(f"{PREFIX}/users", json=user_data)
         user_id = reg.json()["user_id"]
         token = create_token(user_id=user_id, token_type="email_verification")
-        verify = client.post(f"{PREFIX}/users/email-verifications/{token}")
+        verify = await client.post(f"{PREFIX}/users/email-verifications/{token}")
         assert verify.status_code == status.HTTP_200_OK
 
         _mock_reset = mock_email_service(
@@ -369,7 +380,7 @@ class TestPasswordResetFlow:
             "app.api.services.user.user_unit_of_work.send_password_reset_email",
         )
 
-        resp = client.post(
+        resp = await client.post(
             f"{PREFIX}/users/password-resets",
             json={"user_email": user_data["user_email"]},
         )
@@ -388,21 +399,21 @@ class TestPasswordResetFlow:
             "user_first_name": "Reseter",
             "user_country_code": "GB",
         }
-        reg = client.post(f"{PREFIX}/users", json=user_data)
+        reg = await client.post(f"{PREFIX}/users", json=user_data)
         user_id = reg.json()["user_id"]
         token_ver = create_token(user_id=user_id, token_type="email_verification")
-        client.post(f"{PREFIX}/users/email-verifications/{token_ver}")
+        await client.post(f"{PREFIX}/users/email-verifications/{token_ver}")
 
         reset_token = create_token(user_id=user_id, token_type="reset")
         new_pass = "NewPass456!#"
 
-        resp = client.post(
+        resp = await client.post(
             f"{PREFIX}/users/password-resets/{reset_token}",
             json={"new_password": new_pass},
         )
         assert resp.status_code == status.HTTP_200_OK
         assert "has been reset" in resp.json()["message"].lower()
-        login = client.post(
+        login = await client.post(
             f"{PREFIX}/auth/token",
             json={"user_email": user_data["user_email"], "user_password": new_pass},
         )
@@ -413,6 +424,7 @@ class TestPasswordResetFlow:
             and data["user_first_name"] == user_data["user_first_name"]
         )
 
+    @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "payload,code",
         [
@@ -428,15 +440,17 @@ class TestPasswordResetFlow:
             ),
         ],
     )
-    def test_reset_password_errors(self, client, payload, code):
+    async def test_reset_password_errors(self, client, payload, code):
         """Invalid token or weak password yields appropriate error."""
         if code == status.HTTP_401_UNAUTHORIZED:
             bad_token = "bad.token.payload"
-            resp = client.post(
+            resp = await client.post(
                 f"{PREFIX}/users/password-resets/{bad_token}", json=payload
             )
         else:
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
-            resp = client.post(f"{PREFIX}/users/password-resets/{token}", json=payload)
+            resp = await client.post(
+                f"{PREFIX}/users/password-resets/{token}", json=payload
+            )
 
         assert resp.status_code == code
