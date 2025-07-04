@@ -233,12 +233,15 @@ class UserUnitOfWork:
             }
 
     @translate_db_exceptions
-    async def reset_password(self, token: str, new_password: str) -> None:
+    async def reset_password(self, token: str, new_password: str) -> User:
         """Reset a user's password with a token.
 
         Args:
             token: The reset token
             new_password: The new password
+
+        Returns:
+            The updated user
 
         Raises:
             InvalidTokenError: If the token is invalid
@@ -274,6 +277,8 @@ class UserUnitOfWork:
 
         log_context["email"] = user.user_email
         logger.info("Password reset successful", **log_context)
+
+        return user
 
     @translate_token_exceptions
     async def _decode_token(
@@ -347,3 +352,55 @@ class UserUnitOfWork:
                 user_id, allotment_data
             )
             return allotment
+
+    @translate_db_exceptions
+    async def register_user(self, user_data: UserCreate) -> User:
+        """Register a new user with email verification."""
+        safe_context = {
+            "email": user_data.user_email,
+            "request_id": self.request_id,
+            "operation": "register_user_uow",
+        }
+
+        logger.info("Registering user via unit of work", **safe_context)
+
+        with log_timing(
+            "register_user_transaction", request_id=safe_context["request_id"]
+        ):
+            try:
+                user = UserFactory.create_user(user_data)
+                created_user = await self.user_repo.create_user(user)
+
+                # Send verification email
+                await send_verification_email(
+                    created_user.user_email, str(created_user.user_id)
+                )
+
+                safe_context["user_id"] = str(created_user.user_id)
+                logger.info(
+                    "User registered and verification email sent", **safe_context
+                )
+
+                return created_user
+            except ValidationError:
+                raise
+            except Exception as exc:
+                logger.error("Error registering user", error=str(exc), **safe_context)
+                raise
+
+    @translate_db_exceptions
+    async def verify_user_email(self, user_id: str) -> User:
+        """Verify a user's email by user ID."""
+        return await self.verify_email(user_id)
+
+    @translate_db_exceptions
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email address."""
+        log_context = {
+            "email": email,
+            "request_id": self.request_id,
+            "operation": "get_user_by_email_uow",
+        }
+
+        logger.debug("Getting user by email via unit of work", **log_context)
+        return await self.user_repo.get_user_by_email(email)

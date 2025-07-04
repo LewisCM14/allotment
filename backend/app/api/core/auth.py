@@ -25,7 +25,7 @@ from app.api.models import User
 
 logger = structlog.get_logger()
 
-TokenType = Literal["access", "refresh", "reset", "email_verification"]
+TokenType = Literal["access", "refresh", "reset", "email_verification", "verification"]
 
 
 def create_token(
@@ -57,7 +57,7 @@ def create_token(
                 expire_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
             elif token_type == "reset":
                 expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
-            elif token_type == "email_verification":
+            elif token_type == "email_verification" or token_type == "verification":
                 expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
             else:
                 raise ValueError(f"Unknown token type: {token_type}")

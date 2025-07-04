@@ -3,9 +3,6 @@ User Endpoints
 - Provides API endpoints for user-related operations.
 """
 
-import uuid
-from typing import Any, Dict
-
 import structlog
 from authlib.jose import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
@@ -15,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth import (
     create_token,
-    verify_password,
 )
 from app.api.core.config import settings
 from app.api.core.database import get_db
@@ -28,13 +24,11 @@ from app.api.middleware.error_handler import (
     validate_user_exists,
 )
 from app.api.middleware.exception_handler import (
-    AuthenticationError,
     BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
     EmailVerificationError,
     InvalidTokenError,
-    UserNotFoundError,
 )
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
@@ -47,9 +41,7 @@ from app.api.schemas.user.user_schema import (
     MessageResponse,
     PasswordResetRequest,
     PasswordUpdate,
-    RefreshRequest,
     UserCreate,
-    UserLogin,
     VerificationStatusResponse,
 )
 from app.api.services.email_service import (
@@ -491,7 +483,10 @@ async def reset_password(
         raise e
     except InvalidTokenError as e:
         logger.warning("Invalid reset token", error=str(e), **log_context)
-        raise HTTPException(status_code=e.status_code, detail=e.error_code)
+        # Return both a message and the error code for consistency
+        raise HTTPException(
+            status_code=e.status_code, detail=[{"msg": str(e), "type": e.error_code}]
+        )
     except BaseApplicationError as exc:
         logger.warning(
             f"{type(exc).__name__}",

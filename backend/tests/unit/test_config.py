@@ -1,16 +1,21 @@
 import os
+
 import pytest
+
 from app.api.core.config import Settings
+
 
 # Helper to patch environment variables
 def set_env_vars(env_vars):
     for key, value in env_vars.items():
         os.environ[key] = value
 
+
 def clear_env_vars(keys):
     for key in keys:
         if key in os.environ:
             del os.environ[key]
+
 
 def minimal_env():
     return {
@@ -38,37 +43,38 @@ def minimal_env():
         "JWT_PUBLIC_KEY": "-----BEGIN PUBLIC KEY-----\\ndef\\n-----END PUBLIC KEY-----",
     }
 
-@pytest.fixture
-def patch_env(monkeypatch):
-    env = minimal_env()
-    for k, v in env.items():
-        monkeypatch.setenv(k, v)
-    yield env
-    for k in env:
-        monkeypatch.delenv(k, raising=False)
 
-def test_cors_settings_are_parsed(patch_env):
-    settings = Settings()
-    assert settings.CORS_ORIGINS == ["http://localhost", "http://127.0.0.1"]
-    assert settings.CORS_ALLOW_METHODS == ["GET", "POST"]
-    assert settings.CORS_ALLOW_HEADERS == ["Authorization", "Content-Type"]
+class TestSettingsConfig:
+    @pytest.fixture
+    def patch_env(self, monkeypatch):
+        env = minimal_env()
+        for k, v in env.items():
+            monkeypatch.setenv(k, v)
+        yield env
+        for k in env:
+            monkeypatch.delenv(k, raising=False)
 
-def test_jwt_keys_are_processed(patch_env):
-    settings = Settings()
-    assert b"BEGIN PRIVATE KEY" in settings.PRIVATE_KEY
-    assert b"abc" in settings.PRIVATE_KEY
-    assert b"BEGIN PUBLIC KEY" in settings.PUBLIC_KEY
-    assert b"def" in settings.PUBLIC_KEY
-    # Should contain real newlines
-    assert b"\n" in settings.PRIVATE_KEY
-    assert b"\n" in settings.PUBLIC_KEY
+    def test_cors_settings_are_parsed(self, patch_env):
+        settings = Settings()
+        assert settings.CORS_ORIGINS == ["http://localhost", "http://127.0.0.1"]
+        assert settings.CORS_ALLOW_METHODS == ["GET", "POST"]
+        assert settings.CORS_ALLOW_HEADERS == ["Authorization", "Content-Type"]
 
+    def test_jwt_keys_are_processed(self, patch_env):
+        settings = Settings()
+        assert b"BEGIN PRIVATE KEY" in settings.PRIVATE_KEY
+        assert b"abc" in settings.PRIVATE_KEY
+        assert b"BEGIN PUBLIC KEY" in settings.PUBLIC_KEY
+        assert b"def" in settings.PUBLIC_KEY
+        # Should contain real newlines
+        assert b"\n" in settings.PRIVATE_KEY
+        assert b"\n" in settings.PUBLIC_KEY
 
-def test_invalid_jwt_key_raises(monkeypatch):
-    env = minimal_env()
-    env["JWT_PRIVATE_KEY"] = ""
-    env["JWT_PUBLIC_KEY"] = ""
-    for k, v in env.items():
-        monkeypatch.setenv(k, v)
-    with pytest.raises(ValueError):
-        Settings()
+    def test_invalid_jwt_key_raises(self, monkeypatch):
+        env = minimal_env()
+        env["JWT_PRIVATE_KEY"] = ""
+        env["JWT_PUBLIC_KEY"] = ""
+        for k, v in env.items():
+            monkeypatch.setenv(k, v)
+        with pytest.raises(ValueError):
+            Settings()

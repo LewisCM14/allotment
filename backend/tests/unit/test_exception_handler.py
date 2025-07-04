@@ -65,60 +65,60 @@ class TestCustomExceptions:
         assert error.status_code == status.HTTP_409_CONFLICT
 
 
-@pytest.mark.asyncio
-async def test_exception_handling_middleware_handles_base_application_error():
-    """Test that the middleware handles BaseApplicationError correctly."""
-    middleware = ExceptionHandlingMiddleware(None)
+class TestExceptionHandlingMiddleware:
+    @pytest.mark.asyncio
+    async def test_handles_base_application_error(self):
+        """Test that the middleware handles BaseApplicationError correctly."""
+        middleware = ExceptionHandlingMiddleware(None)
 
-    async def mock_call_next(_):
-        raise BusinessLogicError(message="Test business logic error")
+        async def mock_call_next(_):
+            raise BusinessLogicError(message="Test business logic error")
 
-    mock_request = MagicMock()
-    mock_request.headers = {"X-Request-ID": "test-request-id"}
-    mock_request.url.path = "/test-path"
-    mock_request.method = "GET"
+        mock_request = MagicMock()
+        mock_request.headers = {"X-Request-ID": "test-request-id"}
+        mock_request.url.path = "/test-path"
+        mock_request.method = "GET"
 
-    response = await middleware.dispatch(mock_request, mock_call_next)
+        response = await middleware.dispatch(mock_request, mock_call_next)
 
-    assert response.status_code == status.HTTP_400_BAD_REQUEST
-    response_body = json.loads(response.body.decode("utf-8"))
-    assert response_body == {
-        "detail": [
-            {
-                "msg": "Test business logic error",
-                "type": "businesslogicerror",
-                "code": GENERAL_BUSINESS_RULE_VIOLATION,
-            }
-        ]
-    }
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        response_body = json.loads(response.body.decode("utf-8"))
+        assert response_body == {
+            "detail": [
+                {
+                    "msg": "Test business logic error",
+                    "type": "businesslogicerror",
+                    "code": GENERAL_BUSINESS_RULE_VIOLATION,
+                }
+            ]
+        }
 
+    @pytest.mark.asyncio
+    async def test_handles_unhandled_exception(self):
+        """Test that the middleware handles unhandled exceptions correctly."""
+        middleware = ExceptionHandlingMiddleware(None)
 
-@pytest.mark.asyncio
-async def test_exception_handling_middleware_handles_unhandled_exception():
-    """Test that the middleware handles unhandled exceptions correctly."""
-    middleware = ExceptionHandlingMiddleware(None)
+        async def mock_call_next(_):
+            raise ValueError("Test unhandled exception")
 
-    async def mock_call_next(_):
-        raise ValueError("Test unhandled exception")
+        mock_request = MagicMock()
+        mock_request.headers = {"X-Request-ID": "test-request-id"}
+        mock_request.url.path = "/test-path"
+        mock_request.method = "GET"
 
-    mock_request = MagicMock()
-    mock_request.headers = {"X-Request-ID": "test-request-id"}
-    mock_request.url.path = "/test-path"
-    mock_request.method = "GET"
+        response = await middleware.dispatch(mock_request, mock_call_next)
 
-    response = await middleware.dispatch(mock_request, mock_call_next)
-
-    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    response_body = json.loads(response.body.decode("utf-8"))
-    assert response_body == {
-        "detail": [
-            {
-                "msg": "An unexpected error occurred",
-                "type": "server_error",
-                "code": "GEN_999",
-                "request_id": "test-request-id",
-                "timestamp": response_body["detail"][0]["timestamp"],
-                "environment": settings.ENVIRONMENT,
-            }
-        ]
-    }
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        response_body = json.loads(response.body.decode("utf-8"))
+        assert response_body == {
+            "detail": [
+                {
+                    "msg": "An unexpected error occurred",
+                    "type": "server_error",
+                    "code": "GEN_999",
+                    "request_id": "test-request-id",
+                    "timestamp": response_body["detail"][0]["timestamp"],
+                    "environment": settings.ENVIRONMENT,
+                }
+            ]
+        }
