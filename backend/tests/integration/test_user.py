@@ -7,7 +7,7 @@ from fastapi import status
 from app.api.core.auth import create_token
 from app.api.core.config import settings
 from app.api.factories.user_factory import UserFactoryValidationError
-from app.api.middleware.exception_handler import BaseApplicationError
+from app.api.middleware.exceptions import BaseApplicationError
 from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
@@ -243,7 +243,7 @@ class TestPasswordReset:
         """Test registration with BaseApplicationError from DB."""
         mocker.patch("app.api.v1.user.send_verification_email")
         mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
-        from app.api.middleware.exception_handler import BaseApplicationError
+        from app.api.middleware.exceptions import BaseApplicationError
 
         mock_db_execute.side_effect = BaseApplicationError("fail", "fail_code")
         response = await client.post(
@@ -566,7 +566,7 @@ class TestPasswordReset:
         mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
         mock_uow_instance = mocker.AsyncMock()
         mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-        from app.api.middleware.exception_handler import UserNotFoundError
+        from app.api.middleware.exceptions import UserNotFoundError
 
         mock_uow_instance.verify_email.side_effect = UserNotFoundError("User not found")
         response = await client.post(f"{PREFIX}/users/email-verifications/validtoken")
@@ -600,7 +600,7 @@ class TestPasswordReset:
         mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
         mock_uow_instance = mocker.AsyncMock()
         mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-        from app.api.middleware.exception_handler import UserNotFoundError
+        from app.api.middleware.exceptions import UserNotFoundError
 
         mock_uow_instance.verify_email.side_effect = UserNotFoundError("User not found")
         response = await client.post(f"{PREFIX}/users/email-verifications/validtoken")
@@ -915,7 +915,7 @@ class TestPasswordReset:
     @pytest.mark.asyncio
     async def test_request_verification_email_user_not_found(self, client, mocker):
         """Test requesting verification email for non-existent user."""
-        from app.api.middleware.exception_handler import UserNotFoundError
+        from app.api.middleware.exceptions import UserNotFoundError
 
         mocker.patch(
             "app.api.v1.user.validate_user_exists",
@@ -1040,7 +1040,7 @@ class TestPasswordReset:
     @pytest.mark.asyncio
     async def test_check_verification_status_user_not_found(self, client, mocker):
         """Test verification status for non-existent user."""
-        from app.api.middleware.exception_handler import UserNotFoundError
+        from app.api.middleware.exceptions import UserNotFoundError
 
         mocker.patch(
             "app.api.v1.user.validate_user_exists",
@@ -1277,7 +1277,7 @@ class TestPasswordReset:
         self, client, mocker
     ):
         """Test password reset with BaseApplicationError logging."""
-        from app.api.middleware.exception_handler import BaseApplicationError
+        from app.api.middleware.exceptions import BaseApplicationError
 
         # Mock UserUnitOfWork to raise BaseApplicationError
         with patch("app.api.v1.user.UserUnitOfWork") as mock_uow:
@@ -1323,7 +1323,7 @@ class TestPasswordReset:
         self, client, mocker
     ):
         """Test password reset with InvalidTokenError logging."""
-        from app.api.middleware.exception_handler import InvalidTokenError
+        from app.api.middleware.exceptions import InvalidTokenError
 
         # Mock UserUnitOfWork to raise InvalidTokenError
         with patch("app.api.v1.user.UserUnitOfWork") as mock_uow:

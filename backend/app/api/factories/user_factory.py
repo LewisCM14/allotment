@@ -13,7 +13,7 @@ import structlog
 
 from app.api.core.logging import log_timing
 from app.api.middleware.error_codes import GENERAL_VALIDATION_ERROR
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
 )

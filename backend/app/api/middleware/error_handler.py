@@ -32,9 +32,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.error_codes import DB_QUERY_ERROR
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
+    DatabaseIntegrityError,
     EmailAlreadyRegisteredError,
     ExpiredTokenError,
     InvalidTokenError,
@@ -95,8 +96,6 @@ def translate_db_exceptions(
                 "unique constraint" in error_msg
                 and "user_allotment.user_id" in error_msg
             ):
-                from app.api.middleware.exception_handler import DatabaseIntegrityError
-
                 raise DatabaseIntegrityError(message="User already has an allotment")
 
             logger.error(

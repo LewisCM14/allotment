@@ -4,7 +4,7 @@ Auth Endpoints
 """
 
 import structlog
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth import (
@@ -15,18 +15,13 @@ from app.api.core.auth import (
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.middleware.error_handler import (
-    validate_user_exists,
-)
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     AuthenticationError,
-    BaseApplicationError,
-    BusinessLogicError,
     InvalidTokenError,
+    validate_user_exists,
 )
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
-    sanitize_error_message,
 )
 from app.api.models import User
 from app.api.schemas import TokenResponse
@@ -69,12 +64,16 @@ async def login(
         "email": user.user_email,
     }
     logger.info("Login attempt", **log_context)
-    try:
+
+    from app.api.middleware.error_handler import safe_operation
+
+    async with safe_operation("authenticating user", log_context):
         db_user = await authenticate_user(db, user.user_email, user.user_password)
         if not db_user:
             raise AuthenticationError("Invalid email or password")
 
         log_context["user_id"] = str(db_user.user_id)
+
         with log_timing("generate_tokens", request_id=log_context["request_id"]):
             access_token = create_token(
                 user_id=str(db_user.user_id), token_type="access"
@@ -82,7 +81,7 @@ async def login(
             refresh_token = create_token(
                 user_id=str(db_user.user_id), token_type="refresh"
             )
-            logger.debug("Tokens generated successfully", **log_context)
+
         logger.info("Login successful", **log_context)
         return TokenResponse(
             access_token=access_token,
@@ -91,27 +90,6 @@ async def login(
             user_first_name=db_user.user_first_name,
             is_email_verified=db_user.is_email_verified,
             user_id=str(db_user.user_id),
-        )
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"Login failed: {type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
-        raise
-    except Exception as exc:
-        sanitized_error = sanitize_error_message(str(exc))
-        logger.error(
-            "Unhandled exception during login",
-            error=sanitized_error,
-            error_type=type(exc).__name__,
-            **log_context,
-        )
-        raise BusinessLogicError(
-            message="An unexpected error occurred during login",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 

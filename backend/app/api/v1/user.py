@@ -23,7 +23,7 @@ from app.api.middleware.error_handler import (
     translate_token_exceptions,
     validate_user_exists,
 )
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
@@ -85,86 +85,77 @@ async def create_user(
         "operation": "user_registration",
     }
     logger.info("Attempting user registration", **log_context)
+
     try:
+        # Check if email already exists
         with log_timing("check_existing_user", request_id=log_context["request_id"]):
             query = select(User).where(User.user_email == user.user_email)
             result = await db.execute(query)
             if result.scalar_one_or_none():
-                logger.warning(
-                    "Registration failed - email already exists", **log_context
-                )
                 raise EmailAlreadyRegisteredError()
-        new_user = None
-        async with safe_operation(
-            "user_creation", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
-        ):
-            with log_timing(
-                "create_user_account", request_id=log_context["request_id"]
-            ):
-                async with UserUnitOfWork(db) as uow:
-                    new_user = await uow.create_user(user)
-            if not new_user or not new_user.user_id:
-                logger.error("User creation failed", **log_context)
-                raise BusinessLogicError(
-                    message="Failed to create user",
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                )
-            log_context["user_id"] = str(new_user.user_id)
-        try:
-            with log_timing(
-                "send_verification_email", request_id=log_context["request_id"]
-            ):
-                await send_verification_email(
-                    user_email=user.user_email, user_id=str(new_user.user_id)
-                )
-                logger.info(
-                    "Verification email sent during registration", **log_context
-                )
-        except Exception as email_error:
-            sanitized_error = sanitize_error_message(str(email_error))
-            logger.error(
-                "Failed to send verification email during registration",
-                error=sanitized_error,
-                error_type=type(email_error).__name__,
-                **log_context,
-            )
-        with log_timing("generate_tokens", request_id=log_context["request_id"]):
-            access_token = create_token(
-                user_id=str(new_user.user_id), token_type="access"
-            )
-            refresh_token = create_token(
-                user_id=str(new_user.user_id), token_type="refresh"
-            )
-            logger.debug("Tokens generated successfully", **log_context)
-        logger.info("User successfully registered", **log_context)
-        return TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
-            user_first_name=new_user.user_first_name,
-            is_email_verified=new_user.is_email_verified,
-            user_id=str(new_user.user_id),
-        )
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"User registration failed: {type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
+
+        # Create user
+        with log_timing("create_user_account", request_id=log_context["request_id"]):
+            async with UserUnitOfWork(db) as uow:
+                new_user = await uow.create_user(user)
+    except BaseApplicationError:
         raise
-    except Exception as exc:
-        sanitized_error = sanitize_error_message(str(exc))
+    except Exception as e:
+        error_type = type(e).__name__
+        sanitized_error = sanitize_error_message(str(e))
         logger.error(
-            "Unhandled exception during user registration",
-            error=sanitized_error,
-            error_type=type(exc).__name__,
+            "Error during registration",
+            error_type=error_type,
+            error_details=sanitized_error,
+            exc_info=True,
             **log_context,
         )
         raise BusinessLogicError(
-            message="An unexpected error occurred during registration",
+            message="An unexpected error occurred during registration.",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
+    if not new_user or not new_user.user_id:
+        raise BusinessLogicError(
+            message="Failed to create user",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+
+    log_context["user_id"] = str(new_user.user_id)
+
+    # Send verification email (non-blocking)
+    try:
+        with log_timing(
+            "send_verification_email", request_id=log_context["request_id"]
+        ):
+            await send_verification_email(
+                user_email=user.user_email, user_id=str(new_user.user_id)
+            )
+    except Exception as email_error:
+        # Log but don't fail registration for email issues
+        sanitized_error = sanitize_error_message(str(email_error))
+        logger.error(
+            "Failed to send verification email during registration",
+            error=sanitized_error,
+            error_type=type(email_error).__name__,
+            **log_context,
+        )
+
+    # Generate tokens
+    with log_timing("generate_tokens", request_id=log_context["request_id"]):
+        access_token = create_token(user_id=str(new_user.user_id), token_type="access")
+        refresh_token = create_token(
+            user_id=str(new_user.user_id), token_type="refresh"
+        )
+
+    logger.info("User successfully registered", **log_context)
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        user_first_name=new_user.user_first_name,
+        is_email_verified=new_user.is_email_verified,
+        user_id=str(new_user.user_id),
+    )
 
 
 @router.post(

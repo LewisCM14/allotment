@@ -10,7 +10,7 @@ from app.api.middleware.error_codes import (
     GENERAL_BUSINESS_RULE_VIOLATION,
     USER_NOT_FOUND,
 )
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
     DatabaseIntegrityError,

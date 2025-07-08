@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from httpx import AsyncClient
 
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
     ResourceNotFoundError,
@@ -29,10 +29,12 @@ class TestExceptionHandlers:
             # Create a mock request
             from fastapi import Request
 
-            from app.main import business_logic_error_handler
+            from app.api.middleware.exceptions import (
+                application_exception_handler,
+            )
 
             request = MagicMock(spec=Request)
-            response = await business_logic_error_handler(request, error)
+            response = await application_exception_handler(request, error)
 
             assert response.status_code == error.status_code
             content = response.body.decode()
@@ -44,10 +46,10 @@ class TestExceptionHandlers:
 
         from fastapi import Request
 
-        from app.main import resource_not_found_error_handler
+        from app.api.middleware.exceptions import application_exception_handler
 
         request = MagicMock(spec=Request)
-        response = await resource_not_found_error_handler(request, error)
+        response = await application_exception_handler(request, error)
 
         assert response.status_code == error.status_code
         content = response.body.decode()
@@ -59,10 +61,10 @@ class TestExceptionHandlers:
 
         from fastapi import Request
 
-        from app.main import base_application_error_handler
+        from app.api.middleware.exceptions import application_exception_handler
 
         request = MagicMock(spec=Request)
-        response = await base_application_error_handler(request, error)
+        response = await application_exception_handler(request, error)
 
         assert response.status_code == error.status_code
         content = response.body.decode()

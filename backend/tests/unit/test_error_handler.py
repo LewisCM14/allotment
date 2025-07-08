@@ -1,3 +1,4 @@
+# cSpell:ignore caplog
 import uuid
 from unittest.mock import AsyncMock, Mock
 
@@ -14,7 +15,7 @@ from app.api.middleware.error_handler import (
     translate_token_exceptions,
     validate_user_exists,
 )
-from app.api.middleware.exception_handler import (
+from app.api.middleware.exceptions import (
     BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
@@ -109,10 +110,9 @@ class TestSafeOperation:
     async def test_safe_operation_success(self):
         """Test that safe_operation allows successful operations to complete."""
         log_context = {"operation": "test_operation"}
-        result = None
 
         async with safe_operation("test_operation", log_context):
-            result = "success"
+            pass
 
 
 class TestValidateUserExists:
@@ -166,4 +166,5 @@ class TestHandleRouteExceptions:
             assert str(e) == "An unexpected error occurred"
         else:
             assert False, "BusinessLogicError not raised"
+        assert "Unhandled exception during op" in caplog.text
         assert "Unhandled exception during op" in caplog.text

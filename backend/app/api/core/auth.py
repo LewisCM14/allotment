@@ -19,7 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.core.config import settings
 from app.api.core.database import get_db
 from app.api.middleware.error_handler import validate_user_exists
-from app.api.middleware.exception_handler import InvalidTokenError
+from app.api.middleware.exceptions import InvalidTokenError
 from app.api.middleware.logging_middleware import sanitize_error_message
 from app.api.models import User
 
