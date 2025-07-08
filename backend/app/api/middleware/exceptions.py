@@ -1,15 +1,12 @@
 """
-Consolidated Exception Handling System
-
 Provides standardized exception classes and handlers that work with FastAPI's
-built-in exception handling system. This consolidates the functionality from
-multiple files into a single, maintainable module.
+built-in exception handling system.
 """
 
 import json
 import time
 import uuid
-from typing import Any, Awaitable, Callable, Dict, Optional
+from typing import Any, Dict, Optional
 
 import structlog
 from fastapi import FastAPI, HTTPException, Request, status
@@ -19,6 +16,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.api.core.config import settings
 from app.api.middleware.error_codes import (
@@ -230,7 +228,7 @@ async def validation_exception_handler(
             {
                 "msg": error.get("msg", "Validation error"),
                 "loc": error.get("loc", []),
-                "type": error.get("type", "validation_error"),
+                "type": "validation_error",
                 "code": GENERAL_VALIDATION_ERROR,
                 "ctx": {},  # ...context processing...
             }
@@ -489,13 +487,10 @@ def register_exception_handlers(app: FastAPI) -> None:
     app.add_exception_handler(Exception, general_exception_handler)
 
 
-class ExceptionHandlingMiddleware:
-    def __init__(self, app: Any) -> None:
-        self.app = app
-
+class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request: Request, call_next: Callable[[Request], Awaitable[JSONResponse]]
-    ) -> JSONResponse:  # added type annotations for parameters and return type
+        self, request, call_next: RequestResponseEndpoint
+    ) -> JSONResponse:
         try:
             response = await call_next(request)
         except Exception as e:
