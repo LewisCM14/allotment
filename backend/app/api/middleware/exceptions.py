@@ -17,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 from app.api.core.config import settings
 from app.api.middleware.error_codes import (
@@ -489,8 +490,8 @@ def register_exception_handlers(app: FastAPI) -> None:
 
 class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
-        self, request, call_next: RequestResponseEndpoint
-    ) -> JSONResponse:
+        self, request: Request, call_next: RequestResponseEndpoint
+    ) -> Response:
         try:
             response = await call_next(request)
         except Exception as e:
