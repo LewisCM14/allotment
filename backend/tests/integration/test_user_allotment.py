@@ -22,7 +22,7 @@ class TestUserAllotment:
         reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
-                "user_email": "allotment@example.com",
+                "user_email": f"allotment_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
                 "user_first_name": "Allot",
                 "user_country_code": "US",
@@ -55,7 +55,7 @@ class TestUserAllotment:
         reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
-                "user_email": "allotment2@example.com",
+                "user_email": f"allotment2_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
                 "user_first_name": "Allot",
                 "user_country_code": "CA",
@@ -103,6 +103,14 @@ class TestUserAllotment:
     @pytest.mark.parametrize(
         "payload, expected_status",
         [
+            (
+                {
+                    "allotment_postal_zip_code": None,
+                    "allotment_width_meters": 10.0,
+                    "allotment_length_meters": 20.0,
+                },
+                status.HTTP_422_UNPROCESSABLE_ENTITY,
+            ),
             (
                 {
                     "allotment_postal_zip_code": "123",
@@ -168,7 +176,7 @@ class TestUserAllotment:
         reg_resp = await client.post(
             f"{PREFIX}/users",
             json={
-                "user_email": "dup@example.com",
+                "user_email": f"dup_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
                 "user_first_name": "Dup",
                 "user_country_code": "DE",

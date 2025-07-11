@@ -6,7 +6,7 @@ User Allotment Endpoints
 from typing import Any
 
 import structlog
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth import get_current_user
@@ -71,6 +71,12 @@ async def get_user_allotment(
     logger.info("Fetching user allotment", **log_context)
     async with UserUnitOfWork(db) as uow:
         result = await uow.get_user_allotment(current_user.user_id)
+    if not result:
+        logger.warning("User allotment not found", **log_context)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User allotment not found.",
+        )
     logger.info("User allotment fetched", **log_context)
     # Pydantic v2 migration: use model_validate instead of from_orm
     return UserAllotmentRead.model_validate(result)

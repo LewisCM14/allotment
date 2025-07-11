@@ -19,7 +19,6 @@ from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.factories.user_factory import UserFactoryValidationError
 from app.api.middleware.error_handler import (
-    safe_operation,
     translate_token_exceptions,
     validate_user_exists,
 )
@@ -194,17 +193,14 @@ async def request_verification_email(
     )
     log_context["user_id"] = str(user.user_id)
     try:
-        async with safe_operation(
-            "sending verification email",
-            log_context,
-            status.HTTP_500_INTERNAL_SERVER_ERROR,
-        ):
-            with log_timing("send_email", request_id=log_context["request_id"]):
-                await send_verification_email(
-                    user_email=user_email, user_id=str(user.user_id)
-                )
-                logger.info("Verification email sent successfully", **log_context)
-                return MessageResponse(message="Verification email sent successfully")
+        logger.debug("About to call send_verification_email", **log_context)
+        with log_timing("send_email", request_id=log_context["request_id"]):
+            await send_verification_email(
+                user_email=user_email, user_id=str(user.user_id)
+            )
+        logger.debug("send_verification_email call completed", **log_context)
+        logger.info("Verification email sent successfully", **log_context)
+        return MessageResponse(message="Verification email sent successfully")
     except Exception as e:
         logger.error(
             "Failed to send verification email during operation",
@@ -212,7 +208,7 @@ async def request_verification_email(
             error_code="EMAIL_VERIFICATION_ERROR",
             **log_context,
         )
-        raise
+        return MessageResponse(message="Internal server error")
 
 
 @router.post(
@@ -454,10 +450,21 @@ async def reset_password(
     logger.debug("Password reset attempt with token", **log_context)
 
     try:
-        token_parts = token.split(".")
-        if len(token_parts) != 3:
-            logger.warning("Malformed JWT token format", **log_context)
-            raise InvalidTokenError("Malformed JWT token")
+        from app.api.core.auth import decode_token
+        try:
+            payload = decode_token(token)
+            user_id = payload["sub"]
+        except Exception as exc:
+            logger.error(
+                "General exception during token decode",
+                error=str(exc),
+                **log_context,
+            )
+            from app.api.middleware.exceptions import BusinessLogicError
+            raise BusinessLogicError(
+                message="Internal server error",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+            )
 
         async with UserUnitOfWork(db) as uow:
             await uow.reset_password(token, password_data.new_password)
@@ -495,7 +502,8 @@ async def reset_password(
             error_type=type(exc).__name__,
             **log_context,
         )
+        from app.api.middleware.exceptions import BusinessLogicError
         raise BusinessLogicError(
-            message="An unexpected error occurred during password reset",
+            message="Internal server error",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
