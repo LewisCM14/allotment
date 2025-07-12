@@ -82,7 +82,29 @@ class FamilyUnitOfWork:
         """
         Retrieves all botanical groups with their families via the repository.
         """
-        return await self.family_repo.get_all_botanical_groups_with_families()
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_botanical_groups_with_families",
+        }
+        logger.info("Starting operation to fetch botanical groups", **log_context)
+
+        try:
+            botanical_groups = (
+                await self.family_repo.get_all_botanical_groups_with_families()
+            )
+            logger.info(
+                "Successfully retrieved botanical groups",
+                count=len(botanical_groups),
+                **log_context,
+            )
+            return botanical_groups
+        except Exception as e:
+            logger.error(
+                "Error retrieving botanical groups",
+                error=str(e),
+                **log_context,
+            )
+            raise
 
     async def get_family_details(self, family_id: Any) -> Optional[FamilyInfoSchema]:
         """

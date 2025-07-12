@@ -22,7 +22,7 @@ from app.api.middleware.error_handler import (
     translate_token_exceptions,
     validate_user_exists,
 )
-from app.api.middleware.exceptions import (
+from app.api.middleware.exception_handler import (
     BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
@@ -292,7 +292,7 @@ async def verify_email_token(
 )
 async def check_verification_status(
     user_email: EmailStr = Query(...),
-    db: AsyncSession = Depends(get_db),  # Changed to Query parameter
+    db: AsyncSession = Depends(get_db),
 ) -> VerificationStatusResponse:
     """
     Check if a user's email is verified.
@@ -423,7 +423,7 @@ async def request_password_reset(
 async def reset_password(
     token: str,
     password_data: PasswordUpdate,
-    request: Request,  # Keep request for logging if needed, or remove if not used
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """
@@ -451,6 +451,7 @@ async def reset_password(
 
     try:
         from app.api.core.auth import decode_token
+
         try:
             payload = decode_token(token)
             user_id = payload["sub"]
@@ -460,7 +461,8 @@ async def reset_password(
                 error=str(exc),
                 **log_context,
             )
-            from app.api.middleware.exceptions import BusinessLogicError
+            from app.api.middleware.exception_handler import BusinessLogicError
+
             raise BusinessLogicError(
                 message="Internal server error",
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -502,7 +504,8 @@ async def reset_password(
             error_type=type(exc).__name__,
             **log_context,
         )
-        from app.api.middleware.exceptions import BusinessLogicError
+        from app.api.middleware.exception_handler import BusinessLogicError
+
         raise BusinessLogicError(
             message="Internal server error",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

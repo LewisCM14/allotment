@@ -23,7 +23,7 @@ from app.api.middleware.error_handler import (
     translate_db_exceptions,
     translate_token_exceptions,
 )
-from app.api.middleware.exceptions import InvalidTokenError
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -94,7 +94,7 @@ class UserUnitOfWork:
         else:
             from sqlalchemy.exc import IntegrityError
 
-            from app.api.middleware.exceptions import DatabaseIntegrityError
+            from app.api.middleware.exception_handler import DatabaseIntegrityError
 
             try:
                 with log_timing("db_commit"):
@@ -197,9 +197,7 @@ class UserUnitOfWork:
             }
 
         log_context["user_id"] = str(user.user_id)
-        log_context["is_verified"] = str(
-            user.is_email_verified
-        )  # Convert boolean to string
+        log_context["is_verified"] = str(user.is_email_verified)
 
         if not user.is_email_verified:
             logger.info(

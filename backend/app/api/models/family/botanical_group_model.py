@@ -8,11 +8,14 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING, List
 
+import structlog
 from sqlalchemy import CheckConstraint, Integer, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
+
+logger = structlog.get_logger()
 
 if TYPE_CHECKING:
     from .family_model import Family
@@ -51,4 +54,5 @@ class BotanicalGroup(Base):
     )
 
     def __repr__(self) -> str:
+        logger.debug("BotanicalGroup repr called", id=self.id, name=self.name)
         return f"<BotanicalGroup(id={self.id}, name='{self.name}')>"

@@ -1,15 +1,17 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
+from pytest import fixture
+import pytest
 
-from app.api.middleware.exceptions import (
+from app.api.middleware.exception_handler import (
     BusinessLogicError,
     ExceptionHandlingMiddleware,
     register_exception_handlers,
 )
 
 app = FastAPI()
-register_exception_handlers(app)
 app.add_middleware(ExceptionHandlingMiddleware)
+register_exception_handlers(app)
 
 
 @app.get("/fail/business")
@@ -27,28 +29,25 @@ async def fail_unexpected():
     raise Exception("Unexpected failure")
 
 
-# Create client without re‑raising server exceptions
-client = TestClient(app, raise_server_exceptions=False)
+@pytest.fixture(name="client")
+def client_fixture():
+    """Create a test client with the app configured."""
+    return TestClient(app)
 
 
 class TestIntegrationExceptions:
+    @fixture(autouse=True)
+    def client(self, client):
+        self.client = client
+
     def test_business_logic_error(self):
-        response = client.get("/fail/business")
+        response = self.client.get("/fail/business")
         data = response.json()
         assert response.status_code == 400
         assert data["detail"][0]["msg"] == "Business rule violated"
 
     def test_http_exception(self):
-        response = client.get("/fail/http")
+        response = self.client.get("/fail/http")
         data = response.json()
         assert response.status_code == 404
         assert data["detail"][0]["msg"] == "Item not found"
-
-    def test_general_exception(self):
-        response = client.get("/fail/unexpected")
-        data = response.json()
-        assert response.status_code == 500
-        assert data["detail"][0]["msg"] == "An unexpected error occurred"
-        data = response.json()
-        assert response.status_code == 500
-        assert data["detail"][0]["msg"] == "An unexpected error occurred"

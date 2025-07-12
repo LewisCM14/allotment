@@ -32,7 +32,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.error_codes import DB_QUERY_ERROR
-from app.api.middleware.exceptions import (
+from app.api.middleware.exception_handler import (
     BaseApplicationError,
     BusinessLogicError,
     DatabaseIntegrityError,

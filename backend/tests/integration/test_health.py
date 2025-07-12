@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+import app.api.v1.health
 from app.api.core.config import settings
 
 PREFIX = settings.API_PREFIX
@@ -62,8 +63,6 @@ async def test_health_database_query_returns_unexpected_result(client):
 async def test_health_high_cpu_usage(client):
     """Test the /health endpoint with high CPU usage"""
     with patch("app.api.v1.health.psutil.cpu_percent", return_value=90.0):
-        import app.api.v1.health
-
         app.api.v1.health._previous_resources_state = {
             "cpu_critical": False,
             "memory_critical": False,
@@ -83,8 +82,6 @@ async def test_health_high_memory_usage(client):
     """Test the /health endpoint with high memory usage"""
     with patch("app.api.v1.health.psutil.virtual_memory") as mock_memory:
         mock_memory.return_value.percent = 90.0
-        import app.api.v1.health
-
         app.api.v1.health._previous_resources_state = {
             "cpu_critical": False,
             "memory_critical": False,
@@ -104,8 +101,6 @@ async def test_health_high_disk_usage(client):
     """Test the /health endpoint with high disk usage"""
     with patch("app.api.v1.health.psutil.disk_usage") as mock_disk:
         mock_disk.return_value.percent = 90.0
-        import app.api.v1.health
-
         app.api.v1.health._previous_resources_state = {
             "cpu_critical": False,
             "memory_critical": False,
@@ -131,8 +126,6 @@ async def test_health_all_resources_critical(client):
         mock_memory.return_value.percent = 90.0
         mock_disk.return_value.percent = 90.0
 
-        import app.api.v1.health
-
         app.api.v1.health._previous_resources_state = {
             "cpu_critical": False,
             "memory_critical": False,
@@ -152,8 +145,6 @@ async def test_health_all_resources_critical(client):
 @pytest.mark.asyncio
 async def test_health_resources_return_to_normal(client):
     """Test the /health endpoint when resources return to normal levels"""
-    import app.api.v1.health
-
     app.api.v1.health._previous_resources_state = {
         "cpu_critical": True,
         "memory_critical": True,
@@ -181,8 +172,6 @@ async def test_health_resources_return_to_normal(client):
 @pytest.mark.asyncio
 async def test_health_no_state_change_when_already_critical(client):
     """Test the /health endpoint when resources are already critical"""
-    import app.api.v1.health
-
     app.api.v1.health._previous_resources_state = {
         "cpu_critical": True,
         "memory_critical": True,

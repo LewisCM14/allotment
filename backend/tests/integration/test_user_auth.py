@@ -4,7 +4,10 @@ import pytest
 from fastapi import status
 
 from app.api.core.config import settings
-from app.api.middleware.exceptions import BaseApplicationError
+from app.api.middleware.exception_handler import (
+    BaseApplicationError,
+    BusinessLogicError,
+)
 from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
@@ -87,7 +90,6 @@ class TestUserLogin:
     async def test_login_with_specific_business_logic_error(self, client, mocker):
         """Test handling of specific BusinessLogicError during login."""
         mock_authenticate = mocker.patch("app.api.v1.user_auth.authenticate_user")
-        from app.api.middleware.exceptions import BusinessLogicError
 
         mock_authenticate.side_effect = BusinessLogicError(
             message="Account locked",
@@ -164,7 +166,6 @@ class TestTokenRefresh:
         mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
         mock_decode.return_value = {"type": "refresh", "sub": "user-id"}
         mock_validate = mocker.patch("app.api.v1.user_auth.validate_user_exists")
-        from app.api.middleware.exceptions import BaseApplicationError
 
         mock_validate.side_effect = BaseApplicationError("fail", "fail_code")
         response = await client.post(
@@ -178,7 +179,7 @@ class TestTokenRefresh:
     async def test_token_refresh_with_invalid_token_payload(self, client, mocker):
         """Test refresh token when decode works but payload is invalid."""
         mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
-        mock_decode.return_value = {"sub": "user-id"}  # Missing 'type'
+        mock_decode.return_value = {"sub": "user-id"}
         response = await client.post(
             f"{PREFIX}/auth/token/refresh",
             json={"refresh_token": "invalid-payload-token"},
@@ -258,9 +259,7 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token(self, client, mocker):
         """Test refreshing access token with valid refresh token."""
-        mock_email = mock_email_service(  # noqa: F841
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
 
         register_response = await client.post(
             f"{PREFIX}/users",
@@ -306,9 +305,7 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_with_access_token(self, client, mocker):
         """Test refreshing with an access token instead of refresh token."""
-        mock_email = mock_email_service(  # noqa: F841
-            mocker, "app.api.v1.user.send_verification_email"
-        )
+        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
 
         register_response = await client.post(
             f"{PREFIX}/users",
@@ -418,11 +415,9 @@ class TestUserAuthErrorHandling:
     @pytest.mark.asyncio
     async def test_refresh_token_invalid_token_exception(self, client, mocker):
         """Test refresh token handles invalid token exceptions."""
-        from app.api.middleware.exceptions import InvalidTokenError
-
         # Mock decode_token to raise InvalidTokenError
         mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
-        mock_decode.side_effect = InvalidTokenError("Token decode error")
+        mock_decode.side_effect = Exception("Token decode error")
 
         response = await client.post(
             f"{PREFIX}/auth/token/refresh",

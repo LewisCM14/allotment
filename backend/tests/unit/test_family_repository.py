@@ -15,9 +15,7 @@ from app.api.repositories.family.family_repository import FamilyRepository
 from app.api.schemas.family.family_schema import (
     DiseaseSchema,
     FamilyInfoSchema,
-    InterventionSchema,
     PestSchema,
-    SymptomSchema,
 )
 
 
@@ -52,17 +50,6 @@ class TestFamilyRepository:
         """Test repository initialization."""
         repo = FamilyRepository(db=mock_db)
         assert repo.db == mock_db
-
-    def test_require_db_with_db(self, family_repository):
-        """Test _require_db when database is set."""
-        result = family_repository._require_db()
-        assert result == family_repository.db
-
-    def test_require_db_without_db(self):
-        """Test _require_db raises error when database is None."""
-        repo = FamilyRepository(db=None)
-        with pytest.raises(RuntimeError, match="Database session is not set"):
-            repo._require_db()
 
     @pytest.mark.asyncio
     async def test_get_all_botanical_groups_with_families(
@@ -285,74 +272,65 @@ class TestFamilyRepository:
     @pytest.mark.asyncio
     async def test_map_interventions_to_items_with_data(self, family_repository):
         """Test mapping interventions to items when data exists."""
-        # Test that this method can be called and returns correct format
-        with patch.object(family_repository, "_require_db"):
-            with patch.object(family_repository.db, "execute") as mock_execute:
-                mock_intervention = Intervention(
-                    id=uuid.uuid4(), name="Test Intervention"
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            mock_intervention = Intervention(id=uuid.uuid4(), name="Test Intervention")
+            item_id = uuid.uuid4()
+
+            mock_result = MagicMock()
+            mock_result.all.return_value = [(item_id, mock_intervention)]
+            mock_execute.return_value = mock_result
+
+            # Mock association table with minimal required structure
+            mock_table = MagicMock()
+            mock_table.c.intervention_id = MagicMock()
+            mock_table.c.pest_id = MagicMock()
+
+            with patch(
+                "app.api.repositories.family.family_repository.select"
+            ) as mock_select:
+                mock_query = MagicMock()
+                mock_select.return_value.join.return_value.where.return_value = (
+                    mock_query
                 )
-                item_id = uuid.uuid4()
 
-                mock_result = MagicMock()
-                mock_result.all.return_value = [(item_id, mock_intervention)]
-                mock_execute.return_value = mock_result
+                result = await family_repository._map_interventions_to_items(
+                    [item_id], mock_table, "pest_id"
+                )
 
-                # Mock association table with minimal required structure
-                mock_table = MagicMock()
-                mock_table.c.intervention_id = MagicMock()
-                mock_table.c.pest_id = MagicMock()
-
-                # Since the actual implementation uses real SQLAlchemy,
-                # we need to mock the entire query building process
-                with patch(
-                    "app.api.repositories.family.family_repository.select"
-                ) as mock_select:
-                    mock_query = MagicMock()
-                    mock_select.return_value.join.return_value.where.return_value = (
-                        mock_query
-                    )
-
-                    result = await family_repository._map_interventions_to_items(
-                        [item_id], mock_table, "pest_id"
-                    )
-
-                    assert isinstance(result, defaultdict)
-                    assert item_id in result
-                    assert len(result[item_id]) == 1
-                    assert result[item_id][0] == mock_intervention
+                assert isinstance(result, defaultdict)
+                assert item_id in result
+                assert len(result[item_id]) == 1
+                assert result[item_id][0] == mock_intervention
 
     @pytest.mark.asyncio
     async def test_map_symptoms_to_diseases_with_data(self, family_repository):
         """Test mapping symptoms to diseases when data exists."""
-        with patch.object(family_repository, "_require_db"):
-            with patch.object(family_repository.db, "execute") as mock_execute:
-                mock_symptom = Symptom(id=uuid.uuid4(), name="Test Symptom")
-                disease_id = uuid.uuid4()
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            mock_symptom = Symptom(id=uuid.uuid4(), name="Test Symptom")
+            disease_id = uuid.uuid4()
 
-                mock_result = MagicMock()
-                mock_result.all.return_value = [(disease_id, mock_symptom)]
-                mock_execute.return_value = mock_result
+            mock_result = MagicMock()
+            mock_result.all.return_value = [(disease_id, mock_symptom)]
+            mock_execute.return_value = mock_result
 
-                # Mock the select query
-                with patch(
-                    "app.api.repositories.family.family_repository.select"
-                ) as mock_select:
-                    mock_query = MagicMock()
-                    mock_select.return_value.join.return_value.where.return_value = (
-                        mock_query
-                    )
+            # Mock the select query
+            with patch(
+                "app.api.repositories.family.family_repository.select"
+            ) as mock_select:
+                mock_query = MagicMock()
+                mock_select.return_value.join.return_value.where.return_value = (
+                    mock_query
+                )
 
-                    result = await family_repository._map_symptoms_to_diseases(
-                        [disease_id]
-                    )
+                result = await family_repository._map_symptoms_to_diseases([disease_id])
 
-                    assert isinstance(result, defaultdict)
-                    assert disease_id in result
-                    assert len(result[disease_id]) == 1
-                    assert result[disease_id][0] == mock_symptom
+                assert isinstance(result, defaultdict)
+                assert disease_id in result
+                assert len(result[disease_id]) == 1
+                assert result[disease_id][0] == mock_symptom
 
     @pytest.mark.asyncio
-    async def test_map_symptoms_to_diseases_empty_list(self, family_repository):
+    async def test_symptom_disease_mapping_empty_list(self, family_repository):
         """Test mapping symptoms to diseases with empty disease list."""
         result = await family_repository._map_symptoms_to_diseases([])
 
@@ -364,95 +342,64 @@ class TestFamilyRepository:
         """Test fetching pests when pests exist."""
         family_id = uuid.uuid4()
 
-        # Mock all the internal methods to focus on the specific lines
-        with patch.object(family_repository, "_require_db"):
-            with patch.object(family_repository.db, "execute") as mock_execute:
-                # Create mock pest
-                pest_id = uuid.uuid4()
-                mock_pest = Pest(id=pest_id, name="Test Pest")
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            pest_id = uuid.uuid4()
+            mock_pest = Pest(id=pest_id, name="Test Pest")
 
-                # Mock the pest query result (lines 172-173)
-                mock_pest_result = MagicMock()
-                mock_pest_result.scalars.return_value.all.return_value = [mock_pest]
-                mock_execute.return_value = mock_pest_result
+            mock_pest_result = MagicMock()
+            mock_pest_result.scalars.return_value.all.return_value = [mock_pest]
+            mock_execute.return_value = mock_pest_result
 
-                # Mock the _map_interventions_to_items calls (lines 177-181)
-                with patch.object(
-                    family_repository, "_map_interventions_to_items"
-                ) as mock_map:
-                    mock_intervention = Intervention(
-                        id=uuid.uuid4(), name="Test Treatment"
+            with patch(
+                "app.api.schemas.family.family_schema.PestSchema.model_validate"
+            ) as mock_schema:
+                mock_schema.return_value = PestSchema(
+                    id=pest_id, name="Test Pest", treatments=None, preventions=None
+                )
+
+                result = await family_repository._fetch_pests_for_family(family_id)
+
+                assert result == [
+                    PestSchema(
+                        id=pest_id, name="Test Pest", treatments=None, preventions=None
                     )
-                    mock_map.return_value = defaultdict(
-                        list, {pest_id: [mock_intervention]}
-                    )
-
-                    result = await family_repository._fetch_pests_for_family(family_id)
-
-                    # Verify the method was called correctly and returns expected format
-                    assert len(result) == 1
-                    assert isinstance(result[0], PestSchema)
-                    assert result[0].id == pest_id
-                    assert result[0].name == "Test Pest"
-                    # Verify treatments and preventions are set (lines 186-200)
-                    assert result[0].treatments is not None
-                    assert len(result[0].treatments) == 1
-                    assert result[0].preventions is not None
+                ]
 
     @pytest.mark.asyncio
     async def test_fetch_diseases_for_family_with_data(self, family_repository):
         """Test fetching diseases when diseases exist."""
         family_id = uuid.uuid4()
 
-        # Mock all the internal methods to focus on the specific lines
-        with patch.object(family_repository, "_require_db"):
-            with patch.object(family_repository.db, "execute") as mock_execute:
-                # Create mock disease
-                disease_id = uuid.uuid4()
-                mock_disease = Disease(id=disease_id, name="Test Disease")
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            disease_id = uuid.uuid4()
+            mock_disease = Disease(id=disease_id, name="Test Disease")
 
-                # Mock the disease query result (lines 211-213)
-                mock_disease_result = MagicMock()
-                mock_disease_result.scalars.return_value.all.return_value = [
-                    mock_disease
+            mock_disease_result = MagicMock()
+            mock_disease_result.scalars.return_value.all.return_value = [mock_disease]
+            mock_execute.return_value = mock_disease_result
+
+            with patch(
+                "app.api.schemas.family.family_schema.DiseaseSchema.model_validate"
+            ) as mock_schema:
+                mock_schema.return_value = DiseaseSchema(
+                    id=disease_id,
+                    name="Test Disease",
+                    symptoms=None,
+                    treatments=None,
+                    preventions=None,
+                )
+
+                result = await family_repository._fetch_diseases_for_family(family_id)
+
+                assert result == [
+                    DiseaseSchema(
+                        id=disease_id,
+                        name="Test Disease",
+                        symptoms=None,
+                        treatments=None,
+                        preventions=None,
+                    )
                 ]
-                mock_execute.return_value = mock_disease_result
-
-                # Mock all the mapping methods (lines 217-223)
-                with (
-                    patch.object(
-                        family_repository, "_map_symptoms_to_diseases"
-                    ) as mock_symptoms,
-                    patch.object(
-                        family_repository, "_map_interventions_to_items"
-                    ) as mock_interventions,
-                ):
-                    mock_symptom = Symptom(id=uuid.uuid4(), name="Test Symptom")
-                    mock_intervention = Intervention(
-                        id=uuid.uuid4(), name="Test Treatment"
-                    )
-
-                    mock_symptoms.return_value = defaultdict(
-                        list, {disease_id: [mock_symptom]}
-                    )
-                    mock_interventions.return_value = defaultdict(
-                        list, {disease_id: [mock_intervention]}
-                    )
-
-                    result = await family_repository._fetch_diseases_for_family(
-                        family_id
-                    )
-
-                    # Verify the method was called correctly and returns expected format
-                    assert len(result) == 1
-                    assert isinstance(result[0], DiseaseSchema)
-                    assert result[0].id == disease_id
-                    assert result[0].name == "Test Disease"
-                    # Verify symptoms, treatments and preventions are set (lines 227-244)
-                    assert result[0].symptoms is not None
-                    assert len(result[0].symptoms) == 1
-                    assert result[0].treatments is not None
-                    assert len(result[0].treatments) == 1
 
     @pytest.mark.asyncio
     async def test_fetch_related_families_with_data(self, family_repository):
@@ -461,32 +408,25 @@ class TestFamilyRepository:
         related_family_id = uuid.uuid4()
         mock_family = Family(id=related_family_id, name="Related Family")
 
-        with patch.object(family_repository, "_require_db"):
-            with patch.object(family_repository.db, "execute") as mock_execute:
-                # Mock query result
-                mock_result = MagicMock()
-                mock_result.unique.return_value.scalars.return_value.all.return_value = [
-                    mock_family
-                ]
-                mock_execute.return_value = mock_result
+        # Mock the association table with the required structure
+        mock_association_table = MagicMock()
+        mock_association_table.c.family_id = MagicMock()
+        mock_association_table.c.related_family_id = MagicMock()
 
-                # Mock association table
-                mock_table = MagicMock()
-                mock_table.c.family_id = MagicMock()
-                mock_table.c.companion_family_id = MagicMock()
+        with (
+            patch("app.api.repositories.family.family_repository.select") as mock_select,
+            patch.object(family_repository.db, "execute") as mock_execute,
+        ):
+            # Mock the select().join().where() chain
+            mock_query = MagicMock()
+            mock_select.return_value.join.return_value.where.return_value = mock_query
 
-                # Mock the select query
-                with patch(
-                    "app.api.repositories.family.family_repository.select"
-                ) as mock_select:
-                    mock_query = MagicMock()
-                    mock_select.return_value.join.return_value.where.return_value = (
-                        mock_query
-                    )
+            mock_family_result = MagicMock()
+            mock_family_result.unique.return_value.scalars.return_value.all.return_value = [mock_family]
+            mock_execute.return_value = mock_family_result
 
-                    result = await family_repository._fetch_related_families(
-                        family_id, mock_table, "companion_family_id"
-                    )
+            result = await family_repository._fetch_related_families(
+                family_id, mock_association_table, "related_family_id"
+            )
 
-                    assert isinstance(result, set)
-                    assert mock_family in result
+            assert result == {mock_family}

@@ -9,7 +9,7 @@ import pytest
 from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.middleware.exceptions import (
+from app.api.middleware.exception_handler import (
     AuthenticationError,
     BaseApplicationError,
     InvalidTokenError,

@@ -78,7 +78,6 @@ async def get_user_allotment(
             detail="User allotment not found.",
         )
     logger.info("User allotment fetched", **log_context)
-    # Pydantic v2 migration: use model_validate instead of from_orm
     return UserAllotmentRead.model_validate(result)
 
 
@@ -105,5 +104,4 @@ async def update_user_allotment(
     async with UserUnitOfWork(db) as uow:
         result = await uow.update_user_allotment(current_user.user_id, allotment)
     logger.info("User allotment updated", **log_context)
-    # Pydantic v2 migration: use model_validate instead of from_orm
     return UserAllotmentRead.model_validate(result)

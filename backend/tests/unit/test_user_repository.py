@@ -5,7 +5,7 @@ import pytest
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.middleware.exceptions import InvalidTokenError
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.models.user.user_model import User, UserAllotment
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas.user.user_allotment_schema import (

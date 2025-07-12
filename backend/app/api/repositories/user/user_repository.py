@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import translate_db_exceptions
-from app.api.middleware.exceptions import InvalidTokenError
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )

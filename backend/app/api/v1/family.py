@@ -12,7 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.middleware.exceptions import (
+from app.api.middleware.error_codes import RESOURCE_NOT_FOUND
+from app.api.middleware.error_handler import safe_operation
+from app.api.middleware.exception_handler import (
     ResourceNotFoundError,
 )
 from app.api.middleware.logging_middleware import (
@@ -45,8 +47,6 @@ async def list_botanical_groups_with_families(
         "operation": "list_botanical_groups",
     }
     logger.info("Attempting to list botanical groups", **log_context)
-
-    from app.api.middleware.error_handler import safe_operation
 
     async with safe_operation("retrieving botanical groups", log_context):
         async with FamilyUnitOfWork(db) as uow:
@@ -86,8 +86,6 @@ async def get_family_info(
     }
     logger.info("Attempting to retrieve family info", **log_context)
 
-    from app.api.middleware.error_handler import safe_operation
-
     async with safe_operation("retrieving family information", log_context):
         async with FamilyUnitOfWork(db) as uow:
             with log_timing(
@@ -96,6 +94,11 @@ async def get_family_info(
                 result = await uow.get_family_details(family_id)
 
         if result is None:
+            logger.error(
+                "Family not found",
+                error_code=RESOURCE_NOT_FOUND,
+                **log_context,
+            )
             raise ResourceNotFoundError(resource_id=family_id, resource_type="Family")
 
         logger.info("Successfully retrieved family info", **log_context)

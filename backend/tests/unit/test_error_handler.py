@@ -1,4 +1,3 @@
-# cSpell:ignore caplog
 import uuid
 from unittest.mock import AsyncMock, Mock
 
@@ -15,7 +14,7 @@ from app.api.middleware.error_handler import (
     translate_token_exceptions,
     validate_user_exists,
 )
-from app.api.middleware.exceptions import (
+from app.api.middleware.exception_handler import (
     BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,

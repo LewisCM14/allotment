@@ -8,6 +8,7 @@ import uuid
 from collections import defaultdict
 from typing import Any, List, Optional
 
+import structlog
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -45,6 +46,8 @@ from app.api.schemas.family.family_schema import (
     SymptomSchema,
 )
 
+logger = structlog.get_logger()
+
 
 class FamilyRepository:
     """Repository for Family and related tables."""
@@ -52,30 +55,41 @@ class FamilyRepository:
     def __init__(self, db: AsyncSession):
         """Initializes the repository with a database session."""
         self.db = db
-
-    def _require_db(self) -> AsyncSession:
-        if self.db is None:
-            raise RuntimeError("Database session is not set on FamilyRepository.")
-        return self.db
+        logger.debug("FamilyRepository initialized", db_session=str(db))
 
     async def get_all_botanical_groups_with_families(self) -> List[BotanicalGroup]:
         """
         Retrieves all botanical groups, with their associated families preloaded.
         """
-        self._require_db()
-        query = (
-            select(BotanicalGroup)
-            .options(joinedload(BotanicalGroup.families))
-            .order_by(BotanicalGroup.name)
-        )
-        result = await self.db.execute(query)
-        return list(result.unique().scalars().all())
+        log_context = {"operation": "get_all_botanical_groups_with_families"}
+        logger.info("Fetching all botanical groups with families", **log_context)
+
+        try:
+            query = (
+                select(BotanicalGroup)
+                .options(joinedload(BotanicalGroup.families))
+                .order_by(BotanicalGroup.name)
+            )
+            result = await self.db.execute(query)
+            botanical_groups = list(result.unique().scalars().all())
+            logger.info(
+                "Successfully fetched botanical groups",
+                count=len(botanical_groups),
+                **log_context,
+            )
+            return botanical_groups
+        except Exception as e:
+            logger.error(
+                "Error fetching botanical groups",
+                error=str(e),
+                **log_context,
+            )
+            raise
 
     async def get_family_by_id(self, family_id: int) -> Family | None:
         """
         Retrieves a single family by its ID, with antagonists and companions.
         """
-        self._require_db()
         query = (
             select(Family)
             .options(
@@ -106,7 +120,6 @@ class FamilyRepository:
         Fetches a family by its UUID with related botanical group,
         antagonises, and companion_to.
         """
-        self._require_db()
         query = (
             select(Family)
             .options(
@@ -129,7 +142,6 @@ class FamilyRepository:
         Maps interventions to items (pests or diseases) using an
         association table.
         """
-        self._require_db()
         item_id_column = getattr(association_table.c, item_id_column_name)
         query = (
             select(item_id_column, Intervention)
@@ -146,7 +158,6 @@ class FamilyRepository:
         self, disease_ids: List[uuid.UUID]
     ) -> defaultdict[uuid.UUID, List[Symptom]]:
         """Maps symptoms to diseases."""
-        self._require_db()
         symptoms_map: defaultdict[uuid.UUID, List[Symptom]] = defaultdict(list)
         if not disease_ids:
             return symptoms_map
@@ -164,7 +175,6 @@ class FamilyRepository:
         self, family_id_uuid: uuid.UUID
     ) -> List[PestSchema]:
         """Fetches pests and their details for a given family."""
-        self._require_db()
         family_pests_result = await self.db.execute(
             select(Pest)
             .join(family_pest, Pest.id == family_pest.c.pest_id)
@@ -204,7 +214,6 @@ class FamilyRepository:
         self, family_id_uuid: uuid.UUID
     ) -> List[DiseaseSchema]:
         """Fetches diseases and their details for a given family."""
-        self._require_db()
         family_diseases_result = await self.db.execute(
             select(Disease)
             .join(family_disease, Disease.id == family_disease.c.disease_id)
@@ -253,7 +262,6 @@ class FamilyRepository:
         related_column_name: str,
     ) -> set[Family]:
         """Fetches related (antagonist or companion) families."""
-        self._require_db()
         family_id_col = association_table.c.family_id
         related_family_id_col = getattr(association_table.c, related_column_name)
 
@@ -281,7 +289,6 @@ class FamilyRepository:
         their symptoms, treatments, preventions, botanical group information,
         antagonist families, and companion families.
         """
-        self._require_db()
         family_id_uuid = self._validate_family_id(family_id)
         if not family_id_uuid:
             return None

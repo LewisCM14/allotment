@@ -15,7 +15,7 @@ from pydantic import EmailStr
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.middleware.exceptions import register_exception_handlers
+from app.api.middleware.exception_handler import register_exception_handlers
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
     request_id_ctx_var,
@@ -71,15 +71,14 @@ app = FastAPI(
 )
 
 
-# Register Exception Handlers
-# Use FastAPI's built-in exception handling system
 logger.debug("Registering exception handlers")
 register_exception_handlers(app)
 
 
-# Request Logging Middleware (replaces the old ExceptionHandlingMiddleware)
-logger.debug("Adding request logging middleware")
+# Logging Middleware
+logger.debug("Adding logging middleware")
 app.add_middleware(AsyncLoggingMiddleware)
+
 
 # CORS Middleware
 logger.debug("Adding CORS middleware")
@@ -91,12 +90,10 @@ app.add_middleware(
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
-# Logging Middleware
-logger.debug("Adding logging middleware")
-app.add_middleware(AsyncLoggingMiddleware)
 
 # Rate Limiter
 app.state.limiter = limiter
+
 
 # Register Routes
 logger.debug("Registering API routes")

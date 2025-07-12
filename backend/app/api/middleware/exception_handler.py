@@ -3,6 +3,7 @@ Provides standardized exception classes and handlers that work with FastAPI's
 built-in exception handling system.
 """
 
+import anyio
 import json
 import time
 import uuid
@@ -164,6 +165,15 @@ def create_error_response(
     extra_data: Optional[Dict[str, Any]] = None,
 ) -> JSONResponse:
     """Create a standardized error response."""
+    logger.info(
+        "Creating error response",
+        status_code=status_code,
+        message=message,
+        error_type=error_type,
+        error_code=error_code,
+        request_id=request_id,
+    )
+
     error_detail = {
         "msg": message,
         "type": error_type,
@@ -347,7 +357,7 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
 
     sanitized_error = sanitize_error_message(str(exc))
     logger.error(
-        "Unhandled exception",
+        "Unhandled exception in general_exception_handler",
         request_id=request_id,
         method=request.method,
         path=request.url.path,
@@ -355,14 +365,28 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         error_type=type(exc).__name__,
         exc_info=settings.LOG_LEVEL.upper() == "DEBUG",
     )
+    logger.debug(
+        "General exception handler invoked",
+        request_id=request_id,
+        error_type=type(exc).__name__,
+        error_message=str(exc),
+    )
 
-    return create_error_response(
+    response = create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         message="An unexpected error occurred",
         error_type="server_error",
         error_code=GENERAL_UNEXPECTED_ERROR,
         request_id=request_id,
     )
+
+    logger.debug(
+        "Exiting general_exception_handler",
+        response_status_code=response.status_code,
+        response_content=response.body.decode("utf-8"),
+    )
+
+    return response
 
 
 # ============================================================================
@@ -492,11 +516,49 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
     async def dispatch(
         self, request: Request, call_next: RequestResponseEndpoint
     ) -> Response:
+        logger.debug(
+            "Entering ExceptionHandlingMiddleware.dispatch",
+            method=request.method,
+            path=request.url.path,
+            headers=dict(request.headers),
+        )
         try:
-            response = await call_next(request)
-        except Exception as e:
-            if isinstance(e, BaseApplicationError):
-                response = await application_exception_handler(request, e)
-            else:
+            try:
+                response = await call_next(request)
+                logger.debug(
+                    "Exiting ExceptionHandlingMiddleware.dispatch",
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                )
+            except anyio.EndOfStream as e:
+                logger.error(
+                    "EndOfStream error intercepted in ExceptionHandlingMiddleware.dispatch",
+                    exception_type=type(e).__name__,
+                    exception_message=str(e),
+                )
                 response = await general_exception_handler(request, e)
+            except Exception as e:
+                logger.error(
+                    "Exception intercepted in ExceptionHandlingMiddleware.dispatch",
+                    exception_type=type(e).__name__,
+                    exception_message=str(e),
+                )
+                if isinstance(e, BaseApplicationError):
+                    response = await application_exception_handler(request, e)
+                else:
+                    response = await general_exception_handler(request, e)
+        except Exception as e:
+            # Catch any exception not caught above (e.g., in route handler before response)
+            logger.error(
+                "Exception intercepted at outermost ExceptionHandlingMiddleware level",
+                exception_type=type(e).__name__,
+                exception_message=str(e),
+            )
+            response = await general_exception_handler(request, e)
+
+        logger.debug(
+            "Response created by ExceptionHandlingMiddleware.dispatch",
+            status_code=response.status_code,
+            headers=dict(response.headers),
+        )
         return response
