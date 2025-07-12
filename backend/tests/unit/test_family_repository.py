@@ -414,7 +414,9 @@ class TestFamilyRepository:
         mock_association_table.c.related_family_id = MagicMock()
 
         with (
-            patch("app.api.repositories.family.family_repository.select") as mock_select,
+            patch(
+                "app.api.repositories.family.family_repository.select"
+            ) as mock_select,
             patch.object(family_repository.db, "execute") as mock_execute,
         ):
             # Mock the select().join().where() chain
@@ -422,7 +424,9 @@ class TestFamilyRepository:
             mock_select.return_value.join.return_value.where.return_value = mock_query
 
             mock_family_result = MagicMock()
-            mock_family_result.unique.return_value.scalars.return_value.all.return_value = [mock_family]
+            mock_family_result.unique.return_value.scalars.return_value.all.return_value = [
+                mock_family
+            ]
             mock_execute.return_value = mock_family_result
 
             result = await family_repository._fetch_related_families(

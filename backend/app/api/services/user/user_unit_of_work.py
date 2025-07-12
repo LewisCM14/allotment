@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import structlog
 from authlib.jose import jwt
+from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -331,7 +332,10 @@ class UserUnitOfWork:
             allotment = await self.user_repo.get_user_allotment(user_id)
             if not allotment:
                 logger.warning("No allotment found", **log_context)
-                raise Exception("Allotment not found")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Allotment not found",
+                )
             return allotment
 
     @translate_db_exceptions

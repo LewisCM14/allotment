@@ -3,10 +3,11 @@ Auth Endpoints
 - Provides API endpoints for user-related authentication operations.
 """
 
+import uuid
+
 import structlog
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
-import uuid
 
 from app.api.core.auth import (
     authenticate_user,
@@ -18,8 +19,8 @@ from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.exception_handler import (
     AuthenticationError,
-    InvalidTokenError,
     BaseApplicationError,
+    InvalidTokenError,
     validate_user_exists,
 )
 from app.api.middleware.logging_middleware import (
@@ -116,10 +117,16 @@ async def refresh_token(
         try:
             payload = decode_token(refresh_data.refresh_token)
         except BaseApplicationError as e:
-            logger.warning("Invalid token error in refresh_token", error=str(e), **log_context)
+            logger.warning(
+                "Invalid token error in refresh_token", error=str(e), **log_context
+            )
             raise
         except Exception as e:
-            logger.warning("Exception in decode_token in refresh_token", error=str(e), **log_context)
+            logger.warning(
+                "Exception in decode_token in refresh_token",
+                error=str(e),
+                **log_context,
+            )
             raise InvalidTokenError(str(e)) from e
 
         logger.debug("Token decoded successfully", payload=payload, **log_context)
@@ -147,7 +154,9 @@ async def refresh_token(
         log_context["email"] = user.user_email
 
         access_token = create_token(user_id=str(user.user_id), token_type="access")
-        new_refresh_token = create_token(user_id=str(user.user_id), token_type="refresh")
+        new_refresh_token = create_token(
+            user_id=str(user.user_id), token_type="refresh"
+        )
         logger.info("Tokens refreshed successfully", **log_context)
 
         return TokenResponse(
@@ -160,7 +169,9 @@ async def refresh_token(
         )
 
     except InvalidTokenError as e:
-        logger.warning("Invalid token error in refresh_token", error=str(e), **log_context)
+        logger.warning(
+            "Invalid token error in refresh_token", error=str(e), **log_context
+        )
         raise
     except Exception as e:
         logger.error(

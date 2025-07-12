@@ -14,12 +14,19 @@ from app.api.middleware.error_codes import (
 )
 from app.api.middleware.exception_handler import (
     BusinessLogicError,
+    DatabaseIntegrityError,
+    EmailAlreadyRegisteredError,
     ExceptionHandlingMiddleware,
     InvalidResourceStateError,
+    InvalidTokenError,
+    UserNotFoundError,
     application_exception_handler,
     create_error_response,
     general_exception_handler,
+    handle_auth_exceptions,
+    handle_db_exceptions,
     http_exception_handler,
+    validate_user_exists,
     validation_exception_handler,
 )
 
@@ -167,10 +174,90 @@ class TestExceptionHandlingMiddleware:
         assert body["detail"][0]["msg"] == "Middleware failure"
 
 
-def test_invalid_resource_state_error():
-    from fastapi import status
+class TestHandleDbExceptions:
+    def test_handle_db_exceptions_unique_email(self):
+        from sqlalchemy.exc import IntegrityError
 
-    exc = InvalidResourceStateError("Invalid state")
-    assert exc.message == "Invalid state"
-    assert exc.error_code == RESOURCE_INVALID_STATE
-    assert exc.status_code == status.HTTP_409_CONFLICT
+        err = IntegrityError("unique constraint failed: email", None, None)
+        with pytest.raises(EmailAlreadyRegisteredError):
+            handle_db_exceptions(err)
+
+    def test_handle_db_exceptions_unique_allotment(self):
+        from sqlalchemy.exc import IntegrityError
+
+        err = IntegrityError(
+            "unique constraint failed: user_allotment.user_id", None, None
+        )
+        with pytest.raises(DatabaseIntegrityError):
+            handle_db_exceptions(err)
+
+    def test_handle_db_exceptions_other_integrity(self):
+        from sqlalchemy.exc import IntegrityError
+
+        err = IntegrityError("other integrity", None, None)
+        with pytest.raises(DatabaseIntegrityError):
+            handle_db_exceptions(err)
+
+    def test_handle_db_exceptions_sqlalchemy(self):
+        from sqlalchemy.exc import SQLAlchemyError
+
+        err = SQLAlchemyError("sqlalchemy error")
+        with pytest.raises(BusinessLogicError):
+            handle_db_exceptions(err)
+
+
+class TestHandleAuthExceptions:
+    def test_handle_auth_exceptions_valueerror(self):
+        err = ValueError("key may not be safe")
+        with pytest.raises(InvalidTokenError):
+            handle_auth_exceptions(err)
+
+
+class TestValidateUserExists:
+    @pytest.mark.asyncio
+    async def test_validate_user_exists_email(self, mocker):
+        # Patch select to avoid SQLAlchemy ArgumentError
+        db = mocker.AsyncMock()
+        user_model = mocker.Mock()
+        mock_query = mocker.Mock()
+        db.execute = mocker.AsyncMock()
+        db.execute.return_value.scalar_one_or_none = mocker.Mock(return_value=None)
+        # Patch select to return mock_query
+        import app.api.middleware.exception_handler as eh
+
+        mocker.patch.object(eh, "select", return_value=mock_query)
+        with pytest.raises(UserNotFoundError):
+            await validate_user_exists(db, user_model, user_email="x@example.com")
+
+    @pytest.mark.asyncio
+    async def test_validate_user_exists_user_id(self, mocker):
+        db = mocker.AsyncMock()
+        user_model = mocker.Mock()
+        mock_query = mocker.Mock()
+        db.execute.return_value.scalar_one_or_none = mocker.Mock(return_value="user")
+        import app.api.middleware.exception_handler as eh
+
+        mocker.patch.object(eh, "select", return_value=mock_query)
+        result = await validate_user_exists(db, user_model, user_id=str(uuid.uuid4()))
+        assert result == "user"
+
+    @pytest.mark.asyncio
+    async def test_validate_user_exists_value_error(self, mocker):
+        db = mocker.AsyncMock()
+        user_model = mocker.Mock()
+        db.execute.side_effect = ValueError("invalid literal for uuid")
+        import app.api.middleware.exception_handler as eh
+
+        mocker.patch.object(
+            eh,
+            "select",
+            side_effect=lambda *a, **kw: (_ for _ in ()).throw(
+                ValueError("invalid literal for uuid")
+            ),
+        )
+        with pytest.raises(InvalidTokenError):
+            await validate_user_exists(db, user_model, user_id="not-a-uuid")
+        exc = InvalidResourceStateError("Invalid state")
+        assert exc.message == "Invalid state"
+        assert exc.error_code == RESOURCE_INVALID_STATE
+        assert exc.status_code == status.HTTP_409_CONFLICT

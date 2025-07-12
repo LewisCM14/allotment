@@ -1,7 +1,7 @@
+import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from pytest import fixture
-import pytest
 
 from app.api.middleware.exception_handler import (
     BusinessLogicError,

@@ -168,6 +168,44 @@ class TestUserAllotment:
             f"{PREFIX}/users/allotment", json=payload, headers=headers
         )
         assert resp.status_code == expected_status
+        # Try to create an allotment with invalid payload, expect 422
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        reg_resp = await client.post(
+            f"{PREFIX}/users",
+            json={
+                "user_email": f"allotment3_{uuid.uuid4().hex}@example.com",
+                "user_password": "SecurePass123!",
+                "user_first_name": "Allot",
+                "user_country_code": "US",
+            },
+        )
+        assert reg_resp.status_code == status.HTTP_201_CREATED
+        token = reg_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        resp = await client.post(
+            f"{PREFIX}/users/allotment", json=payload, headers=headers
+        )
+        assert resp.status_code == expected_status
+
+    @pytest.mark.asyncio
+    async def test_get_user_allotment_not_found(self, client, mocker):
+        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        reg_resp = await client.post(
+            f"{PREFIX}/users",
+            json={
+                "user_email": f"allotment4_{uuid.uuid4().hex}@example.com",
+                "user_password": "SecurePass123!",
+                "user_first_name": "Allot",
+                "user_country_code": "US",
+            },
+        )
+        assert reg_resp.status_code == status.HTTP_201_CREATED
+        token = reg_resp.json()["access_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+        # No allotment created yet
+        resp = await client.get(f"{PREFIX}/users/allotment", headers=headers)
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        assert "not found" in resp.text
 
     @pytest.mark.asyncio
     async def test_duplicate_user_allotment(self, client, mocker):

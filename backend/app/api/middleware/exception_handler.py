@@ -3,12 +3,12 @@ Provides standardized exception classes and handlers that work with FastAPI's
 built-in exception handling system.
 """
 
-import anyio
 import json
 import time
 import uuid
 from typing import Any, Dict, Optional
 
+import anyio
 import structlog
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -42,11 +42,6 @@ from app.api.middleware.logging_middleware import (
 )
 
 logger = structlog.get_logger()
-
-
-# ============================================================================
-# Exception Classes
-# ============================================================================
 
 
 class BaseApplicationError(Exception):
@@ -149,11 +144,6 @@ class DatabaseIntegrityError(BaseApplicationError):
 
     def __init__(self, message: str = "Database integrity constraint violation"):
         super().__init__(message, DB_INTEGRITY_ERROR, status.HTTP_409_CONFLICT)
-
-
-# ============================================================================
-# Exception Handlers
-# ============================================================================
 
 
 def create_error_response(
@@ -380,18 +370,18 @@ async def general_exception_handler(request: Request, exc: Exception) -> JSONRes
         request_id=request_id,
     )
 
+    # Safely decode response.body for both bytes and memoryview
+    body_bytes = response.body
+    if isinstance(body_bytes, memoryview):
+        body_bytes = body_bytes.tobytes()
+    response_content = body_bytes.decode("utf-8")
     logger.debug(
         "Exiting general_exception_handler",
         response_status_code=response.status_code,
-        response_content=response.body.decode("utf-8"),
+        response_content=response_content,
     )
 
     return response
-
-
-# ============================================================================
-# Utility Functions for Common Exception Patterns
-# ============================================================================
 
 
 def handle_db_exceptions(error: Exception) -> None:
@@ -447,11 +437,6 @@ def handle_auth_exceptions(error: Exception) -> None:
             raise InvalidTokenError("Invalid token signature")
 
 
-# ============================================================================
-# Validation Utilities
-# ============================================================================
-
-
 async def validate_user_exists(
     db_session: AsyncSession,
     user_model: Any,
@@ -465,7 +450,10 @@ async def validate_user_exists(
         if user_email:
             query = select(user_model).where(user_model.user_email == user_email)
         elif user_id:
-            user_uuid = uuid.UUID(user_id)
+            try:
+                user_uuid = uuid.UUID(user_id)
+            except ValueError:
+                raise InvalidTokenError("Invalid user ID format")
             query = select(user_model).where(user_model.user_id == user_uuid)
         else:
             raise ValueError("Either user_email or user_id must be provided")
@@ -484,14 +472,8 @@ async def validate_user_exists(
         raise
 
 
-# ============================================================================
-# Registration Function
-# ============================================================================
-
-
 def register_exception_handlers(app: FastAPI) -> None:
     """Register all exception handlers for the FastAPI application."""
-    # Register exception handlers without duplicates
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
     app.add_exception_handler(ValidationError, pydantic_validation_exception_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
