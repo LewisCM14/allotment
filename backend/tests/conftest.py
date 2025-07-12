@@ -69,12 +69,13 @@ async def setup_test_db():
 @pytest.fixture(scope="function", autouse=True)
 async def clear_tables():
     """Clear table data between tests."""
-    yield
-
-    # Delete all data after each test
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(table.delete())
+    try:
+        yield
+    finally:
+        # Delete all data after each test
+        async with engine.begin() as conn:
+            for table in reversed(Base.metadata.sorted_tables):
+                await conn.execute(table.delete())
 
 
 @pytest.fixture(name="client")
