@@ -14,7 +14,8 @@ private.pem
 public.pem
 
 ## Logs
-app.log
+app.log*
+*.log
 
 
 # Frontend

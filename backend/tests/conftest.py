@@ -3,6 +3,7 @@ Testing Configuration
 """
 
 import asyncio
+import os
 import uuid
 
 import pytest
@@ -44,6 +45,24 @@ async def override_get_db():
 
 # Apply database override
 app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest.fixture(scope="session", autouse=True)
+def disable_file_logging():
+    """Disable file logging during tests to prevent log file generation."""
+    # Store original value
+    original_log_to_file = os.environ.get("LOG_TO_FILE")
+
+    # Disable file logging for tests
+    os.environ["LOG_TO_FILE"] = "false"
+
+    yield
+
+    # Restore original value
+    if original_log_to_file is not None:
+        os.environ["LOG_TO_FILE"] = original_log_to_file
+    else:
+        os.environ.pop("LOG_TO_FILE", None)
 
 
 @pytest.fixture(scope="session", autouse=True)

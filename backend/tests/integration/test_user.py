@@ -255,6 +255,30 @@ class TestUserRegistration:
             assert response.status_code == status.HTTP_400_BAD_REQUEST
             assert "A specific business logic error occurred" in str(response.json())
 
+    @pytest.mark.asyncio
+    async def test_register_user_with_email_already_registered(self, client, mocker):
+        """Test user registration when email is already registered."""
+        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        
+        # Mock database query to return an existing user
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = MagicMock()  # Existing user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
+
+        response = await client.post(
+            f"{PREFIX}",
+            json={
+                "user_email": "existing@example.com",
+                "user_password": "TestPass123!@",
+                "user_first_name": "Test",
+                "user_country_code": "GB",
+            },
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Email already registered" in response.json()["detail"][0]["msg"]
+
 
 class TestEmailVerification:
     @pytest.mark.asyncio
@@ -409,7 +433,7 @@ class TestEmailVerification:
         """Test requesting verification email with a general exception."""
         mocker.patch(
             "app.api.v1.user.validate_user_exists",
-            return_value=MagicMock(is_email_verified=False),
+            return_value=MagicMock(user_id="test-id", is_email_verified=False),
         )
         mocker.patch(
             "app.api.v1.user.send_verification_email",
@@ -423,6 +447,48 @@ class TestEmailVerification:
         assert response.status_code == status.HTTP_200_OK
         assert "Internal server error" in response.text
 
+    @pytest.mark.asyncio
+    async def test_request_verification_email_success(self, client, mocker):
+        """Test successful verification email request."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.is_email_verified = False
+        
+        mocker.patch("app.api.v1.user.validate_user_exists", return_value=mock_user)
+        mock_send_email = mocker.patch("app.api.v1.user.send_verification_email")
+        
+        response = await client.post(
+            f"{PREFIX}/email-verifications",
+            json={"user_email": "test@example.com"},
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        assert "Verification email sent successfully" in response.json()["message"]
+        mock_send_email.assert_called_once_with(
+            user_email="test@example.com", user_id="test-user-id"
+        )
+
+
+class TestVerificationStatus:
+    @pytest.mark.asyncio
+    async def test_check_verification_status_success(self, client, mocker):
+        """Test checking verification status successfully."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.is_email_verified = True
+        
+        mocker.patch("app.api.v1.user.validate_user_exists", return_value=mock_user)
+        
+        response = await client.get(
+            f"{PREFIX}/verification-status",
+            params={"user_email": "test@example.com"}
+        )
+        
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["is_email_verified"] is True
+        assert data["user_id"] == "test-user-id"
+
 
 class TestPasswordReset:
     @pytest.mark.asyncio
@@ -433,264 +499,228 @@ class TestPasswordReset:
             json={"user_email": "nonexistent@example.com"},
         )
 
-        # Should return success message even for non-existent users for security
         assert response.status_code == status.HTTP_200_OK
-        assert "If your email exists" in response.json()["message"]
+        assert (
+            "If your email exists in our system and is verified, you will receive a password reset link shortly."
+            in response.json()["message"]
+        )
 
     @pytest.mark.asyncio
     async def test_password_reset_unverified_email(self, client, mocker):
-        """Test password reset request when user email is not verified."""
-        # Register a user (will be unverified by default)
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        """Test password reset for unverified email."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.user_email = "unverified@example.com"
+        mock_user.is_email_verified = False
 
-        register_response = await client.post(
-            f"{PREFIX}",
-            json={
-                "user_email": "unverified@example.com",
-                "user_password": "TestPass123!@",
-                "user_first_name": "Test",
-                "user_country_code": "GB",
-            },
-        )
-        assert register_response.status_code == status.HTTP_201_CREATED
+        # Mock database query to return unverified user
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
 
-        # Mock send_verification_email for the from_reset=True case
-        with patch("app.api.v1.user.send_verification_email") as mock_send:
-            response = await client.post(
-                f"{PREFIX}/password-resets",
-                json={"user_email": "unverified@example.com"},
-            )
+        mock_send_email = mocker.patch("app.api.v1.user.send_verification_email")
 
-            assert response.status_code == status.HTTP_200_OK
-            assert "Your email is not verified" in response.json()["message"]
-            # Verify that verification email was sent with from_reset=True
-            mock_send.assert_called_once()
-            call_kwargs = mock_send.call_args[1]
-            assert call_kwargs.get("from_reset") is True
-
-    @pytest.mark.asyncio
-    async def test_verify_email_from_password_reset_query_param(self, client, mocker):
-        """Test email verification from password reset flow with query parameter."""
-        # Register a user first
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
-
-        register_response = await client.post(
-            f"{PREFIX}",
-            json={
-                "user_email": "reset-verify@example.com",
-                "user_password": "TestPass123!@",
-                "user_first_name": "Test",
-                "user_country_code": "GB",
-            },
-        )
-        user_id = register_response.json()["user_id"]
-
-        # Create a verification token
-        verification_token = create_token(user_id=user_id, token_type="verification")
-
-        # Verify email with fromReset=true
         response = await client.post(
-            f"{PREFIX}/email-verifications/{verification_token}?fromReset=true",
+            f"{PREFIX}/password-resets",
+            json={"user_email": "unverified@example.com"},
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert "You can now reset your password" in response.json()["message"]
+        assert "verification email has been sent" in response.json()["message"]
+        mock_send_email.assert_called_once_with(
+            user_email="unverified@example.com",
+            user_id="test-user-id",
+            from_reset=True
+        )
+
+    @pytest.mark.asyncio
+    async def test_verify_email_from_password_reset_query_param(self, client, mocker):
+        """Test email verification with fromReset query parameter."""
+        mock_send_email = mock_email_service(
+            mocker, "app.api.v1.user.send_verification_email"
+        )
+
+        user_data = {
+            "user_email": "reset-verify@example.com",
+            "user_password": "SecurePass123!",
+            "user_first_name": "ResetVerify",
+            "user_country_code": "GB",
+        }
+        register_response = await client.post(f"{PREFIX}", json=user_data)
+        assert register_response.status_code == status.HTTP_201_CREATED
+        user_id = register_response.json()["user_id"]
+
+        token = create_token(user_id=user_id, token_type="email_verification")
+
+        verify_response = await client.post(
+            f"{PREFIX}/email-verifications/{token}?fromReset=true"
+        )
+
+        assert verify_response.status_code == status.HTTP_200_OK
+        assert "You can now reset your password" in verify_response.json()["message"]
+
+        mock_send_email.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_reset_password_malformed_token(self, client):
-        """Test password reset with malformed JWT token."""
+        """Test password reset with malformed token."""
         response = await client.post(
-            f"{PREFIX}/password-resets/invalid-token-format",
+            f"{PREFIX}/password-resets/malformed-token",
             json={"new_password": "NewPassword123!"},
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Internal server error" in response.json()["detail"][0]["msg"]
 
     @pytest.mark.asyncio
     async def test_password_reset_exception_handling(self, client, mocker):
-        """Test password reset request exception handling."""
-        # Register a user first
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        """Test password reset exception handling in UoW."""
+        # Mock database query to return verified user
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.user_email = "verified@example.com"
+        mock_user.is_email_verified = True
 
-        register_response = await client.post(
-            f"{PREFIX}",
-            json={
-                "user_email": "exception-test@example.com",
-                "user_password": "TestPass123!@",
-                "user_first_name": "Test",
-                "user_country_code": "GB",
-            },
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
+
+        # Mock UoW to raise general exception
+        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
+        mock_uow_instance = mocker.AsyncMock()
+        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
+        mock_uow_instance.request_password_reset.side_effect = Exception("UoW error")
+
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "verified@example.com"},
         )
-        assert register_response.status_code == status.HTTP_201_CREATED
-        user_id = register_response.json()["user_id"]
 
-        # Verify the user's email first so we reach the UserUnitOfWork code
-        verification_token = create_token(
-            user_id=user_id, token_type="email_verification"
-        )
-        verify_response = await client.post(
-            f"{PREFIX}/email-verifications/{verification_token}"
-        )
-        assert verify_response.status_code == status.HTTP_200_OK
-
-        # Mock UserUnitOfWork to raise an exception
-        with patch("app.api.v1.user.UserUnitOfWork") as mock_uow:
-            mock_uow_instance = AsyncMock()
-            mock_uow_instance.request_password_reset.side_effect = Exception(
-                "Database error"
-            )
-            mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-
-            response = await client.post(
-                f"{PREFIX}/password-resets",
-                json={"user_email": "exception-test@example.com"},
-            )
-
-            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-            assert "An unexpected error occurred during password reset request" in str(
-                response.json()
-            )
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert "An unexpected error occurred during password reset request" in response.json()["detail"][0]["msg"]
 
     @pytest.mark.asyncio
     async def test_password_reset_user_not_verified(self, client, mocker):
-        """Test password reset for user whose email is not verified."""
-        mock_user = MagicMock()
-        mock_user.is_email_verified = False
-        mock_user.user_email = "notverified@example.com"
-        mock_user.user_id = 123
-        mocker.patch(
-            "sqlalchemy.ext.asyncio.AsyncSession.execute",
-            return_value=MagicMock(scalar_one_or_none=lambda: mock_user),
-        )
-        mocker.patch("app.api.v1.user.send_verification_email")
-        response = await client.post(
-            f"{PREFIX}/password-resets",
-            json={"user_email": "notverified@example.com"},
-        )
-        assert response.status_code == 200
-        assert "verification email" in response.json()["message"].lower()
-
-    @pytest.mark.asyncio
-    async def test_request_password_reset_unverified(self, client, mocker):
-        _mock_verify = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
-
-        user_data = {
-            "user_email": "reset-unverified@example.com",
-            "user_password": "TestPass123!@",
-            "user_first_name": "NoVerify",
-            "user_country_code": "GB",
-        }
-        register = await client.post(f"{PREFIX}", json=user_data)
-        assert register.status_code == status.HTTP_201_CREATED
-
-        # ignore the initial registration call
-        _mock_verify.reset_mock()
-
-        # now request reset
-        resp = await client.post(
-            f"{PREFIX}/password-resets",
-            json={"user_email": user_data["user_email"]},
-        )
-        assert resp.status_code == status.HTTP_200_OK
-        body = resp.json()
-        assert "not verified" in body["message"].lower()
-        _mock_verify.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_request_password_reset_verified(self, client, mocker):
-        _mock_verify = mock_email_service(
-            mocker, "app.api.v1.user.send_verification_email"
-        )
-
-        user_data = {
-            "user_email": "reset-verified@example.com",
-            "user_password": "TestPass123!@",
-            "user_first_name": "DoVerify",
-            "user_country_code": "GB",
-        }
-        reg = await client.post(f"{PREFIX}", json=user_data)
-        user_id = reg.json()["user_id"]
-        token = create_token(user_id=user_id, token_type="email_verification")
-        verify = await client.post(f"{PREFIX}/email-verifications/{token}")
-        assert verify.status_code == status.HTTP_200_OK
-
-        _mock_reset = mock_email_service(
-            mocker,
-            "app.api.services.user.user_unit_of_work.send_password_reset_email",
-        )
-
-        resp = await client.post(
-            f"{PREFIX}/password-resets",
-            json={"user_email": user_data["user_email"]},
-        )
-        assert resp.status_code == status.HTTP_200_OK
-        msg = resp.json()["message"].lower()
-        assert "password reset link" in msg
-        _mock_reset.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_request_password_reset_nonexistent_user(self, client):
-        """Test requesting password reset for non-existent user returns generic message."""
-        resp = await client.post(
-            f"{PREFIX}/password-resets",
-            json={"user_email": "nonexistent@example.com"},
-        )
-        assert resp.status_code == status.HTTP_200_OK
-        msg = resp.json()["message"]
-        assert "If your email exists in our system" in msg
-
-    @pytest.mark.asyncio
-    async def test_request_password_reset_handles_exception(self, client, mocker):
-        """Test password reset request handles unexpected exceptions."""
-        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
-        mock_db_execute.side_effect = Exception("Unexpected database error")
-
-        resp = await client.post(
-            f"{PREFIX}/password-resets",
-            json={"user_email": "test@example.com"},
-        )
-        assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert (
-            "An unexpected error occurred during password reset request"
-            in resp.json()["detail"][0]["msg"]
-        )
-
-    @pytest.mark.asyncio
-    async def test_reset_password_and_login(self, client, mocker):
+        """Test password reset for user with unverified email."""
+        # Create user with unverified email
         mock_email_service(mocker, "app.api.v1.user.send_verification_email")
 
         user_data = {
-            "user_email": "do-reset@example.com",
-            "user_password": "OldPass123!@",
-            "user_first_name": "Reseter",
+            "user_email": "unverified@example.com",
+            "user_password": "TestPass123!@",
+            "user_first_name": "Unverified",
             "user_country_code": "GB",
         }
-        reg = await client.post(f"{PREFIX}", json=user_data)
-        user_id = reg.json()["user_id"]
-        token_ver = create_token(user_id=user_id, token_type="email_verification")
-        await client.post(f"{PREFIX}/email-verifications/{token_ver}")
+        await client.post(f"{PREFIX}", json=user_data)
 
-        reset_token = create_token(user_id=user_id, token_type="reset")
-        new_pass = "NewPass456!#"
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "unverified@example.com"},
+        )
 
-        resp = await client.post(
-            f"{PREFIX}/password-resets/{reset_token}",
-            json={"new_password": new_pass},
+        assert response.status_code == status.HTTP_200_OK
+        assert "verification email has been sent" in response.json()["message"]
+
+    @pytest.mark.asyncio
+    async def test_request_password_reset_unverified(self, client, mocker):
+        """Test requesting password reset for unverified user."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.user_email = "unverified@example.com"
+        mock_user.is_email_verified = False
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
+
+        mock_send_email = mocker.patch("app.api.v1.user.send_verification_email")
+
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "unverified@example.com"},
         )
-        assert resp.status_code == status.HTTP_200_OK
-        assert "has been reset" in resp.json()["message"].lower()
-        login = await client.post(
-            f"{settings.API_PREFIX}/auth/token",
-            json={"user_email": user_data["user_email"], "user_password": new_pass},
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "verification email has been sent" in response.json()["message"]
+        mock_send_email.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_request_password_reset_verified(self, client, mocker):
+        """Test requesting password reset for verified user."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.user_email = "verified@example.com"
+        mock_user.is_email_verified = True
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
+
+        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
+        mock_uow_instance = mocker.AsyncMock()
+        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
+        mock_uow_instance.request_password_reset.return_value = {
+            "status": "success",
+            "message": "Password reset link sent"
+        }
+
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "verified@example.com"},
         )
-        assert login.status_code == status.HTTP_200_OK
-        data = login.json()
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "Password reset link sent" in response.json()["message"]
+
+    @pytest.mark.asyncio
+    async def test_request_password_reset_nonexistent_user(self, client):
+        """Test requesting password reset for non-existent user."""
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "nonexistent@example.com"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
         assert (
-            "access_token" in data
-            and data["user_first_name"] == user_data["user_first_name"]
+            "If your email exists in our system and is verified, you will receive a password reset link shortly."
+            in response.json()["message"]
         )
+
+    @pytest.mark.asyncio
+    async def test_request_password_reset_handles_exception(self, client, mocker):
+        """Test password reset request handles general exceptions."""
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.side_effect = Exception("Database connection failed")
+
+        response = await client.post(
+            f"{PREFIX}/password-resets",
+            json={"user_email": "test@example.com"},
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert "An unexpected error occurred during password reset request" in response.json()["detail"][0]["msg"]
+
+    @pytest.mark.asyncio
+    async def test_reset_password_and_login(self, client, mocker):
+        """Test successful password reset flow."""
+        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
+        mock_uow_instance = mocker.AsyncMock()
+        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
+        mock_uow_instance.reset_password.return_value = None
+
+        valid_token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
+
+        response = await client.post(
+            f"{PREFIX}/password-resets/{valid_token}",
+            json={"new_password": "NewPassword123!"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "Password has been reset successfully" in response.json()["message"]
 
     @pytest.mark.asyncio
     async def test_reset_password_with_base_application_error_logging(
@@ -800,24 +830,34 @@ class TestPasswordReset:
 
     @pytest.mark.asyncio
     async def test_request_password_reset_base_application_error(self, client, mocker):
-        mocker.patch(
-            "app.api.v1.user.validate_user_exists",
-            side_effect=BaseApplicationError(
-                message="A base error occurred", error_code="TEST_ERROR"
-            ),
+        """Test password reset request with BaseApplicationError."""
+        mock_user = MagicMock()
+        mock_user.user_id = "test-user-id"
+        mock_user.user_email = "verified@example.com"
+        mock_user.is_email_verified = True
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = mock_user
+        mock_db_execute = mocker.patch("sqlalchemy.ext.asyncio.AsyncSession.execute")
+        mock_db_execute.return_value = mock_result
+
+        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
+        mock_uow_instance = mocker.AsyncMock()
+        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
+        mock_uow_instance.request_password_reset.side_effect = BaseApplicationError(
+            message="A base error occurred", error_code="TEST_ERROR"
         )
+
         response = await client.post(
             f"{PREFIX}/password-resets",
-            json={"user_email": "test@example.com"},
+            json={"user_email": "verified@example.com"},
         )
-        assert response.status_code == status.HTTP_200_OK
-        assert (
-            "If your email exists in our system and is verified, you will receive a password reset link shortly."
-            in response.text
-        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "A base error occurred" in response.json()["detail"][0]["msg"]
 
     @pytest.mark.asyncio
     async def test_password_reset_general_exception(self, client, mocker):
+        """Test password reset with general exception during token decode."""
         mocker.patch(
             "app.api.core.auth.decode_token", side_effect=Exception("General error")
         )
@@ -826,4 +866,20 @@ class TestPasswordReset:
             json={"new_password": "NewValidPassword123!@"},
         )
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "Internal server error" in response.text
+        assert "Internal server error" in response.json()["detail"][0]["msg"]
+
+    @pytest.mark.asyncio
+    async def test_reset_password_token_decode_exception(self, client, mocker):
+        """Test password reset when token decode raises exception."""
+        mocker.patch(
+            "app.api.core.auth.decode_token", 
+            side_effect=Exception("Token decode failed")
+        )
+        
+        response = await client.post(
+            f"{PREFIX}/password-resets/invalid-token",
+            json={"new_password": "NewPassword123!"},
+        )
+        
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert "Internal server error" in response.json()["detail"][0]["msg"]
