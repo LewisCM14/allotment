@@ -43,6 +43,9 @@ from app.api.middleware.logging_middleware import (
 
 logger = structlog.get_logger()
 
+# Constants
+VALIDATION_ERROR_MSG = "Validation error"
+
 
 class BaseApplicationError(Exception):
     """Base class for all application exceptions with standardized attributes."""
@@ -190,6 +193,38 @@ def create_error_response(
     )
 
 
+def _sanitize_validation_context(error_ctx: Dict[str, Any]) -> Dict[str, Any]:
+    """Sanitize validation error context to avoid exposing sensitive data."""
+    sanitized_ctx = {}
+    for key, value in error_ctx.items():
+        if key.lower() in SENSITIVE_FIELDS:
+            sanitized_ctx[key] = "[REDACTED]"
+        else:
+            try:
+                # Test if value is JSON serializable
+                json.dumps(value)
+                sanitized_ctx[key] = value
+            except TypeError:
+                # Convert non-serializable values to string
+                sanitized_ctx[key] = str(value)
+    return sanitized_ctx
+
+
+def _format_validation_error(error: Dict[str, Any]) -> Dict[str, Any]:
+    """Format a single validation error with proper sanitization."""
+    sanitized_ctx = {}
+    if "ctx" in error and error["ctx"]:
+        sanitized_ctx = _sanitize_validation_context(error["ctx"])
+
+    return {
+        "msg": error.get("msg", VALIDATION_ERROR_MSG),
+        "loc": error.get("loc", []),
+        "type": "validation_error",
+        "code": GENERAL_VALIDATION_ERROR,
+        "ctx": sanitized_ctx,
+    }
+
+
 async def validation_exception_handler(
     request: Request, exc: Exception
 ) -> JSONResponse:
@@ -199,7 +234,7 @@ async def validation_exception_handler(
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 
     logger.warning(
-        "Validation error",
+        VALIDATION_ERROR_MSG,
         request_id=request_id,
         method=request.method,
         path=request.url.path,
@@ -207,33 +242,7 @@ async def validation_exception_handler(
     )
 
     # Format validation errors with security sanitization
-    formatted_errors: list[Dict[str, Any]] = []
-    for error in exc.errors():
-        # Sanitize context to avoid exposing sensitive data
-        sanitized_ctx = {}
-        if "ctx" in error and error["ctx"]:
-            for key, value in error["ctx"].items():
-                # Convert non-serializable objects to strings
-                if key.lower() in SENSITIVE_FIELDS:
-                    sanitized_ctx[key] = "[REDACTED]"
-                else:
-                    try:
-                        # Test if value is JSON serializable
-                        json.dumps(value)
-                        sanitized_ctx[key] = value
-                    except TypeError:
-                        # Convert non-serializable values to string
-                        sanitized_ctx[key] = str(value)
-
-        formatted_errors.append(
-            {
-                "msg": error.get("msg", "Validation error"),
-                "loc": error.get("loc", []),
-                "type": "validation_error",
-                "code": GENERAL_VALIDATION_ERROR,
-                "ctx": {},  # ...context processing...
-            }
-        )
+    formatted_errors = [_format_validation_error(error) for error in exc.errors()]
 
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -268,7 +277,7 @@ async def pydantic_validation_exception_handler(
             }
         formatted_errors.append(
             {
-                "msg": error.get("msg", "Validation error"),
+                "msg": error.get("msg", VALIDATION_ERROR_MSG),
                 "loc": error.get("loc", []),
                 "type": error.get("type", "validation_error"),
                 "code": GENERAL_VALIDATION_ERROR,

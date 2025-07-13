@@ -211,9 +211,8 @@ class TestFlushLogs:
 
         # Verify attempts were made
         mock_handler.flush.assert_called_once()
-        # close() should have been attempted (even though it failed)
-        # We just verify no exception was raised from flush_logs
-        assert True  # If we get here, no exception was raised
+        # Verify close() was attempted (even though it failed)
+        mock_handler.close.assert_called_once()
 
     @patch("app.main.logging.getLogger")
     def test_flush_logs_with_no_stream_handler(self, mock_logging_logger):

@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth import (
     create_token,
+    decode_token,
 )
 from app.api.core.config import settings
 from app.api.core.database import get_db
@@ -50,6 +51,8 @@ from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
 logger = structlog.get_logger()
+
+INTERNAL_SERVER_ERROR_MSG = "Internal server error"
 
 
 @router.post(
@@ -208,7 +211,7 @@ async def request_verification_email(
             error_code="EMAIL_VERIFICATION_ERROR",
             **log_context,
         )
-        return MessageResponse(message="Internal server error")
+        return MessageResponse(message=INTERNAL_SERVER_ERROR_MSG)
 
 
 @router.post(
@@ -450,21 +453,16 @@ async def reset_password(
     logger.debug("Password reset attempt with token", **log_context)
 
     try:
-        from app.api.core.auth import decode_token
-
         try:
-            payload = decode_token(token)
-            user_id = payload["sub"]
+            decode_token(token)
         except Exception as exc:
             logger.error(
                 "General exception during token decode",
                 error=str(exc),
                 **log_context,
             )
-            from app.api.middleware.exception_handler import BusinessLogicError
-
             raise BusinessLogicError(
-                message="Internal server error",
+                message=INTERNAL_SERVER_ERROR_MSG,
                 status_code=status.HTTP_401_UNAUTHORIZED,
             )
 
@@ -504,9 +502,7 @@ async def reset_password(
             error_type=type(exc).__name__,
             **log_context,
         )
-        from app.api.middleware.exception_handler import BusinessLogicError
-
         raise BusinessLogicError(
-            message="Internal server error",
+            message=INTERNAL_SERVER_ERROR_MSG,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
