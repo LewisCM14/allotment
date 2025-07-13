@@ -259,7 +259,7 @@ class TestUserRegistration:
     async def test_register_user_with_email_already_registered(self, client, mocker):
         """Test user registration when email is already registered."""
         mock_email_service(mocker, "app.api.v1.user.send_verification_email")
-        
+
         # Mock database query to return an existing user
         mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = MagicMock()  # Existing user
@@ -453,15 +453,15 @@ class TestEmailVerification:
         mock_user = MagicMock()
         mock_user.user_id = "test-user-id"
         mock_user.is_email_verified = False
-        
+
         mocker.patch("app.api.v1.user.validate_user_exists", return_value=mock_user)
         mock_send_email = mocker.patch("app.api.v1.user.send_verification_email")
-        
+
         response = await client.post(
             f"{PREFIX}/email-verifications",
             json={"user_email": "test@example.com"},
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert "Verification email sent successfully" in response.json()["message"]
         mock_send_email.assert_called_once_with(
@@ -476,14 +476,13 @@ class TestVerificationStatus:
         mock_user = MagicMock()
         mock_user.user_id = "test-user-id"
         mock_user.is_email_verified = True
-        
+
         mocker.patch("app.api.v1.user.validate_user_exists", return_value=mock_user)
-        
+
         response = await client.get(
-            f"{PREFIX}/verification-status",
-            params={"user_email": "test@example.com"}
+            f"{PREFIX}/verification-status", params={"user_email": "test@example.com"}
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["is_email_verified"] is True
@@ -529,9 +528,7 @@ class TestPasswordReset:
         assert response.status_code == status.HTTP_200_OK
         assert "verification email has been sent" in response.json()["message"]
         mock_send_email.assert_called_once_with(
-            user_email="unverified@example.com",
-            user_id="test-user-id",
-            from_reset=True
+            user_email="unverified@example.com", user_id="test-user-id", from_reset=True
         )
 
     @pytest.mark.asyncio
@@ -599,7 +596,10 @@ class TestPasswordReset:
         )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert "An unexpected error occurred during password reset request" in response.json()["detail"][0]["msg"]
+        assert (
+            "An unexpected error occurred during password reset request"
+            in response.json()["detail"][0]["msg"]
+        )
 
     @pytest.mark.asyncio
     async def test_password_reset_user_not_verified(self, client, mocker):
@@ -665,7 +665,7 @@ class TestPasswordReset:
         mock_uow.return_value.__aenter__.return_value = mock_uow_instance
         mock_uow_instance.request_password_reset.return_value = {
             "status": "success",
-            "message": "Password reset link sent"
+            "message": "Password reset link sent",
         }
 
         response = await client.post(
@@ -702,7 +702,10 @@ class TestPasswordReset:
         )
 
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert "An unexpected error occurred during password reset request" in response.json()["detail"][0]["msg"]
+        assert (
+            "An unexpected error occurred during password reset request"
+            in response.json()["detail"][0]["msg"]
+        )
 
     @pytest.mark.asyncio
     async def test_reset_password_and_login(self, client, mocker):
@@ -872,14 +875,14 @@ class TestPasswordReset:
     async def test_reset_password_token_decode_exception(self, client, mocker):
         """Test password reset when token decode raises exception."""
         mocker.patch(
-            "app.api.core.auth.decode_token", 
-            side_effect=Exception("Token decode failed")
+            "app.api.core.auth.decode_token",
+            side_effect=Exception("Token decode failed"),
         )
-        
+
         response = await client.post(
             f"{PREFIX}/password-resets/invalid-token",
             json={"new_password": "NewPassword123!"},
         )
-        
+
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Internal server error" in response.json()["detail"][0]["msg"]

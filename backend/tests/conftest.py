@@ -111,17 +111,17 @@ def prevent_real_emails(monkeypatch):
     # Override mail settings to prevent real email sending
     monkeypatch.setenv("MAIL_USERNAME", "test@example.com")
     monkeypatch.setenv("MAIL_PASSWORD", "test_password")
-    
+
     # Mock the mail client at module level to prevent actual SMTP connections
     # Import inside the function to avoid import order issues
     import app.api.services.email_service
-    
+
     class MockFastMail:
         async def send_message(self, message):
             # Do nothing - just return successfully
             pass
-    
-    monkeypatch.setattr(app.api.services.email_service, 'mail_client', MockFastMail())
+
+    monkeypatch.setattr(app.api.services.email_service, "mail_client", MockFastMail())
 
 
 @pytest.fixture(autouse=True)
