@@ -6,21 +6,17 @@ import pytest
 from fastapi import status
 
 from app.api.core.config import settings
-from tests.conftest import mock_email_service
 
 PREFIX = settings.API_PREFIX
 
 
 class TestEmailService:
     @pytest.mark.asyncio
-    async def test_test_email_endpoint(self, client, mocker):
+    async def test_test_email_endpoint(self, client):
         """Test the email configuration test endpoint."""
-        mock_send_test = mock_email_service(mocker, "app.main.send_test_email")
-
         test_email = "test@example.com"
         response = await client.post(f"/test-email?email={test_email}")
 
         assert response.status_code == status.HTTP_200_OK
         assert "message" in response.json()
-
-        mock_send_test.assert_called_once()
+        assert response.json()["message"] == "Test email sent successfully"

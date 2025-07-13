@@ -106,6 +106,25 @@ async def client_fixture():
 
 
 @pytest.fixture(autouse=True)
+def prevent_real_emails(monkeypatch):
+    """Prevent real emails from being sent during tests by overriding mail config."""
+    # Override mail settings to prevent real email sending
+    monkeypatch.setenv("MAIL_USERNAME", "test@example.com")
+    monkeypatch.setenv("MAIL_PASSWORD", "test_password")
+    
+    # Mock the mail client at module level to prevent actual SMTP connections
+    # Import inside the function to avoid import order issues
+    import app.api.services.email_service
+    
+    class MockFastMail:
+        async def send_message(self, message):
+            # Do nothing - just return successfully
+            pass
+    
+    monkeypatch.setattr(app.api.services.email_service, 'mail_client', MockFastMail())
+
+
+@pytest.fixture(autouse=True)
 def disable_rate_limits():
     """Disable rate limits for tests."""
     from app.api.core.limiter import limiter
