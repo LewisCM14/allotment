@@ -62,6 +62,14 @@ class ApiCache {
 	}
 
 	/**
+	 * Invalidate user-specific caches
+	 */
+	invalidateUserData(): void {
+		this.invalidateByPrefix("/users/allotment");
+		this.invalidateByPrefix("/user/profile");
+	}
+
+	/**
 	 * Clear all cached data
 	 */
 	clear(): void {

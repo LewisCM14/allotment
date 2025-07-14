@@ -27,6 +27,9 @@ const BotanicalGroupsPage = React.lazy(
 const FamilyInfoPage = React.lazy(
 	() => import("../features/family/pages/FamilyInfoPage"),
 );
+const AllotmentPage = React.lazy(
+	() => import("../features/user/pages/AllotmentPage"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -97,6 +100,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<FamilyInfoPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/allotment"
+					element={
+						<ProtectedRoute>
+							<AllotmentPage />
 						</ProtectedRoute>
 					}
 				/>

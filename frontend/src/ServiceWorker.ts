@@ -41,6 +41,23 @@ registerRoute(
 	}),
 );
 
+// User allotment data
+registerRoute(
+	({ url }) => url.pathname.startsWith(`${API_VERSION}/users/allotment`),
+	new StaleWhileRevalidate({
+		cacheName: "user-allotment-cache",
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 5,
+				maxAgeSeconds: 60 * 60 * 24, // 1 day
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200],
+			}),
+		],
+	}),
+);
+
 // Botanical groups data
 registerRoute(
 	({ url }) => url.pathname === `${API_VERSION}/families/botanical-groups/`,
