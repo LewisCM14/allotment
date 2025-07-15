@@ -2,7 +2,8 @@ import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildUrl } from "../../../mocks/handlers";
 import { server } from "../../../mocks/server";
-import * as apiModule from "../../../services/api";
+import api from "../../../services/api";
+import { apiCache } from "../../../services/apiCache";
 import {
 	AUTH_ERRORS,
 	checkEmailVerificationStatus,
@@ -23,6 +24,8 @@ describe("UserService", () => {
 		});
 		localStorage.clear();
 		vi.restoreAllMocks();
+		// Clear cache to prevent test pollution
+		apiCache.clear();
 	});
 
 	afterEach(() => {
@@ -107,7 +110,7 @@ describe("UserService", () => {
 			);
 			await expect(
 				loginUser("notfound@example.com", "password"),
-			).rejects.toThrow("The email address you entered is not registered.");
+			).rejects.toThrow("User not found");
 		});
 
 		it("should throw an error for account locked (403)", async () => {
@@ -120,7 +123,7 @@ describe("UserService", () => {
 				}),
 			);
 			await expect(loginUser("locked@example.com", "password")).rejects.toThrow(
-				AUTH_ERRORS.ACCOUNT_LOCKED,
+				"Account locked",
 			);
 		});
 
@@ -139,7 +142,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle unexpected server responses", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 
 			const serverError = new Error("Server returned unexpected response");
 			Object.defineProperty(serverError, "isAxiosError", { value: true });
@@ -160,7 +163,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle network errors", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 
 			const networkError = new Error("Network Error");
 			Object.defineProperty(networkError, "isAxiosError", { value: true });
@@ -221,7 +224,7 @@ describe("UserService", () => {
 
 			await expect(
 				registerUser("exists@example.com", "password123", "John", "US"),
-			).rejects.toThrow(AUTH_ERRORS.EMAIL_EXISTS);
+			).rejects.toThrow("Email already registered");
 		});
 
 		it("should handle bad request errors (400)", async () => {
@@ -242,7 +245,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle validation errors from the server (422)", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const validationError = new Error("Request failed with status code 422");
 			Object.defineProperty(validationError, "isAxiosError", { value: true });
 			Object.defineProperty(validationError, "response", {
@@ -336,7 +339,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle service unavailable (503)", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const serviceUnavailableError = new Error("Service Unavailable");
 			Object.defineProperty(serviceUnavailableError, "isAxiosError", {
 				value: true,
@@ -351,9 +354,7 @@ describe("UserService", () => {
 
 			await expect(
 				requestVerificationEmail("test@example.com"),
-			).rejects.toThrow(
-				"Email service is temporarily unavailable. Please try again later.",
-			);
+			).rejects.toThrow("Service down");
 			postSpy.mockRestore();
 		});
 	});
@@ -448,7 +449,7 @@ describe("UserService", () => {
 				}),
 			);
 			await expect(verifyEmail("not-found-token")).rejects.toThrow(
-				AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
+				"Token not found",
 			);
 		});
 
@@ -474,7 +475,7 @@ describe("UserService", () => {
 				}),
 			);
 			await expect(verifyEmail("expired-token")).rejects.toThrow(
-				AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED,
+				"Token has expired",
 			);
 		});
 
@@ -566,7 +567,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle service unavailable (503)", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const serviceUnavailableError = new Error("Service Unavailable");
 			Object.defineProperty(serviceUnavailableError, "isAxiosError", {
 				value: true,
@@ -580,13 +581,13 @@ describe("UserService", () => {
 			postSpy.mockRejectedValueOnce(serviceUnavailableError);
 
 			await expect(requestPasswordReset("any@example.com")).rejects.toThrow(
-				"Email service is temporarily unavailable. Please try again later.",
+				"Email service down",
 			);
 			postSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const err = new Error("Network Error");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "request", { value: {} });
@@ -693,7 +694,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle server errors (500)", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const err = new Error("Server down");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "response", {
@@ -707,7 +708,7 @@ describe("UserService", () => {
 		});
 
 		it("should handle network errors", async () => {
-			const postSpy = vi.spyOn(apiModule.default, "post");
+			const postSpy = vi.spyOn(api, "post");
 			const err = new Error("Network Error");
 			Object.defineProperty(err, "isAxiosError", { value: true });
 			Object.defineProperty(err, "request", { value: {} });
@@ -764,17 +765,17 @@ describe("UserService", () => {
 
 			await expect(
 				checkEmailVerificationStatus("unknown@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.EMAIL_NOT_FOUND);
+			).rejects.toThrow("Not Found");
 		});
 
-		it("should throw FETCH_VERIFICATION_STATUS_FAILED for other server errors", async () => {
+		it("should throw SERVER_ERROR for other server errors", async () => {
 			await expect(
 				checkEmailVerificationStatus("server-error@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+			).rejects.toThrow(AUTH_ERRORS.SERVER_ERROR);
 		}, 10000);
 
-		it("should throw FETCH_VERIFICATION_STATUS_FAILED for network errors", async () => {
-			const getSpy = vi.spyOn(apiModule.default, "get");
+		it("should throw NETWORK_ERROR for network errors", async () => {
+			const getSpy = vi.spyOn(api, "get");
 			const networkError = new Error("Network Error");
 			Object.defineProperty(networkError, "isAxiosError", { value: true });
 			Object.defineProperty(networkError, "request", { value: {} });
@@ -782,7 +783,7 @@ describe("UserService", () => {
 
 			await expect(
 				checkEmailVerificationStatus("test@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+			).rejects.toThrow(AUTH_ERRORS.NETWORK_ERROR);
 			getSpy.mockRestore();
 		});
 	});

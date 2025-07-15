@@ -56,6 +56,12 @@ export async function getBotanicalGroups(
 			"/families/botanical-groups/",
 			{ signal },
 		);
+
+		// Handle null or malformed response
+		if (!Array.isArray(response)) {
+			return [];
+		}
+
 		return response.map((group) => ({
 			...group,
 			recommended_rotation_years: group.recommended_rotation_years ?? null,
