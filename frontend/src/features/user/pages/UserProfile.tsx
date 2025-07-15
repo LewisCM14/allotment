@@ -38,7 +38,7 @@ export default function UserProfile() {
 			setError("");
 
 			const data = await checkEmailVerificationStatus(email);
-
+			setError(""); // Clear error on success
 			setIsEmailVerified(data.is_email_verified);
 			localStorage.setItem("is_email_verified", String(data.is_email_verified));
 

@@ -9,7 +9,7 @@ describe("API Service", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		apiCache.clear();
-		vi.spyOn(console, "error").mockImplementation(() => { });
+		vi.spyOn(console, "error").mockImplementation(() => {});
 	});
 
 	afterEach(() => {
@@ -100,7 +100,10 @@ describe("API Service", () => {
 			server.use(
 				http.get("*/test-cache", () => {
 					requestCount++;
-					return HttpResponse.json({ data: "cached-response", count: requestCount });
+					return HttpResponse.json({
+						data: "cached-response",
+						count: requestCount,
+					});
 				}),
 			);
 
@@ -128,7 +131,11 @@ describe("API Service", () => {
 					const url = new URL(request.url);
 					const param = url.searchParams.get("param");
 					url2RequestCount++;
-					return HttpResponse.json({ url: "2", param, count: url2RequestCount });
+					return HttpResponse.json({
+						url: "2",
+						param,
+						count: url2RequestCount,
+					});
 				}),
 			);
 
@@ -190,7 +197,7 @@ describe("API Service", () => {
 					if (authAttempts === 1 || !auth || auth === "Bearer expired-token") {
 						return HttpResponse.json(
 							{ detail: "Token expired" },
-							{ status: 401 }
+							{ status: 401 },
 						);
 					}
 
@@ -220,13 +227,13 @@ describe("API Service", () => {
 				http.get("*/protected-resource", () => {
 					return HttpResponse.json(
 						{ detail: "Token expired" },
-						{ status: 401 }
+						{ status: 401 },
 					);
 				}),
 				http.post("*/auth/token/refresh", () => {
 					return HttpResponse.json(
 						{ detail: "Refresh token expired" },
-						{ status: 401 }
+						{ status: 401 },
 					);
 				}),
 			);
@@ -253,7 +260,7 @@ describe("API Service", () => {
 					if (!auth || auth === "Bearer expired-token") {
 						return HttpResponse.json(
 							{ detail: "Token expired" },
-							{ status: 401 }
+							{ status: 401 },
 						);
 					}
 
@@ -262,7 +269,7 @@ describe("API Service", () => {
 				http.post("*/auth/token/refresh", async () => {
 					refreshCount++;
 					// Simulate delay
-					await new Promise(resolve => setTimeout(resolve, 50));
+					await new Promise((resolve) => setTimeout(resolve, 50));
 					return HttpResponse.json({
 						access_token: "new-access-token",
 						refresh_token: "new-refresh-token",
@@ -285,7 +292,7 @@ describe("API Service", () => {
 			expect(refreshCount).toBe(1);
 
 			// At least some requests should succeed
-			const successfulResults = results.filter(r => r.data !== "failed");
+			const successfulResults = results.filter((r) => r.data !== "failed");
 			expect(successfulResults.length).toBeGreaterThan(0);
 		});
 	});
@@ -301,7 +308,7 @@ describe("API Service", () => {
 						// Return a 500 error instead of throwing
 						return HttpResponse.json(
 							{ error: "Network error" },
-							{ status: 500 }
+							{ status: 500 },
 						);
 					}
 					return HttpResponse.json({ success: true, attempts: attemptCount });
@@ -322,7 +329,7 @@ describe("API Service", () => {
 					if (attemptCount < 2) {
 						return HttpResponse.json(
 							{ error: "Internal server error" },
-							{ status: 500 }
+							{ status: 500 },
 						);
 					}
 					return HttpResponse.json({ success: true, attempts: attemptCount });
@@ -340,10 +347,7 @@ describe("API Service", () => {
 			server.use(
 				http.get("*/bad-request", () => {
 					attemptCount++;
-					return HttpResponse.json(
-						{ error: "Bad request" },
-						{ status: 400 }
-					);
+					return HttpResponse.json({ error: "Bad request" }, { status: 400 });
 				}),
 			);
 
@@ -357,10 +361,7 @@ describe("API Service", () => {
 			server.use(
 				http.get("*/always-500", () => {
 					attemptCount++;
-					return HttpResponse.json(
-						{ error: "Always fails" },
-						{ status: 500 }
-					);
+					return HttpResponse.json({ error: "Always fails" }, { status: 500 });
 				}),
 			);
 
@@ -407,7 +408,10 @@ describe("API Service", () => {
 					return HttpResponse.json({ users: [], count: getRequestCount });
 				}),
 				http.post("*/users", () => {
-					return HttpResponse.json({ id: 1, name: "New User" }, { status: 201 });
+					return HttpResponse.json(
+						{ id: 1, name: "New User" },
+						{ status: 201 },
+					);
 				}),
 			);
 
@@ -433,7 +437,11 @@ describe("API Service", () => {
 			server.use(
 				http.get("*/users/1", () => {
 					getRequestCount++;
-					return HttpResponse.json({ id: 1, name: "User", count: getRequestCount });
+					return HttpResponse.json({
+						id: 1,
+						name: "User",
+						count: getRequestCount,
+					});
 				}),
 				http.put("*/users/1", () => HttpResponse.json({ success: true })),
 				http.patch("*/users/1", () => HttpResponse.json({ success: true })),
@@ -458,7 +466,8 @@ describe("API Service", () => {
 			expect(getRequestCount).toBe(4);
 		}, 10000); // Increase timeout to 10 seconds
 	});
-}); describe("API interceptors", () => {
+});
+describe("API interceptors", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		apiCache.clear();
@@ -491,14 +500,15 @@ describe("API Service", () => {
 			"authorization",
 			"Bearer test-token",
 		);
-	}); it("should handle offline status", async () => {
+	});
+	it("should handle offline status", async () => {
 		Object.defineProperty(navigator, "onLine", {
 			value: false,
 			configurable: true,
 		});
 		const captureExceptionSpy = vi
 			.spyOn(errorMonitor, "captureException")
-			.mockImplementation(() => { });
+			.mockImplementation(() => {});
 
 		await expect(api.get("/any-endpoint")).rejects.toThrow(
 			"You are offline. Please check your connection.",
