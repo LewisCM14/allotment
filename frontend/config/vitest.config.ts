@@ -25,14 +25,14 @@ export default defineConfig({
                 "src/main.tsx",
                 "src/ServiceWorker.ts",
                 "coverage/**",
-                "dist/**"
-                ,"src/components/ui/**" // Shadcn UI
-                ,"src/types/**" // Type definitions
-                ,"src/utils/**" // Utility wrappers
-                ,"src/assets/**" // Static assets
-                ,"src/store/**/AuthContext.tsx" // Auth context only
-                ,"src/store/**/ThemeContext.tsx" // Theme context only
-                ,"src/features/**/hooks/**" // Custom hooks (optional, review)
+                "dist/**",
+                "src/components/ui/**",// Shadcn UI
+                "src/types/**", // Type definitions
+                "src/utils/**", // Utility wrappers
+                "src/assets/**", // Static assets
+                "src/store/**/AuthContext.tsx", // Auth context only
+                "src/store/**/ThemeContext.tsx", // Theme context only
+                "src/features/**/hooks/**", // Custom hooks (optional, review)
             ],
             include: [
                 "src/**/*.{ts,tsx}"
