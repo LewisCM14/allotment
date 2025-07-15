@@ -48,8 +48,8 @@ export default function AllotmentPage(_: React.ComponentProps<"div">) {
 	// Watch form values for real-time area calculation
 	const formValues = useWatch({ control });
 	const currentArea =
-		(formValues.allotment_width_meters || 0) *
-		(formValues.allotment_length_meters || 0);
+		(formValues.allotment_width_meters ?? 0) *
+		(formValues.allotment_length_meters ?? 0);
 
 	const [existingAllotment, setExistingAllotment] =
 		useState<IAllotmentResponse | null>(null);
@@ -100,7 +100,7 @@ export default function AllotmentPage(_: React.ComponentProps<"div">) {
 				);
 			} catch (err) {
 				// If allotment doesn't exist, that's fine - form will show placeholders
-				console.log("No existing allotment found - user will create one");
+				console.info("No existing allotment found - user will create one", err);
 				setError(""); // Clear any error since this is expected for new users
 			} finally {
 				setIsLoading(false);
