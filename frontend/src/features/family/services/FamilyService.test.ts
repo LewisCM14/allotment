@@ -1,7 +1,7 @@
 import axios from "axios";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildUrl } from "../../../mocks/handlers";
+import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
 import { apiCache } from "../../../services/apiCache";
