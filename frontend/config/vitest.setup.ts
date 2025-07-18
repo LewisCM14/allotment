@@ -1,6 +1,22 @@
 // Mock import.meta.env for consistent API URL and Version in tests
 // THIS MUST BE AT THE VERY TOP, before any other imports.
 import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import "@testing-library/jest-dom";
+
+// Polyfill for IE event methods that React might try to use
+if (typeof HTMLElement !== 'undefined') {
+    (HTMLElement.prototype as any).attachEvent = function (event: string, handler: any) {
+        if (typeof handler === 'function') {
+            this.addEventListener(event.replace('on', ''), handler);
+        }
+    };
+
+    (HTMLElement.prototype as any).detachEvent = function (event: string, handler: any) {
+        if (typeof handler === 'function') {
+            this.removeEventListener(event.replace('on', ''), handler);
+        }
+    };
+}
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -49,6 +65,9 @@ vi.stubGlobal('window', {
     navigator: {
         onLine: true,
     },
+    // Mock window event listeners
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     matchMedia: global.window?.matchMedia || vi.fn().mockImplementation(query => ({ // Preserve existing matchMedia or mock it
         matches: false,
         media: query,

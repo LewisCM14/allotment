@@ -1,4 +1,5 @@
-import { afterAll, afterEach, beforeAll } from "vitest";
+import { afterAll, afterEach, beforeAll, vi } from "vitest";
+import "@testing-library/jest-dom";
 import { server } from "./mocks/server";
 
 // Mock localStorage
@@ -18,25 +19,34 @@ const localStorageMock = (() => {
 	};
 })();
 
-// Set up global mocks for browser APIs
-Object.defineProperty(global, "localStorage", { value: localStorageMock });
-
-// Create a minimal window mock if needed by your code
-if (typeof window === "undefined") {
-	Object.defineProperty(global, "window", {
-		value: {
-			navigator: {
-				onLine: true,
-			},
-			localStorage: localStorageMock,
-		},
+// Mock global window object before any test runs
+beforeAll(() => {
+	// Mock window methods that components might use
+	Object.defineProperty(window, "addEventListener", {
+		value: vi.fn(),
+		writable: true,
+		configurable: true,
 	});
-}
+	Object.defineProperty(window, "removeEventListener", {
+		value: vi.fn(),
+		writable: true,
+		configurable: true,
+	});
+	Object.defineProperty(window, "localStorage", {
+		value: localStorageMock,
+		writable: true,
+		configurable: true,
+	});
 
-// Set up MSW
-beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
+	// Start MSW server
+	server.listen({ onUnhandledRequest: "warn" });
+});
+
+// Clean up after each test
 afterEach(() => {
 	server.resetHandlers();
 	localStorageMock.clear();
 });
+
+// Clean up after all tests
 afterAll(() => server.close());

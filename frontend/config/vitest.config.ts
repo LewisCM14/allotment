@@ -1,15 +1,16 @@
-import path from "path";
 import { defineConfig } from "vitest/config";
+import path from "path";
 
 export default defineConfig({
-    plugins: [],
+    resolve: {
+        alias: {
+            "@": path.resolve(process.cwd(), "src"),
+        },
+    },
     test: {
         environment: "jsdom",
         globals: true,
         setupFiles: [path.resolve(__dirname, "vitest.setup.ts")],
-        alias: {
-            "@": path.resolve(__dirname, "../src"),
-        },
         coverage: {
             provider: "v8",
             reporter: ["text", "json", "html", "lcov"],
@@ -26,7 +27,7 @@ export default defineConfig({
                 "src/ServiceWorker.ts",
                 "coverage/**",
                 "dist/**",
-                "src/components/ui/**",// Shadcn UI
+                "src/components/ui/**", // Shadcn UI
                 "src/types/**", // Type definitions
                 "src/utils/**", // Utility wrappers
                 "src/assets/**", // Static assets
@@ -47,10 +48,5 @@ export default defineConfig({
                 }
             }
         }
-    },
-    resolve: {
-        alias: {
-            "@": path.resolve(__dirname, "../src"),
-        },
     },
 });

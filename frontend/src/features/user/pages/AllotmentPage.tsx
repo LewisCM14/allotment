@@ -63,13 +63,17 @@ export default function AllotmentPage(_: React.ComponentProps<"div">) {
 		const handleOnline = () => setIsOffline(false);
 		const handleOffline = () => setIsOffline(true);
 
-		window.addEventListener("online", handleOnline);
-		window.addEventListener("offline", handleOffline);
+		if (typeof window !== "undefined" && window.addEventListener) {
+			window.addEventListener("online", handleOnline);
+			window.addEventListener("offline", handleOffline);
 
-		return () => {
-			window.removeEventListener("online", handleOnline);
-			window.removeEventListener("offline", handleOffline);
-		};
+			return () => {
+				if (window.removeEventListener) {
+					window.removeEventListener("online", handleOnline);
+					window.removeEventListener("offline", handleOffline);
+				}
+			};
+		}
 	}, []);
 
 	useEffect(() => {
