@@ -48,27 +48,34 @@ export function FamilyInfoPresenter({
 
 	if (!data) return null;
 
+	// Guard for missing botanical_group
+	const hasBotanicalGroup =
+		data.botanical_group && typeof data.botanical_group === "object";
+
 	return (
 		<div className="w-full max-w-2xl mx-auto min-h-[32rem] flex flex-col">
 			<h1 className="text-3xl font-bold mb-2 capitalize">{data.name}</h1>
-			<div className="mb-4 text-muted-foreground">
-				<span>
-					Group:{" "}
-					<Link
-						to="/botanical_groups"
-						className="capitalize underline underline-offset-4 font-semibold text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring transition-colors"
-					>
-						{data.botanical_group.name}
-					</Link>
-				</span>
-				{" · "}
-				<span>
-					Rotation:{" "}
-					{data.botanical_group.recommended_rotation_years !== null
-						? `${data.botanical_group.recommended_rotation_years} year(s)`
-						: "Perennial"}
-				</span>
-			</div>
+			{hasBotanicalGroup && (
+				<div className="mb-4 text-muted-foreground">
+					<span>
+						Group:{" "}
+						<Link
+							to="/botanical_groups"
+							className="capitalize underline underline-offset-4 font-semibold text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors"
+						>
+							{data.botanical_group.name}
+						</Link>
+					</span>
+
+					<span>
+						Rotation:{" "}
+						{data.botanical_group.recommended_rotation_years !== null &&
+						data.botanical_group.recommended_rotation_years !== undefined
+							? `${data.botanical_group.recommended_rotation_years} year(s)`
+							: "Perennial"}
+					</span>
+				</div>
+			)}
 			<div className="flex flex-col md:flex-row gap-4 mb-6">
 				<div className="flex-1">
 					<h2 className="font-semibold mb-1">Companion Families</h2>
@@ -78,7 +85,7 @@ export function FamilyInfoPresenter({
 								<li key={fam.id} className="capitalize">
 									<Link
 										to={`/family/${fam.id}`}
-										className="underline underline-offset-4 text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring transition-colors"
+										className="underline underline-offset-4 text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors"
 									>
 										{fam.name}
 									</Link>

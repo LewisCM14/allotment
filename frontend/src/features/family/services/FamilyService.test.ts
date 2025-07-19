@@ -12,6 +12,89 @@ import {
 } from "./FamilyService";
 
 describe("FamilyService", () => {
+	describe("getFamilyInfo", () => {
+		it("should fetch family info successfully", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const mockData = {
+				id: "fam-1",
+				name: "Test Family",
+				description: "desc",
+				botanical_group: {
+					id: "bg1",
+					name: "BG",
+					recommended_rotation_years: 2,
+				},
+				companion_to: [],
+				antagonises: [],
+				pests: [],
+				diseases: [],
+			};
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockResolvedValueOnce(mockData);
+			const result = await getFamilyInfo("fam-1");
+			expect(result).toEqual(mockData);
+			cachedGetSpy.mockRestore();
+		});
+
+		it("should handle axios cancel error", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const cancelError = new Error("Request cancelled");
+			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
+			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockRejectedValueOnce(cancelError);
+			await expect(getFamilyInfo("fam-1")).rejects.toThrow("Request cancelled");
+			cachedGetSpy.mockRestore();
+			isCancelSpy.mockRestore();
+		});
+
+		it("should handle unknown error", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const genericError = new Error("Generic error");
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockRejectedValueOnce(genericError);
+			await expect(getFamilyInfo("fam-1")).rejects.toThrow();
+			cachedGetSpy.mockRestore();
+		});
+	});
+
+	describe("getFamilyDetails edge cases", () => {
+		it("should handle axios cancel error", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const cancelError = new Error("Request cancelled");
+			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
+			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
+			const apiGetSpy = vi.spyOn(api, "get").mockRejectedValueOnce(cancelError);
+			await expect(getFamilyDetails("fam-1")).rejects.toThrow(
+				"Request cancelled",
+			);
+			apiGetSpy.mockRestore();
+			isCancelSpy.mockRestore();
+		});
+
+		it("should handle unknown error", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const genericError = new Error("Generic error");
+			const apiGetSpy = vi
+				.spyOn(api, "get")
+				.mockRejectedValueOnce(genericError);
+			await expect(getFamilyDetails("fam-1")).rejects.toThrow();
+			apiGetSpy.mockRestore();
+		});
+
+		it("should handle missing data gracefully", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const apiGetSpy = vi
+				.spyOn(api, "get")
+				.mockResolvedValueOnce({ data: null });
+			const result = await getFamilyDetails("fam-1");
+			expect(result).toBeNull();
+			apiGetSpy.mockRestore();
+		});
+	});
 	beforeEach(() => {
 		Object.defineProperty(navigator, "onLine", {
 			configurable: true,

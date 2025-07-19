@@ -104,6 +104,7 @@ export async function getFamilyDetails(familyId: string, signal?: AbortSignal) {
 
 		return response.data;
 	} catch (error: unknown) {
+		if (axios.isCancel(error)) throw error;
 		return handleApiError(error, "Failed to fetch family details");
 	}
 }
