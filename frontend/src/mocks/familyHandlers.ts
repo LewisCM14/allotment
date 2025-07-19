@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";
+import { jsonOk, jsonError } from "./responseHelpers";
 
 export const familyHandlers = [
 	// Mock the botanical groups endpoint
@@ -13,8 +14,7 @@ export const familyHandlers = [
 			);
 		}
 
-		// Successful response
-		return HttpResponse.json([
+		return jsonOk([
 			{
 				id: "group-1",
 				name: "Brassicaceae",
@@ -53,7 +53,7 @@ export const familyHandlers = [
 	http.get(buildUrl("/families/:familyId/"), ({ params }) => {
 		const { familyId } = params;
 		if (familyId === "family-1") {
-			return HttpResponse.json({
+			return jsonOk({
 				id: "family-1",
 				name: "Cabbage",
 				botanical_group: "Brassicaceae",
@@ -74,13 +74,10 @@ export const familyHandlers = [
 			});
 		}
 		if (familyId === "family-404") {
-			return new HttpResponse(JSON.stringify({ detail: "Family not found" }), {
-				status: 404,
-				headers: { "Content-Type": "application/json" },
-			});
+			return jsonError("Family not found", 404);
 		}
 		// Default mock for other families
-		return HttpResponse.json({
+		return jsonOk({
 			id: familyId,
 			name: "Unknown Family",
 			botanical_group: "Unknown",

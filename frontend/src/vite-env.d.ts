@@ -1,5 +1,6 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-pwa/client" />
+/// <reference types="@testing-library/jest-dom" />
 
 interface EnvConfig {
 	VITE_APP_TITLE?: string;
@@ -42,4 +43,4 @@ declare module "./utils/wsTracker" {
 	export default content;
 }
 
-export {};
+export { };

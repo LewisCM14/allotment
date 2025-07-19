@@ -6,18 +6,18 @@ import type { IRefreshRequest } from "@/services/api";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";
+import { jsonOk, jsonError } from "./responseHelpers";
 
 export const authHandlers = [
 	// Mock the login endpoint
 	http.post(buildUrl("/auth/token"), async ({ request }) => {
 		const body = (await request.json()) as ILoginRequest;
 
-		// Example validation logic
 		if (
 			body?.user_email === "test@example.com" &&
 			body?.user_password === "password123"
 		) {
-			return HttpResponse.json({
+			return jsonOk({
 				access_token: "mock-access-token",
 				refresh_token: "mock-refresh-token",
 				token_type: "bearer",
@@ -26,15 +26,8 @@ export const authHandlers = [
 				user_id: "user-123",
 			} as ILoginResponse);
 		}
-
 		// Return 401 for invalid credentials
-		return new HttpResponse(
-			JSON.stringify({ detail: "Invalid email or password" }),
-			{
-				status: 401,
-				headers: { "Content-Type": "application/json" },
-			},
-		);
+		return jsonError("Invalid email or password", 401);
 	}),
 	http.options(buildUrl("/auth/token"), () => {
 		// Assuming /auth/token
@@ -46,16 +39,12 @@ export const authHandlers = [
 		const body = (await request.json()) as IRefreshRequest;
 
 		if (body?.refresh_token === "mock-refresh-token") {
-			return HttpResponse.json({
+			return jsonOk({
 				access_token: "refreshed-access-token",
 				refresh_token: "new-refresh-token",
 			} as ITokenPair);
 		}
-
-		return new HttpResponse(null, {
-			status: 401,
-			headers: { "Content-Type": "application/json" },
-		});
+		return jsonError("Invalid refresh token", 401);
 	}),
 	http.options(buildUrl("/auth/token/refresh"), () => {
 		return new HttpResponse(null, { status: 204 });
