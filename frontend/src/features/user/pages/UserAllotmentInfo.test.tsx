@@ -1,6 +1,6 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import AllotmentPage from "./AllotmentPage";
+import AllotmentPage from "./UserAllotmentInfo";
 import * as UserService from "../services/UserService";
 import { useAuth } from "@/store/auth/AuthContext";
 import React from "react";

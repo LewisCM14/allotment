@@ -43,4 +43,4 @@ declare module "./utils/wsTracker" {
 	export default content;
 }
 
-export { };
+export {};
