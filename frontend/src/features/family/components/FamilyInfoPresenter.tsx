@@ -68,6 +68,7 @@ export function FamilyInfoPresenter({
 					</span>
 
 					<span>
+						{" "}
 						Rotation:{" "}
 						{data.botanical_group.recommended_rotation_years !== null &&
 						data.botanical_group.recommended_rotation_years !== undefined
