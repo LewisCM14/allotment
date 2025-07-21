@@ -25,6 +25,7 @@ export default defineConfig({
                 "**/*.config.js",
                 "src/main.tsx",
                 "src/ServiceWorker.ts",
+                "src/App.tsx",
                 "coverage/**",
                 "dist/**",
                 "src/components/ui/**", // Shadcn UI

@@ -87,6 +87,7 @@ export function HeaderPresenter({
 			{isOpen && isAuthenticated && (
 				<nav
 					data-header-menu
+					data-testid="mobile-menu"
 					className="md:hidden bg-card shadow-md p-4 flex flex-col space-y-2"
 				>
 					{navLinks.map((link) => (

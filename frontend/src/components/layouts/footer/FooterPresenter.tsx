@@ -29,6 +29,7 @@ export function FooterPresenter({
 			{isOpen && isAuthenticated && (
 				<nav
 					data-menu
+					data-testid="mobile-menu"
 					className="fixed bottom-16 left-0 w-full bg-card shadow-md p-4 flex flex-col space-y-2 z-50 touch-manipulation"
 				>
 					{navLinks.map((link) => (
