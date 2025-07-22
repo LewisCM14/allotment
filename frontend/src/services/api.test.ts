@@ -20,7 +20,7 @@ describe("API Service", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		apiCache.clear();
-		vi.spyOn(console, "error").mockImplementation(() => { });
+		vi.spyOn(console, "error").mockImplementation(() => {});
 	});
 
 	afterEach(() => {
@@ -519,7 +519,7 @@ describe("API interceptors", () => {
 		});
 		const captureExceptionSpy = vi
 			.spyOn(errorMonitor, "captureException")
-			.mockImplementation(() => { });
+			.mockImplementation(() => {});
 
 		await expect(api.get("/any-endpoint")).rejects.toThrow(
 			"You are offline. Please check your connection.",
@@ -537,7 +537,7 @@ describe("ApiService class", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		apiCache.clear();
-		vi.spyOn(console, "error").mockImplementation(() => { });
+		vi.spyOn(console, "error").mockImplementation(() => {});
 	});
 
 	afterEach(() => {
@@ -746,8 +746,8 @@ describe("API Service & Error Monitoring Integration", () => {
 			(global as unknown as { navigator: Navigator }).navigator =
 				{} as Navigator;
 		// Mock all console methods
-		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
-		consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => { });
+		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+		consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => {});
 		// Patch import.meta.env.PROD for production simulation
 		originalProd = import.meta.env.PROD;
 		// Mock browser APIs (define before spying)

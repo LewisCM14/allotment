@@ -41,7 +41,8 @@ vi.stubGlobal("import.meta", {
 
 // Mock window.envConfig for runtime configuration in tests
 vi.stubGlobal("window", {
-    ...global.window,
+    ...global.window, // preserve jsdom's document and all other properties
+    document: global.window.document, // ensure document is present
     envConfig: {
         VITE_API_URL: "http://localhost:8000",
         VITE_API_VERSION: "/api/v1",
