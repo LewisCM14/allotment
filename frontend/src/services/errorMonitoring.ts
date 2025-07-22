@@ -13,7 +13,6 @@ interface IErrorContext {
 }
 
 class ErrorMonitoringService {
-	private readonly isProduction = import.meta.env.PROD;
 	private readonly logEndpoint: string;
 
 	constructor() {
@@ -25,19 +24,17 @@ class ErrorMonitoringService {
 				: apiVersionPath;
 			this.logEndpoint = `${cleanedApiVersionPath}/log-client-error`;
 		} else {
-			console.warn(
-				"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly.",
-			);
+			if (!import.meta.env.PROD) {
+				console.warn(
+					"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly.",
+				);
+			}
 			this.logEndpoint = "/api/v1/log-client-error";
-		}
-
-		if (this.isProduction) {
-			console.log(`ErrorMonitoringService: logging to ${this.logEndpoint}`);
 		}
 	}
 
 	captureException(error: unknown, context?: IErrorContext): void {
-		if (!this.isProduction) {
+		if (!import.meta.env.PROD) {
 			console.error("[ErrorMonitor]", error, context);
 			return;
 		}
@@ -69,7 +66,7 @@ class ErrorMonitoringService {
 					keepalive: true,
 				}).catch((fetchError) => {
 					// Log fetch errors locally if we're not in production
-					if (!this.isProduction) {
+					if (!import.meta.env.PROD) {
 						console.error(
 							"[ErrorMonitor] Failed to send error data:",
 							fetchError,
@@ -79,14 +76,14 @@ class ErrorMonitoringService {
 			}
 		} catch (e) {
 			// Log internal error handling failures, but only in non-production
-			if (!this.isProduction) {
+			if (!import.meta.env.PROD) {
 				console.error("[ErrorMonitor] Error in error handling:", e);
 			}
 		}
 	}
 
 	captureMessage(message: string, context?: IErrorContext): void {
-		if (!this.isProduction) {
+		if (!import.meta.env.PROD) {
 			console.info("[ErrorMonitor]", message, context);
 			return;
 		}
@@ -118,7 +115,7 @@ class ErrorMonitoringService {
 					keepalive: true,
 				}).catch((fetchError) => {
 					// Log fetch errors locally if we're not in production
-					if (!this.isProduction) {
+					if (!import.meta.env.PROD) {
 						console.error(
 							"[ErrorMonitor] Failed to send message data:",
 							fetchError,
@@ -128,7 +125,7 @@ class ErrorMonitoringService {
 			}
 		} catch (e) {
 			// Log internal error handling failures, but only in non-production
-			if (!this.isProduction) {
+			if (!import.meta.env.PROD) {
 				console.error("[ErrorMonitor] Error in message handling:", e);
 			}
 		}

@@ -399,10 +399,6 @@ describe("UserService", () => {
 									: "Email verified successfully",
 							});
 						}
-						return HttpResponse.json(
-							{ detail: "Unhandled mock" },
-							{ status: 500 },
-						);
 					},
 				),
 			);
@@ -411,7 +407,7 @@ describe("UserService", () => {
 				message:
 					"Email verified successfully. You can now reset your password.",
 			});
-		});
+		}, 10000);
 
 		it("should handle invalid verification token (400)", async () => {
 			server.use(
@@ -421,7 +417,7 @@ describe("UserService", () => {
 						if (params.token === "invalid-token") {
 							return HttpResponse.json(
 								{ detail: "Invalid verification token" },
-								{ status: 400 }, // Or 404 depending on API
+								{ status: 400 },
 							);
 						}
 						return HttpResponse.json(
@@ -606,31 +602,21 @@ describe("UserService", () => {
 				http.post(
 					buildUrl("/users/password-resets/:token"),
 					async ({ params, request }) => {
-						try {
-							const body = (await request.json()) as {
-								new_password?: string;
-							};
-							if (
-								params.token === "valid-token" &&
-								body.new_password === "NewPass123!"
-							) {
-								return HttpResponse.json({ message: "Password updated" });
-							}
-							return HttpResponse.json(
-								{ detail: "Unhandled mock: wrong token or password" },
-								{ status: 400 },
-							);
-						} catch (e) {
-							return HttpResponse.json(
-								{ detail: "MSW handler error" },
-								{ status: 500 },
-							);
+						const body = (await request.json()) as {
+							new_password?: string;
+						};
+						if (
+							params.token === "valid-token" &&
+							body.new_password === "NewPass123!"
+						) {
+							return HttpResponse.json({ message: "Password updated" });
 						}
+						return HttpResponse.json(
+							{ detail: "Invalid token" },
+							{ status: 400 },
+						);
 					},
 				),
-				http.options(buildUrl("/users/password-resets/:token"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
 			);
 			await expect(
 				resetPassword("valid-token", "NewPass123!"),

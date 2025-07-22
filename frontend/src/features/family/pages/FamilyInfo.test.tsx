@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import FamilyInfoPage from "./FamilyInfo";
 import * as useFamilyInfoHook from "../hooks/useFamilyInfo";
 import React from "react";
@@ -43,7 +43,9 @@ describe("FamilyInfoPage", () => {
 		});
 		renderWithRoute("123");
 		expect(
-			screen.getByText(/failed to fetch family info/i),
+			screen.getByText(
+				/failed to load family information.*failed to fetch family info/i,
+			),
 		).toBeInTheDocument();
 	});
 

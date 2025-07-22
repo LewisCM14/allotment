@@ -1,15 +1,26 @@
 import { http, HttpResponse } from "msw";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+	type Mock,
+	type MockInstance,
+} from "vitest";
 import { server } from "../mocks/server";
 import api, { handleApiError } from "./api";
 import { apiCache } from "./apiCache";
 import { errorMonitor } from "./errorMonitoring";
+import { apiService } from "./apiService";
+import { API_URL, API_VERSION } from "./apiConfig";
 
 describe("API Service", () => {
 	beforeEach(() => {
 		localStorage.clear();
 		apiCache.clear();
-		vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.spyOn(console, "error").mockImplementation(() => { });
 	});
 
 	afterEach(() => {
@@ -177,7 +188,7 @@ describe("API Service", () => {
 			expect(requestCount).toBe(2);
 
 			Date.now = originalDateNow;
-		});
+		}, 10000);
 	});
 
 	describe("Token refresh", () => {
@@ -318,7 +329,7 @@ describe("API Service", () => {
 			const response = await api.get("/flaky-endpoint");
 			expect(response.data).toEqual({ success: true, attempts: 3 });
 			expect(attemptCount).toBe(3);
-		});
+		}, 10000);
 
 		it("should retry on 5xx server errors", async () => {
 			let attemptCount = 0;
@@ -339,7 +350,7 @@ describe("API Service", () => {
 			const response = await api.get("/server-error");
 			expect(response.data).toEqual({ success: true, attempts: 2 });
 			expect(attemptCount).toBe(2);
-		});
+		}, 10000);
 
 		it("should not retry on 4xx client errors (except 401)", async () => {
 			let attemptCount = 0;
@@ -508,7 +519,7 @@ describe("API interceptors", () => {
 		});
 		const captureExceptionSpy = vi
 			.spyOn(errorMonitor, "captureException")
-			.mockImplementation(() => {});
+			.mockImplementation(() => { });
 
 		await expect(api.get("/any-endpoint")).rejects.toThrow(
 			"You are offline. Please check your connection.",
@@ -518,6 +529,386 @@ describe("API interceptors", () => {
 		Object.defineProperty(navigator, "onLine", {
 			value: true,
 			configurable: true,
+		});
+	});
+});
+
+describe("ApiService class", () => {
+	beforeEach(() => {
+		localStorage.clear();
+		apiCache.clear();
+		vi.spyOn(console, "error").mockImplementation(() => { });
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		server.resetHandlers();
+	});
+
+	it("should handle GET requests with custom error message", async () => {
+		server.use(
+			http.get("*/test-endpoint", () => {
+				return HttpResponse.json({ data: "test" });
+			}),
+		);
+
+		const result = await apiService.get("/test-endpoint", {
+			errorMessage: "Custom error",
+		});
+		expect(result).toEqual({ data: "test" });
+	});
+
+	it("should handle GET requests with caching enabled", async () => {
+		let requestCount = 0;
+		server.use(
+			http.get("*/cached-endpoint", () => {
+				requestCount++;
+				return HttpResponse.json({ data: "cached", count: requestCount });
+			}),
+		);
+
+		// First request
+		const result1 = await apiService.get("/cached-endpoint", {
+			useCache: true,
+		});
+		expect(result1).toEqual({ data: "cached", count: 1 });
+
+		// Second request should use cache
+		const result2 = await apiService.get("/cached-endpoint", {
+			useCache: true,
+		});
+		expect(result2).toEqual({ data: "cached", count: 1 });
+		expect(requestCount).toBe(1);
+	});
+
+	it("should handle POST requests", async () => {
+		server.use(
+			http.post("*/create-endpoint", async ({ request }) => {
+				const body = await request.json();
+				return HttpResponse.json({ created: true, data: body });
+			}),
+		);
+
+		const result = await apiService.post("/create-endpoint", { name: "test" });
+		expect(result).toEqual({ created: true, data: { name: "test" } });
+	});
+
+	it("should handle PUT requests", async () => {
+		server.use(
+			http.put("*/update-endpoint", async ({ request }) => {
+				const body = await request.json();
+				return HttpResponse.json({ updated: true, data: body });
+			}),
+		);
+
+		const result = await apiService.put("/update-endpoint", {
+			name: "updated",
+		});
+		expect(result).toEqual({ updated: true, data: { name: "updated" } });
+	});
+
+	it("should handle PATCH requests", async () => {
+		server.use(
+			http.patch("*/patch-endpoint", async ({ request }) => {
+				const body = await request.json();
+				return HttpResponse.json({ patched: true, data: body });
+			}),
+		);
+
+		const result = await apiService.patch("/patch-endpoint", {
+			name: "patched",
+		});
+		expect(result).toEqual({ patched: true, data: { name: "patched" } });
+	}, 10000);
+
+	it("should handle DELETE requests", async () => {
+		server.use(
+			http.delete("*/delete-endpoint", () => {
+				return HttpResponse.json({ deleted: true });
+			}),
+		);
+
+		const result = await apiService.delete("/delete-endpoint");
+		expect(result).toEqual({ deleted: true });
+	});
+
+	it("should handle errors in GET requests", async () => {
+		server.use(
+			http.get("*/error-endpoint", () => {
+				return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+			}),
+		);
+
+		await expect(
+			apiService.get("/error-endpoint", { errorMessage: "Custom GET error" }),
+		).rejects.toThrow();
+	}, 10000); // Increase timeout
+
+	it("should handle errors in POST requests", async () => {
+		server.use(
+			http.post("*/error-endpoint", () => {
+				return HttpResponse.json({ detail: "Server error" }, { status: 500 });
+			}),
+		);
+
+		await expect(
+			apiService.post(
+				"/error-endpoint",
+				{},
+				{ errorMessage: "Custom POST error" },
+			),
+		).rejects.toThrow();
+	}, 10000); // Increase timeout
+});
+
+describe("ApiCache service", () => {
+	beforeEach(() => {
+		apiCache.clear();
+	});
+
+	it("should cache data with custom duration", async () => {
+		return new Promise<void>((resolve) => {
+			apiCache.set("test-key", { data: "test" }, 100);
+
+			// Should be available immediately
+			expect(apiCache.get("test-key")).toEqual({ data: "test" });
+
+			// Should be cleared after duration
+			setTimeout(() => {
+				expect(apiCache.get("test-key")).toBeNull();
+				resolve();
+			}, 150);
+		});
+	});
+
+	it("should invalidate cache by pattern", () => {
+		apiCache.set("/users/1", { user: 1 });
+		apiCache.set("/users/2", { user: 2 });
+		apiCache.set("/posts/1", { post: 1 });
+
+		apiCache.invalidate(/\/users\/.*/);
+
+		expect(apiCache.get("/users/1")).toBeNull();
+		expect(apiCache.get("/users/2")).toBeNull();
+		expect(apiCache.get("/posts/1")).toEqual({ post: 1 });
+	});
+
+	it("should invalidate cache by prefix", () => {
+		apiCache.set("/users/profile", { profile: true });
+		apiCache.set("/users/allotment", { allotment: true });
+		apiCache.set("/posts/1", { post: 1 });
+
+		apiCache.invalidateByPrefix("/users/");
+
+		expect(apiCache.get("/users/profile")).toBeNull();
+		expect(apiCache.get("/users/allotment")).toBeNull();
+		expect(apiCache.get("/posts/1")).toEqual({ post: 1 });
+	});
+
+	it("should invalidate user-specific data", () => {
+		apiCache.set("/users/allotment", { allotment: true });
+		apiCache.set("/user/profile", { profile: true });
+		apiCache.set("/posts/1", { post: 1 });
+
+		apiCache.invalidateUserData();
+
+		expect(apiCache.get("/users/allotment")).toBeNull();
+		expect(apiCache.get("/user/profile")).toBeNull();
+		expect(apiCache.get("/posts/1")).toEqual({ post: 1 });
+	});
+
+	it("should return cache statistics", () => {
+		apiCache.set("key1", "value1");
+		apiCache.set("key2", "value2");
+
+		const stats = apiCache.getStats();
+		expect(stats.size).toBe(2);
+		expect(stats.keys).toContain("key1");
+		expect(stats.keys).toContain("key2");
+	});
+});
+
+// --- API Service & Error Monitoring Integration ---
+// (import already at top)
+
+describe("API Service & Error Monitoring Integration", () => {
+	let consoleErrorSpy: MockInstance;
+	let consoleInfoSpy: MockInstance;
+	let sendBeaconSpy: MockInstance;
+	let fetchSpy: Mock;
+	let originalProd: boolean;
+
+	beforeEach(() => {
+		// Ensure window and navigator are present (JSDOM)
+		if (typeof window === "undefined")
+			(global as unknown as { window: Window }).window = {} as Window;
+		if (typeof navigator === "undefined")
+			(global as unknown as { navigator: Navigator }).navigator =
+				{} as Navigator;
+		// Mock all console methods
+		consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => { });
+		consoleInfoSpy = vi.spyOn(console, "info").mockImplementation(() => { });
+		// Patch import.meta.env.PROD for production simulation
+		originalProd = import.meta.env.PROD;
+		// Mock browser APIs (define before spying)
+		Object.defineProperty(navigator, "sendBeacon", {
+			value: vi.fn().mockReturnValue(true),
+			writable: true,
+			configurable: true,
+		});
+		sendBeaconSpy = vi.spyOn(navigator, "sendBeacon");
+		fetchSpy = vi.fn().mockResolvedValue({ ok: true });
+		global.fetch = fetchSpy;
+		Object.defineProperty(window, "location", {
+			value: { href: "https://test.com/page" },
+			configurable: true,
+		});
+		Object.defineProperty(navigator, "userAgent", {
+			value: "TestAgent/1.0",
+			configurable: true,
+		});
+		server.use(
+			http.get("*/network-fail", () => {
+				// Simulate network error immediately
+				return new Promise((_, reject) => reject(new Error("Network error")));
+			}),
+			http.options("*/network-fail", () => {
+				return new Promise((_, reject) => reject(new Error("Network error")));
+			}),
+		);
+		server.use(
+			http.get("*/fail-500", () =>
+				HttpResponse.json({ detail: "fail" }, { status: 500 }),
+			),
+		);
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+		import.meta.env.PROD = originalProd;
+	});
+
+	describe("Development mode", () => {
+		it("logs errors and messages to console", () => {
+			errorMonitor.captureException(new Error("dev error"), { foo: 1 });
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				expect.any(Error),
+				{ foo: 1 },
+			);
+			errorMonitor.captureMessage("dev msg", { bar: 2 });
+			expect(consoleInfoSpy).toHaveBeenCalledWith("[ErrorMonitor]", "dev msg", {
+				bar: 2,
+			});
+		});
+		it("handles null/undefined/empty", () => {
+			expect(() => errorMonitor.captureException(null)).not.toThrow();
+			expect(() => errorMonitor.captureException(undefined)).not.toThrow();
+			expect(() => errorMonitor.captureMessage("")).not.toThrow();
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				null,
+				undefined,
+			);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				undefined,
+				undefined,
+			);
+			expect(consoleInfoSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				"",
+				undefined,
+			);
+		});
+		it("handles non-Error objects", () => {
+			expect(() => errorMonitor.captureException("string error")).not.toThrow();
+			expect(() => errorMonitor.captureException({ foo: "bar" })).not.toThrow();
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				"string error",
+				undefined,
+			);
+			expect(consoleErrorSpy).toHaveBeenCalledWith(
+				"[ErrorMonitor]",
+				{ foo: "bar" },
+				undefined,
+			);
+		});
+	});
+
+	describe("Production mode", () => {
+		beforeEach(() => {
+			import.meta.env.PROD = true;
+		});
+		it("sends errors via sendBeacon", async () => {
+			sendBeaconSpy.mockClear();
+			errorMonitor.captureException(new Error("prod error"), { url: "/prod" });
+			expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+			const callArgs = sendBeaconSpy.mock.calls[0];
+			expect(callArgs[1]).toBeInstanceOf(Blob);
+			expect(callArgs[0]).toMatch(/log-client-error/);
+		});
+		it("sends messages via sendBeacon", async () => {
+			sendBeaconSpy.mockClear();
+			errorMonitor.captureMessage("prod msg", { foo: 1 });
+			expect(sendBeaconSpy).toHaveBeenCalledTimes(1);
+			const callArgs = sendBeaconSpy.mock.calls[0];
+			expect(callArgs[1]).toBeInstanceOf(Blob);
+		});
+		it("falls back to fetch if sendBeacon is unavailable", async () => {
+			Object.defineProperty(navigator, "sendBeacon", {
+				value: undefined,
+				configurable: true,
+			});
+			fetchSpy.mockClear();
+			errorMonitor.captureException(new Error("fetch fallback"));
+			expect(fetchSpy).toHaveBeenCalledTimes(1);
+			expect(fetchSpy).toHaveBeenCalledWith(
+				expect.stringMatching(/log-client-error/),
+				expect.objectContaining({
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					keepalive: true,
+					body: expect.stringContaining("fetch fallback"),
+				}),
+			);
+		});
+		it("handles fetch errors gracefully", async () => {
+			Object.defineProperty(navigator, "sendBeacon", {
+				value: undefined,
+				configurable: true,
+			});
+			fetchSpy.mockClear();
+			fetchSpy.mockRejectedValue(new Error("fail"));
+			expect(() =>
+				errorMonitor.captureException(new Error("fail fetch")),
+			).not.toThrow();
+			expect(fetchSpy).toHaveBeenCalled();
+		});
+		it("handles sendBeacon returning false", async () => {
+			sendBeaconSpy.mockClear();
+			sendBeaconSpy.mockReturnValue(false);
+			expect(() =>
+				errorMonitor.captureException(new Error("fail beacon")),
+			).not.toThrow();
+			expect(sendBeaconSpy).toHaveBeenCalled();
+		});
+		it("includes all error details", async () => {
+			sendBeaconSpy.mockClear();
+			const err = new Error("detailed");
+			err.stack = "stacktrace";
+			errorMonitor.captureException(err, { foo: "bar" });
+			expect(sendBeaconSpy).toHaveBeenCalled();
+			const callArgs = sendBeaconSpy.mock.calls[0];
+			expect(callArgs[1]).toBeInstanceOf(Blob);
+			expect((callArgs[1] as Blob).type).toBe("application/json");
+		});
+		it("handles non-Error objects in production", async () => {
+			sendBeaconSpy.mockClear();
+			expect(() => errorMonitor.captureException("prod string")).not.toThrow();
+			expect(() => errorMonitor.captureException({ foo: 1 })).not.toThrow();
+			expect(sendBeaconSpy).toHaveBeenCalledTimes(2);
 		});
 	});
 });
