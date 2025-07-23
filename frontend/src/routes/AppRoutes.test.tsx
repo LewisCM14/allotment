@@ -89,9 +89,11 @@ async function renderWithRouter(
 		</MemoryRouter>,
 	);
 
+	vi.useFakeTimers();
 	await act(async () => {
-		await new Promise((resolve) => setTimeout(resolve, 10));
+		vi.runAllTimers();
 	});
+	vi.useRealTimers();
 
 	return result;
 }

@@ -128,7 +128,9 @@ describe("Footer", () => {
 		});
 
 		// Wait for React to update the DOM and then check
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		vi.useFakeTimers();
+		vi.runAllTimers();
+		vi.useRealTimers();
 		expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
 	});
 
@@ -229,7 +231,9 @@ describe("Footer", () => {
 		await userEvent.click(signOutLink);
 
 		// Wait for logout to complete and menu to close
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		vi.useFakeTimers();
+		vi.runAllTimers();
+		vi.useRealTimers();
 		expect(screen.queryByTestId("mobile-menu")).not.toBeInTheDocument();
 	});
 

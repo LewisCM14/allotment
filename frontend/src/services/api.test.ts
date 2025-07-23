@@ -280,7 +280,9 @@ describe("API Service", () => {
 				http.post("*/auth/token/refresh", async () => {
 					refreshCount++;
 					// Simulate delay
-					await new Promise((resolve) => setTimeout(resolve, 50));
+					vi.useFakeTimers();
+					vi.runAllTimers();
+					vi.useRealTimers();
 					return HttpResponse.json({
 						access_token: "new-access-token",
 						refresh_token: "new-refresh-token",

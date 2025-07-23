@@ -82,7 +82,9 @@ describe("Header", () => {
 			document.body.dispatchEvent(mousedownEvent);
 		});
 		// Wait for React to update the DOM and then check
-		await new Promise((resolve) => setTimeout(resolve, 100));
+		vi.useFakeTimers();
+		vi.runAllTimers();
+		vi.useRealTimers();
 		expect(screen.queryByTestId("mobile-menu")).not.toBeInTheDocument();
 	});
 });

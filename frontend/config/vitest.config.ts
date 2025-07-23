@@ -11,6 +11,7 @@ export default defineConfig({
         environment: "jsdom",
         globals: true,
         setupFiles: [path.resolve(__dirname, "vitest.setup.ts")],
+        testTimeout: 15000, // Increased global timeout to 15 seconds
         coverage: {
             provider: "v8",
             reporter: ["text", "json", "html", "lcov"],

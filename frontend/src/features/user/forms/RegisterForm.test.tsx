@@ -24,7 +24,9 @@ async function findTextContentMatch(
 			(node) => node.textContent && matcher(node.textContent),
 		);
 		if (found) return found;
-		await new Promise((res) => setTimeout(res, 50));
+		vi.useFakeTimers();
+		vi.runAllTimers();
+		vi.useRealTimers();
 	}
 	throw new Error(`Text not found: ${matcher.toString()}`);
 }

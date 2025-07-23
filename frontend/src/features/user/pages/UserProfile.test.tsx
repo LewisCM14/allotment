@@ -22,6 +22,17 @@ function renderPage() {
 describe("UserProfile", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+
+		// Set up default mocks for UserService functions
+		(
+			UserService.checkEmailVerificationStatus as unknown as Mock
+		).mockResolvedValue({
+			is_email_verified: false,
+		});
+		(UserService.requestVerificationEmail as unknown as Mock).mockResolvedValue(
+			{},
+		);
+
 		(useAuth as unknown as Mock).mockReturnValue({
 			user: {
 				user_email: "test@example.com",
@@ -164,10 +175,27 @@ describe("UserProfile", () => {
 		const { container } = renderPage();
 		const refreshBtn = screen.getByRole("button", { name: /refresh status/i });
 		await userEvent.click(refreshBtn);
-		expect(refreshBtn).toBeDisabled();
+
+		// Button should be disabled while checking
+		await waitFor(
+			() => {
+				expect(refreshBtn).toBeDisabled();
+			},
+			{ container },
+		);
+
+		// Resolve the promise
 		if (resolve) {
 			resolve({ is_email_verified: false });
 		}
+
+		// Button should be re-enabled after completion
+		await waitFor(
+			() => {
+				expect(refreshBtn).not.toBeDisabled();
+			},
+			{ container },
+		);
 	});
 
 	it("shows error if user email is missing when requesting verification", async () => {
