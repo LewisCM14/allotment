@@ -145,5 +145,32 @@ def add_container_context(
     return event_dict
 
 
+# Configure log rotation
+LOG_FILE = "app/app.log"
+LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
+LOG_BACKUP_COUNT = 5
+
+# Set up the RotatingFileHandler
+file_handler = RotatingFileHandler(
+    LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT
+)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+
+# Configure structlog to use the RotatingFileHandler
+structlog.configure(
+    processors=[
+        structlog.processors.JSONRenderer(),
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    wrapper_class=structlog.stdlib.BoundLogger,
+    cache_logger_on_first_use=True,
+)
+
+# Add the file handler to the root logger
+logging.getLogger().addHandler(file_handler)
+
 configure_logging()
 logger = structlog.get_logger()

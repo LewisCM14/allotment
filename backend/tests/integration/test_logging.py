@@ -117,7 +117,6 @@ class TestDataSanitization:
     @pytest.mark.parametrize(
         "error_msg,expected",
         [
-            # Update the test to match the actual regex behavior
             ("Error: Invalid password provided", "Error: Invalid password provided"),
             ("User token=abc123 is invalid", "User token=[REDACTED] is invalid"),
             ("Something unrelated", "Something unrelated"),

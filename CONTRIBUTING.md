@@ -218,15 +218,19 @@ Tests
 pytest
 ```
 
-Tests with Coverage
-```
-pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
-```
-
 Run Tests in Parallel
 ```
 pytest --numprocesses=auto
 ```
+
+Tests with Coverage
+```
+pytest --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
+```
+```
+pytest -n auto --cov=app --cov-report=xml --cov-report=html --cov-report=term-missing
+```
+> In Parallel
 --- 
 
 ## Frontend

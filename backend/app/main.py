@@ -10,19 +10,12 @@ from typing import AsyncGenerator, Dict, Optional
 import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.middleware.error_handler import safe_operation
-from app.api.middleware.exception_handler import (
-    BaseApplicationError,
-    BusinessLogicError,
-    ExceptionHandlingMiddleware,
-    ResourceNotFoundError,
-)
+from app.api.middleware.exception_handler import register_exception_handlers
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
     request_id_ctx_var,
@@ -78,63 +71,14 @@ app = FastAPI(
 )
 
 
-@app.exception_handler(BusinessLogicError)
-async def business_logic_error_handler(
-    request: Request, exc: BusinessLogicError
-) -> JSONResponse:
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "detail": [
-                {
-                    "msg": exc.message,
-                    "type": exc.__class__.__name__.lower(),
-                    "code": getattr(exc, "error_code", None),
-                }
-            ]
-        },
-    )
+logger.debug("Registering exception handlers")
+register_exception_handlers(app)
 
 
-@app.exception_handler(ResourceNotFoundError)
-async def resource_not_found_error_handler(
-    request: Request, exc: ResourceNotFoundError
-) -> JSONResponse:
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "detail": [
-                {
-                    "msg": exc.message,
-                    "type": exc.__class__.__name__.lower(),
-                    "code": getattr(exc, "error_code", None),
-                }
-            ]
-        },
-    )
+# Logging Middleware
+logger.debug("Adding logging middleware")
+app.add_middleware(AsyncLoggingMiddleware)
 
-
-@app.exception_handler(BaseApplicationError)
-async def base_application_error_handler(
-    request: Request, exc: BaseApplicationError
-) -> JSONResponse:
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "detail": [
-                {
-                    "msg": exc.message,
-                    "type": exc.__class__.__name__.lower(),
-                    "code": getattr(exc, "error_code", None),
-                }
-            ]
-        },
-    )
-
-
-# Exception Handling Middleware
-logger.debug("Adding exception handling middleware")
-app.add_middleware(ExceptionHandlingMiddleware)
 
 # CORS Middleware
 logger.debug("Adding CORS middleware")
@@ -146,12 +90,10 @@ app.add_middleware(
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
 
-# Logging Middleware
-logger.debug("Adding logging middleware")
-app.add_middleware(AsyncLoggingMiddleware)
 
 # Rate Limiter
 app.state.limiter = limiter
+
 
 # Register Routes
 logger.debug("Registering API routes")
@@ -172,21 +114,19 @@ async def root() -> Dict[str, str]:
         "request_id": request_id_ctx_var.get(),
         "operation": "root",
     }
-    async with safe_operation(
-        "root", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
-    ):
-        logger.info(
-            "Root endpoint accessed",
-            endpoint="/",
-            app_name=settings.APP_NAME,
-            app_version=settings.APP_VERSION,
-            **log_context,
-        )
-        return {
-            "message": "Welcome to the Allotment Service API!",
-            "app_name": settings.APP_NAME,
-            "version": settings.APP_VERSION,
-        }
+
+    logger.info(
+        "Root endpoint accessed",
+        endpoint="/",
+        app_name=settings.APP_NAME,
+        app_version=settings.APP_VERSION,
+        **log_context,
+    )
+    return {
+        "message": "Welcome to the Allotment Service API!",
+        "app_name": settings.APP_NAME,
+        "version": settings.APP_VERSION,
+    }
 
 
 @app.post(
@@ -215,15 +155,21 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
 
     logger.info("Test email requested", **log_context)
 
-    async with safe_operation(
-        "sending test email", log_context, status.HTTP_500_INTERNAL_SERVER_ERROR
-    ):
+    try:
         with log_timing("send_email", request_id=log_context["request_id"]):
             recipient = email if email else settings.MAIL_USERNAME
             await send_test_email(recipient)
             logger.info("Test email sent successfully", **log_context)
 
-    return {"message": "Test email sent successfully"}
+        return {"message": "Test email sent successfully"}
+    except Exception as exc:
+        logger.error(
+            "Error sending test email",
+            error=str(exc),
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise
 
 
 @app.post("/api/v1/log-client-error")

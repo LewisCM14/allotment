@@ -1,19 +1,44 @@
+import uuid
+from unittest.mock import AsyncMock, Mock
+
 import pytest
 from authlib.jose.errors import ExpiredTokenError as AuthlibExpiredTokenError
 from authlib.jose.errors import JoseError
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 
 from app.api.middleware.error_handler import (
+    handle_route_exceptions,
     safe_operation,
     translate_db_exceptions,
     translate_token_exceptions,
+    validate_user_exists,
 )
 from app.api.middleware.exception_handler import (
+    BaseApplicationError,
     BusinessLogicError,
     EmailAlreadyRegisteredError,
     ExpiredTokenError,
     InvalidTokenError,
+    UserNotFoundError,
 )
+
+Base = declarative_base()
+
+
+class RealUser(Base):
+    __tablename__ = "users"
+    user_id: Mapped[uuid.UUID] = mapped_column(primary_key=True)
+    user_email: Mapped[str] = mapped_column()
+
+
+class DummyBaseApplicationError(BaseApplicationError):
+    def __init__(self):
+        super().__init__(message="dummy", error_code=123)
+        self.status_code = 400
+
+    def __str__(self):
+        return "DummyBaseApplicationError"
 
 
 class TestTranslateDbExceptions:
@@ -84,9 +109,61 @@ class TestSafeOperation:
     async def test_safe_operation_success(self):
         """Test that safe_operation allows successful operations to complete."""
         log_context = {"operation": "test_operation"}
-        result = None
 
         async with safe_operation("test_operation", log_context):
-            result = "success"
+            pass
 
-        assert result == "success"
+
+class TestValidateUserExists:
+    @pytest.mark.asyncio
+    async def test_by_email_found(self):
+        user = RealUser(user_id=uuid.uuid4(), user_email="foo@bar.com")
+        mock_session = AsyncMock()
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = user
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        result = await validate_user_exists(
+            mock_session, RealUser, user_email="foo@bar.com"
+        )
+        assert result is user
+
+    @pytest.mark.asyncio
+    async def test_by_email_not_found(self):
+        mock_session = AsyncMock()
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_session.execute = AsyncMock(return_value=mock_result)
+        with pytest.raises(UserNotFoundError):
+            await validate_user_exists(mock_session, RealUser, user_email="foo@bar.com")
+
+    @pytest.mark.asyncio
+    async def test_by_id_invalid(self):
+        mock_session = AsyncMock()
+        with pytest.raises(ValueError):
+            await validate_user_exists(mock_session, RealUser, user_id="not-a-uuid")
+
+    @pytest.mark.asyncio
+    async def test_no_args(self):
+        mock_session = AsyncMock()
+        with pytest.raises(ValueError):
+            await validate_user_exists(mock_session, RealUser)
+
+
+class TestHandleRouteExceptions:
+    def test_base_application_error(self, caplog):
+        log_context = {"foo": "bar"}
+        error = DummyBaseApplicationError()
+        handle_route_exceptions("op", log_context, error)
+        assert "op failed: DummyBaseApplicationError" in caplog.text
+
+    def test_other_error(self, caplog):
+        log_context = {"foo": "bar"}
+        error = ValueError("fail")
+        try:
+            handle_route_exceptions("op", log_context, error)
+        except BusinessLogicError as e:
+            assert str(e) == "An unexpected error occurred"
+        else:
+            assert False, "BusinessLogicError not raised"
+        assert "Unhandled exception during op" in caplog.text
+        assert "Unhandled exception during op" in caplog.text

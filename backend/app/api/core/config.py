@@ -157,6 +157,13 @@ class Settings(BaseSettings):
             jwt_private_key_str = str(self.JWT_PRIVATE_KEY).strip()
             jwt_public_key_str = str(self.JWT_PUBLIC_KEY).strip()
 
+            if not jwt_private_key_str or not jwt_public_key_str:
+                logger.error(
+                    "JWT keys must not be empty",
+                    environment=self.ENVIRONMENT,
+                )
+                raise ValueError("JWT keys must not be empty")
+
             def process_key_string(key_str: str) -> str:
                 # Define a unique placeholder that won't clash with Base64 characters or be affected by backslash replacement.
                 placeholder = "___PLACEHOLDER_FOR_ACTUAL_NEWLINE___"
@@ -167,7 +174,6 @@ class Settings(BaseSettings):
                 processed_str = processed_str.replace("\\", "\n")
                 # Step 3: Replace the placeholder back with actual newlines "\n".
                 processed_str = processed_str.replace(placeholder, "\n")
-
                 return processed_str
 
             private_key = process_key_string(jwt_private_key_str)

@@ -1,9 +1,10 @@
 import axios from "axios";
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildUrl } from "../../../mocks/handlers";
+import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
-import * as apiModule from "../../../services/api";
+import api from "../../../services/api";
+import { apiCache } from "../../../services/apiCache";
 import {
 	FAMILY_SERVICE_ERRORS,
 	type IBotanicalGroup,
@@ -11,6 +12,89 @@ import {
 } from "./FamilyService";
 
 describe("FamilyService", () => {
+	describe("getFamilyInfo", () => {
+		it("should fetch family info successfully", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const mockData = {
+				id: "fam-1",
+				name: "Test Family",
+				description: "desc",
+				botanical_group: {
+					id: "bg1",
+					name: "BG",
+					recommended_rotation_years: 2,
+				},
+				companion_to: [],
+				antagonises: [],
+				pests: [],
+				diseases: [],
+			};
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockResolvedValueOnce(mockData);
+			const result = await getFamilyInfo("fam-1");
+			expect(result).toEqual(mockData);
+			cachedGetSpy.mockRestore();
+		});
+
+		it("should handle axios cancel error", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const cancelError = new Error("Request cancelled");
+			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
+			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockRejectedValueOnce(cancelError);
+			await expect(getFamilyInfo("fam-1")).rejects.toThrow("Request cancelled");
+			cachedGetSpy.mockRestore();
+			isCancelSpy.mockRestore();
+		});
+
+		it("should handle unknown error", async () => {
+			const { getFamilyInfo } = await import("./FamilyService");
+			const genericError = new Error("Generic error");
+			const cachedGetSpy = vi
+				.spyOn(api, "cachedGet")
+				.mockRejectedValueOnce(genericError);
+			await expect(getFamilyInfo("fam-1")).rejects.toThrow();
+			cachedGetSpy.mockRestore();
+		});
+	});
+
+	describe("getFamilyDetails edge cases", () => {
+		it("should handle axios cancel error", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const cancelError = new Error("Request cancelled");
+			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
+			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
+			const apiGetSpy = vi.spyOn(api, "get").mockRejectedValueOnce(cancelError);
+			await expect(getFamilyDetails("fam-1")).rejects.toThrow(
+				"Request cancelled",
+			);
+			apiGetSpy.mockRestore();
+			isCancelSpy.mockRestore();
+		});
+
+		it("should handle unknown error", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const genericError = new Error("Generic error");
+			const apiGetSpy = vi
+				.spyOn(api, "get")
+				.mockRejectedValueOnce(genericError);
+			await expect(getFamilyDetails("fam-1")).rejects.toThrow();
+			apiGetSpy.mockRestore();
+		});
+
+		it("should handle missing data gracefully", async () => {
+			const { getFamilyDetails } = await import("./FamilyService");
+			const apiGetSpy = vi
+				.spyOn(api, "get")
+				.mockResolvedValueOnce({ data: null });
+			const result = await getFamilyDetails("fam-1");
+			expect(result).toBeNull();
+			apiGetSpy.mockRestore();
+		});
+	});
 	beforeEach(() => {
 		Object.defineProperty(navigator, "onLine", {
 			configurable: true,
@@ -18,6 +102,8 @@ describe("FamilyService", () => {
 			writable: true,
 		});
 		vi.restoreAllMocks();
+		// Clear the API cache before each test to prevent cache pollution
+		apiCache.clear();
 	});
 
 	afterEach(() => {
@@ -83,7 +169,8 @@ describe("FamilyService", () => {
 		});
 
 		it("should handle server error (500)", async () => {
-			const getSpy = vi.spyOn(apiModule.default, "get");
+			// Mock the cachedGet method to avoid retry logic in tests
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
 			const serverError = new Error("Server error");
 			Object.defineProperty(serverError, "isAxiosError", { value: true });
 			Object.defineProperty(serverError, "response", {
@@ -93,13 +180,13 @@ describe("FamilyService", () => {
 				},
 			});
 
-			getSpy.mockRejectedValueOnce(serverError);
+			cachedGetSpy.mockRejectedValueOnce(serverError);
 
 			await expect(getBotanicalGroups()).rejects.toThrow(
 				FAMILY_SERVICE_ERRORS.SERVER_ERROR,
 			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 
 		it("should handle other HTTP errors", async () => {
@@ -116,23 +203,25 @@ describe("FamilyService", () => {
 		});
 
 		it("should handle network errors", async () => {
-			const getSpy = vi.spyOn(apiModule.default, "get");
+			// Mock the cachedGet method to avoid retry logic in tests
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
 			const networkError = new Error("Network Error");
 			Object.defineProperty(networkError, "isAxiosError", { value: true });
 			Object.defineProperty(networkError, "request", { value: {} });
 			Object.defineProperty(networkError, "response", { value: undefined });
 
-			getSpy.mockRejectedValueOnce(networkError);
+			cachedGetSpy.mockRejectedValueOnce(networkError);
 
 			await expect(getBotanicalGroups()).rejects.toThrow(
 				FAMILY_SERVICE_ERRORS.NETWORK_ERROR,
 			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 
 		it("should handle unexpected server responses", async () => {
-			const getSpy = vi.spyOn(apiModule.default, "get");
+			// Mock the cachedGet method to avoid retry logic in tests
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
 			const serverError = new Error("Server returned unexpected response");
 			Object.defineProperty(serverError, "isAxiosError", { value: true });
 			Object.defineProperty(serverError, "response", {
@@ -142,16 +231,18 @@ describe("FamilyService", () => {
 				},
 			});
 
-			getSpy.mockRejectedValueOnce(serverError);
+			cachedGetSpy.mockRejectedValueOnce(serverError);
 
-			await expect(getBotanicalGroups()).rejects.toThrow("Bad Gateway");
+			await expect(getBotanicalGroups()).rejects.toThrow(
+				FAMILY_SERVICE_ERRORS.FETCH_BOTANICAL_GROUPS_FAILED,
+			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 
 		it("should handle abortion signal", async () => {
 			const controller = new AbortController();
-			const getSpy = vi.spyOn(apiModule.default, "get");
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
 			const isCancelSpy = vi.spyOn(axios, "isCancel");
 
 			const cancelError = new Error("Request cancelled");
@@ -160,46 +251,46 @@ describe("FamilyService", () => {
 			// Mock axios.isCancel to return true for cancellation
 			isCancelSpy.mockReturnValue(true);
 
-			getSpy.mockRejectedValueOnce(cancelError);
+			cachedGetSpy.mockRejectedValueOnce(cancelError);
 			controller.abort();
 
 			await expect(getBotanicalGroups(controller.signal)).rejects.toThrow(
 				"Request cancelled",
 			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 			isCancelSpy.mockRestore();
 		});
 
 		it("should pass abort signal to API call", async () => {
 			const controller = new AbortController();
-			const getSpy = vi.spyOn(apiModule.default, "get");
-			getSpy.mockResolvedValueOnce({ data: [] });
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
+			cachedGetSpy.mockResolvedValueOnce([]);
 
 			await getBotanicalGroups(controller.signal);
 
-			expect(getSpy).toHaveBeenCalledWith(
-				expect.stringContaining("/families/botanical-groups/"),
+			expect(cachedGetSpy).toHaveBeenCalledWith(
+				"/families/botanical-groups/",
 				expect.objectContaining({
 					signal: controller.signal,
 				}),
 			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 
 		it("should handle generic errors", async () => {
-			const getSpy = vi.spyOn(apiModule.default, "get");
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
 			const genericError = new Error("Generic error");
 			Object.defineProperty(genericError, "isAxiosError", { value: false });
 
-			getSpy.mockRejectedValueOnce(genericError);
+			cachedGetSpy.mockRejectedValueOnce(genericError);
 
 			await expect(getBotanicalGroups()).rejects.toThrow(
-				FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR,
+				FAMILY_SERVICE_ERRORS.FETCH_BOTANICAL_GROUPS_FAILED,
 			);
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 
 		it("should handle malformed response data", async () => {
@@ -223,17 +314,17 @@ describe("FamilyService", () => {
 				},
 			];
 
-			const getSpy = vi.spyOn(apiModule.default, "get");
-			getSpy.mockResolvedValueOnce({ data: mockBotanicalGroups });
+			const cachedGetSpy = vi.spyOn(api, "cachedGet");
+			cachedGetSpy.mockResolvedValueOnce(mockBotanicalGroups);
 
 			const result = await getBotanicalGroups();
 
-			expect(getSpy).toHaveBeenCalled();
+			expect(cachedGetSpy).toHaveBeenCalled();
 			expect(result).not.toBeNull();
 			expect(result?.[0].recommended_rotation_years).toBeNull();
 			expect(result?.[0].name).toBe("Mixed Group");
 
-			getSpy.mockRestore();
+			cachedGetSpy.mockRestore();
 		});
 	});
 

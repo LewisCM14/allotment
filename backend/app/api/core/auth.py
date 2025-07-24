@@ -7,24 +7,25 @@ Authentication Utilities
 
 import uuid
 from datetime import UTC, datetime, timedelta
-from typing import Literal, Optional, cast
+from typing import Any, Literal, Optional, cast
 
 import bcrypt
 import structlog
 from authlib.jose import JoseError, jwt
-from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from fastapi import Depends, Header, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.config import settings
 from app.api.core.database import get_db
+from app.api.middleware.error_handler import validate_user_exists
+from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import sanitize_error_message
 from app.api.models import User
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 logger = structlog.get_logger()
 
-TokenType = Literal["access", "refresh", "reset", "email_verification"]
+TokenType = Literal["access", "refresh", "reset", "email_verification", "verification"]
 
 
 def create_token(
@@ -56,7 +57,7 @@ def create_token(
                 expire_seconds = settings.REFRESH_TOKEN_EXPIRE_DAYS * 86400
             elif token_type == "reset":
                 expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
-            elif token_type == "email_verification":
+            elif token_type == "email_verification" or token_type == "verification":
                 expire_seconds = settings.RESET_TOKEN_EXPIRE_MINUTES * 60
             else:
                 raise ValueError(f"Unknown token type: {token_type}")
@@ -117,20 +118,30 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    """Authenticate user by verifying their credentials.
+def decode_token(token: str) -> dict[str, Any]:
+    """Decode JWT token and return payload."""
+    logger.debug("Validating JWT token")
+    try:
+        payload = jwt.decode(token, settings.PUBLIC_KEY)
+        return cast(dict[str, Any], payload)
+    except (JoseError, ValueError) as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Token validation failed",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+        )
+        raise InvalidTokenError("Invalid token") from e
 
-    Args:
-        db: Database session
-        email: User's email
-        password: User's password
 
-    Returns:
-        Optional[User]: User object if authenticated, None otherwise
-    """
+async def authenticate_user(
+    db: AsyncSession, email: str, password: str
+) -> Optional[User]:
+    """Authenticate user by verifying their credentials."""
     try:
         logger.info("User authentication attempt")
-        user = db.query(User).filter(User.user_email == email).first()
+        result = await db.execute(select(User).filter(User.user_email == email))
+        user = result.scalar_one_or_none()
 
         if not user:
             # Use generic log message to prevent user enumeration
@@ -150,39 +161,33 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
         return None
 
 
-def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+async def get_current_user(
+    authorization: str = Header(...),
+    db: AsyncSession = Depends(get_db),
 ) -> User:
-    """Validate JWT and return user.
-
-    Args:
-        token: JWT token from Authorization header
-        db: Database session
-
-    Returns:
-        User: Authenticated user object
-
-    Raises:
-        HTTPException: If token is invalid or user not found
-    """
-    logger.debug("Validating JWT token")
-    try:
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-    except JoseError as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.error(
-            "Token validation failed",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-        )
+    """Get the current user from the authorization header."""
+    if not authorization:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from e
+            detail="Authorization header missing",
+        )
 
-    user_id: Optional[str] = payload.get("sub")
-    if user_id is None:
+    token_type, _, token = authorization.partition(" ")
+    if token_type.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Invalid token type, "Bearer" expected.',
+        )
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing"
+        )
+
+    payload = decode_token(token)
+    user_id = payload.get("sub")
+
+    if not user_id:
         logger.warning("Invalid token payload - missing user ID")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -190,16 +195,5 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user = db.query(User).filter(User.user_id == user_id).first()
-    if user is None:
-        logger.warning(
-            "User from valid token not found in database",
-            user_id=user_id,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-
-    logger.info("Token validated successfully", user_id=user_id)
-    return user
+    user = await validate_user_exists(db_session=db, user_model=User, user_id=user_id)
+    return cast(User, user)

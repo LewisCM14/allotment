@@ -3,10 +3,11 @@ Testing Configuration
 """
 
 import asyncio
+import os
 import uuid
 
 import pytest
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -47,6 +48,24 @@ app.dependency_overrides[get_db] = override_get_db
 
 
 @pytest.fixture(scope="session", autouse=True)
+def disable_file_logging():
+    """Disable file logging during tests to prevent log file generation."""
+    # Store original value
+    original_log_to_file = os.environ.get("LOG_TO_FILE")
+
+    # Disable file logging for tests
+    os.environ["LOG_TO_FILE"] = "false"
+
+    yield
+
+    # Restore original value
+    if original_log_to_file is not None:
+        os.environ["LOG_TO_FILE"] = original_log_to_file
+    else:
+        os.environ.pop("LOG_TO_FILE", None)
+
+
+@pytest.fixture(scope="session", autouse=True)
 def event_loop_policy():
     """Configure the event loop policy for all tests."""
     policy = asyncio.get_event_loop_policy()
@@ -69,19 +88,40 @@ async def setup_test_db():
 @pytest.fixture(scope="function", autouse=True)
 async def clear_tables():
     """Clear table data between tests."""
-    yield
-
-    # Delete all data after each test
-    async with engine.begin() as conn:
-        for table in reversed(Base.metadata.sorted_tables):
-            await conn.execute(table.delete())
+    try:
+        yield
+    finally:
+        # Delete all data after each test
+        async with engine.begin() as conn:
+            for table in reversed(Base.metadata.sorted_tables):
+                await conn.execute(table.delete())
 
 
 @pytest.fixture(name="client")
-def client_fixture():
-    """Create a test client."""
-    with TestClient(app) as client:
+async def client_fixture():
+    """Create an async test client."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
         yield client
+
+
+@pytest.fixture(autouse=True)
+def prevent_real_emails(monkeypatch):
+    """Prevent real emails from being sent during tests by overriding mail config."""
+    # Override mail settings to prevent real email sending
+    monkeypatch.setenv("MAIL_USERNAME", "test@example.com")
+    monkeypatch.setenv("MAIL_PASSWORD", "test_password")
+
+    # Mock the mail client at module level to prevent actual SMTP connections
+    # Import inside the function to avoid import order issues
+    import app.api.services.email_service
+
+    class MockFastMail:
+        async def send_message(self, message):
+            # Do nothing - just return successfully
+            pass
+
+    monkeypatch.setattr(app.api.services.email_service, "mail_client", MockFastMail())
 
 
 @pytest.fixture(autouse=True)

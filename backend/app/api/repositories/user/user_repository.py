@@ -18,6 +18,11 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
 from app.api.models import User
+from app.api.models.user.user_model import UserAllotment
+from app.api.schemas.user.user_allotment_schema import (
+    UserAllotmentCreate,
+    UserAllotmentUpdate,
+)
 
 logger = structlog.get_logger()
 
@@ -159,3 +164,68 @@ class UserRepository:
             logger.info("User password updated", **log_context)
 
         return user
+
+    @translate_db_exceptions
+    async def create_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentCreate
+    ) -> UserAllotment:
+        """Create a new allotment for a user."""
+        log_context = {
+            "user_id": str(user_id),
+        }
+        with log_timing(
+            "db_create_user_allotment", request_id=self.request_id, **log_context
+        ):
+            new_allotment = UserAllotment(
+                user_id=user_id, **allotment_data.model_dump()
+            )
+            self.db.add(new_allotment)
+            logger.info(
+                "User allotment added to session",
+                operation="create_user_allotment",
+                **log_context,
+            )
+            return new_allotment
+
+    @translate_db_exceptions
+    async def get_user_allotment(self, user_id: str) -> Optional[UserAllotment]:
+        """Fetch a user's allotment by user_id."""
+        log_context = {"user_id": str(user_id)}
+        with log_timing(
+            "db_get_user_allotment", request_id=self.request_id, **log_context
+        ):
+            query = select(UserAllotment).where(UserAllotment.user_id == user_id)
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+
+    @translate_db_exceptions
+    async def update_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentUpdate
+    ) -> UserAllotment:
+        """Update a user's allotment."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        timing_context = {k: v for k, v in log_context.items() if k != "request_id"}
+        with log_timing(
+            "db_update_user_allotment", request_id=self.request_id, **timing_context
+        ):
+            query = select(UserAllotment).where(UserAllotment.user_id == user_id)
+            result = await self.db.execute(query)
+            allotment = result.scalar_one_or_none()
+
+            if not allotment:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Allotment not found",
+                )
+
+            update_data = allotment_data.model_dump(exclude_unset=True)
+            for key, value in update_data.items():
+                setattr(allotment, key, value)
+
+            self.db.add(allotment)
+            logger.info(
+                "User allotment updated in session",
+                operation="update_user_allotment",
+                **log_context,
+            )
+            return allotment

@@ -53,6 +53,10 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    @property
+    def id(self) -> uuid.UUID:
+        return self.user_id
+
     def set_password(self, password: str) -> None:
         """Hash and store the password."""
         log_context = {
@@ -151,19 +155,29 @@ class UserAllotment(Base):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         log_context = {
-            "user_id": str(self.user_id),
-            "allotment_id": str(self.user_allotment_id),
+            "user_id": str(self.user_id) if self.user_id else None,
+            "allotment_id": str(self.user_allotment_id)
+            if self.user_allotment_id
+            else None,
             "postal_code": self.allotment_postal_zip_code,
             "width": self.allotment_width_meters,
             "length": self.allotment_length_meters,
             "request_id": request_id_ctx_var.get(),
         }
 
+        # Only calculate area if both width and length are available
+        area_sqm = None
+        if (
+            self.allotment_width_meters is not None
+            and self.allotment_length_meters is not None
+        ):
+            area_sqm = round(
+                self.allotment_width_meters * self.allotment_length_meters, 2
+            )
+
         logger.info(
             "UserAllotment created",
             action="allotment_creation",
-            area_sqm=round(
-                self.allotment_width_meters * self.allotment_length_meters, 2
-            ),
+            area_sqm=area_sqm,
             **log_context,
         )

@@ -92,6 +92,11 @@ def translate_db_exceptions(
             error_msg = str(ie).lower()
             if "unique constraint" in error_msg and "email" in error_msg:
                 raise EmailAlreadyRegisteredError()
+            if (
+                "unique constraint" in error_msg
+                and "user_allotment.user_id" in error_msg
+            ):
+                raise DatabaseIntegrityError(message="User already has an allotment")
 
             logger.error(
                 "Database integrity error",

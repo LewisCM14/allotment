@@ -1,6 +1,5 @@
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { formatError } from "@/utils/errorUtils";
-import axios from "axios";
 import api, { handleApiError } from "../../../services/api";
 
 export const AUTH_ERRORS = {
@@ -46,22 +45,6 @@ export interface IRegisterRequest {
 	user_country_code: string;
 }
 
-interface IValidationErrorDetail {
-	msg?: string;
-	loc?: string[];
-	type?: string;
-}
-
-// Helper function to format validation errors from the API
-const formatValidationErrors = (details: unknown): string => {
-	if (!details || !Array.isArray(details)) return "";
-
-	const messages = (details as IValidationErrorDetail[])
-		.map((err: IValidationErrorDetail) => err.msg ?? "Validation error")
-		.join(", ");
-	return messages || "Validation failed. Please check your inputs.";
-};
-
 export const registerUser = async (
 	email: string,
 	password: string,
@@ -79,33 +62,6 @@ export const registerUser = async (
 		const response = await api.post<ITokenPair>("/users/", requestData);
 		return response.data;
 	} catch (error: unknown) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 409:
-						throw new Error(AUTH_ERRORS.EMAIL_EXISTS);
-					case 400:
-						throw new Error(
-							formatError(error.response.data) ||
-								AUTH_ERRORS.REGISTRATION_FAILED,
-						);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.REGISTRATION_FAILED,
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
 		return handleApiError(error, AUTH_ERRORS.REGISTRATION_FAILED);
 	}
 };
@@ -171,33 +127,7 @@ export const loginUser = async (
 				is_email_verified: is_email_verified ?? false,
 			},
 		};
-	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 404:
-						throw new Error("The email address you entered is not registered.");
-					case 401:
-						throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
-					case 403:
-						throw new Error(AUTH_ERRORS.ACCOUNT_LOCKED);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.INVALID_CREDENTIALS,
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
+	} catch (error: unknown) {
 		return handleApiError(error, AUTH_ERRORS.UNKNOWN_ERROR);
 	}
 };
@@ -213,36 +143,7 @@ export const verifyEmail = async (
 			{ params: { fromReset } },
 		);
 		return response.data;
-	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 400:
-						throw new Error(
-							formatError(error.response.data) ||
-								AUTH_ERRORS.VERIFICATION_TOKEN_INVALID,
-						);
-					case 404:
-						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_INVALID);
-					case 410:
-						throw new Error(AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
+	} catch (error: unknown) {
 		return handleApiError(error, AUTH_ERRORS.VERIFICATION_FAILED);
 	}
 };
@@ -256,33 +157,7 @@ export const requestVerificationEmail = async (
 			{ user_email: email },
 		);
 		return response.data;
-	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 404:
-						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.VERIFICATION_FAILED,
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					case 503:
-						throw new Error(
-							"Email service is temporarily unavailable. Please try again later.",
-						);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
+	} catch (error: unknown) {
 		return handleApiError(error, "Failed to send verification email");
 	}
 };
@@ -296,38 +171,7 @@ export const requestPasswordReset = async (
 			{ user_email: email },
 		);
 		return response.data;
-	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 400:
-						throw new Error(
-							formatError(error.response.data) ||
-								"Email not verified. Please verify your email first.",
-						);
-					case 404:
-						throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								AUTH_ERRORS.RESET_FAILED,
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					case 503:
-						throw new Error(
-							"Email service is temporarily unavailable. Please try again later.",
-						);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
+	} catch (error: unknown) {
 		return handleApiError(error, AUTH_ERRORS.RESET_FAILED);
 	}
 };
@@ -342,31 +186,7 @@ export const resetPassword = async (
 			{ new_password: newPassword },
 		);
 		return response.data;
-	} catch (error) {
-		if (axios.isAxiosError(error)) {
-			if (error.response) {
-				switch (error.response.status) {
-					case 400:
-						throw new Error(
-							formatError(error.response.data) || "Invalid or expired token",
-						);
-					case 422:
-						throw new Error(
-							formatValidationErrors(error.response.data?.detail) ||
-								"Invalid password format",
-						);
-					case 500:
-						throw new Error(AUTH_ERRORS.SERVER_ERROR);
-					default:
-						throw new Error(
-							formatError(error.response.data) || AUTH_ERRORS.UNKNOWN_ERROR,
-						);
-				}
-			}
-			if (error.request) {
-				throw new Error(AUTH_ERRORS.NETWORK_ERROR);
-			}
-		}
+	} catch (error: unknown) {
 		return handleApiError(error, "Failed to reset password");
 	}
 };
@@ -382,13 +202,74 @@ export const checkEmailVerificationStatus = async (
 			},
 		);
 		return response.data;
-	} catch (error) {
-		console.error("Error checking verification status:", error);
-		if (axios.isAxiosError(error)) {
-			if (error.response?.status === 404) {
-				throw new Error(AUTH_ERRORS.EMAIL_NOT_FOUND);
-			}
-		}
-		throw new Error(AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+	} catch (error: unknown) {
+		return handleApiError(error, AUTH_ERRORS.FETCH_VERIFICATION_STATUS_FAILED);
+	}
+};
+
+export interface IAllotmentRequest {
+	allotment_postal_zip_code: string;
+	allotment_width_meters: number;
+	allotment_length_meters: number;
+}
+
+export interface IAllotmentUpdateRequest {
+	allotment_postal_zip_code?: string;
+	allotment_width_meters?: number;
+	allotment_length_meters?: number;
+}
+
+export interface IAllotmentResponse {
+	user_allotment_id: string;
+	user_id: string;
+	allotment_postal_zip_code: string;
+	allotment_width_meters: number;
+	allotment_length_meters: number;
+}
+
+export const createUserAllotment = async (
+	allotmentData: IAllotmentRequest,
+): Promise<IAllotmentResponse> => {
+	try {
+		const response = await api.post<IAllotmentResponse>(
+			"/users/allotment",
+			allotmentData,
+		);
+		return response.data;
+	} catch (error: unknown) {
+		return handleApiError(
+			error,
+			"Failed to create allotment. Please try again.",
+		);
+	}
+};
+
+export const getUserAllotment = async (): Promise<IAllotmentResponse> => {
+	try {
+		const response =
+			await api.cachedGet<IAllotmentResponse>("/users/allotment");
+		return response;
+	} catch (error: unknown) {
+		return handleApiError(
+			error,
+			"Failed to fetch allotment. Please try again.",
+		);
+	}
+};
+
+export const updateUserAllotment = async (
+	allotmentData: IAllotmentUpdateRequest,
+): Promise<IAllotmentResponse> => {
+	try {
+		const response = await api.put<IAllotmentResponse>(
+			"/users/allotment",
+			allotmentData,
+		);
+		return response.data;
+	} catch (error: unknown) {
+		return handleApiError(
+			error,
+			"Failed to update allotment. Please try again.",
+		);
 	}
 };

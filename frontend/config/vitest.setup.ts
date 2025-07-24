@@ -1,6 +1,14 @@
-// Mock import.meta.env for consistent API URL and Version in tests
-// THIS MUST BE AT THE VERY TOP, before any other imports.
-import { afterAll, afterEach, beforeAll, vi } from "vitest";
+// Consolidated test setup for Vitest (React + Vite)
+import { beforeAll, afterAll, afterEach, vi } from "vitest";
+import "@testing-library/jest-dom";
+import { server } from "../src/mocks/server";
+import { cleanup } from "@testing-library/react";
+
+// Polyfill for IE event methods that React might try to use
+if (typeof HTMLElement !== "undefined") {
+    (HTMLElement.prototype as any).attachEvent = function (_event: string, _handler: any) { };
+    (HTMLElement.prototype as any).detachEvent = function (_event: string, _handler: any) { };
+}
 
 // Mock localStorage
 const localStorageMock = (() => {
@@ -16,59 +24,57 @@ const localStorageMock = (() => {
         clear: () => {
             store = {};
         },
+        key: (index: number) => Object.keys(store)[index] || null,
         get length() {
             return Object.keys(store).length;
         },
-        key: (index: number) => {
-            const keys = Object.keys(store);
-            return keys[index] || null;
-        }
     };
 })();
 
-vi.stubGlobal('import.meta', {
+// Mock import.meta.env for consistent API URL and Version in tests
+vi.stubGlobal("import.meta", {
     env: {
-        VITE_API_URL: 'http://localhost:8000',
-        VITE_API_VERSION: '/api/v1',
-        // Add other VITE_ variables your app might need at build time or as a fallback
+        VITE_API_URL: "http://localhost:8000",
+        VITE_API_VERSION: "/api/v1",
     },
 });
 
 // Mock window.envConfig for runtime configuration in tests
-vi.stubGlobal('window', {
-    ...global.window, // Preserve existing window properties if any (e.g., from jsdom)
+vi.stubGlobal("window", {
+    ...global.window, // preserve jsdom's document and all other properties
+    document: global.window.document, // ensure document is present
     envConfig: {
-        VITE_API_URL: 'http://localhost:8000',
-        VITE_API_VERSION: '/api/v1',
-        VITE_APP_TITLE: 'Allotment Test',
-        VITE_CONTACT_EMAIL: 'test@example.com',
-        VITE_FORCE_AUTH: 'false',
+        VITE_API_URL: "http://localhost:8000",
+        VITE_API_VERSION: "/api/v1",
+        VITE_APP_TITLE: "Allotment Test",
+        VITE_CONTACT_EMAIL: "test@example.com",
+        VITE_FORCE_AUTH: "false",
     },
-    // Ensure localStorage and navigator are part of this new window object
-    localStorage: localStorageMock, // Use the hoisted localStorageMock
+    localStorage: localStorageMock,
     navigator: {
         onLine: true,
     },
-    matchMedia: global.window?.matchMedia || vi.fn().mockImplementation(query => ({ // Preserve existing matchMedia or mock it
-        matches: false,
-        media: query,
-        onchange: null,
-        addListener: vi.fn(), // deprecated
-        removeListener: vi.fn(), // deprecated
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        dispatchEvent: vi.fn(),
-    })),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    matchMedia:
+        global.window?.matchMedia ||
+        vi.fn().mockImplementation((query) => ({
+            matches: false,
+            media: query,
+            onchange: null,
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            addEventListener: vi.fn(),
+            removeEventListener: vi.fn(),
+            dispatchEvent: vi.fn(),
+        })),
 });
-
-
-import { server } from "../src/mocks/server";
 
 // Set up global mocks for browser APIs
 Object.defineProperty(global, "localStorage", { value: localStorageMock });
 
 if (global.window && !global.window.matchMedia) {
-    global.window.matchMedia = vi.fn().mockImplementation(query => ({
+    global.window.matchMedia = vi.fn().mockImplementation((query) => ({
         matches: false,
         media: query,
         onchange: null,
@@ -80,15 +86,60 @@ if (global.window && !global.window.matchMedia) {
     }));
 }
 
-
-// Establish API mocking before all tests
-beforeAll(() => server.listen({ onUnhandledRequest: "warn" }));
-
-// Reset any request handlers and clear localStorage that we may add during the tests
-afterEach(() => {
-    server.resetHandlers();
-    localStorageMock.clear();
+// MSW server setup
+beforeAll(() => {
+    server.listen({
+        onUnhandledRequest: "warn"
+    });
 });
 
-// Clean up after the tests are finished
-afterAll(() => server.close());
+afterEach(() => {
+    // Reset MSW handlers
+    server.resetHandlers();
+
+    // Clear localStorage state
+    localStorageMock.clear();
+
+    // Clean up React Testing Library
+    cleanup();
+
+    // Reset all mocks and timers
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+
+    // Reset any navigator mocks
+    Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true
+    });
+
+    // Reset document body
+    if (global.document) {
+        document.body.innerHTML = '';
+    }
+});
+
+afterAll(() => {
+    server.close();
+});
+
+// Disable console errors during tests to reduce noise
+const originalConsoleError = console.error;
+console.error = (...args) => {
+    // Filter out expected React errors during testing
+    const isTestingLibraryWarning = args.some(arg =>
+        typeof arg === 'string' &&
+        (arg.includes('Warning: ReactDOM.render') ||
+            arg.includes('Warning: An update to') ||
+            arg.includes('Warning: Can\'t perform a React state update'))
+    );
+
+    if (!isTestingLibraryWarning) {
+        originalConsoleError(...args);
+    }
+};
+
+// Add global helper to identify slow-running tests
+globalThis.__VitestPerformanceMarks = new Map();
+globalThis.__VitestPerformanceMarks = new Map();

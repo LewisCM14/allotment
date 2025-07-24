@@ -22,10 +22,13 @@ const SetNewPassword = React.lazy(
 	() => import("../features/user/forms/SetNewPassword"),
 );
 const BotanicalGroupsPage = React.lazy(
-	() => import("../features/family/pages/BotanicalGroupsPage"),
+	() => import("../features/family/pages/BotanicalGroups"),
 );
 const FamilyInfoPage = React.lazy(
-	() => import("../features/family/pages/FamilyInfoPage"),
+	() => import("../features/family/pages/FamilyInfo"),
+);
+const AllotmentPage = React.lazy(
+	() => import("../features/user/pages/UserAllotmentInfo"),
 );
 
 const AppRoutes = () => {
@@ -97,6 +100,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<FamilyInfoPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/allotment"
+					element={
+						<ProtectedRoute>
+							<AllotmentPage />
 						</ProtectedRoute>
 					}
 				/>

@@ -6,10 +6,11 @@ User Unit of Work
 """
 
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import TYPE_CHECKING, Any, Dict, Optional, Type
 
 import structlog
 from authlib.jose import jwt
+from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -30,11 +31,18 @@ from app.api.middleware.logging_middleware import (
 )
 from app.api.models import User
 from app.api.repositories.user.user_repository import UserRepository
+from app.api.schemas.user.user_allotment_schema import (
+    UserAllotmentCreate,
+    UserAllotmentUpdate,
+)
 from app.api.schemas.user.user_schema import UserCreate
 from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
 )
+
+if TYPE_CHECKING:
+    from app.api.models.user.user_model import UserAllotment
 
 logger = structlog.get_logger()
 
@@ -85,13 +93,27 @@ class UserUnitOfWork:
                 "Transaction rolled back", transaction="rollback", **log_context
             )
         else:
-            with log_timing("db_commit", **log_context):
-                await self.db.commit()
-                logger.debug(
-                    "Transaction committed successfully",
-                    transaction="commit",
-                    **log_context,
+            from sqlalchemy.exc import IntegrityError
+
+            from app.api.middleware.exception_handler import DatabaseIntegrityError
+
+            try:
+                with log_timing("db_commit"):
+                    await self.db.commit()
+                    logger.debug(
+                        "Transaction committed successfully",
+                        transaction="commit",
+                        **log_context,
+                    )
+            except IntegrityError as ie:
+                sanitized_error = sanitize_error_message(str(ie))
+                logger.error(
+                    "Database integrity error during commit",
+                    error=sanitized_error,
+                    error_type="IntegrityError",
+                    exc_info=True,
                 )
+                raise DatabaseIntegrityError(message="User already has an allotment")
 
     @translate_db_exceptions
     async def create_user(self, user_data: UserCreate) -> User:
@@ -176,9 +198,7 @@ class UserUnitOfWork:
             }
 
         log_context["user_id"] = str(user.user_id)
-        log_context["is_verified"] = str(
-            user.is_email_verified
-        )  # Convert boolean to string
+        log_context["is_verified"] = str(user.is_email_verified)
 
         if not user.is_email_verified:
             logger.info(
@@ -212,12 +232,15 @@ class UserUnitOfWork:
             }
 
     @translate_db_exceptions
-    async def reset_password(self, token: str, new_password: str) -> None:
+    async def reset_password(self, token: str, new_password: str) -> User:
         """Reset a user's password with a token.
 
         Args:
             token: The reset token
             new_password: The new password
+
+        Returns:
+            The updated user
 
         Raises:
             InvalidTokenError: If the token is invalid
@@ -254,6 +277,8 @@ class UserUnitOfWork:
         log_context["email"] = user.user_email
         logger.info("Password reset successful", **log_context)
 
+        return user
+
     @translate_token_exceptions
     async def _decode_token(
         self, token: str, log_context: Dict[str, Any]
@@ -276,3 +301,108 @@ class UserUnitOfWork:
             claims_options={"exp": {"essential": True}},
         )
         return dict(decoded)
+
+    @translate_db_exceptions
+    async def create_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentCreate
+    ) -> "UserAllotment":
+        """Create a new allotment for a user."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info(
+            "Creating user allotment via unit of work",
+            operation="create_user_allotment_uow",
+            **log_context,
+        )
+        with log_timing("uow_create_user_allotment", request_id=self.request_id):
+            allotment = await self.user_repo.create_user_allotment(
+                user_id, allotment_data
+            )
+            return allotment
+
+    @translate_db_exceptions
+    async def get_user_allotment(self, user_id: str) -> "UserAllotment":
+        """Fetch a user's allotment by user_id."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info(
+            "Fetching user allotment via unit of work",
+            operation="uow_get_user_allotment",
+            **log_context,
+        )
+        with log_timing("uow_get_user_allotment", request_id=self.request_id):
+            allotment = await self.user_repo.get_user_allotment(user_id)
+            if not allotment:
+                logger.warning("No allotment found", **log_context)
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Allotment not found",
+                )
+            return allotment
+
+    @translate_db_exceptions
+    async def update_user_allotment(
+        self, user_id: str, allotment_data: UserAllotmentUpdate
+    ) -> "UserAllotment":
+        """Update a user's allotment."""
+        log_context = {"user_id": str(user_id), "request_id": self.request_id}
+        logger.info(
+            "Updating user allotment via unit of work",
+            operation="uow_update_user_allotment",
+            **log_context,
+        )
+        with log_timing("uow_update_user_allotment", request_id=self.request_id):
+            allotment = await self.user_repo.update_user_allotment(
+                user_id, allotment_data
+            )
+            return allotment
+
+    @translate_db_exceptions
+    async def register_user(self, user_data: UserCreate) -> User:
+        """Register a new user with email verification."""
+        safe_context = {
+            "email": user_data.user_email,
+            "request_id": self.request_id,
+            "operation": "register_user_uow",
+        }
+
+        logger.info("Registering user via unit of work", **safe_context)
+
+        with log_timing(
+            "register_user_transaction", request_id=safe_context["request_id"]
+        ):
+            try:
+                user = UserFactory.create_user(user_data)
+                created_user = await self.user_repo.create_user(user)
+
+                # Send verification email
+                await send_verification_email(
+                    created_user.user_email, str(created_user.user_id)
+                )
+
+                safe_context["user_id"] = str(created_user.user_id)
+                logger.info(
+                    "User registered and verification email sent", **safe_context
+                )
+
+                return created_user
+            except ValidationError:
+                raise
+            except Exception as exc:
+                logger.error("Error registering user", error=str(exc), **safe_context)
+                raise
+
+    @translate_db_exceptions
+    async def verify_user_email(self, user_id: str) -> User:
+        """Verify a user's email by user ID."""
+        return await self.verify_email(user_id)
+
+    @translate_db_exceptions
+    async def get_user_by_email(self, email: str) -> Optional[User]:
+        """Get a user by email address."""
+        log_context = {
+            "email": email,
+            "request_id": self.request_id,
+            "operation": "get_user_by_email_uow",
+        }
+
+        logger.debug("Getting user by email via unit of work", **log_context)
+        return await self.user_repo.get_user_by_email(email)

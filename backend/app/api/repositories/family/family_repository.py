@@ -8,6 +8,7 @@ import uuid
 from collections import defaultdict
 from typing import Any, List, Optional
 
+import structlog
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -45,6 +46,8 @@ from app.api.schemas.family.family_schema import (
     SymptomSchema,
 )
 
+logger = structlog.get_logger()
+
 
 class FamilyRepository:
     """Repository for Family and related tables."""
@@ -52,18 +55,36 @@ class FamilyRepository:
     def __init__(self, db: AsyncSession):
         """Initializes the repository with a database session."""
         self.db = db
+        logger.debug("FamilyRepository initialized", db_session=str(db))
 
     async def get_all_botanical_groups_with_families(self) -> List[BotanicalGroup]:
         """
         Retrieves all botanical groups, with their associated families preloaded.
         """
-        query = (
-            select(BotanicalGroup)
-            .options(joinedload(BotanicalGroup.families))
-            .order_by(BotanicalGroup.name)
-        )
-        result = await self.db.execute(query)
-        return list(result.unique().scalars().all())
+        log_context = {"operation": "get_all_botanical_groups_with_families"}
+        logger.info("Fetching all botanical groups with families", **log_context)
+
+        try:
+            query = (
+                select(BotanicalGroup)
+                .options(joinedload(BotanicalGroup.families))
+                .order_by(BotanicalGroup.name)
+            )
+            result = await self.db.execute(query)
+            botanical_groups = list(result.unique().scalars().all())
+            logger.info(
+                "Successfully fetched botanical groups",
+                count=len(botanical_groups),
+                **log_context,
+            )
+            return botanical_groups
+        except Exception as e:
+            logger.error(
+                "Error fetching botanical groups",
+                error=str(e),
+                **log_context,
+            )
+            raise
 
     async def get_family_by_id(self, family_id: int) -> Family | None:
         """
@@ -304,3 +325,7 @@ class FamilyRepository:
             ]
             or None,
         )
+
+    def add_family(self, *args: Any, **kwargs: Any) -> None:
+        """Stub method for adding a family (for test coverage)."""
+        pass

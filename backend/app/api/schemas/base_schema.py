@@ -4,7 +4,7 @@ Base Schema
 - Includes security features for safe logging
 """
 
-from typing import Any, Dict, Mapping  # Import Mapping for type annotations
+from typing import Any, Dict, Mapping
 
 import structlog
 from pydantic import BaseModel, model_validator

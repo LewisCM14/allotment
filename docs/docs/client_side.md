@@ -306,11 +306,10 @@ There are several aspects to consider when deciding on the appropriate technolog
                 - Contains components that dictate page layouts.
                 - Contains UI components to use as interface building blocks.
             /features
-                - The frontend applications interfaces and the services that serve them.
+                - The frontend applications interfaces logic and the services that serve them.
                 - Related test files.
             /mocks
-                - handlers.ts
-                - server.ts
+                - Files that support the Frontend test harness
             /routes
                 - AppRoutes.tsx
                 - ProtectedRoute.tsx
@@ -319,6 +318,7 @@ There are several aspects to consider when deciding on the appropriate technolog
                 - api.ts
                 - apiCache.ts
                 - apiConfig.ts
+                - apiService.ts
                 - errorMonitoring.ts
             /store
                 /auth
@@ -336,10 +336,12 @@ There are several aspects to consider when deciding on the appropriate technolog
             - global.css
             - main.tsc
             - ServiceWorker.ts
-            - setupTests.ts
+            - test-utils.tsx
             - vite-env.d.ts
         - .env
+        - components.json
         - index.html
+        - nginx.conf
         - package-lock.json
         - package.json
         - tsconfig.app.json

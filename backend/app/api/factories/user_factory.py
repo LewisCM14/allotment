@@ -206,3 +206,18 @@ class UserFactory:
             )
 
         logger.debug("Password validation passed", **context)
+
+
+def create_user(email: str, password: str) -> User:
+    """Test helper: create a User with just email and password."""
+    from app.api.schemas.user.user_schema import UserCreate
+
+    user_data = UserCreate(
+        user_email=email,
+        user_password=password,
+        user_first_name="Test",
+        user_country_code="GB",
+    )
+    user = UserFactory.create_user(user_data)
+    setattr(user, "email", user.user_email)
+    return user
