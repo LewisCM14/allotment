@@ -45,6 +45,7 @@
 | Client | NPM | 10.9.2 | Package manager for Node.js and JavaScript libraries. | Artistic License 2.0 |
 | Client | Node | 22.14.0 | JavaScript runtime environment for frontend build tools and scripts. | MIT |
 | Client | @hookform/resolvers | 4.1.3 | Resolvers for React Hook Form to integrate with validation libraries (e.g., Zod). | MIT |
+| Client | @radix-ui/react-accordion | 1.2.11 | Unstyled, accessible accordion component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-dialog | 1.1.6 | Unstyled, accessible dialog component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-label | 2.1.2 | Unstyled, accessible label component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-popover | 1.1.6 | Unstyled, accessible popover component for React (Radix UI). | MIT |
