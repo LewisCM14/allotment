@@ -2,6 +2,7 @@ import pytest
 from sqlalchemy import text
 
 from app.api.core import database
+from tests.conftest import TestingSessionLocal
 
 
 class TestDatabaseIntegration:
@@ -22,6 +23,7 @@ class TestDatabaseIntegration:
     async def test_db_event_handlers(self, monkeypatch):
         monkeypatch.setattr(database.logger, "debug", lambda *a, **k: None)
         monkeypatch.setattr(database.logger, "warning", lambda *a, **k: None)
-        async with database.AsyncSessionLocal() as session:
+
+        async with TestingSessionLocal() as session:
             result = await session.execute(text("SELECT 1"))
             assert result is not None
