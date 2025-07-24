@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import os from 'node:os';
 
 export default defineConfig({
     resolve: {
@@ -12,6 +13,32 @@ export default defineConfig({
         globals: true,
         setupFiles: [path.resolve(__dirname, "vitest.setup.ts")],
         testTimeout: 15000, // Increased global timeout to 15 seconds
+
+        // Enable parallel test execution with threads
+        pool: 'threads',
+        poolOptions: {
+            threads: {
+                minThreads: 2,
+                maxThreads: Math.max(2, Math.floor(os.cpus().length * 0.75)),
+            }
+        },
+        isolate: true, // Isolate each test file in its own thread
+
+        // Additional performance settings
+        maxConcurrency: 10, // Maximum concurrent tests per worker
+        sequence: {
+            shuffle: true, // Randomize test order to identify interference issues
+        },
+
+        // Show slow tests in output for performance debugging
+        slowTestThreshold: 2000, // Flag tests taking longer than 2 seconds
+
+        // Generate HTML report
+        reporters: ['default', 'html'],
+        outputFile: {
+            html: './coverage/html-report/index.html'
+        },
+
         coverage: {
             provider: "v8",
             reporter: ["text", "json", "html", "lcov"],
@@ -35,7 +62,7 @@ export default defineConfig({
                 "src/assets/**", // Static assets
                 "src/store/**/AuthContext.tsx", // Auth context only
                 "src/store/**/ThemeContext.tsx", // Theme context only
-                "src/features/**/hooks/**", // Custom hooks (optional, review)
+                "src/features/**/hooks/**", // Custom hooks
             ],
             include: [
                 "src/**/*.{ts,tsx}"

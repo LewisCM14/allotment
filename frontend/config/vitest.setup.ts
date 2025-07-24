@@ -2,6 +2,7 @@
 import { beforeAll, afterAll, afterEach, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { server } from "../src/mocks/server";
+import { cleanup } from "@testing-library/react";
 
 // Polyfill for IE event methods that React might try to use
 if (typeof HTMLElement !== "undefined") {
@@ -35,7 +36,6 @@ vi.stubGlobal("import.meta", {
     env: {
         VITE_API_URL: "http://localhost:8000",
         VITE_API_VERSION: "/api/v1",
-        // Add other VITE_ variables your app might need at build time or as a fallback
     },
 });
 
@@ -88,14 +88,58 @@ if (global.window && !global.window.matchMedia) {
 
 // MSW server setup
 beforeAll(() => {
-    server.listen({ onUnhandledRequest: "warn" });
+    server.listen({
+        onUnhandledRequest: "warn"
+    });
 });
 
 afterEach(() => {
+    // Reset MSW handlers
     server.resetHandlers();
+
+    // Clear localStorage state
     localStorageMock.clear();
+
+    // Clean up React Testing Library
+    cleanup();
+
+    // Reset all mocks and timers
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+
+    // Reset any navigator mocks
+    Object.defineProperty(navigator, "onLine", {
+        value: true,
+        configurable: true
+    });
+
+    // Reset document body
+    if (global.document) {
+        document.body.innerHTML = '';
+    }
 });
 
 afterAll(() => {
     server.close();
 });
+
+// Disable console errors during tests to reduce noise
+const originalConsoleError = console.error;
+console.error = (...args) => {
+    // Filter out expected React errors during testing
+    const isTestingLibraryWarning = args.some(arg =>
+        typeof arg === 'string' &&
+        (arg.includes('Warning: ReactDOM.render') ||
+            arg.includes('Warning: An update to') ||
+            arg.includes('Warning: Can\'t perform a React state update'))
+    );
+
+    if (!isTestingLibraryWarning) {
+        originalConsoleError(...args);
+    }
+};
+
+// Add global helper to identify slow-running tests
+globalThis.__VitestPerformanceMarks = new Map();
+globalThis.__VitestPerformanceMarks = new Map();
