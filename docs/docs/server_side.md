@@ -41,6 +41,12 @@ All while delivering a fast and seamless "request - response" experience to many
 === "User Allotment"
     Ability for users to create an associated allotment. The details required for this allotment include a zip or postal code along with a width and length measurement. These fields must be editable by the associated user and thus must also be readable.
 
+=== "User Preferences"
+    Ability for users to set and update their nominated day for each type of plant feed available within the system.
+
+=== "User Notifications"
+    Ability for users to set and update their notifications preferences.
+
 ???+ tip "Future Improvement"
     The ability for users to be able to trigger a cascading delete of all their related data is desirable but currently not a strict requirement as this can be done manually. The effected tables are: user, user active varieties, user feed day, variety water day and the user allotment table.
 
@@ -168,7 +174,7 @@ A Repository class is created for each aggregate or related table group.
 
         **User Repository** 
 
-        - To encapsulate the: User, User Allotment, User Feed Day and User Active Varieties tables.
+        - To encapsulate the: User, User Allotment, User Feed Day, User Notifications and User Active Varieties tables.
 
     === "Family"
 
@@ -220,38 +226,28 @@ Unit of Work classes are created to manage transactions and ensure multiple data
 !!! example "_The systems classes include:_"
     
     === "User Management"
-
-        **User**
         
         - For handling the creation of users.
 
-        **User Allotment**
-
         - For creating and managing user allotments.
+
+        - For setting nominated feed days.
+
+        - For setting notification preferences.
 
     === "Grow Guide Management"
 
-        **Grow Guide**
-
         - For CRUD operations on grow guides.
-    
-        **Guide Publishing**
 
         -  For handling public/private status and copying guides.
     
     === "ToDo Management"   
-
-        **User Weekly ToDo**
     
         - For weekly tasks (coordinating Day, Week, Variety, and User repositories).
-        
-        **User Monthly ToDo**
         
         - For monthly tasks (coordinating Month, Variety, User, and Seasonal repositories).
 
     === "Family Information"
-
-        **Family Page**
             
         - For family information pages (coordinating Family, Disease, Pest, Intervention, Antagonist & Companion Family repositories).
 
@@ -276,8 +272,6 @@ The Factory pattern is used to simplify the creation of complex domain objects w
     === "User"
         
         - User Factory
-        
-        - User Allotment Factory
     
     === "Grow Guide"
         

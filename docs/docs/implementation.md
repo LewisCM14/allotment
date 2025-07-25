@@ -103,9 +103,6 @@ The application is designed to be implemented following the Walking Skeleton app
 1. **User Profile Interface**
 
 1. **User Notification Interface**
-    
-    ??? info
-        This will require a database migration in order to store a users notification preference.
 
 1. **Public Grow Guides** 
 
