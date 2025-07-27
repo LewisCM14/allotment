@@ -7,11 +7,21 @@ User Models
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from typing import Any, Optional
 
 import bcrypt
 import structlog
-from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, String, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -44,6 +54,12 @@ class User(Base):
     user_country_code: Mapped[str] = mapped_column(String(2), nullable=False)
     is_email_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
+    )
+    registered_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_active_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
     allotment: Mapped[Optional["UserAllotment"]] = relationship(

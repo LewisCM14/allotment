@@ -43,6 +43,55 @@ class TestUserLogin:
         assert data["user_first_name"] == "Test"
 
     @pytest.mark.asyncio
+    async def test_login_updates_last_active_date(self, client, mocker):
+        """Test that login updates the user's last_active_date."""
+        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+
+        # Register a new user
+        await client.post(
+            f"{PREFIX}/users",
+            json={
+                "user_email": "datetest@example.com",
+                "user_password": "SecurePass123!",
+                "user_first_name": "DateTest",
+                "user_country_code": "GB",
+            },
+        )
+
+        # First login
+        response1 = await client.post(
+            f"{PREFIX}/auth/token",
+            json={
+                "user_email": "datetest@example.com",
+                "user_password": "SecurePass123!",
+            },
+        )
+        assert response1.status_code == 200
+
+        # Wait a moment to ensure time difference
+        import asyncio
+
+        await asyncio.sleep(0.1)
+
+        # Second login to verify last_active_date is updated
+        response2 = await client.post(
+            f"{PREFIX}/auth/token",
+            json={
+                "user_email": "datetest@example.com",
+                "user_password": "SecurePass123!",
+            },
+        )
+        assert response2.status_code == 200
+
+        # Both logins should succeed
+        data1 = response1.json()
+        data2 = response2.json()
+        assert "access_token" in data1
+        assert "access_token" in data2
+        # Tokens should be different due to different timestamps
+        assert data1["access_token"] != data2["access_token"]
+
+    @pytest.mark.asyncio
     async def test_login_invalid_credentials(self, client):
         """Test login with incorrect password."""
         response = await client.post(

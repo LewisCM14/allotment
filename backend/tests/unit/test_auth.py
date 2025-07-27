@@ -152,6 +152,8 @@ class TestUserAuthentication:
 
         mock_db = MagicMock()
         mock_db.execute = AsyncMock(return_value=MockResult())
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
 
         result = await authenticate_user(
             mock_db, "user@example.com", "correct_password"
@@ -159,6 +161,47 @@ class TestUserAuthentication:
 
         assert result is mock_user
         mock_db.execute.assert_called_once()
+        mock_db.commit.assert_called_once()
+        mock_db.refresh.assert_called_once_with(mock_user)
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_updates_last_active_date(self):
+        """Test that successful authentication updates last_active_date."""
+        from datetime import datetime, timezone
+
+        mock_user = MagicMock(spec=User)
+        mock_user.user_password_hash = bcrypt.hashpw(
+            "correct_password".encode("utf-8"), bcrypt.gensalt()
+        ).decode("utf-8")
+        mock_user.user_id = uuid.uuid4()
+
+        # Set initial last_active_date to a past time
+        old_date = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        mock_user.last_active_date = old_date
+
+        # Mock async SQLAlchemy result
+        class MockResult:
+            def scalar_one_or_none(self):
+                return mock_user
+
+        mock_db = MagicMock()
+        mock_db.execute = AsyncMock(return_value=MockResult())
+        mock_db.commit = AsyncMock()
+        mock_db.refresh = AsyncMock()
+
+        # Store the current time before authentication
+        before_auth = datetime.now(timezone.utc)
+
+        result = await authenticate_user(
+            mock_db, "user@example.com", "correct_password"
+        )
+
+        assert result is mock_user
+        # Verify that last_active_date was updated
+        assert mock_user.last_active_date > old_date
+        assert mock_user.last_active_date >= before_auth
+        mock_db.commit.assert_called_once()
+        mock_db.refresh.assert_called_once_with(mock_user)
 
     @pytest.mark.asyncio
     async def test_authenticate_user_wrong_password(self):

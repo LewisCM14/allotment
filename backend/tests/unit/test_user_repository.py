@@ -30,6 +30,8 @@ class TestUserRepository:
     @pytest.fixture
     def sample_user(self):
         """Create a sample user."""
+        from datetime import datetime, timezone
+
         user = User()
         user.user_id = uuid.uuid4()
         user.user_email = "test@example.com"
@@ -37,6 +39,8 @@ class TestUserRepository:
         user.user_first_name = "Test"
         user.user_country_code = "US"
         user.is_email_verified = False
+        user.registered_date = datetime.now(timezone.utc)
+        user.last_active_date = datetime.now(timezone.utc)
         return user
 
     @pytest.fixture
@@ -63,6 +67,30 @@ class TestUserRepository:
 
         assert result == sample_user
         mock_db.add.assert_called_once_with(sample_user)
+
+    @pytest.mark.asyncio
+    async def test_create_user_with_datetime_fields(self, user_repository, mock_db):
+        """Test creating a user with datetime fields."""
+        from datetime import datetime, timezone
+
+        user = User(
+            user_email="datetime@example.com",
+            user_password_hash="hashed_password",
+            user_first_name="DateTime",
+            user_country_code="US",
+        )
+
+        # Set datetime fields
+        now = datetime.now(timezone.utc)
+        user.registered_date = now
+        user.last_active_date = now
+
+        result = await user_repository.create_user(user)
+
+        assert result == user
+        assert result.registered_date == now
+        assert result.last_active_date == now
+        mock_db.add.assert_called_once_with(user)
 
     @pytest.mark.asyncio
     async def test_verify_email_success(self, user_repository, mock_db, sample_user):

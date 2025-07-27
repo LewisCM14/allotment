@@ -149,6 +149,11 @@ async def authenticate_user(
             return None
 
         if verify_password(password, user.user_password_hash):
+            # Update last_active_date on successful login
+            user.last_active_date = datetime.now(UTC)
+            await db.commit()
+            await db.refresh(user)
+
             logger.info("User authenticated successfully", user_id=str(user.user_id))
             return user
 

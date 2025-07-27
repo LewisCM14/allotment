@@ -9,6 +9,27 @@ class TestUserFactory:
         assert user.email == "test@example.com"
         assert hasattr(user, "id")
 
+    def test_create_user_has_datetime_fields(self):
+        """Test that created users have datetime fields."""
+        from app.api.schemas.user.user_schema import UserCreate
+
+        user_data = UserCreate(
+            user_email="datetime@example.com",
+            user_password="Passw0rd!",
+            user_first_name="DateTime",
+            user_country_code="GB",
+        )
+
+        user = user_factory.UserFactory.create_user(user_data)
+
+        # Verify the user model has datetime fields
+        assert hasattr(user, "registered_date")
+        assert hasattr(user, "last_active_date")
+
+        # These fields should be None initially (set by database defaults)
+        assert user.registered_date is None
+        assert user.last_active_date is None
+
     def test_first_name_too_short(self):
         with pytest.raises(user_factory.UserFactoryValidationError) as exc:
             user_factory.UserFactory.validate_first_name("A")
