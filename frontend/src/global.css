@@ -1,5 +1,34 @@
 @import "tailwindcss";
 
+/* Viewport height fallback for better mobile browser compatibility */
+:root {
+	/* Dynamic viewport height - adjusts to browser UI */
+	--vh-dynamic: 100dvh;
+	/* Small viewport height - excludes browser UI */
+	--vh-small: 100svh;
+	/* Fallback for older browsers */
+	--vh-fallback: 100vh;
+	/* Custom property that will be set by JavaScript for precise control */
+	--vh: 1vh;
+}
+
+/* Support for older browsers that don't support dvh/svh */
+@supports not (height: 100dvh) {
+	:root {
+		--vh-dynamic: 100vh;
+		--vh-small: 100vh;
+	}
+}
+
+/* Mobile Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+	/* This targets WebKit browsers (Safari) */
+	.mobile-vh-fix {
+		height: calc(var(--vh, 1vh) * 100);
+		min-height: calc(var(--vh, 1vh) * 100);
+	}
+}
+
 @font-face {
 	font-family: "Oswald";
 	font-style: normal;
