@@ -21,7 +21,7 @@ import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
 import { loginUser } from "../services/UserService";
 
-function LoginForm(_: React.ComponentProps<"div">) {
+function LoginForm() {
 	const {
 		register,
 		handleSubmit,

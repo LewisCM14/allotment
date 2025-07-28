@@ -1,4 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import RegisterForm from "./RegisterForm";
+import * as AuthContext from "@/store/auth/AuthContext";
+import * as UserService from "../services/UserService";
+import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+// Mock useAuth
+vi.mock("@/store/auth/AuthContext");
+// Mock registerUser
+vi.mock("../services/UserService");
+
 // Helper to select the first non-empty country option
 async function selectFirstCountry() {
 	const countrySelect = screen.queryByLabelText(/country/i);
@@ -30,23 +43,25 @@ async function findTextContentMatch(
 	}
 	throw new Error(`Text not found: ${matcher.toString()}`);
 }
-import userEvent from "@testing-library/user-event";
-import RegisterForm from "./RegisterForm";
-import * as AuthContext from "@/store/auth/AuthContext";
-import * as UserService from "../services/UserService";
-import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
-import { MemoryRouter } from "react-router-dom";
-
-// Mock useAuth
-vi.mock("@/store/auth/AuthContext");
-// Mock registerUser
-vi.mock("../services/UserService");
 
 function renderForm() {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: {
+				retry: false,
+			},
+			mutations: {
+				retry: false,
+			},
+		},
+	});
+
 	return render(
-		<MemoryRouter>
-			<RegisterForm />
-		</MemoryRouter>,
+		<QueryClientProvider client={queryClient}>
+			<MemoryRouter>
+				<RegisterForm />
+			</MemoryRouter>
+		</QueryClientProvider>,
 	);
 }
 

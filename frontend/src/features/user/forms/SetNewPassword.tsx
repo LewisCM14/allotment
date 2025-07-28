@@ -22,7 +22,7 @@ import {
 } from "./SetNewPasswordSchema";
 import { AUTH_ERRORS, resetPassword } from "../services/UserService";
 
-export default function SetNewPassword(_: React.ComponentProps<"div">) {
+export default function SetNewPassword() {
 	const [searchParams] = useSearchParams();
 	const token = searchParams.get("token");
 	const navigate = useNavigate();

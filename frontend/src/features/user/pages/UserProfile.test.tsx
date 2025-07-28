@@ -75,12 +75,15 @@ describe("UserProfile", () => {
 
 		renderPage();
 
-		// Use waitFor to handle React Query loading
-		await waitFor(() => {
-			expect(
-				screen.getByRole("button", { name: /refresh status/i }),
-			).toBeInTheDocument();
-		});
+		// Wait for the query to finish loading, then check for the refresh button
+		await waitFor(
+			() => {
+				expect(
+					screen.getByRole("button", { name: /refresh status/i }),
+				).toBeInTheDocument();
+			},
+			{ timeout: 3000 },
+		);
 	});
 
 	it("can interact with buttons without errors", async () => {

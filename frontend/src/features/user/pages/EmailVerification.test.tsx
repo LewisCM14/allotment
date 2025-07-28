@@ -118,10 +118,12 @@ describe("EmailVerificationPage", () => {
 		await waitFor(
 			() => {
 				expect(
-					screen.getByRole("link", { name: /request new verification link/i }),
+					screen.getByRole("button", {
+						name: /request new verification link/i,
+					}),
 				).toBeInTheDocument();
 				expect(
-					screen.getByRole("link", { name: /return to home/i }),
+					screen.getByRole("button", { name: /return to home/i }),
 				).toBeInTheDocument();
 			},
 			{ container },
