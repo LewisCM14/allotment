@@ -1,6 +1,7 @@
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { formatError } from "@/utils/errorUtils";
 import api, { handleApiError } from "../../../services/api";
+import axios from "axios";
 
 export const AUTH_ERRORS = {
 	// Login specific errors
@@ -37,6 +38,14 @@ export const AUTH_ERRORS = {
 	// Use the common error formatter
 	format: formatError,
 };
+
+// Custom error for when no allotment exists (404)
+export class NoAllotmentFoundError extends Error {
+	constructor(message = "No allotment found") {
+		super(message);
+		this.name = "NoAllotmentFoundError";
+	}
+}
 
 export interface IRegisterRequest {
 	user_email: string;
@@ -246,10 +255,23 @@ export const createUserAllotment = async (
 
 export const getUserAllotment = async (): Promise<IAllotmentResponse> => {
 	try {
-		const response =
-			await api.cachedGet<IAllotmentResponse>("/users/allotment");
-		return response;
+		// Use regular GET instead of cached GET since React Query handles caching
+		const response = await api.get<IAllotmentResponse>("/users/allotment");
+		return response.data;
 	} catch (error: unknown) {
+		if (axios.isAxiosError(error)) {
+			if (!error.response) {
+				return handleApiError(
+					error,
+					"Failed to fetch allotment. Please try again.",
+				);
+			}
+
+			if (error.response.status === 404) {
+				throw new NoAllotmentFoundError("No allotment found for this user");
+			}
+		}
+
 		return handleApiError(
 			error,
 			"Failed to fetch allotment. Please try again.",

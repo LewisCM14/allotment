@@ -113,6 +113,22 @@ const handleOnlineStatus = () => {
 
 const handleRequestCancellation = (config: AxiosRequestConfig) => {
 	if (!config.url) return;
+
+	// Only cancel requests for certain endpoints that support cancellation
+	const cancelableEndpoints = [
+		"/search", // Search queries can be safely canceled
+		"/autocomplete", // Autocomplete can be safely canceled
+		// Add other endpoints that benefit from cancellation
+	];
+
+	const shouldCancelDuplicates = cancelableEndpoints.some((endpoint) =>
+		config.url?.includes(endpoint),
+	);
+
+	if (!shouldCancelDuplicates) {
+		return; // Don't cancel for most endpoints
+	}
+
 	const requestKey = config.url + JSON.stringify(config.params ?? {});
 
 	if (pendingRequests.has(requestKey)) {

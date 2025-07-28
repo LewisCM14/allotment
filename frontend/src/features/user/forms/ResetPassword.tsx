@@ -72,7 +72,6 @@ export default function ResetPassword() {
 			} else {
 				setError("An unexpected error occurred. Please try again.");
 			}
-			console.error("Password reset request failed", err);
 		}
 	};
 

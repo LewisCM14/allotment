@@ -14,7 +14,7 @@ export function useLogout() {
 			queryClient.clear();
 			navigate("/login");
 		} catch (error) {
-			console.error("Error during logout:", error);
+			// Always proceed with logout even if server request fails
 			queryClient.clear();
 			navigate("/login");
 		}

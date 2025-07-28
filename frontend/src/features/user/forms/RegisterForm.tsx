@@ -80,7 +80,6 @@ export default function RegisterForm(_: React.ComponentProps<"div">) {
 		} catch (err: unknown) {
 			const errorMessage = AUTH_ERRORS.format(err);
 			setError(errorMessage);
-			console.error("Registration failed:", err);
 		}
 	};
 

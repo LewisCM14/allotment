@@ -52,17 +52,17 @@ export async function getBotanicalGroups(
 	signal?: AbortSignal,
 ): Promise<IBotanicalGroup[]> {
 	try {
-		const response = await api.cachedGet<IBotanicalGroup[]>(
+		const response = await api.get<IBotanicalGroup[]>(
 			"/families/botanical-groups/",
 			{ signal },
 		);
 
 		// Handle null or malformed response
-		if (!Array.isArray(response)) {
+		if (!Array.isArray(response.data)) {
 			return [];
 		}
 
-		return response.map((group) => ({
+		return response.data.map((group) => ({
 			...group,
 			recommended_rotation_years: group.recommended_rotation_years ?? null,
 		}));
@@ -80,11 +80,10 @@ export async function getFamilyInfo(
 	signal?: AbortSignal,
 ): Promise<IFamilyInfo> {
 	try {
-		const data = await api.cachedGet<IFamilyInfo>(
-			`/families/${familyId}/info`,
-			{ signal },
-		);
-		return data;
+		const response = await api.get<IFamilyInfo>(`/families/${familyId}/info`, {
+			signal,
+		});
+		return response.data;
 	} catch (error: unknown) {
 		if (axios.isCancel(error)) throw error;
 		return handleApiError(error, FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);

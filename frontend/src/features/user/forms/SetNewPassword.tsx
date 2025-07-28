@@ -99,7 +99,6 @@ export default function SetNewPassword(_: React.ComponentProps<"div">) {
 			navigate("/login");
 		} catch (error) {
 			setError(AUTH_ERRORS.format(error));
-			console.error("Password reset failed", error);
 		}
 	};
 

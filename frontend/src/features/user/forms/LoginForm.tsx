@@ -73,7 +73,6 @@ function LoginForm(_: React.ComponentProps<"div">) {
 			await login(result.tokens, result.firstName, userData);
 			navigate("/");
 		} catch (err: unknown) {
-			console.error("Login failed (raw error):", err);
 			if (err instanceof Error) {
 				setError(err.message);
 			} else {
