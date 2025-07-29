@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	checkEmailVerificationStatus,
 	requestVerificationEmail,
-	type IUserData,
 } from "../services/UserService";
 
 // Query key factory for user profile queries
@@ -17,7 +16,7 @@ export const userProfileKeys = {
  */
 export const useEmailVerificationStatus = (email?: string) => {
 	return useQuery({
-		queryKey: userProfileKeys.verification(email || ""),
+		queryKey: userProfileKeys.verification(email ?? ""),
 		queryFn: () => {
 			if (!email) throw new Error("Email is required");
 			return checkEmailVerificationStatus(email);
@@ -43,8 +42,6 @@ export const useEmailVerificationStatus = (email?: string) => {
  * Hook to request email verification with optimistic updates
  */
 export const useRequestEmailVerification = () => {
-	const queryClient = useQueryClient();
-
 	return useMutation({
 		mutationFn: requestVerificationEmail,
 		onSuccess: (data, email) => {

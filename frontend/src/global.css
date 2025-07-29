@@ -10,6 +10,86 @@
 	--vh-fallback: 100vh;
 	/* Custom property that will be set by JavaScript for precise control */
 	--vh: 1vh;
+
+	/* Font families */
+	--font-heading: "Oswald", "Georgia", sans-serif;
+	--font-body: "Noto Sans", "Verdana", sans-serif;
+	--radius: 0.625rem;
+
+	/* main page/component background */
+	--background: oklch(95.63% 0.016 114.38);
+	/* text color over background/main body  */
+	--foreground: oklch(0% 0 0);
+
+	/* card component background */
+	--card: oklch(100% 0 0);
+	/* text over card component */
+	--card-foreground: oklch(0% 0 0);
+
+	/* popover/dropdown background - used for floating menus, tooltips, and select dropdowns */
+	--popover: oklch(60.91% 0.0657 115.43);
+	/* text and icons over popover/dropdown elements */
+	--popover-foreground: oklch(0% 0 0);
+
+	/* primary action buttons, active states, and key UI elements */
+	--primary: oklch(48.56% 0.133153 150.185);
+	/* text and icons on primary-colored elements */
+	--primary-foreground: oklch(0% 0 0);
+
+	/* secondary components background */
+	--secondary: oklch(100% 0 0);
+	/* text over secondary background */
+	--secondary-foreground: oklch(0% 0 0);
+
+	/* subtle backgrounds, disabled states, and secondary UI elements */
+	--muted: oklch(54.7% 0.1381 245.15);
+	/* subdued text, helper text, and placeholders */
+	--muted-foreground: oklch(0% 0 0);
+
+	/* accent background */
+	--accent: oklch(60.91% 0.0657 115.43);
+	/* text over accent background */
+	--accent-foreground: oklch(0% 0 0);
+
+	/* error/delete buttons */
+	--destructive: oklch(52.2% 0.1777 22.14);
+	/* input elements */
+	--input: oklch(51.11% 0.116394 159.5934);
+	/* focus state highlights and interactive element outlines */
+	--ring: oklch(51.11% 0.116394 159.5934);
+
+	/* general border colors for dividers, outlines, and separators */
+	--border: oklch(0% 0 0);
+
+	/* interactive text elements */
+	--interactive-foreground: oklch(25% 0.08 150);
+
+	/* sidebar background */
+	--sidebar: oklch(100% 0 0);
+	/* text over sidebar */
+	--sidebar-foreground: oklch(0% 0 0);
+
+	/* sidebar primary background */
+	--sidebar-primary: oklch(48.56% 0.133153 150.185);
+	/* text over sidebar */
+	--sidebar-primary-foreground: oklch(0% 0 0);
+
+	/* sidebar accent background */
+	--sidebar-accent: oklch(60.91% 0.0657 115.43);
+	/* text over sidebar accent */
+	--sidebar-accent-foreground: oklch(0% 0 0);
+
+	/* sidebar border */
+	--sidebar-border: oklch(0% 0 0);
+	/* sidebar active */
+	--sidebar-ring: oklch(51.11% 0.116394 159.5934);
+
+	/* chart/graph backgrounds */
+	--chart-1: oklch(0.646 0.222 41.116);
+	--chart-2: oklch(0.6 0.118 184.704);
+	--chart-3: oklch(0.398 0.07 227.392);
+	--chart-4: oklch(0.828 0.189 84.429);
+	--chart-5: oklch(0.769 0.188 70.08);
 }
 
 /* Support for older browsers that don't support dvh/svh */
@@ -94,87 +174,6 @@
 }
 
 @custom-variant dark (&:is(.dark *));
-
-:root {
-	--font-heading: "Oswald", "Georgia", sans-serif;
-	--font-body: "Noto Sans", "Verdana", sans-serif;
-	--radius: 0.625rem;
-
-	/* main page/component background */
-	--background: oklch(95.63% 0.016 114.38);
-	/* text color over background/main body  */
-	--foreground: oklch(0% 0 0);
-
-	/* card component background */
-	--card: oklch(100% 0 0);
-	/* text over card component */
-	--card-foreground: oklch(0% 0 0);
-
-	/* popover/dropdown background - used for floating menus, tooltips, and select dropdowns */
-	--popover: oklch(60.91% 0.0657 115.43);
-	/* text and icons over popover/dropdown elements */
-	--popover-foreground: oklch(0% 0 0);
-
-	/* primary action buttons, active states, and key UI elements */
-	--primary: oklch(48.56% 0.133153 150.185);
-	/* text and icons on primary-colored elements */
-	--primary-foreground: oklch(0% 0 0);
-
-	/* secondary components background */
-	--secondary: oklch(100% 0 0);
-	/* text over secondary background */
-	--secondary-foreground: oklch(0% 0 0);
-
-	/* subtle backgrounds, disabled states, and secondary UI elements */
-	--muted: oklch(54.7% 0.1381 245.15);
-	/* subdued text, helper text, and placeholders */
-	--muted-foreground: oklch(0% 0 0);
-
-	/* accent background */
-	--accent: oklch(60.91% 0.0657 115.43);
-	/* text over accent background */
-	--accent-foreground: oklch(0% 0 0);
-
-	/* error/delete buttons */
-	--destructive: oklch(52.2% 0.1777 22.14);
-	/* input elements */
-	--input: oklch(51.11% 0.116394 159.5934);
-	/* focus state highlights and interactive element outlines */
-	--ring: oklch(51.11% 0.116394 159.5934);
-
-	/* general border colors for dividers, outlines, and separators */
-	--border: oklch(0% 0 0);
-
-	/* interactive text elements */
-	--interactive-foreground: oklch(25% 0.08 150);
-
-	/* sidebar background */
-	--sidebar: oklch(100% 0 0);
-	/* text over sidebar */
-	--sidebar-foreground: oklch(0% 0 0);
-
-	/* sidebar primary background */
-	--sidebar-primary: oklch(48.56% 0.133153 150.185);
-	/* text over sidebar */
-	--sidebar-primary-foreground: oklch(0% 0 0);
-
-	/* sidebar accent background */
-	--sidebar-accent: oklch(60.91% 0.0657 115.43);
-	/* text over sidebar accent */
-	--sidebar-accent-foreground: oklch(0% 0 0);
-
-	/* sidebar border */
-	--sidebar-border: oklch(0% 0 0);
-	/* sidebar active */
-	--sidebar-ring: oklch(51.11% 0.116394 159.5934);
-
-	/* chart/graph backgrounds */
-	--chart-1: oklch(0.646 0.222 41.116);
-	--chart-2: oklch(0.6 0.118 184.704);
-	--chart-3: oklch(0.398 0.07 227.392);
-	--chart-4: oklch(0.828 0.189 84.429);
-	--chart-5: oklch(0.769 0.188 70.08);
-}
 
 .dark {
 	/* main page/component background */

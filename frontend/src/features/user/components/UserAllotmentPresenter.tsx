@@ -19,18 +19,18 @@ import type {
 import type { AllotmentFormData } from "../forms/AllotmentSchema";
 
 interface UserAllotmentPresenterProps {
-	register: UseFormRegister<AllotmentFormData>;
-	handleSubmit: UseFormHandleSubmit<AllotmentFormData>;
-	errors: FieldErrors<AllotmentFormData>;
-	currentArea: number;
-	error: string;
-	isOffline: boolean;
-	isLoading: boolean;
-	isSubmitting: boolean;
-	isMutating: boolean;
-	isUpdate: boolean;
-	buttonText: string;
-	onSubmit: (data: AllotmentFormData) => Promise<void>;
+	readonly register: UseFormRegister<AllotmentFormData>;
+	readonly handleSubmit: UseFormHandleSubmit<AllotmentFormData>;
+	readonly errors: FieldErrors<AllotmentFormData>;
+	readonly currentArea: number;
+	readonly error: string;
+	readonly isOffline: boolean;
+	readonly isLoading: boolean;
+	readonly isSubmitting: boolean;
+	readonly isMutating: boolean;
+	readonly isUpdate: boolean;
+	readonly buttonText: string;
+	readonly onSubmit: (data: AllotmentFormData) => Promise<void>;
 }
 
 export default function UserAllotmentPresenter({

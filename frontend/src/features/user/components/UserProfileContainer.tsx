@@ -19,7 +19,6 @@ export default function UserProfileContainer() {
 		data: verificationData,
 		isLoading: isCheckingStatus,
 		error: verificationError,
-		refetch,
 	} = useEmailVerificationStatus(user?.user_email);
 
 	const requestVerificationMutation = useRequestEmailVerification();
@@ -106,8 +105,8 @@ export default function UserProfileContainer() {
 	const isRefreshing = refreshStatusMutation.isPending || isCheckingStatus;
 
 	const error =
-		verificationError?.message ||
-		requestVerificationMutation.error?.message ||
+		verificationError?.message ??
+		requestVerificationMutation.error?.message ??
 		refreshStatusMutation.error?.message;
 
 	return (

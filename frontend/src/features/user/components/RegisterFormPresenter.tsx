@@ -22,20 +22,20 @@ import { Link } from "react-router-dom";
 import type { RegisterFormData } from "../forms/RegisterSchema";
 
 interface RegisterFormPresenterProps {
-	register: UseFormRegister<RegisterFormData>;
-	handleSubmit: UseFormHandleSubmit<RegisterFormData>;
-	control: Control<RegisterFormData>;
-	errors: FieldErrors<RegisterFormData>;
-	error: string;
-	isOffline: boolean;
-	isSubmitting: boolean;
-	isMutating: boolean;
-	showPassword: boolean;
-	showConfirmPassword: boolean;
-	buttonText: string;
-	onSubmit: (data: RegisterFormData) => Promise<void>;
-	onTogglePasswordVisibility: () => void;
-	onToggleConfirmPasswordVisibility: () => void;
+	readonly register: UseFormRegister<RegisterFormData>;
+	readonly handleSubmit: UseFormHandleSubmit<RegisterFormData>;
+	readonly control: Control<RegisterFormData>;
+	readonly errors: FieldErrors<RegisterFormData>;
+	readonly error: string;
+	readonly isOffline: boolean;
+	readonly isSubmitting: boolean;
+	readonly isMutating: boolean;
+	readonly showPassword: boolean;
+	readonly showConfirmPassword: boolean;
+	readonly buttonText: string;
+	readonly onSubmit: (data: RegisterFormData) => Promise<void>;
+	readonly onTogglePasswordVisibility: () => void;
+	readonly onToggleConfirmPasswordVisibility: () => void;
 }
 
 export default function RegisterFormPresenter({

@@ -5,7 +5,6 @@ import {
 	updateUserAllotment,
 	NoAllotmentFoundError,
 	type IAllotmentResponse,
-	type IAllotmentRequest,
 	type IAllotmentUpdateRequest,
 } from "../services/UserService";
 

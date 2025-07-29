@@ -5,16 +5,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { CheckCircle, Loader2, XCircle } from "lucide-react";
 
 interface EmailVerificationPresenterProps {
-	isVerifying: boolean;
-	isSuccess: boolean;
-	isError: boolean;
-	error: Error | null;
-	hasNoToken: boolean;
-	needsPasswordReset: boolean;
-	onResetPassword: () => void;
-	onGoToDashboard: () => void;
-	onRequestNewVerification: () => void;
-	onReturnHome: () => void;
+	readonly isVerifying: boolean;
+	readonly isSuccess: boolean;
+	readonly isError: boolean;
+	readonly error: Error | null;
+	readonly hasNoToken: boolean;
+	readonly needsPasswordReset: boolean;
+	readonly onResetPassword: () => void;
+	readonly onGoToDashboard: () => void;
+	readonly onRequestNewVerification: () => void;
+	readonly onReturnHome: () => void;
 }
 
 export default function EmailVerificationPresenter({

@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { verifyEmail } from "../services/UserService";
 
 // Query key factory for email verification

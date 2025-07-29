@@ -15,6 +15,10 @@ export function useLogout() {
 			navigate("/login");
 		} catch (error) {
 			// Always proceed with logout even if server request fails
+			console.warn(
+				"Logout request failed, but proceeding with local logout:",
+				error,
+			);
 			queryClient.clear();
 			navigate("/login");
 		}

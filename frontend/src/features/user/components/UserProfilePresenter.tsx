@@ -12,14 +12,14 @@ import {
 import { Loader2, RefreshCw } from "lucide-react";
 
 interface UserProfilePresenterProps {
-	userName: string;
-	userEmail: string;
-	isEmailVerified: boolean;
-	isLoading: boolean;
-	isRefreshing: boolean;
-	error?: string;
-	onRequestVerification: () => void;
-	onRefreshStatus: () => void;
+	readonly userName: string;
+	readonly userEmail: string;
+	readonly isEmailVerified: boolean;
+	readonly isLoading: boolean;
+	readonly isRefreshing: boolean;
+	readonly error?: string;
+	readonly onRequestVerification: () => void;
+	readonly onRefreshStatus: () => void;
 }
 
 export default function UserProfilePresenter({
