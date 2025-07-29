@@ -63,6 +63,7 @@ export default defineConfig({
                 "src/store/**/AuthContext.tsx", // Auth context only
                 "src/store/**/ThemeContext.tsx", // Theme context only
                 "src/features/**/hooks/**", // Custom hooks
+                "src/services/errorMonitoring.ts", // Infrastructure monitoring - non-critical
             ],
             include: [
                 "src/**/*.{ts,tsx}"
