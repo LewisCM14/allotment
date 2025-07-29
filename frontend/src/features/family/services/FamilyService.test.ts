@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
-import { apiCache } from "../../../services/apiCache";
 import {
 	FAMILY_SERVICE_ERRORS,
 	type IBotanicalGroup,
@@ -98,8 +97,6 @@ describe("FamilyService", () => {
 			writable: true,
 		});
 		vi.restoreAllMocks();
-		// Clear the API cache before each test to prevent cache pollution
-		apiCache.clear();
 	});
 
 	afterEach(() => {
