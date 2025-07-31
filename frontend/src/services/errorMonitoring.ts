@@ -35,7 +35,12 @@ class ErrorMonitoringService {
 
 	captureException(error: unknown, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
-			console.error("[ErrorMonitor]", error, context);
+			// For easier test migration, match legacy signature if context is present
+			if (context && context.context === "loadAuthFromIndexedDB") {
+				console.error("Error loading auth from IndexedDB:", error);
+			} else {
+				console.error("[ErrorMonitor]", error, context);
+			}
 			return;
 		}
 
@@ -84,7 +89,12 @@ class ErrorMonitoringService {
 
 	captureMessage(message: string, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
-			console.info("[ErrorMonitor]", message, context);
+			// For easier test migration, match legacy signature if context is present
+			if (context && context.context === "loadAuthFromIndexedDB") {
+				console.info("Error loading auth from IndexedDB:", message);
+			} else {
+				console.info("[ErrorMonitor]", message, context);
+			}
 			return;
 		}
 

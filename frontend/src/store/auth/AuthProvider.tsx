@@ -8,6 +8,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
+import { errorMonitor } from "@/services/errorMonitoring";
 import { toast } from "sonner";
 import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
 import {
@@ -203,7 +204,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 
 			return true;
 		} catch (error: unknown) {
-			console.error("Failed to refresh access token:", error);
+			errorMonitor.captureException(error, { context: "refreshAccessToken" });
 
 			// Check if it's an API error with status code
 			if (error && typeof error === "object" && "response" in error) {

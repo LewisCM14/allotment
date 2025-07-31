@@ -22,10 +22,16 @@ const getEnvVariable = (
 // --- API URL Configuration ---
 let configuredUrl = getEnvVariable("VITE_API_URL", "http://localhost:8000"); // Default for local dev if nothing is set
 
+import { errorMonitor } from "@/services/errorMonitoring";
+
 if (!configuredUrl) {
-	console.warn(
-		"VITE_API_URL is not defined. Defaulting to 'http://localhost:8000'. Check your .env files or runtime environment configuration.",
-	);
+	const msg =
+		"VITE_API_URL is not defined. Defaulting to 'http://localhost:8000'. Check your .env files or runtime environment configuration.";
+	if (import.meta.env.PROD) {
+		errorMonitor.captureMessage(msg, { context: "apiConfig_missing_api_url" });
+	} else {
+		console.warn(msg);
+	}
 	configuredUrl = "http://localhost:8000"; // Failsafe default
 }
 
@@ -50,9 +56,15 @@ export const API_URL = getApiUrl();
 let configuredApiVersion = getEnvVariable("VITE_API_VERSION", "/api/v1");
 
 if (!configuredApiVersion) {
-	console.warn(
-		"VITE_API_VERSION is not defined. Defaulting to '/api/v1'. Check your .env files or runtime environment configuration.",
-	);
+	const msg =
+		"VITE_API_VERSION is not defined. Defaulting to '/api/v1'. Check your .env files or runtime environment configuration.";
+	if (import.meta.env.PROD) {
+		errorMonitor.captureMessage(msg, {
+			context: "apiConfig_missing_api_version",
+		});
+	} else {
+		console.warn(msg);
+	}
 	configuredApiVersion = "/api/v1"; // Failsafe default
 }
 
