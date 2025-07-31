@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { FormError } from "@/components/FormError";
 import { PageLayout } from "@/components/layouts/PageLayout";
-import { Save } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import type {
 	FieldErrors,
 	UseFormHandleSubmit,
@@ -49,13 +49,10 @@ export default function UserAllotmentPresenter({
 }: UserAllotmentPresenterProps) {
 	if (isLoading) {
 		return (
-			<PageLayout variant="default">
-				<Card className="w-full">
-					<CardContent className="pt-6">
-						<div className="text-center">Loading allotment data...</div>
-					</CardContent>
-				</Card>
-			</PageLayout>
+			<div className="flex justify-center items-center h-64">
+				<Loader2 className="h-8 w-8 animate-spin text-primary" />
+				<p className="ml-2">Loading allotment data...</p>
+			</div>
 		);
 	}
 
