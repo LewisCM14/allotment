@@ -1,22 +1,25 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
+import { Accordion } from "@/components/ui/Accordion";
 import { Loader2 } from "lucide-react";
 import type * as React from "react";
-import { BotanicalGroupAccordionList } from "./BotanicalGroupAccordionList";
+import { BotanicalGroupItemContainer } from "./BotanicalGroupItemContainer";
 import type { IBotanicalGroup } from "../services/FamilyService";
 
-interface BotanicalGroupListPresenterProps {
+interface BotanicalGroupPresenterProps {
 	readonly botanicalGroups: IBotanicalGroup[];
 	readonly isLoading: boolean;
 	readonly error: Error | null;
 	readonly isSuccess: boolean;
+	readonly onFamilyClick: (familyId: string) => void;
 }
 
-export function BotanicalGroupListPresenter({
+export function BotanicalGroupPresenter({
 	botanicalGroups,
 	isLoading,
 	error,
 	isSuccess,
-}: BotanicalGroupListPresenterProps) {
+	onFamilyClick,
+}: BotanicalGroupPresenterProps) {
 	if (isLoading) {
 		return (
 			<div className="flex justify-center items-center h-64">
@@ -48,7 +51,15 @@ export function BotanicalGroupListPresenter({
 	return (
 		<div className="w-full max-w-2xl mx-auto min-h-[32rem] flex flex-col">
 			<h1 className="text-3xl font-bold mb-6 text-center">Botanical Groups</h1>
-			<BotanicalGroupAccordionList groups={botanicalGroups} />
+			<Accordion type="multiple" className="w-full space-y-2">
+				{botanicalGroups.map((group) => (
+					<BotanicalGroupItemContainer
+						key={group.id}
+						group={group}
+						onFamilyClick={onFamilyClick}
+					/>
+				))}
+			</Accordion>
 		</div>
 	);
 }
