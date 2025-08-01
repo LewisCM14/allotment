@@ -17,7 +17,6 @@ describe("FamilyService", () => {
 			const mockData = {
 				id: "fam-1",
 				name: "Test Family",
-				description: "desc",
 				botanical_group: {
 					id: "bg1",
 					name: "BG",
@@ -56,40 +55,6 @@ describe("FamilyService", () => {
 		});
 	});
 
-	describe("getFamilyDetails edge cases", () => {
-		it("should handle axios cancel error", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			const cancelError = new Error("Request cancelled");
-			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
-			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
-			const apiGetSpy = vi.spyOn(api, "get").mockRejectedValueOnce(cancelError);
-			await expect(getFamilyDetails("fam-1")).rejects.toThrow(
-				"Request cancelled",
-			);
-			apiGetSpy.mockRestore();
-			isCancelSpy.mockRestore();
-		});
-
-		it("should handle unknown error", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			const genericError = new Error("Generic error");
-			const apiGetSpy = vi
-				.spyOn(api, "get")
-				.mockRejectedValueOnce(genericError);
-			await expect(getFamilyDetails("fam-1")).rejects.toThrow();
-			apiGetSpy.mockRestore();
-		});
-
-		it("should handle missing data gracefully", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			const apiGetSpy = vi
-				.spyOn(api, "get")
-				.mockResolvedValueOnce({ data: null });
-			const result = await getFamilyDetails("fam-1");
-			expect(result).toBeNull();
-			apiGetSpy.mockRestore();
-		});
-	});
 	beforeEach(() => {
 		Object.defineProperty(navigator, "onLine", {
 			configurable: true,
@@ -318,78 +283,6 @@ describe("FamilyService", () => {
 			expect(result?.[0].name).toBe("Mixed Group");
 
 			getSpy.mockRestore();
-		});
-	});
-
-	describe("getFamilyDetails", () => {
-		beforeEach(() => {
-			server.use(
-				http.get(buildUrl("/families/:id"), ({ params }) => {
-					const { id } = params;
-					if (id === "family-1") {
-						return HttpResponse.json({
-							id: "family-1",
-							name: "Cabbage",
-							botanical_group: "Brassicaceae",
-							recommended_rotation_years: 3,
-							companion_families: ["Beans", "Peas"],
-							antagonist_families: ["Tomatoes"],
-							common_pests: ["Cabbage worm", "Aphids"],
-							common_diseases: ["Clubroot", "Black rot"],
-						});
-					}
-					if (id === "family-404") {
-						return HttpResponse.json(
-							{ detail: "Family not found" },
-							{ status: 404 },
-						);
-					}
-					if (id === "family-xyz") {
-						return HttpResponse.json({
-							id: "family-xyz",
-							name: "Unknown Family",
-						});
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/families/:id"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-		});
-
-		it("should fetch family details successfully", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			const result = await getFamilyDetails("family-1");
-			expect(result).toMatchObject({
-				id: "family-1",
-				name: "Cabbage",
-				botanical_group: "Brassicaceae",
-				recommended_rotation_years: 3,
-				companion_families: expect.arrayContaining(["Beans", "Peas"]),
-				antagonist_families: expect.arrayContaining(["Tomatoes"]),
-				common_pests: expect.any(Array),
-				common_diseases: expect.any(Array),
-			});
-		});
-
-		it("should handle not found error", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			await expect(getFamilyDetails("family-404")).rejects.toThrow(
-				"Family not found",
-			);
-		});
-
-		it("should handle unknown family gracefully", async () => {
-			const { getFamilyDetails } = await import("./FamilyService");
-			const result = await getFamilyDetails("family-xyz");
-			expect(result).toMatchObject({
-				id: "family-xyz",
-				name: "Unknown Family",
-			});
 		});
 	});
 });

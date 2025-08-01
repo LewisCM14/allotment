@@ -89,21 +89,3 @@ export async function getFamilyInfo(
 		return handleApiError(error, FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
 	}
 }
-
-export async function getFamilyDetails(familyId: string, signal?: AbortSignal) {
-	try {
-		const response = await api.get(
-			`/families/${familyId}`,
-			signal ? { signal } : undefined,
-		);
-
-		if (response.data && response.data.detail === "Family not found") {
-			throw new Error("Family not found");
-		}
-
-		return response.data;
-	} catch (error: unknown) {
-		if (axios.isCancel(error)) throw error;
-		return handleApiError(error, "Failed to fetch family details");
-	}
-}
