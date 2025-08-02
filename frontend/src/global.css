@@ -295,6 +295,11 @@
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
+		/* Hide scrollbars completely */
+		scrollbar-width: none;
+		/* Firefox */
+		-ms-overflow-style: none;
+		/* Internet Explorer 10+ */
 	}
 
 	h1,
@@ -317,14 +322,6 @@
 	body {
 		@apply bg-background text-foreground;
 		font-family: var(--font-body);
-	}
-
-	/* Hide scrollbars completely */
-	* {
-		scrollbar-width: none;
-		/* Firefox */
-		-ms-overflow-style: none;
-		/* Internet Explorer 10+ */
 	}
 
 	*::-webkit-scrollbar {

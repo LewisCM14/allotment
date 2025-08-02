@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { type RegisterFormData, registerSchema } from "../forms/RegisterSchema";
-import { registerUser } from "../services/RegistrationService";
 import { formatError } from "@/utils/errorUtils";
 import { useUserRegistration } from "../hooks/useUserRegistration";
 import RegisterFormPresenter from "./RegisterFormPresenter";

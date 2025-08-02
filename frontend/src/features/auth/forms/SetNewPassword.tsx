@@ -98,7 +98,11 @@ export default function SetNewPassword() {
 
 			navigate("/login");
 		} catch (error) {
-			setError("Password reset failed. Please try again.");
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: "Password reset failed. Please try again.";
+			setError(errorMessage);
 		}
 	};
 
