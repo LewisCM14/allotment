@@ -15,10 +15,10 @@ describe("FamilyService", () => {
 		it("should fetch family info successfully", async () => {
 			const { getFamilyInfo } = await import("./FamilyService");
 			const mockData = {
-				id: "fam-1",
+				id: "550e8400-e29b-41d4-a716-446655440008", // UUID format
 				name: "Test Family",
 				botanical_group: {
-					id: "bg1",
+					id: "550e8400-e29b-41d4-a716-446655440009", // UUID format
 					name: "BG",
 					recommended_rotation_years: 2,
 				},
@@ -30,7 +30,9 @@ describe("FamilyService", () => {
 			const getSpy = vi
 				.spyOn(api, "get")
 				.mockResolvedValueOnce({ data: mockData });
-			const result = await getFamilyInfo("fam-1");
+			const result = await getFamilyInfo(
+				"550e8400-e29b-41d4-a716-446655440008",
+			);
 			expect(result).toEqual(mockData);
 			getSpy.mockRestore();
 		});
@@ -41,7 +43,9 @@ describe("FamilyService", () => {
 			Object.defineProperty(cancelError, "name", { value: "CanceledError" });
 			const isCancelSpy = vi.spyOn(axios, "isCancel").mockReturnValue(true);
 			const getSpy = vi.spyOn(api, "get").mockRejectedValueOnce(cancelError);
-			await expect(getFamilyInfo("fam-1")).rejects.toThrow("canceled");
+			await expect(
+				getFamilyInfo("550e8400-e29b-41d4-a716-446655440010"),
+			).rejects.toThrow("canceled");
 			getSpy.mockRestore();
 			isCancelSpy.mockRestore();
 		});
@@ -50,7 +54,9 @@ describe("FamilyService", () => {
 			const { getFamilyInfo } = await import("./FamilyService");
 			const genericError = new Error("Generic error");
 			const getSpy = vi.spyOn(api, "get").mockRejectedValueOnce(genericError);
-			await expect(getFamilyInfo("fam-1")).rejects.toThrow();
+			await expect(
+				getFamilyInfo("550e8400-e29b-41d4-a716-446655440011"),
+			).rejects.toThrow();
 			getSpy.mockRestore();
 		});
 	});
@@ -80,21 +86,21 @@ describe("FamilyService", () => {
 		it("should fetch botanical groups successfully", async () => {
 			const mockBotanicalGroups: IBotanicalGroup[] = [
 				{
-					id: "group-1",
+					id: "550e8400-e29b-41d4-a716-446655440000", // UUID format
 					name: "Brassicaceae",
 					recommended_rotation_years: 3,
 					families: [
-						{ id: "family-1", name: "Cabbage" },
-						{ id: "family-2", name: "Broccoli" },
+						{ id: "550e8400-e29b-41d4-a716-446655440001", name: "Cabbage" },
+						{ id: "550e8400-e29b-41d4-a716-446655440002", name: "Broccoli" },
 					],
 				},
 				{
-					id: "group-2",
+					id: "550e8400-e29b-41d4-a716-446655440003", // UUID format
 					name: "Solanaceae",
 					recommended_rotation_years: 4,
 					families: [
-						{ id: "family-3", name: "Tomatoes" },
-						{ id: "family-4", name: "Potatoes" },
+						{ id: "550e8400-e29b-41d4-a716-446655440004", name: "Tomatoes" },
+						{ id: "550e8400-e29b-41d4-a716-446655440005", name: "Potatoes" },
 					],
 				},
 			];
@@ -265,10 +271,12 @@ describe("FamilyService", () => {
 		it("should handle botanical group with null rotation years", async () => {
 			const mockBotanicalGroups: IBotanicalGroup[] = [
 				{
-					id: "group-1",
+					id: "550e8400-e29b-41d4-a716-446655440006", // UUID format
 					name: "Mixed Group",
 					recommended_rotation_years: null,
-					families: [{ id: "family-1", name: "Herbs" }],
+					families: [
+						{ id: "550e8400-e29b-41d4-a716-446655440007", name: "Herbs" },
+					],
 				},
 			];
 

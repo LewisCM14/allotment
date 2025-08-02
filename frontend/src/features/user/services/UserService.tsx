@@ -229,11 +229,11 @@ export interface IAllotmentUpdateRequest {
 }
 
 export interface IAllotmentResponse {
-	user_allotment_id: string;
-	user_id: string;
+	user_allotment_id: string; // UUID as string from backend
+	user_id: string; // UUID as string from backend
 	allotment_postal_zip_code: string;
-	allotment_width_meters: number;
-	allotment_length_meters: number;
+	allotment_width_meters: number; // Compatible with backend float
+	allotment_length_meters: number; // Compatible with backend float
 }
 
 export const createUserAllotment = async (
@@ -293,5 +293,34 @@ export const updateUserAllotment = async (
 			error,
 			"Failed to update allotment. Please try again.",
 		);
+	}
+};
+
+export interface IRefreshTokenRequest {
+	refresh_token: string;
+}
+
+export const refreshAccessToken = async (): Promise<ITokenPair> => {
+	try {
+		const refreshToken = localStorage.getItem("refresh_token");
+		if (!refreshToken) {
+			throw new Error("No refresh token available");
+		}
+
+		const response = await api.post<ITokenPair>("/auth/token/refresh", {
+			refresh_token: refreshToken,
+		});
+
+		// Update stored tokens
+		localStorage.setItem("access_token", response.data.access_token);
+		localStorage.setItem("refresh_token", response.data.refresh_token);
+
+		return response.data;
+	} catch (error: unknown) {
+		// Clear tokens on refresh failure
+		localStorage.removeItem("access_token");
+		localStorage.removeItem("refresh_token");
+
+		return handleApiError(error, "Failed to refresh authentication token");
 	}
 };

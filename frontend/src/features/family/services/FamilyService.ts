@@ -12,40 +12,40 @@ export const FAMILY_SERVICE_ERRORS = {
 };
 
 export interface IFamily {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 }
 
 export interface IBotanicalGroup {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 	recommended_rotation_years: number | null;
 	families: IFamily[];
 }
 
 export interface IFamilyInfo {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 	botanical_group: {
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
 		recommended_rotation_years: number | null;
 	};
 	pests?: Array<{
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
-		treatments?: Array<{ id: string; name: string }>;
-		preventions?: Array<{ id: string; name: string }>;
+		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
+		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
 	}>;
 	diseases?: Array<{
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
-		symptoms?: Array<{ id: string; name: string }>;
-		treatments?: Array<{ id: string; name: string }>;
-		preventions?: Array<{ id: string; name: string }>;
+		symptoms?: Array<{ id: string; name: string }>; // UUID serialized as string
+		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
+		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
 	}>;
-	antagonises?: Array<{ id: string; name: string }>;
-	companion_to?: Array<{ id: string; name: string }>;
+	antagonises?: Array<{ id: string; name: string }>; // UUID serialized as string
+	companion_to?: Array<{ id: string; name: string }>; // UUID serialized as string
 }
 
 export async function getBotanicalGroups(

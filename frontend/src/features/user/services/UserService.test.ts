@@ -12,6 +12,7 @@ import {
 	requestVerificationEmail,
 	resetPassword,
 	verifyEmail,
+	refreshAccessToken,
 } from "./UserService";
 
 describe("UserService", () => {
@@ -768,6 +769,128 @@ describe("UserService", () => {
 				checkEmailVerificationStatus("test@example.com"),
 			).rejects.toThrow(AUTH_ERRORS.NETWORK_ERROR);
 			getSpy.mockRestore();
+		});
+	});
+
+	describe("refreshAccessToken", () => {
+		beforeEach(() => {
+			localStorage.clear();
+		});
+
+		it("should refresh access token successfully", async () => {
+			const mockRefreshToken = "old-refresh-token";
+			const mockTokenResponse = {
+				access_token: "new-access-token",
+				refresh_token: "new-refresh-token",
+			};
+
+			localStorage.setItem("refresh_token", mockRefreshToken);
+
+			server.use(
+				http.post(buildUrl("/auth/token/refresh"), async ({ request }) => {
+					const body = (await request.json()) as { refresh_token: string };
+					expect(body.refresh_token).toBe(mockRefreshToken);
+					return HttpResponse.json(mockTokenResponse);
+				}),
+			);
+
+			const result = await refreshAccessToken();
+
+			expect(result).toEqual(mockTokenResponse);
+			expect(localStorage.getItem("access_token")).toBe("new-access-token");
+			expect(localStorage.getItem("refresh_token")).toBe("new-refresh-token");
+		});
+
+		it("should throw error when no refresh token available", async () => {
+			// No refresh token in localStorage
+			await expect(refreshAccessToken()).rejects.toThrow(
+				"Failed to refresh authentication token",
+			);
+		});
+
+		it("should handle invalid refresh token (401)", async () => {
+			localStorage.setItem("refresh_token", "invalid-token");
+
+			server.use(
+				http.post(buildUrl("/auth/token/refresh"), () => {
+					return HttpResponse.json(
+						{ detail: "Invalid refresh token" },
+						{ status: 401 },
+					);
+				}),
+			);
+
+			await expect(refreshAccessToken()).rejects.toThrow(
+				"Invalid email or password. Please try again.",
+			);
+
+			// Tokens should be cleared
+			expect(localStorage.getItem("access_token")).toBeNull();
+			expect(localStorage.getItem("refresh_token")).toBeNull();
+		});
+
+		it("should handle expired refresh token (401)", async () => {
+			localStorage.setItem("refresh_token", "expired-token");
+
+			server.use(
+				http.post(buildUrl("/auth/token/refresh"), () => {
+					return HttpResponse.json(
+						{ detail: "Refresh token expired" },
+						{ status: 401 },
+					);
+				}),
+			);
+
+			await expect(refreshAccessToken()).rejects.toThrow(
+				"Invalid email or password. Please try again.",
+			);
+
+			// Tokens should be cleared
+			expect(localStorage.getItem("access_token")).toBeNull();
+			expect(localStorage.getItem("refresh_token")).toBeNull();
+		});
+
+		it("should handle server errors (500)", async () => {
+			localStorage.setItem("refresh_token", "valid-token");
+
+			server.use(
+				http.post(buildUrl("/auth/token/refresh"), () => {
+					return HttpResponse.json(
+						{ detail: "Internal server error" },
+						{ status: 500 },
+					);
+				}),
+			);
+
+			await expect(refreshAccessToken()).rejects.toThrow(
+				"Server error. Please try again later.",
+			);
+
+			// Tokens should be cleared on failure
+			expect(localStorage.getItem("access_token")).toBeNull();
+			expect(localStorage.getItem("refresh_token")).toBeNull();
+		});
+
+		it("should handle network errors", async () => {
+			localStorage.setItem("refresh_token", "valid-token");
+
+			// Mock network unavailable
+			Object.defineProperty(navigator, "onLine", {
+				value: false,
+				writable: true,
+			});
+
+			server.use(
+				http.post(buildUrl("/auth/token/refresh"), () => {
+					return HttpResponse.error();
+				}),
+			);
+
+			await expect(refreshAccessToken()).rejects.toThrow();
+
+			// Tokens should be cleared on failure
+			expect(localStorage.getItem("access_token")).toBeNull();
+			expect(localStorage.getItem("refresh_token")).toBeNull();
 		});
 	});
 });
