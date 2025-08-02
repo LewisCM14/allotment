@@ -1,7 +1,7 @@
 import type {
 	ILoginRequest,
 	ILoginResponse,
-} from "@/features/user/services/UserService";
+} from "@/features/auth/services/AuthService";
 import type { IRefreshRequest } from "@/services/api";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";

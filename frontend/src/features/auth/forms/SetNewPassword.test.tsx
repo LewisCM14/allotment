@@ -1,11 +1,11 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SetNewPassword from "./SetNewPassword";
-import * as UserService from "../services/UserService";
+import * as UserService from "@/features/user/services/UserService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-vi.mock("../services/UserService");
+vi.mock("@/features/user/services/UserService");
 
 describe("SetNewPassword", () => {
 	beforeEach(() => {

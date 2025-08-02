@@ -2,14 +2,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import LoginForm from "./LoginForm";
 import * as AuthContext from "@/store/auth/AuthContext";
-import * as UserService from "../services/UserService";
+import * as AuthService from "../services/AuthService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
 // Mock useAuth
 vi.mock("@/store/auth/AuthContext");
-// Mock loginUser
-vi.mock("../services/UserService");
+// Mock AuthService
+vi.mock("../services/AuthService");
 
 function renderForm() {
 	// Explicitly return the result of render, including container
@@ -54,7 +54,7 @@ describe("LoginForm", () => {
 		(AuthContext.useAuth as unknown as Mock).mockReturnValue({
 			login: loginMock,
 		});
-		(UserService.loginUser as unknown as Mock).mockResolvedValue({
+		(AuthService.loginUser as unknown as Mock).mockResolvedValue({
 			tokens: { access_token: "token", refresh_token: "refresh" },
 			firstName: "Test",
 			userData: {
@@ -72,7 +72,7 @@ describe("LoginForm", () => {
 		await userEvent.click(screen.getByRole("button", { name: /login/i }));
 		// Instead of waitFor on the mock, check for a post-login UI change if possible
 		// If no UI change, just assert the mocks synchronously
-		expect(UserService.loginUser).toHaveBeenCalledWith(
+		expect(AuthService.loginUser).toHaveBeenCalledWith(
 			"test@example.com",
 			"password123",
 		);
@@ -80,7 +80,7 @@ describe("LoginForm", () => {
 	});
 
 	it("shows error on login failure", async () => {
-		(UserService.loginUser as unknown as Mock).mockRejectedValue(
+		(AuthService.loginUser as unknown as Mock).mockRejectedValue(
 			new Error("Invalid credentials"),
 		);
 		renderForm();

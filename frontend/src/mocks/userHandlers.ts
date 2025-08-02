@@ -1,5 +1,4 @@
-import type { IRegisterRequest } from "@/features/user/services/UserService";
-import { AUTH_ERRORS } from "@/features/user/services/UserService";
+import type { IRegisterRequest } from "@/features/auth/services/RegistrationService";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";
@@ -90,7 +89,10 @@ export const userHandlers = [
 
 			if (token === "expired-token") {
 				return new HttpResponse(
-					JSON.stringify({ detail: AUTH_ERRORS.VERIFICATION_TOKEN_EXPIRED }),
+					JSON.stringify({
+						detail:
+							"The verification link has expired. Please request a new one.",
+					}),
 					{
 						status: 410,
 						headers: { "Content-Type": "application/json" },
@@ -113,7 +115,9 @@ export const userHandlers = [
 
 		if (email === "nonexistent@example.com") {
 			return new HttpResponse(
-				JSON.stringify({ detail: AUTH_ERRORS.EMAIL_NOT_FOUND }),
+				JSON.stringify({
+					detail: "Email address not found. Please check and try again.",
+				}),
 				{
 					status: 404,
 					headers: { "Content-Type": "application/json" },

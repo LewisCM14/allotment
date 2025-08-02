@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
 import { type RegisterFormData, registerSchema } from "../forms/RegisterSchema";
-import { AUTH_ERRORS } from "../services/UserService";
+import { registerUser } from "../services/RegistrationService";
+import { formatError } from "@/utils/errorUtils";
 import { useUserRegistration } from "../hooks/useUserRegistration";
 import RegisterFormPresenter from "./RegisterFormPresenter";
 
@@ -73,7 +74,7 @@ export default function RegisterFormContainer() {
 				await login(tokenPair, data.first_name);
 				navigate("/");
 			} catch (err: unknown) {
-				const errorMessage = AUTH_ERRORS.format(err);
+				const errorMessage = formatError(err);
 				setError(errorMessage);
 			}
 		},

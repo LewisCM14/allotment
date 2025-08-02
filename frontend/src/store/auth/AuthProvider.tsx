@@ -1,4 +1,4 @@
-import type { IUserData } from "@/features/user/services/UserService";
+import type { IUserData } from "@/features/auth/services/AuthService";
 import api from "@/services/api";
 import { API_VERSION } from "@/services/apiConfig";
 import {

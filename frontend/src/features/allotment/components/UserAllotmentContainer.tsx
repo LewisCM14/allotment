@@ -7,7 +7,8 @@ import {
 	allotmentSchema,
 	type AllotmentFormData,
 } from "../forms/AllotmentSchema";
-import { AUTH_ERRORS, NoAllotmentFoundError } from "../services/UserService";
+import { NoAllotmentFoundError } from "../services/AllotmentService";
+import { formatError } from "@/utils/errorUtils";
 import {
 	useUserAllotment,
 	useCreateUserAllotment,
@@ -98,7 +99,7 @@ export default function UserAllotmentContainer() {
 			if (queryError instanceof NoAllotmentFoundError) {
 				setError(""); // Clear any error since this is expected for new users
 			} else {
-				const errorMessage = AUTH_ERRORS.format(queryError);
+				const errorMessage = formatError(queryError);
 				setError(`Failed to load allotment data: ${errorMessage}`);
 			}
 		} else {
@@ -127,7 +128,7 @@ export default function UserAllotmentContainer() {
 					await createAllotmentMutation.mutateAsync(data);
 				}
 			} catch (err: unknown) {
-				const errorMessage = AUTH_ERRORS.format(err);
+				const errorMessage = formatError(err);
 				setError(errorMessage);
 			}
 		},

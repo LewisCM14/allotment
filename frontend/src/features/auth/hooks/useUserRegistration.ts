@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { registerUser } from "../services/UserService";
+import { registerUser } from "../services/RegistrationService";
 
 /**
  * Hook to handle user registration

@@ -15,7 +15,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { type ResetFormData, resetSchema } from "./ResetPasswordSchema";
-import { AUTH_ERRORS, requestPasswordReset } from "../services/UserService";
+import { requestPasswordReset } from "@/features/user/services/UserService";
 
 export default function ResetPassword() {
 	const {
@@ -67,7 +67,7 @@ export default function ResetPassword() {
 						"Your email is not verified. Please check your inbox for a verification email.",
 					);
 				} else {
-					setError(AUTH_ERRORS.format(err));
+					setError("Password reset failed. Please try again.");
 				}
 			} else {
 				setError("An unexpected error occurred. Please try again.");

@@ -20,7 +20,7 @@ import {
 	type SetNewPasswordFormData,
 	setNewPasswordSchema,
 } from "./SetNewPasswordSchema";
-import { AUTH_ERRORS, resetPassword } from "../services/UserService";
+import { resetPassword } from "@/features/user/services/UserService";
 
 export default function SetNewPassword() {
 	const [searchParams] = useSearchParams();
@@ -98,7 +98,7 @@ export default function SetNewPassword() {
 
 			navigate("/login");
 		} catch (error) {
-			setError(AUTH_ERRORS.format(error));
+			setError("Password reset failed. Please try again.");
 		}
 	};
 

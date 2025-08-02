@@ -19,7 +19,7 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
-import { loginUser } from "../services/UserService";
+import { loginUser } from "../services/AuthService";
 
 function LoginForm() {
 	const {

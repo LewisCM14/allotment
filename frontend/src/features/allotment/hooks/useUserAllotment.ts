@@ -6,7 +6,7 @@ import {
 	NoAllotmentFoundError,
 	type IAllotmentResponse,
 	type IAllotmentUpdateRequest,
-} from "../services/UserService";
+} from "../services/AllotmentService";
 
 export const userAllotmentKeys = {
 	all: ["user-allotment"] as const,

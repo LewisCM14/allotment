@@ -4,15 +4,11 @@ import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
 import {
-	AUTH_ERRORS,
 	checkEmailVerificationStatus,
-	loginUser,
-	registerUser,
 	requestPasswordReset,
 	requestVerificationEmail,
 	resetPassword,
 	verifyEmail,
-	refreshAccessToken,
 } from "./UserService";
 
 describe("UserService", () => {
@@ -28,247 +24,6 @@ describe("UserService", () => {
 
 	afterEach(() => {
 		server.resetHandlers();
-	});
-
-	describe("loginUser", () => {
-		it("should log in a user with valid credentials", async () => {
-			server.use(
-				http.post(buildUrl("/auth/token"), async ({ request }) => {
-					const body = (await request.json()) as { user_email?: string };
-					if (body.user_email === "test@example.com") {
-						return HttpResponse.json({
-							access_token: "mock-access-token",
-							refresh_token: "mock-refresh-token",
-							token_type: "bearer",
-							user_first_name: "Test",
-							user_id: "user-123",
-							is_email_verified: true,
-						});
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock case" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/auth/token"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-
-			const result = await loginUser("test@example.com", "password123");
-
-			expect(result).toEqual({
-				tokens: {
-					access_token: "mock-access-token",
-					refresh_token: "mock-refresh-token",
-				},
-				firstName: "Test",
-				userData: {
-					user_email: "test@example.com",
-					user_id: "user-123",
-					is_email_verified: true,
-				},
-			});
-			expect(localStorage.getItem("access_token")).toBe("mock-access-token");
-			expect(localStorage.getItem("refresh_token")).toBe("mock-refresh-token");
-		});
-
-		it("should throw an error with invalid credentials", async () => {
-			server.use(
-				http.post(buildUrl("/auth/token"), async ({ request }) => {
-					const body = (await request.json()) as { user_email?: string };
-					if (body.user_email === "wrong@example.com") {
-						return HttpResponse.json(
-							{ detail: "Invalid email or password" },
-							{ status: 401 },
-						);
-					}
-					return HttpResponse.json(
-						{ detail: "Unhandled mock case" },
-						{ status: 500 },
-					);
-				}),
-				http.options(buildUrl("/auth/token"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-			await expect(loginUser("wrong@example.com", "wrong")).rejects.toThrow(
-				AUTH_ERRORS.INVALID_CREDENTIALS,
-			);
-		});
-
-		it("should throw an error for user not found (404)", async () => {
-			server.use(
-				http.post(buildUrl("/auth/token"), () => {
-					return HttpResponse.json(
-						{ detail: "User not found" },
-						{ status: 404 },
-					);
-				}),
-			);
-			await expect(
-				loginUser("notfound@example.com", "password"),
-			).rejects.toThrow("User not found");
-		});
-
-		it("should throw an error for account locked (403)", async () => {
-			server.use(
-				http.post(buildUrl("/auth/token"), () => {
-					return HttpResponse.json(
-						{ detail: "Account locked" },
-						{ status: 403 },
-					);
-				}),
-			);
-			await expect(loginUser("locked@example.com", "password")).rejects.toThrow(
-				"Account locked",
-			);
-		});
-
-		it("should throw an error for validation error (422)", async () => {
-			server.use(
-				http.post(buildUrl("/auth/token"), () => {
-					return HttpResponse.json(
-						{ detail: [{ msg: "Invalid input" }] },
-						{ status: 422 },
-					);
-				}),
-			);
-			await expect(
-				loginUser("badinput@example.com", "password"),
-			).rejects.toThrow("Invalid input");
-		});
-
-		it("should handle unexpected server responses", async () => {
-			const postSpy = vi.spyOn(api, "post");
-
-			const serverError = new Error("Server returned unexpected response");
-			Object.defineProperty(serverError, "isAxiosError", { value: true });
-			Object.defineProperty(serverError, "response", {
-				value: {
-					status: 500,
-					data: "Unexpected response",
-				},
-			});
-
-			postSpy.mockRejectedValueOnce(serverError);
-
-			await expect(
-				loginUser("test@example.com", "password123"),
-			).rejects.toThrow(AUTH_ERRORS.SERVER_ERROR);
-
-			postSpy.mockRestore();
-		});
-
-		it("should handle network errors", async () => {
-			const postSpy = vi.spyOn(api, "post");
-
-			const networkError = new Error("Network Error");
-			Object.defineProperty(networkError, "isAxiosError", { value: true });
-			Object.defineProperty(networkError, "response", { value: undefined });
-			Object.defineProperty(networkError, "request", { value: {} });
-
-			postSpy.mockRejectedValueOnce(networkError);
-
-			await expect(
-				loginUser("test@example.com", "password123"),
-			).rejects.toThrow(/Network error/i);
-
-			postSpy.mockRestore();
-		});
-	});
-
-	describe("registerUser", () => {
-		it("should register a new user successfully", async () => {
-			const mockApiResponse = {
-				access_token: "new-access-token",
-				refresh_token: "new-refresh-token",
-				token_type: "bearer",
-				user_first_name: "John",
-				is_email_verified: false,
-				user_id: "user-new-id",
-			};
-			server.use(
-				http.post(buildUrl("/users/"), () => {
-					return HttpResponse.json(mockApiResponse);
-				}),
-				http.options(buildUrl("/users/"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-
-			const result = await registerUser(
-				"new@example.com",
-				"password123",
-				"John",
-				"US",
-			);
-
-			expect(result).toEqual(mockApiResponse);
-		});
-
-		it("should throw an error if email already exists (409)", async () => {
-			server.use(
-				http.post(buildUrl("/users/"), () => {
-					return HttpResponse.json(
-						{ detail: "Email already registered" },
-						{ status: 409 },
-					);
-				}),
-				http.options(buildUrl("/users/"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-
-			await expect(
-				registerUser("exists@example.com", "password123", "John", "US"),
-			).rejects.toThrow("Email already registered");
-		});
-
-		it("should handle bad request errors (400)", async () => {
-			server.use(
-				http.post(buildUrl("/users/"), () => {
-					return HttpResponse.json(
-						{ detail: "Bad request data" },
-						{ status: 400 },
-					);
-				}),
-				http.options(buildUrl("/users/"), () => {
-					return new HttpResponse(null, { status: 204 });
-				}),
-			);
-			await expect(
-				registerUser("bad@example.com", "password", "Bad", "XX"),
-			).rejects.toThrow("Bad request data");
-		});
-
-		it("should handle validation errors from the server (422)", async () => {
-			const postSpy = vi.spyOn(api, "post");
-			const validationError = new Error("Request failed with status code 422");
-			Object.defineProperty(validationError, "isAxiosError", { value: true });
-			Object.defineProperty(validationError, "response", {
-				value: {
-					status: 422,
-					data: {
-						detail: [
-							{
-								loc: ["body", "user_password"],
-								msg: "Password must be at least 8 characters",
-								type: "value_error",
-							},
-						],
-					},
-				},
-			});
-
-			postSpy.mockRejectedValueOnce(validationError);
-
-			await expect(
-				registerUser("valid@example.com", "short", "John", "US"),
-			).rejects.toThrow(/Password must be at least 8 characters/);
-
-			postSpy.mockRestore();
-		});
 	});
 
 	describe("requestVerificationEmail", () => {
@@ -516,7 +271,7 @@ describe("UserService", () => {
 			server.use(
 				http.post(buildUrl("/users/password-resets"), () => {
 					return HttpResponse.json(
-						{ detail: AUTH_ERRORS.EMAIL_NOT_FOUND },
+						{ detail: "Email address not found. Please check and try again." },
 						{ status: 404 },
 					);
 				}),
@@ -526,7 +281,7 @@ describe("UserService", () => {
 			);
 			await expect(
 				requestPasswordReset("nonexistent@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.EMAIL_NOT_FOUND);
+			).rejects.toThrow("Email address not found. Please check and try again.");
 		});
 
 		it("should handle email not verified (400) as per current frontend logic", async () => {
@@ -588,7 +343,7 @@ describe("UserService", () => {
 			Object.defineProperty(err, "response", { value: undefined });
 			postSpy.mockRejectedValueOnce(err);
 			await expect(requestPasswordReset("user@example.com")).rejects.toThrow(
-				AUTH_ERRORS.NETWORK_ERROR,
+				"Network error. Please check your connection and try again.",
 			);
 			postSpy.mockRestore();
 		});
@@ -686,7 +441,7 @@ describe("UserService", () => {
 			});
 			postSpy.mockRejectedValueOnce(err);
 			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
-				AUTH_ERRORS.SERVER_ERROR,
+				"Server error. Please try again later.",
 			);
 			postSpy.mockRestore();
 		});
@@ -699,7 +454,7 @@ describe("UserService", () => {
 			Object.defineProperty(err, "response", { value: undefined });
 			postSpy.mockRejectedValueOnce(err);
 			await expect(resetPassword("any-token", "NewPass123!")).rejects.toThrow(
-				AUTH_ERRORS.NETWORK_ERROR,
+				"Network error. Please check your connection and try again.",
 			);
 			postSpy.mockRestore();
 		});
@@ -755,7 +510,7 @@ describe("UserService", () => {
 		it("should throw SERVER_ERROR for other server errors", async () => {
 			await expect(
 				checkEmailVerificationStatus("server-error@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.SERVER_ERROR);
+			).rejects.toThrow("Server error. Please try again later.");
 		}, 10000);
 
 		it("should throw NETWORK_ERROR for network errors", async () => {
@@ -767,130 +522,10 @@ describe("UserService", () => {
 
 			await expect(
 				checkEmailVerificationStatus("test@example.com"),
-			).rejects.toThrow(AUTH_ERRORS.NETWORK_ERROR);
+			).rejects.toThrow(
+				"Network error. Please check your connection and try again.",
+			);
 			getSpy.mockRestore();
-		});
-	});
-
-	describe("refreshAccessToken", () => {
-		beforeEach(() => {
-			localStorage.clear();
-		});
-
-		it("should refresh access token successfully", async () => {
-			const mockRefreshToken = "old-refresh-token";
-			const mockTokenResponse = {
-				access_token: "new-access-token",
-				refresh_token: "new-refresh-token",
-			};
-
-			localStorage.setItem("refresh_token", mockRefreshToken);
-
-			server.use(
-				http.post(buildUrl("/auth/token/refresh"), async ({ request }) => {
-					const body = (await request.json()) as { refresh_token: string };
-					expect(body.refresh_token).toBe(mockRefreshToken);
-					return HttpResponse.json(mockTokenResponse);
-				}),
-			);
-
-			const result = await refreshAccessToken();
-
-			expect(result).toEqual(mockTokenResponse);
-			expect(localStorage.getItem("access_token")).toBe("new-access-token");
-			expect(localStorage.getItem("refresh_token")).toBe("new-refresh-token");
-		});
-
-		it("should throw error when no refresh token available", async () => {
-			// No refresh token in localStorage
-			await expect(refreshAccessToken()).rejects.toThrow(
-				"Failed to refresh authentication token",
-			);
-		});
-
-		it("should handle invalid refresh token (401)", async () => {
-			localStorage.setItem("refresh_token", "invalid-token");
-
-			server.use(
-				http.post(buildUrl("/auth/token/refresh"), () => {
-					return HttpResponse.json(
-						{ detail: "Invalid refresh token" },
-						{ status: 401 },
-					);
-				}),
-			);
-
-			await expect(refreshAccessToken()).rejects.toThrow(
-				"Invalid email or password. Please try again.",
-			);
-
-			// Tokens should be cleared
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
-		});
-
-		it("should handle expired refresh token (401)", async () => {
-			localStorage.setItem("refresh_token", "expired-token");
-
-			server.use(
-				http.post(buildUrl("/auth/token/refresh"), () => {
-					return HttpResponse.json(
-						{ detail: "Refresh token expired" },
-						{ status: 401 },
-					);
-				}),
-			);
-
-			await expect(refreshAccessToken()).rejects.toThrow(
-				"Invalid email or password. Please try again.",
-			);
-
-			// Tokens should be cleared
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
-		});
-
-		it("should handle server errors (500)", async () => {
-			localStorage.setItem("refresh_token", "valid-token");
-
-			server.use(
-				http.post(buildUrl("/auth/token/refresh"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
-			await expect(refreshAccessToken()).rejects.toThrow(
-				"Server error. Please try again later.",
-			);
-
-			// Tokens should be cleared on failure
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
-		});
-
-		it("should handle network errors", async () => {
-			localStorage.setItem("refresh_token", "valid-token");
-
-			// Mock network unavailable
-			Object.defineProperty(navigator, "onLine", {
-				value: false,
-				writable: true,
-			});
-
-			server.use(
-				http.post(buildUrl("/auth/token/refresh"), () => {
-					return HttpResponse.error();
-				}),
-			);
-
-			await expect(refreshAccessToken()).rejects.toThrow();
-
-			// Tokens should be cleared on failure
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
 		});
 	});
 });

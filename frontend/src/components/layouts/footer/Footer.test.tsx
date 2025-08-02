@@ -8,7 +8,7 @@ import { vi, describe, it, beforeEach, expect } from "vitest";
 
 vi.mock("@/store/auth/AuthContext");
 vi.mock("@/store/theme/ThemeContext");
-vi.mock("@/features/user/hooks/useLogout", () => ({
+vi.mock("@/features/auth/hooks/useLogout", () => ({
 	useLogout: vi.fn(),
 }));
 
@@ -55,7 +55,7 @@ describe("Footer", () => {
 		mockLogout.mockResolvedValue(undefined);
 
 		// Mock useLogout hook
-		const { useLogout } = await import("@/features/user/hooks/useLogout");
+		const { useLogout } = await import("@/features/auth/hooks/useLogout");
 		vi.mocked(useLogout).mockReturnValue(mockLogout);
 
 		// Default theme mock

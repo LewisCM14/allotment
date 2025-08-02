@@ -1,4 +1,3 @@
-import { AUTH_ERRORS } from "@/features/user/services/UserService";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import { errorMonitor } from "@/services/errorMonitoring";
 import type { ITokenPair } from "@/store/auth/AuthContext";
@@ -26,15 +25,17 @@ export const handleApiError = (
 ): never => {
 	if (axios.isAxiosError(error)) {
 		if (!error.response) {
-			throw new Error(AUTH_ERRORS.NETWORK_ERROR);
+			throw new Error(
+				"Network error. Please check your connection and try again.",
+			);
 		}
 
 		if (error.response.status === 401) {
-			throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
+			throw new Error("Invalid email or password. Please try again.");
 		}
 
 		if (error.response.status === 500) {
-			throw new Error(AUTH_ERRORS.SERVER_ERROR);
+			throw new Error("Server error. Please try again later.");
 		}
 
 		const errorDetail = error.response?.data?.detail;

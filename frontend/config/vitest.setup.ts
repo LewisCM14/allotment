@@ -43,6 +43,20 @@ vi.stubGlobal("import.meta", {
 vi.stubGlobal("window", {
     ...global.window, // preserve jsdom's document and all other properties
     document: global.window.document, // ensure document is present
+    location: {
+        href: "http://localhost:3000",
+        origin: "http://localhost:3000",
+        protocol: "http:",
+        host: "localhost:3000",
+        hostname: "localhost",
+        port: "3000",
+        pathname: "/",
+        search: "",
+        hash: "",
+        reload: vi.fn(),
+        replace: vi.fn(),
+        assign: vi.fn(),
+    },
     envConfig: {
         VITE_API_URL: "http://localhost:8000",
         VITE_API_VERSION: "/api/v1",
