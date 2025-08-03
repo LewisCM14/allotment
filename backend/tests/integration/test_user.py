@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi import status
 
-from app.api.core.auth import create_token
+from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
 from app.api.factories.user_factory import UserFactoryValidationError
 from app.api.middleware.exception_handler import BaseApplicationError
@@ -332,7 +332,7 @@ class TestEmailVerification:
         user_id = register_response.json()["user_id"]
 
         # Generate a valid JWT token for email verification
-        from app.api.core.auth import create_token
+        from app.api.core.auth_utils import create_token
 
         token = create_token(user_id=user_id)
 
@@ -893,7 +893,8 @@ class TestPasswordReset:
     async def test_password_reset_general_exception(self, client, mocker):
         """Test password reset with general exception during token decode."""
         mocker.patch(
-            "app.api.core.auth.decode_token", side_effect=Exception("General error")
+            "app.api.core.auth_utils.decode_token",
+            side_effect=Exception("General error"),
         )
         response = await client.post(
             f"{PREFIX}/password-resets/faketoken",
@@ -906,7 +907,7 @@ class TestPasswordReset:
     async def test_reset_password_token_decode_exception(self, client, mocker):
         """Test password reset when token decode raises exception."""
         mocker.patch(
-            "app.api.core.auth.decode_token",
+            "app.api.core.auth_utils.decode_token",
             side_effect=Exception("Token decode failed"),
         )
 

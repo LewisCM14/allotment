@@ -122,7 +122,7 @@ class TestUserLogin:
             },
         )
         with patch(
-            "app.api.v1.user_auth.create_token",
+            "app.api.v1.auth.create_token",
             side_effect=Exception("Token generation failed"),
         ):
             response = await client.post(
@@ -138,7 +138,7 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_with_specific_business_logic_error(self, client, mocker):
         """Test handling of specific BusinessLogicError during login."""
-        mock_authenticate = mocker.patch("app.api.v1.user_auth.authenticate_user")
+        mock_authenticate = mocker.patch("app.api.v1.auth.authenticate_user")
 
         mock_authenticate.side_effect = BusinessLogicError(
             message="Account locked",
@@ -158,7 +158,7 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_base_application_error(self, client, mocker):
         """Test login with BaseApplicationError from authenticate_user."""
-        mock_auth = mocker.patch("app.api.v1.user_auth.authenticate_user")
+        mock_auth = mocker.patch("app.api.v1.auth.authenticate_user")
         mock_auth.side_effect = BaseApplicationError("fail", "fail_code")
         response = await client.post(
             f"{PREFIX}/auth/token",
@@ -170,7 +170,7 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_general_exception(self, client, mocker):
         """Test login with general exception from authenticate_user."""
-        mock_auth = mocker.patch("app.api.v1.user_auth.authenticate_user")
+        mock_auth = mocker.patch("app.api.v1.auth.authenticate_user")
         mock_auth.side_effect = Exception("fail")
         response = await client.post(
             f"{PREFIX}/auth/token",
@@ -188,7 +188,7 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token_decode_token_missing_type(self, client, mocker):
         """Test refresh token decode returns missing type."""
-        mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
+        mock_decode = mocker.patch("app.api.v1.auth.decode_token")
         mock_decode.return_value = {"sub": "user-id"}
         response = await client.post(
             f"{PREFIX}/auth/token/refresh",
@@ -200,7 +200,7 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token_decode_token_missing_sub(self, client, mocker):
         """Test refresh token decode returns missing sub."""
-        mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
+        mock_decode = mocker.patch("app.api.v1.auth.decode_token")
         mock_decode.return_value = {"type": "refresh"}
         response = await client.post(
             f"{PREFIX}/auth/token/refresh",
@@ -212,9 +212,9 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token_validate_user_exists_raises(self, client, mocker):
         """Test refresh token when validate_user_exists raises BaseApplicationError."""
-        mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
+        mock_decode = mocker.patch("app.api.v1.auth.decode_token")
         mock_decode.return_value = {"type": "refresh", "sub": "user-id"}
-        mock_validate = mocker.patch("app.api.v1.user_auth.validate_user_exists")
+        mock_validate = mocker.patch("app.api.v1.auth.validate_user_exists")
 
         mock_validate.side_effect = BaseApplicationError("fail", "fail_code")
         response = await client.post(
@@ -227,7 +227,7 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_token_refresh_with_invalid_token_payload(self, client, mocker):
         """Test refresh token when decode works but payload is invalid."""
-        mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
+        mock_decode = mocker.patch("app.api.v1.auth.decode_token")
         mock_decode.return_value = {"sub": "user-id"}
         response = await client.post(
             f"{PREFIX}/auth/token/refresh",
@@ -241,7 +241,7 @@ class TestTokenRefresh:
         """Test login when an unexpected exception occurs."""
         # Mock authenticate_user to raise an exception
         with patch(
-            "app.api.v1.user_auth.authenticate_user",
+            "app.api.v1.auth.authenticate_user",
             side_effect=Exception("Database error"),
         ):
             response = await client.post(
@@ -380,7 +380,7 @@ class TestTokenRefresh:
     async def test_login_with_authentication_error(self, client, mocker):
         """Test login when authentication fails."""
         # Mock authenticate_user to return None (authentication failure)
-        with patch("app.api.v1.user_auth.authenticate_user", return_value=None):
+        with patch("app.api.v1.auth.authenticate_user", return_value=None):
             response = await client.post(
                 f"{PREFIX}/auth/token",
                 json={
@@ -396,9 +396,7 @@ class TestTokenRefresh:
     async def test_refresh_token_missing_user_id(self, client, mocker):
         """Test refresh token when token is missing user ID."""
         # Mock decode_token to return payload without 'sub'
-        with patch(
-            "app.api.v1.user_auth.decode_token", return_value={"type": "refresh"}
-        ):
+        with patch("app.api.v1.auth.decode_token", return_value={"type": "refresh"}):
             response = await client.post(
                 f"{PREFIX}/auth/token/refresh",
                 json={"refresh_token": "fake_token"},
@@ -412,7 +410,7 @@ class TestTokenRefresh:
         """Test refresh token when token type is not 'refresh'."""
         # Mock decode_token to return access token type
         with patch(
-            "app.api.v1.user_auth.decode_token",
+            "app.api.v1.auth.decode_token",
             return_value={"type": "access", "sub": "user123"},
         ):
             response = await client.post(
@@ -429,7 +427,7 @@ class TestUserAuthErrorHandling:
     async def test_login_general_exception(self, client, mocker):
         """Test login handles general exceptions."""
         # Mock authenticate_user to raise a general exception
-        mock_auth = mocker.patch("app.api.v1.user_auth.authenticate_user")
+        mock_auth = mocker.patch("app.api.v1.auth.authenticate_user")
         mock_auth.side_effect = Exception("Database connection error")
 
         response = await client.post(
@@ -447,7 +445,7 @@ class TestUserAuthErrorHandling:
     async def test_login_authentication_error(self, client, mocker):
         """Test login with authentication error."""
         # Mock authenticate_user to return None (invalid credentials)
-        mock_auth = mocker.patch("app.api.v1.user_auth.authenticate_user")
+        mock_auth = mocker.patch("app.api.v1.auth.authenticate_user")
         mock_auth.return_value = None
 
         response = await client.post(
@@ -465,7 +463,7 @@ class TestUserAuthErrorHandling:
     async def test_refresh_token_invalid_token_exception(self, client, mocker):
         """Test refresh token handles invalid token exceptions."""
         # Mock decode_token to raise InvalidTokenError
-        mock_decode = mocker.patch("app.api.v1.user_auth.decode_token")
+        mock_decode = mocker.patch("app.api.v1.auth.decode_token")
         mock_decode.side_effect = Exception("Token decode error")
 
         response = await client.post(

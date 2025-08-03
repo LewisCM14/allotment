@@ -10,7 +10,7 @@ from pydantic import EmailStr
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import (
+from app.api.core.auth_utils import (
     create_token,
     decode_token,
 )

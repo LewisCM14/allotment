@@ -13,7 +13,7 @@ from fastapi import HTTPException, status
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
 
-from app.api.core.auth import create_token
+from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
 from app.api.core.logging import log_timing
 from app.api.middleware.logging_middleware import (

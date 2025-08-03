@@ -14,7 +14,7 @@ from fastapi import HTTPException, status
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import (
+from app.api.core.auth_utils import (
     create_token,
 )
 from app.api.core.config import settings

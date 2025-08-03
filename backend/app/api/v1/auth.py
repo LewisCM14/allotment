@@ -9,7 +9,7 @@ import structlog
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import (
+from app.api.core.auth_utils import (
     authenticate_user,
     create_token,
     decode_token,
