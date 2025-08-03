@@ -12,7 +12,7 @@ vi.mock("../features/auth/forms/LoginForm", () => ({
 	default: () => <div data-testid="login-form">Login Form</div>,
 }));
 
-vi.mock("../features/auth/forms/RegisterForm", () => ({
+vi.mock("../features/registration/forms/RegisterForm", () => ({
 	default: () => <div data-testid="register-form">Register Form</div>,
 }));
 

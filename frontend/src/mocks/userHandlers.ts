@@ -1,4 +1,4 @@
-import type { IRegisterRequest } from "@/features/auth/services/RegistrationService";
+import type { IRegisterRequest } from "@/features/registration/services/RegistrationService";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";

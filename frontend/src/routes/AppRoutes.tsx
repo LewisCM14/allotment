@@ -6,7 +6,7 @@ import PublicRoute from "./PublicRoute";
 
 const LoginForm = React.lazy(() => import("../features/auth/forms/LoginForm"));
 const RegisterForm = React.lazy(
-	() => import("../features/auth/forms/RegisterForm"),
+	() => import("../features/registration/forms/RegisterForm"),
 );
 const ResetPassword = React.lazy(
 	() => import("../features/auth/forms/ResetPassword"),
