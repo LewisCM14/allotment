@@ -12,7 +12,7 @@ const ResetPassword = React.lazy(
 	() => import("../features/auth/forms/ResetPassword"),
 );
 const EmailVerificationPage = React.lazy(
-	() => import("../features/user/pages/EmailVerification"),
+	() => import("../features/registration/pages/EmailVerification"),
 );
 const UserProfile = React.lazy(
 	() => import("../features/user/pages/UserProfile"),

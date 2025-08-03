@@ -2,11 +2,12 @@ import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ResetPassword from "./ResetPassword";
 import SetNewPassword from "./SetNewPassword";
-import * as UserService from "@/features/user/services/UserService";
+import * as AuthService from "../services/AuthService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-vi.mock("@/features/user/services/UserService");
+// Mock AuthService
+vi.mock("../services/AuthService");
 
 describe("ResetPassword", () => {
 	beforeEach(() => {
@@ -43,7 +44,7 @@ describe("ResetPassword", () => {
 	});
 
 	it("calls requestPasswordReset and shows success message", async () => {
-		(UserService.requestPasswordReset as unknown as Mock).mockResolvedValue(
+		(AuthService.requestPasswordReset as unknown as Mock).mockResolvedValue(
 			undefined,
 		);
 		renderForm();
@@ -51,7 +52,7 @@ describe("ResetPassword", () => {
 		await userEvent.click(
 			screen.getByRole("button", { name: /send reset link/i }),
 		);
-		expect(UserService.requestPasswordReset).toHaveBeenCalledWith(
+		expect(AuthService.requestPasswordReset).toHaveBeenCalledWith(
 			"test@example.com",
 		);
 		// Wait for the success message to appear
@@ -61,7 +62,7 @@ describe("ResetPassword", () => {
 	});
 
 	it("shows error if request fails", async () => {
-		(UserService.requestPasswordReset as unknown as Mock).mockRejectedValue(
+		(AuthService.requestPasswordReset as unknown as Mock).mockRejectedValue(
 			new Error("Email not verified"),
 		);
 		renderForm();

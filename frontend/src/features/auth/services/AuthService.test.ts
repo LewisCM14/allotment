@@ -3,7 +3,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
-import { loginUser, refreshAccessToken } from "./AuthService";
+import {
+	loginUser,
+	refreshAccessToken,
+	requestPasswordReset,
+	resetPassword,
+} from "./AuthService";
 
 describe("AuthService", () => {
 	beforeEach(() => {
@@ -253,6 +258,195 @@ describe("AuthService", () => {
 			await expect(refreshAccessToken()).rejects.toThrow("Server error");
 			expect(localStorage.getItem("access_token")).toBeNull();
 			expect(localStorage.getItem("refresh_token")).toBeNull();
+		});
+	});
+
+	describe("requestPasswordReset", () => {
+		it("should request password reset successfully", async () => {
+			const mockResponse = {
+				message:
+					"If your email exists in our system and is verified, you will receive a password reset link shortly.",
+			};
+
+			server.use(
+				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
+					const body = await request.json();
+					expect(body).toEqual({ user_email: "test@example.com" });
+					return HttpResponse.json(mockResponse);
+				}),
+			);
+
+			const result = await requestPasswordReset("test@example.com");
+
+			expect(result).toEqual(mockResponse);
+		});
+
+		it("should handle user not found gracefully", async () => {
+			const mockResponse = {
+				message:
+					"If your email exists in our system and is verified, you will receive a password reset link shortly.",
+			};
+
+			server.use(
+				http.post(buildUrl("/users/password-resets"), () => {
+					return HttpResponse.json(mockResponse);
+				}),
+			);
+
+			// Even for non-existent users, the service should return the same message for security
+			const result = await requestPasswordReset("nonexistent@example.com");
+
+			expect(result).toEqual(mockResponse);
+		});
+
+		it("should handle validation errors", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Invalid email format",
+									type: "value_error.email",
+								},
+							],
+						}),
+						{
+							status: 422,
+							headers: {
+								"content-type": "application/json",
+							},
+						},
+					);
+				}),
+			);
+
+			await expect(requestPasswordReset("invalid-email")).rejects.toThrow(
+				"Invalid email format",
+			);
+		});
+
+		it("should handle network errors appropriately", async () => {
+			vi.spyOn(api, "post").mockRejectedValueOnce(new Error("Network Error"));
+
+			await expect(requestPasswordReset("test@example.com")).rejects.toThrow(
+				"Password reset failed. Please try again later.",
+			);
+		});
+	});
+
+	describe("resetPassword", () => {
+		it("should reset password successfully", async () => {
+			const mockResponse = { message: "Password has been reset successfully" };
+
+			server.use(
+				http.post(
+					buildUrl("/users/password-resets/valid-reset-token"),
+					async ({ request }) => {
+						const body = await request.json();
+						expect(body).toEqual({ new_password: "newPassword123!" });
+						return HttpResponse.json(mockResponse);
+					},
+				),
+			);
+
+			const result = await resetPassword(
+				"valid-reset-token",
+				"newPassword123!",
+			);
+
+			expect(result).toEqual(mockResponse);
+		});
+
+		it("should handle invalid token errors", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets/invalid-token"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Invalid or expired reset token",
+									type: "invalid_token_error",
+								},
+							],
+						}),
+						{
+							status: 400,
+							headers: {
+								"content-type": "application/json",
+							},
+						},
+					);
+				}),
+			);
+
+			await expect(
+				resetPassword("invalid-token", "newPassword123!"),
+			).rejects.toThrow("Invalid or expired reset token");
+		});
+
+		it("should handle token expiry errors", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets/expired-token"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Reset token has expired",
+									type: "token_expired_error",
+								},
+							],
+						}),
+						{
+							status: 400,
+							headers: {
+								"content-type": "application/json",
+							},
+						},
+					);
+				}),
+			);
+
+			await expect(
+				resetPassword("expired-token", "newPassword123!"),
+			).rejects.toThrow(
+				'[{"msg":"Reset token has expired","type":"token_expired_error"}]',
+			);
+		});
+
+		it("should handle password validation errors", async () => {
+			server.use(
+				http.post(buildUrl("/users/password-resets/valid-token"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Password must be at least 8 characters long",
+									type: "value_error.password_too_short",
+								},
+							],
+						}),
+						{
+							status: 422,
+							headers: {
+								"content-type": "application/json",
+							},
+						},
+					);
+				}),
+			);
+
+			await expect(resetPassword("valid-token", "weak")).rejects.toThrow(
+				"Password must be at least 8 characters long",
+			);
+		});
+
+		it("should handle network errors appropriately", async () => {
+			vi.spyOn(api, "post").mockRejectedValueOnce(new Error("Network Error"));
+
+			await expect(
+				resetPassword("any-token", "newPassword123!"),
+			).rejects.toThrow("Failed to reset password");
 		});
 	});
 });

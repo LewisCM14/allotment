@@ -40,7 +40,7 @@ vi.mock("../features/family/pages/FamilyInfo", () => ({
 	default: () => <div data-testid="family-info">Family Info</div>,
 }));
 
-vi.mock("../features/user/pages/EmailVerification", () => ({
+vi.mock("../features/registration/pages/EmailVerification", () => ({
 	default: () => <div data-testid="email-verification">Email Verification</div>,
 }));
 

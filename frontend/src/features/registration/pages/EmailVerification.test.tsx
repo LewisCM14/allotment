@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EmailVerificationPage from "./EmailVerification";
-import * as UserService from "../services/UserService";
+import * as RegistrationService from "../services/RegistrationService";
 import { renderWithRouter } from "@/test-utils";
 import { describe, it, beforeEach, vi, expect, type Mock } from "vitest";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -20,8 +20,8 @@ vi.mock("react-router-dom", async () => {
 	};
 });
 
-// Mock UserService
-vi.mock("../services/UserService");
+// Mock RegistrationService
+vi.mock("../services/RegistrationService");
 
 function setupSearchParams(params: Record<string, string | undefined>) {
 	const searchParams = new URLSearchParams();
@@ -55,7 +55,7 @@ describe("EmailVerificationPage", () => {
 
 	it("shows success message on valid token", async () => {
 		setupSearchParams({ token: "valid-token" });
-		(UserService.verifyEmail as unknown as Mock).mockResolvedValueOnce({
+		(RegistrationService.verifyEmail as unknown as Mock).mockResolvedValueOnce({
 			message: "Email verified",
 		});
 		const { container } = renderPage();
@@ -69,7 +69,7 @@ describe("EmailVerificationPage", () => {
 
 	it("shows password reset flow if fromReset param is true", async () => {
 		setupSearchParams({ token: "valid-token", fromReset: "true" });
-		(UserService.verifyEmail as unknown as Mock).mockResolvedValueOnce({
+		(RegistrationService.verifyEmail as unknown as Mock).mockResolvedValueOnce({
 			message: "Email verified",
 		});
 		const { container } = renderPage();
@@ -94,7 +94,7 @@ describe("EmailVerificationPage", () => {
 
 	it("shows error message on verification failure", async () => {
 		setupSearchParams({ token: "invalid-token" });
-		(UserService.verifyEmail as unknown as Mock).mockRejectedValueOnce(
+		(RegistrationService.verifyEmail as unknown as Mock).mockRejectedValueOnce(
 			new Error("Invalid or expired token"),
 		);
 		const { container } = renderPage();
@@ -111,7 +111,7 @@ describe("EmailVerificationPage", () => {
 
 	it("shows request new verification link and return to home links on error", async () => {
 		setupSearchParams({ token: "invalid-token" });
-		(UserService.verifyEmail as unknown as Mock).mockRejectedValueOnce(
+		(RegistrationService.verifyEmail as unknown as Mock).mockRejectedValueOnce(
 			new Error("Invalid or expired token"),
 		);
 		const { container } = renderPage();

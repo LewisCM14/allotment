@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import SetNewPassword from "./SetNewPassword";
-import * as UserService from "@/features/user/services/UserService";
+import * as AuthService from "../services/AuthService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 
-vi.mock("@/features/user/services/UserService");
+// Mock AuthService
+vi.mock("../services/AuthService");
 
 describe("SetNewPassword", () => {
 	beforeEach(() => {
@@ -58,7 +59,7 @@ describe("SetNewPassword", () => {
 	});
 
 	it("calls resetPassword and navigates on success", async () => {
-		(UserService.resetPassword as unknown as Mock).mockResolvedValue(undefined);
+		(AuthService.resetPassword as unknown as Mock).mockResolvedValue(undefined);
 
 		render(
 			<MemoryRouter initialEntries={["/reset-password?token=token123"]}>
@@ -75,14 +76,14 @@ describe("SetNewPassword", () => {
 			screen.getByRole("button", { name: /set new password/i }),
 		);
 
-		expect(UserService.resetPassword).toHaveBeenCalledWith(
+		expect(AuthService.resetPassword).toHaveBeenCalledWith(
 			"token123",
 			"Password1!",
 		);
 	});
 
 	it("shows error if reset fails", async () => {
-		(UserService.resetPassword as unknown as Mock).mockRejectedValue(
+		(AuthService.resetPassword as unknown as Mock).mockRejectedValue(
 			new Error("Some error"),
 		);
 		renderForm();
@@ -96,7 +97,7 @@ describe("SetNewPassword", () => {
 		);
 
 		// Verify the service was called (proving the error occurred)
-		expect(UserService.resetPassword).toHaveBeenCalledWith(
+		expect(AuthService.resetPassword).toHaveBeenCalledWith(
 			"token123",
 			"Password1!",
 		);

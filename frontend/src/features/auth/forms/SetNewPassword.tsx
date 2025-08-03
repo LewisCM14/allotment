@@ -20,7 +20,7 @@ import {
 	type SetNewPasswordFormData,
 	setNewPasswordSchema,
 } from "./SetNewPasswordSchema";
-import { resetPassword } from "@/features/user/services/UserService";
+import { resetPassword } from "../services/AuthService";
 
 export default function SetNewPassword() {
 	const [searchParams] = useSearchParams();

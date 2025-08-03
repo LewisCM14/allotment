@@ -10,7 +10,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Mock useAuth
 vi.mock("@/store/auth/AuthContext");
 // Mock registerUser
-vi.mock("../services/UserService");
+vi.mock("../services/RegistrationService");
 
 // Helper to select the first non-empty country option
 async function selectFirstCountry() {

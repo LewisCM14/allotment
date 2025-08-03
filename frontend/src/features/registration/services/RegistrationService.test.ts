@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
-import { registerUser } from "./RegistrationService";
+import { registerUser, verifyEmail } from "./RegistrationService";
 
 describe("RegistrationService", () => {
 	beforeEach(() => {
@@ -110,6 +110,81 @@ describe("RegistrationService", () => {
 			).rejects.toThrow(/Password must be at least 8 characters/);
 
 			postSpy.mockRestore();
+		});
+	});
+
+	describe("verifyEmail", () => {
+		it("should verify email successfully with token", async () => {
+			const mockResponse = { message: "Email verified successfully" };
+
+			server.use(
+				http.post(
+					buildUrl("/users/email-verifications/valid-token"),
+					({ request }) => {
+						const url = new URL(request.url);
+						expect(url.searchParams.get("fromReset")).toBe("false");
+						return HttpResponse.json(mockResponse);
+					},
+				),
+			);
+
+			const result = await verifyEmail("valid-token");
+
+			expect(result).toEqual(mockResponse);
+		});
+
+		it("should verify email with fromReset parameter", async () => {
+			const mockResponse = { message: "Email verified for password reset" };
+
+			server.use(
+				http.post(
+					buildUrl("/users/email-verifications/reset-token"),
+					({ request }) => {
+						const url = new URL(request.url);
+						expect(url.searchParams.get("fromReset")).toBe("true");
+						return HttpResponse.json(mockResponse);
+					},
+				),
+			);
+
+			const result = await verifyEmail("reset-token", true);
+
+			expect(result).toEqual(mockResponse);
+		});
+
+		it("should handle invalid token errors", async () => {
+			server.use(
+				http.post(buildUrl("/users/email-verifications/invalid-token"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Invalid or expired verification token",
+									type: "invalid_token_error",
+								},
+							],
+						}),
+						{
+							status: 400,
+							headers: {
+								"content-type": "application/json",
+							},
+						},
+					);
+				}),
+			);
+
+			await expect(verifyEmail("invalid-token")).rejects.toThrow(
+				"Invalid or expired verification token",
+			);
+		});
+
+		it("should handle network errors appropriately", async () => {
+			vi.spyOn(api, "post").mockRejectedValueOnce(new Error("Network Error"));
+
+			await expect(verifyEmail("any-token")).rejects.toThrow(
+				"Email verification failed. Please request a new verification link.",
+			);
 		});
 	});
 });

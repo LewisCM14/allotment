@@ -28,3 +28,22 @@ export const registerUser = async (
 		return handleApiError(error, "Registration failed. Please try again.");
 	}
 };
+
+export const verifyEmail = async (
+	token: string,
+	fromReset = false,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			`/users/email-verifications/${token}`,
+			null,
+			{ params: { fromReset } },
+		);
+		return response.data;
+	} catch (error: unknown) {
+		return handleApiError(
+			error,
+			"Email verification failed. Please request a new verification link.",
+		);
+	}
+};

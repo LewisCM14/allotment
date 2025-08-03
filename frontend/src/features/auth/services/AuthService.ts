@@ -98,3 +98,35 @@ export const refreshAccessToken = async (): Promise<ITokenPair> => {
 		return handleApiError(error, "Failed to refresh authentication token");
 	}
 };
+
+export const requestPasswordReset = async (
+	email: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			"/users/password-resets",
+			{ user_email: email },
+		);
+		return response.data;
+	} catch (error: unknown) {
+		return handleApiError(
+			error,
+			"Password reset failed. Please try again later.",
+		);
+	}
+};
+
+export const resetPassword = async (
+	token: string,
+	newPassword: string,
+): Promise<{ message: string }> => {
+	try {
+		const response = await api.post<{ message: string }>(
+			`/users/password-resets/${token}`,
+			{ new_password: newPassword },
+		);
+		return response.data;
+	} catch (error: unknown) {
+		return handleApiError(error, "Failed to reset password");
+	}
+};

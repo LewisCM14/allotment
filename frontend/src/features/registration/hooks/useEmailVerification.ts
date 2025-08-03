@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { verifyEmail } from "../services/UserService";
+import { verifyEmail } from "../services/RegistrationService";
 
 // Query key factory for email verification
 export const emailVerificationKeys = {
