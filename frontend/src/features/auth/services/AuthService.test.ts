@@ -9,7 +9,6 @@ import {
 	requestPasswordReset,
 	resetPassword,
 } from "./AuthService";
-
 describe("AuthService", () => {
 	beforeEach(() => {
 		Object.defineProperty(navigator, "onLine", {
@@ -269,7 +268,7 @@ describe("AuthService", () => {
 			};
 
 			server.use(
-				http.post(buildUrl("/users/password-resets"), async ({ request }) => {
+				http.post(buildUrl("/auth/password-resets"), async ({ request }) => {
 					const body = await request.json();
 					expect(body).toEqual({ user_email: "test@example.com" });
 					return HttpResponse.json(mockResponse);
@@ -288,7 +287,7 @@ describe("AuthService", () => {
 			};
 
 			server.use(
-				http.post(buildUrl("/users/password-resets"), () => {
+				http.post(buildUrl("/auth/password-resets"), () => {
 					return HttpResponse.json(mockResponse);
 				}),
 			);
@@ -301,7 +300,7 @@ describe("AuthService", () => {
 
 		it("should handle validation errors", async () => {
 			server.use(
-				http.post(buildUrl("/users/password-resets"), () => {
+				http.post(buildUrl("/auth/password-resets"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [
@@ -341,7 +340,7 @@ describe("AuthService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/users/password-resets/valid-reset-token"),
+					buildUrl("/auth/password-resets/valid-reset-token"),
 					async ({ request }) => {
 						const body = await request.json();
 						expect(body).toEqual({ new_password: "newPassword123!" });
@@ -349,7 +348,6 @@ describe("AuthService", () => {
 					},
 				),
 			);
-
 			const result = await resetPassword(
 				"valid-reset-token",
 				"newPassword123!",
@@ -360,7 +358,7 @@ describe("AuthService", () => {
 
 		it("should handle invalid token errors", async () => {
 			server.use(
-				http.post(buildUrl("/users/password-resets/invalid-token"), () => {
+				http.post(buildUrl("/auth/password-resets/invalid-token"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [
@@ -387,7 +385,7 @@ describe("AuthService", () => {
 
 		it("should handle token expiry errors", async () => {
 			server.use(
-				http.post(buildUrl("/users/password-resets/expired-token"), () => {
+				http.post(buildUrl("/auth/password-resets/expired-token"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [
@@ -416,7 +414,7 @@ describe("AuthService", () => {
 
 		it("should handle password validation errors", async () => {
 			server.use(
-				http.post(buildUrl("/users/password-resets/valid-token"), () => {
+				http.post(buildUrl("/auth/password-resets/valid-token"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [

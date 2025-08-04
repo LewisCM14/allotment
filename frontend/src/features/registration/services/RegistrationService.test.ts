@@ -31,14 +31,13 @@ describe("RegistrationService", () => {
 				user_id: "user-new-id",
 			};
 			server.use(
-				http.post(buildUrl("/users/"), () => {
+				http.post(buildUrl("/registration"), () => {
 					return HttpResponse.json(mockApiResponse);
 				}),
-				http.options(buildUrl("/users/"), () => {
+				http.options(buildUrl("/registration"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
-
 			const result = await registerUser(
 				"new@example.com",
 				"password123",
@@ -51,17 +50,16 @@ describe("RegistrationService", () => {
 
 		it("should throw an error if email already exists (409)", async () => {
 			server.use(
-				http.post(buildUrl("/users/"), () => {
+				http.post(buildUrl("/registration"), () => {
 					return HttpResponse.json(
 						{ detail: "Email already registered" },
 						{ status: 409 },
 					);
 				}),
-				http.options(buildUrl("/users/"), () => {
+				http.options(buildUrl("/registration"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
-
 			await expect(
 				registerUser("exists@example.com", "password123", "John", "US"),
 			).rejects.toThrow("Email already registered");
@@ -69,13 +67,13 @@ describe("RegistrationService", () => {
 
 		it("should handle bad request errors (400)", async () => {
 			server.use(
-				http.post(buildUrl("/users/"), () => {
+				http.post(buildUrl("/registration"), () => {
 					return HttpResponse.json(
 						{ detail: "Bad request data" },
 						{ status: 400 },
 					);
 				}),
-				http.options(buildUrl("/users/"), () => {
+				http.options(buildUrl("/registration"), () => {
 					return new HttpResponse(null, { status: 204 });
 				}),
 			);
@@ -119,7 +117,7 @@ describe("RegistrationService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/users/email-verifications/valid-token"),
+					buildUrl("/registration/email-verifications/valid-token"),
 					({ request }) => {
 						const url = new URL(request.url);
 						expect(url.searchParams.get("fromReset")).toBe("false");
@@ -138,7 +136,7 @@ describe("RegistrationService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/users/email-verifications/reset-token"),
+					buildUrl("/registration/email-verifications/reset-token"),
 					({ request }) => {
 						const url = new URL(request.url);
 						expect(url.searchParams.get("fromReset")).toBe("true");
@@ -154,24 +152,27 @@ describe("RegistrationService", () => {
 
 		it("should handle invalid token errors", async () => {
 			server.use(
-				http.post(buildUrl("/users/email-verifications/invalid-token"), () => {
-					return new HttpResponse(
-						JSON.stringify({
-							detail: [
-								{
-									msg: "Invalid or expired verification token",
-									type: "invalid_token_error",
+				http.post(
+					buildUrl("/registration/email-verifications/invalid-token"),
+					() => {
+						return new HttpResponse(
+							JSON.stringify({
+								detail: [
+									{
+										msg: "Invalid or expired verification token",
+										type: "invalid_token_error",
+									},
+								],
+							}),
+							{
+								status: 400,
+								headers: {
+									"content-type": "application/json",
 								},
-							],
-						}),
-						{
-							status: 400,
-							headers: {
-								"content-type": "application/json",
 							},
-						},
-					);
-				}),
+						);
+					},
+				),
 			);
 
 			await expect(verifyEmail("invalid-token")).rejects.toThrow(
