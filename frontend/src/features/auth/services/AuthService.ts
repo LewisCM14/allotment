@@ -104,7 +104,7 @@ export const requestPasswordReset = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			"/users/password-resets",
+			"/auth/password-resets",
 			{ user_email: email },
 		);
 		return response.data;
@@ -122,7 +122,7 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`/users/password-resets/${token}`,
+			`/auth/password-resets/${token}`,
 			{ new_password: newPassword },
 		);
 		return response.data;

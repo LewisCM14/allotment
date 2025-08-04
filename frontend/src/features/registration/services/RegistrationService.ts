@@ -22,7 +22,7 @@ export const registerUser = async (
 			user_country_code: countryCode,
 		};
 
-		const response = await api.post<ITokenPair>("/users/", requestData);
+		const response = await api.post<ITokenPair>("/registration", requestData);
 		return response.data;
 	} catch (error: unknown) {
 		return handleApiError(error, "Registration failed. Please try again.");
@@ -35,7 +35,7 @@ export const verifyEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`/users/email-verifications/${token}`,
+			`/registration/email-verifications/${token}`,
 			null,
 			{ params: { fromReset } },
 		);
