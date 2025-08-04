@@ -17,10 +17,12 @@ class TestUserAllotment:
     @pytest.mark.asyncio
     async def test_create_user_allotment(self, client, mocker):
         """Test creating a user allotment."""
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         # Register a new user and obtain an access token
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"allotment_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
@@ -51,9 +53,11 @@ class TestUserAllotment:
     @pytest.mark.asyncio
     async def test_get_and_update_user_allotment(self, client, mocker):
         """Test retrieving and updating a user allotment."""
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"allotment2_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
@@ -150,10 +154,12 @@ class TestUserAllotment:
         self, client, mocker, payload, expected_status
     ):
         """Test validation errors when creating allotment with invalid data."""
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         # Register user
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"val_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
@@ -169,9 +175,11 @@ class TestUserAllotment:
         )
         assert resp.status_code == expected_status
         # Try to create an allotment with invalid payload, expect 422
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"allotment3_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
@@ -189,9 +197,11 @@ class TestUserAllotment:
 
     @pytest.mark.asyncio
     async def test_get_user_allotment_not_found(self, client, mocker):
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"allotment4_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",
@@ -210,9 +220,11 @@ class TestUserAllotment:
     @pytest.mark.asyncio
     async def test_duplicate_user_allotment(self, client, mocker):
         """Test that duplicate allotment creation is rejected."""
-        _ = mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        _ = mock_email_service(
+            mocker, "app.api.v1.registration.send_verification_email"
+        )
         reg_resp = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": f"dup_{uuid.uuid4().hex}@example.com",
                 "user_password": "SecurePass123!",

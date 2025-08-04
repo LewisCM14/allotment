@@ -1,163 +1,35 @@
 """
-User Endpoints
-- Provides API endpoints for user-related operations.
+User Profile Endpoints
+- Provides API endpoints for user profile management and email verification status.
 """
 
 import structlog
-from authlib.jose import jwt
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import EmailStr
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth_utils import (
-    create_token,
-    decode_token,
-)
-from app.api.core.config import settings
 from app.api.core.database import get_db
-from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
-from app.api.factories.user_factory import UserFactoryValidationError
-from app.api.middleware.error_handler import (
-    translate_token_exceptions,
-    validate_user_exists,
-)
 from app.api.middleware.exception_handler import (
-    BaseApplicationError,
-    BusinessLogicError,
-    EmailAlreadyRegisteredError,
-    EmailVerificationError,
-    InvalidTokenError,
+    validate_user_exists,
 )
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
-    sanitize_error_message,
 )
 from app.api.models import User
-from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import (
     EmailRequest,
     MessageResponse,
-    PasswordResetRequest,
-    PasswordUpdate,
-    UserCreate,
     VerificationStatusResponse,
 )
 from app.api.services.email_service import (
     send_verification_email,
 )
-from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
 logger = structlog.get_logger()
 
 INTERNAL_SERVER_ERROR_MSG = "Internal server error"
-
-
-@router.post(
-    "",
-    tags=["User"],
-    response_model=TokenResponse,
-    status_code=status.HTTP_201_CREATED,
-    summary="Register a new user",
-    description="Creates a new user account and returns an access token",
-)
-@limiter.limit("5/minute")
-async def create_user(
-    request: Request, user: UserCreate, db: AsyncSession = Depends(get_db)
-) -> TokenResponse:
-    """
-    Create a new user account.
-
-    Args:
-        user: User registration details
-        db: Database session
-
-    Returns:
-        TokenResponse: JWT access token
-
-    Raises:
-        EmailAlreadyRegisteredError: Email is already registered
-        BusinessLogicError: Other business logic errors
-    """
-    log_context = {
-        "email": user.user_email,
-        "request_id": request_id_ctx_var.get(),
-        "operation": "user_registration",
-    }
-    logger.info("Attempting user registration", **log_context)
-
-    try:
-        # Check if email already exists
-        with log_timing("check_existing_user", request_id=log_context["request_id"]):
-            query = select(User).where(User.user_email == user.user_email)
-            result = await db.execute(query)
-            if result.scalar_one_or_none():
-                raise EmailAlreadyRegisteredError()
-
-        # Create user
-        with log_timing("create_user_account", request_id=log_context["request_id"]):
-            async with UserUnitOfWork(db) as uow:
-                new_user = await uow.create_user(user)
-    except BaseApplicationError:
-        raise
-    except Exception as e:
-        error_type = type(e).__name__
-        sanitized_error = sanitize_error_message(str(e))
-        logger.error(
-            "Error during registration",
-            error_type=error_type,
-            error_details=sanitized_error,
-            exc_info=True,
-            **log_context,
-        )
-        raise BusinessLogicError(
-            message="An unexpected error occurred during registration.",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    if not new_user or not new_user.user_id:
-        raise BusinessLogicError(
-            message="Failed to create user",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-    log_context["user_id"] = str(new_user.user_id)
-
-    # Send verification email (non-blocking)
-    try:
-        with log_timing(
-            "send_verification_email", request_id=log_context["request_id"]
-        ):
-            await send_verification_email(
-                user_email=user.user_email, user_id=str(new_user.user_id)
-            )
-    except Exception as email_error:
-        # Log but don't fail registration for email issues
-        sanitized_error = sanitize_error_message(str(email_error))
-        logger.error(
-            "Failed to send verification email during registration",
-            error=sanitized_error,
-            error_type=type(email_error).__name__,
-            **log_context,
-        )
-
-    # Generate tokens
-    with log_timing("generate_tokens", request_id=log_context["request_id"]):
-        access_token = create_token(user_id=str(new_user.user_id), token_type="access")
-        refresh_token = create_token(
-            user_id=str(new_user.user_id), token_type="refresh"
-        )
-
-    logger.info("User successfully registered", **log_context)
-    return TokenResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        user_first_name=new_user.user_first_name,
-        is_email_verified=new_user.is_email_verified,
-        user_id=str(new_user.user_id),
-    )
 
 
 @router.post(
@@ -214,77 +86,6 @@ async def request_verification_email(
         return MessageResponse(message=INTERNAL_SERVER_ERROR_MSG)
 
 
-@router.post(
-    "/email-verifications/{token}",
-    tags=["User"],
-    response_model=MessageResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Verify email using token from path",
-    description="Verifies the user's email using the provided token in the URL path. This is a POST request as it changes server state.",
-)
-async def verify_email_token(
-    token: str,
-    from_reset: bool = Query(False, alias="fromReset"),
-    db: AsyncSession = Depends(get_db),
-) -> MessageResponse:
-    """
-    Verify the user's email using the token.
-
-    Args:
-        token: The JWT token from the verification link
-        db: Database session
-
-    Returns:
-        MessageResponse: Success message
-    """
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "verify_email",
-        "token_provided": bool(token),
-    }
-    logger.debug("Processing email verification", **log_context)
-
-    @translate_token_exceptions
-    async def attempt_decode() -> str:
-        try:
-            payload = jwt.decode(
-                token,
-                settings.PUBLIC_KEY,
-                claims_options={"exp": {"essential": True}},
-            )
-            return str(payload.get("sub", ""))
-        except Exception as exc:
-            logger.error(
-                "Failed to decode token",
-                error=str(exc),
-                token_provided=bool(token),
-                **{k: v for k, v in log_context.items() if k != "token_provided"},
-            )
-            raise InvalidTokenError("Invalid or expired token")
-
-    try:
-        user_id = await attempt_decode()
-    except InvalidTokenError:
-        logger.warning("Invalid JWT token provided", **log_context)
-        raise EmailVerificationError("Invalid verification token")
-    log_context["user_id"] = user_id
-    log_context["is_from_reset"] = from_reset
-
-    async with UserUnitOfWork(db) as uow:
-        user = await uow.verify_email(user_id)
-    logger.info(
-        "Email verification processed",
-        is_verified=user.is_email_verified,
-        **log_context,
-    )
-
-    if from_reset:
-        return MessageResponse(
-            message="Email verified successfully. You can now reset your password."
-        )
-    return MessageResponse(message="Email verified successfully")
-
-
 @router.get(
     "/verification-status",
     tags=["User"],
@@ -323,186 +124,3 @@ async def check_verification_status(
         is_email_verified=user.is_email_verified,
         user_id=str(user.user_id),
     )
-
-
-@router.post(
-    "/password-resets",
-    tags=["User"],
-    response_model=MessageResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Request password reset",
-    description="Sends a password reset link to the user's email",
-)
-@limiter.limit("5/minute")
-async def request_password_reset(
-    request: Request,
-    user_data: PasswordResetRequest,
-    db: AsyncSession = Depends(get_db),
-) -> MessageResponse:
-    """
-    Request a password reset link.
-
-    Args:
-        request: The incoming request
-        user_data: Request containing user's email
-        db: Database session
-
-    Returns:
-        MessageResponse: Success message
-
-    Raises:
-        UserNotFoundError: If the email is not found
-    """
-    user_email = user_data.user_email
-    log_context = {
-        "email": user_email,
-        "request_id": request_id_ctx_var.get(),
-        "operation": "request_password_reset",
-    }
-    logger.debug("Password reset requested", **log_context)
-
-    try:
-        query = select(User).where(User.user_email == user_email)
-        db_result = await db.execute(query)
-        user = db_result.scalar_one_or_none()
-
-        if not user:
-            logger.warning("User not found for password reset", **log_context)
-            return MessageResponse(
-                message="If your email exists in our system and is verified, you will receive a password reset link shortly."
-            )
-
-        if not user.is_email_verified:
-            logger.info(
-                "User email not verified, sending verification email", **log_context
-            )
-            await send_verification_email(
-                user_email=user.user_email, user_id=str(user.user_id), from_reset=True
-            )
-            return MessageResponse(
-                message="Your email is not verified. A verification email has been sent to your address."
-            )
-
-        async with UserUnitOfWork(db) as uow:
-            reset_result = await uow.request_password_reset(user_email)
-            logger.info(
-                "Password reset operation completed",
-                status=reset_result["status"],
-                **log_context,
-            )
-            return MessageResponse(message=reset_result["message"])
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"{type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
-        raise
-    except Exception as exc:
-        sanitized_error = sanitize_error_message(str(exc))
-        logger.error(
-            "Unhandled exception during password reset request",
-            error=sanitized_error,
-            error_type=type(exc).__name__,
-            **log_context,
-        )
-        raise BusinessLogicError(
-            message="An unexpected error occurred during password reset request",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )
-
-
-@router.post(
-    "/password-resets/{token}",
-    tags=["User"],
-    response_model=MessageResponse,
-    status_code=status.HTTP_200_OK,
-    summary="Reset password with token from path",
-    description="Resets a user's password using a valid reset token from the URL path and new password from the request body.",
-)
-@limiter.limit("5/minute")
-async def reset_password(
-    token: str,
-    password_data: PasswordUpdate,
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-) -> MessageResponse:
-    """
-    Reset user's password using a reset token.
-
-    Args:
-        token: The reset token from the URL path
-        password_data: Contains the new password
-        request: The incoming request
-        db: Database session
-
-    Returns:
-        MessageResponse: Success message
-
-    Raises:
-        InvalidTokenError: If the token is invalid or expired
-        ValidationError: If the new password doesn't meet requirements
-        BusinessLogicError: Other unexpected errors
-    """
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "reset_password",
-    }
-    logger.debug("Password reset attempt with token", **log_context)
-
-    try:
-        try:
-            decode_token(token)
-        except Exception as exc:
-            logger.error(
-                "General exception during token decode",
-                error=str(exc),
-                **log_context,
-            )
-            raise BusinessLogicError(
-                message=INTERNAL_SERVER_ERROR_MSG,
-                status_code=status.HTTP_401_UNAUTHORIZED,
-            )
-
-        async with UserUnitOfWork(db) as uow:
-            await uow.reset_password(token, password_data.new_password)
-
-        logger.info("Password reset successful", **log_context)
-        return MessageResponse(message="Password has been reset successfully")
-    except UserFactoryValidationError as e:
-        logger.warning(
-            "Password validation failed during reset",
-            error=str(e),
-            field=e.field,
-            **log_context,
-        )
-        raise e
-    except InvalidTokenError as e:
-        logger.warning("Invalid reset token", error=str(e), **log_context)
-        # Return both a message and the error code for consistency
-        raise HTTPException(
-            status_code=e.status_code, detail=[{"msg": str(e), "type": e.error_code}]
-        )
-    except BaseApplicationError as exc:
-        logger.warning(
-            f"{type(exc).__name__}",
-            error=str(exc),
-            error_code=exc.error_code,
-            status_code=exc.status_code,
-            **log_context,
-        )
-        raise
-    except Exception as exc:
-        sanitized_error = sanitize_error_message(str(exc))
-        logger.error(
-            "Unhandled exception during password reset",
-            error=sanitized_error,
-            error_type=type(exc).__name__,
-            **log_context,
-        )
-        raise BusinessLogicError(
-            message=INTERNAL_SERVER_ERROR_MSG,
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        )

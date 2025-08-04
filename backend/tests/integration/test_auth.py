@@ -17,9 +17,9 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_success(self, client, mocker):
         """Test user login with correct credentials."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "testuser@example.com",
                 "user_password": "SecurePass123!",
@@ -45,11 +45,11 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_updates_last_active_date(self, client, mocker):
         """Test that login updates the user's last_active_date."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
 
         # Register a new user
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "datetest@example.com",
                 "user_password": "SecurePass123!",
@@ -111,9 +111,9 @@ class TestUserLogin:
     @pytest.mark.asyncio
     async def test_login_with_token_generation_exception(self, client, mocker):
         """Test handling of exceptions during token generation."""
-        mocker.patch("app.api.v1.user.send_verification_email")
+        mocker.patch("app.api.v1.registration.send_verification_email")
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "token-error@example.com",
                 "user_password": "SecurePass123!",
@@ -277,9 +277,9 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token_generates_unique_tokens(self, client, mocker):
         """Test that refresh token endpoint generates unique tokens."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "unique-tokens@example.com",
                 "user_password": "SecurePass123!",
@@ -308,10 +308,10 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_token(self, client, mocker):
         """Test refreshing access token with valid refresh token."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
 
         register_response = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "refresh@example.com",
                 "user_password": "SecurePass123!",
@@ -354,10 +354,10 @@ class TestTokenRefresh:
     @pytest.mark.asyncio
     async def test_refresh_with_access_token(self, client, mocker):
         """Test refreshing with an access token instead of refresh token."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
 
         register_response = await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "wrong_token@example.com",
                 "user_password": "SecurePass123!",
@@ -479,11 +479,11 @@ class TestUserAuthSuccessFlows:
     @pytest.mark.asyncio
     async def test_login_success_with_token_generation(self, client, mocker):
         """Test successful login with proper token generation."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
 
         # Create a user first
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "login-success@example.com",
                 "user_password": "TestPass123!@",
@@ -513,11 +513,11 @@ class TestUserAuthSuccessFlows:
     @pytest.mark.asyncio
     async def test_refresh_token_success_flow(self, client, mocker):
         """Test successful refresh token flow with proper response."""
-        mock_email_service(mocker, "app.api.v1.user.send_verification_email")
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
 
         # Create and login user to get tokens
         await client.post(
-            f"{PREFIX}/users",
+            f"{PREFIX}/registration",
             json={
                 "user_email": "refresh-success@example.com",
                 "user_password": "TestPass123!@",

@@ -172,7 +172,7 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
         raise
 
 
-@app.post("/api/v1/log-client-error")
+@app.post("/api/v1/log-client-error", tags=["Utility"])
 async def handle_log_client_error(
     error_log: ClientErrorLog, request: Request
 ) -> Dict[str, str]:
