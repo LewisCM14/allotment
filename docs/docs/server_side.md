@@ -33,7 +33,7 @@ All while delivering a fast and seamless "request - response" experience to many
 ### User Tables
 
 === "User"
-    Ability to create a user account with email and password that can have a first name and country code assigned to it. This information should be editable by the associated user and thus must be readable also.
+    Ability to create a user account with email and password that can have a first name and country code assigned to it. Whilst all fields must be readable, only a users country and name must be editable.
 
     !!! info
         Supporting routes like: login & logout, password reset and email confirmation are also provided when interacting with the User table.

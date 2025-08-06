@@ -75,7 +75,8 @@ _High level interface functionality accompanied by low fidelity designs._
 <u>_**Medium Priority**_</u>
 
 === "User Profile Interface"
-    - Ability for users to update their: first name, email address, password and country code.
+    - Ability for users to view & update their: first name, password and country code. This interface will also display a users registered email address and verification status. With the ability to request a verification email be sent.
+    
 
 === "User Password Reset Interface"
     - Ability for users to enter a new password, after having come from the magic link provided via email to their registered address.
