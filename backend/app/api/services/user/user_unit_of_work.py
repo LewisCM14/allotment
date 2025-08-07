@@ -12,6 +12,7 @@ import structlog
 from authlib.jose import jwt
 from fastapi import HTTPException, status
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth_utils import (
@@ -24,7 +25,7 @@ from app.api.middleware.error_handler import (
     translate_db_exceptions,
     translate_token_exceptions,
 )
-from app.api.middleware.exception_handler import InvalidTokenError
+from app.api.middleware.exception_handler import DatabaseIntegrityError, InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -93,10 +94,6 @@ class UserUnitOfWork:
                 "Transaction rolled back", transaction="rollback", **log_context
             )
         else:
-            from sqlalchemy.exc import IntegrityError
-
-            from app.api.middleware.exception_handler import DatabaseIntegrityError
-
             try:
                 with log_timing("db_commit"):
                     await self.db.commit()
@@ -406,3 +403,41 @@ class UserUnitOfWork:
 
         logger.debug("Getting user by email via unit of work", **log_context)
         return await self.user_repo.get_user_by_email(email)
+
+    @translate_db_exceptions
+    async def update_user_profile(
+        self, user_id: str, first_name: str, country_code: str
+    ) -> User:
+        """Update a user's profile information.
+
+        Args:
+            user_id: The user's ID
+            first_name: The new first name
+            country_code: The new country code
+
+        Returns:
+            The updated user
+
+        Raises:
+            UserNotFoundError: If the user is not found
+            InvalidTokenError: If the user ID format is invalid
+        """
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "update_user_profile_uow",
+        }
+
+        logger.info("Updating user profile", **log_context)
+
+        with log_timing("uow_update_user_profile", request_id=self.request_id):
+            user = await self.user_repo.update_user_profile(
+                user_id, first_name, country_code
+            )
+            
+            log_context["updated_fields"] = {
+                "first_name": first_name,
+                "country_code": country_code
+            }
+            logger.info("User profile updated successfully", **log_context)
+            return user

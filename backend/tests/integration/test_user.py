@@ -382,3 +382,283 @@ class TestPasswordReset:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert "Internal server error" in response.json()["detail"][0]["msg"]
+
+
+class TestUserProfile:
+    @pytest.mark.asyncio
+    async def test_get_user_profile_success(self, client, mocker):
+        """Test getting user profile successfully."""
+        # Mock the current user from JWT
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+        mock_user.user_email = "test@example.com"
+        mock_user.user_first_name = "Test"
+        mock_user.user_country_code = "GB"
+        mock_user.is_email_verified = True
+
+        # Mock validate_user_exists at the auth_utils level since get_current_user calls it
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+
+        # Create a valid JWT token
+        token = create_token(str(mock_user.user_id))
+
+        response = await client.get(
+            f"{USER_PREFIX}/profile",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data["user_id"] == str(mock_user.user_id)
+        assert data["user_email"] == "test@example.com"
+        assert data["user_first_name"] == "Test"
+        assert data["user_country_code"] == "GB"
+        assert data["is_email_verified"] is True
+
+    @pytest.mark.asyncio
+    async def test_get_user_profile_unauthorized(self, client):
+        """Test getting user profile without authentication."""
+        response = await client.get(f"{USER_PREFIX}/profile")
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_success(self, client, mocker):
+        """Test updating user profile successfully."""
+        # Mock the current user from JWT
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+        mock_user.user_email = "test@example.com"
+        mock_user.user_first_name = "Test"
+        mock_user.user_country_code = "GB"
+        mock_user.is_email_verified = True
+
+        # Mock the updated user from UOW
+        mock_updated_user = MagicMock()
+        mock_updated_user.user_id = mock_user.user_id
+        mock_updated_user.user_email = "test@example.com"
+        mock_updated_user.user_first_name = "Updated Name"
+        mock_updated_user.user_country_code = "US"
+        mock_updated_user.is_email_verified = True
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+
+        # Mock validate_user_exists at the auth_utils level since get_current_user calls it
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        # Mock the UserUnitOfWork
+        mock_uow = AsyncMock()
+        mock_uow.update_user_profile = AsyncMock(return_value=mock_updated_user)
+
+        with patch("app.api.v1.user.UserUnitOfWork") as mock_uow_class:
+            mock_uow_class.return_value.__aenter__ = AsyncMock(return_value=mock_uow)
+            mock_uow_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+            # Create a valid JWT token
+            token = create_token(str(mock_user.user_id))
+
+            response = await client.put(
+                f"{USER_PREFIX}/profile",
+                json={
+                    "user_first_name": "Updated Name",
+                    "user_country_code": "US",
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+            data = response.json()
+            assert data["user_id"] == str(mock_user.user_id)
+            assert data["user_email"] == "test@example.com"
+            assert data["user_first_name"] == "Updated Name"
+            assert data["user_country_code"] == "US"
+            assert data["is_email_verified"] is True
+
+            # Verify the UOW was called with correct parameters
+            mock_uow.update_user_profile.assert_called_once_with(
+                user_id=str(mock_user.user_id),
+                first_name="Updated Name",
+                country_code="US",
+            )
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_unauthorized(self, client):
+        """Test updating user profile without authentication."""
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_first_name": "Updated Name",
+                "user_country_code": "US",
+            },
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_invalid_data(self, client, mocker):
+        """Test updating user profile with invalid data."""
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+
+        # Mock validate_user_exists at the auth_utils level since get_current_user calls it
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        # Create a valid JWT token
+        token = create_token(str(mock_user.user_id))
+
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_first_name": "X",  # Too short
+                "user_country_code": "USA",  # Too long
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_invalid_country_code(self, client, mocker):
+        """Test updating user profile with invalid country code only."""
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        token = create_token(str(mock_user.user_id))
+
+        # Test with invalid country code (too long)
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_first_name": "ValidName",
+                "user_country_code": "USA",  # Should be 2 characters
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_invalid_first_name(self, client, mocker):
+        """Test updating user profile with invalid first name only."""
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        token = create_token(str(mock_user.user_id))
+
+        # Test with invalid first name (too short)
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_first_name": "A",  # Should be at least 2 characters
+                "user_country_code": "US",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_missing_required_fields(self, client, mocker):
+        """Test updating user profile with missing required fields."""
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        token = create_token(str(mock_user.user_id))
+
+        # Test with missing user_first_name
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_country_code": "US",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+        # Test with missing user_country_code
+        response = await client.put(
+            f"{USER_PREFIX}/profile",
+            json={
+                "user_first_name": "ValidName",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_authentication_enforcement(self, client, mocker):
+        """Test that users can only update their own profile (authentication enforcement)."""
+        mock_user = MagicMock()
+        mock_user.user_id = uuid.uuid4()
+        mock_user.user_email = "test@example.com"
+        mock_user.user_first_name = "John"
+        mock_user.user_country_code = "GB"
+
+        # Mock the updated user
+        mock_updated_user = MagicMock()
+        mock_updated_user.user_id = mock_user.user_id
+        mock_updated_user.user_email = "test@example.com"
+        mock_updated_user.user_first_name = "Jane"
+        mock_updated_user.user_country_code = "US"
+        mock_updated_user.is_email_verified = True
+
+        mocker.patch("app.api.v1.user.get_current_user", return_value=mock_user)
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists", return_value=mock_user
+        )
+
+        # Mock the UserUnitOfWork
+        mock_uow = AsyncMock()
+        mock_uow.update_user_profile = AsyncMock(return_value=mock_updated_user)
+
+        with patch("app.api.v1.user.UserUnitOfWork") as mock_uow_class:
+            mock_uow_class.return_value.__aenter__ = AsyncMock(return_value=mock_uow)
+            mock_uow_class.return_value.__aexit__ = AsyncMock(return_value=None)
+
+            token = create_token(str(mock_user.user_id))
+
+            response = await client.put(
+                f"{USER_PREFIX}/profile",
+                json={
+                    "user_first_name": "Jane",
+                    "user_country_code": "US",
+                },
+                headers={"Authorization": f"Bearer {token}"},
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+
+            # Verify the UOW was called with the user ID from the token (ensuring security)
+            mock_uow.update_user_profile.assert_called_once_with(
+                user_id=str(
+                    mock_user.user_id
+                ),  # This ensures only the authenticated user's data is updated
+                first_name="Jane",
+                country_code="US",
+            )

@@ -12,7 +12,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.logging import log_timing
-from app.api.middleware.error_handler import translate_db_exceptions
+from app.api.middleware.error_handler import translate_db_exceptions, validate_user_exists
 from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
@@ -162,6 +162,51 @@ class UserRepository:
             user.set_password(new_password)
 
             logger.info("User password updated", **log_context)
+
+        return user
+
+    @translate_db_exceptions
+    async def update_user_profile(
+        self, user_id: str, first_name: str, country_code: str
+    ) -> User:
+        """Update a user's profile information.
+
+        Args:
+            user_id: The user's ID
+            first_name: The new first name
+            country_code: The new country code
+
+        Returns:
+            Updated User object
+
+        Raises:
+            UserNotFoundError: If the user is not found
+            InvalidTokenError: If the user ID format is invalid
+        """
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "update_user_profile",
+        }
+
+        logger.debug("Updating user profile", **log_context)
+
+        timing_context = {
+            k: v for k, v in log_context.items() if k not in ("request_id", "operation")
+        }
+
+        with log_timing(
+            "db_update_user_profile", request_id=self.request_id, **timing_context
+        ):
+            user = await validate_user_exists(
+                db_session=self.db, user_model=User, user_id=user_id
+            )
+
+            log_context["email"] = user.user_email
+            user.user_first_name = first_name
+            user.user_country_code = country_code
+
+            logger.info("User profile updated successfully", **log_context)
 
         return user
 
