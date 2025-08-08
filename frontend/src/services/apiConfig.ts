@@ -22,12 +22,12 @@ const getEnvVariable = (
 // --- API URL Configuration ---
 let configuredUrl = getEnvVariable("VITE_API_URL", "http://localhost:8000"); // Default for local dev if nothing is set
 
-import { errorMonitor } from "@/services/errorMonitoring";
-
 if (!configuredUrl) {
 	const msg =
 		"VITE_API_URL is not defined. Defaulting to 'http://localhost:8000'. Check your .env files or runtime environment configuration.";
 	if (import.meta.env.PROD) {
+		// Lazy import to avoid circular dependency
+		const { errorMonitor } = require("@/services/errorMonitoring");
 		errorMonitor.captureMessage(msg, { context: "apiConfig_missing_api_url" });
 	} else {
 		console.warn(msg);
@@ -59,6 +59,8 @@ if (!configuredApiVersion) {
 	const msg =
 		"VITE_API_VERSION is not defined. Defaulting to '/api/v1'. Check your .env files or runtime environment configuration.";
 	if (import.meta.env.PROD) {
+		// Lazy import to avoid circular dependency
+		const { errorMonitor } = require("@/services/errorMonitoring");
 		errorMonitor.captureMessage(msg, {
 			context: "apiConfig_missing_api_version",
 		});
