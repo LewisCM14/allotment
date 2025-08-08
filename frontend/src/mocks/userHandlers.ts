@@ -15,7 +15,7 @@ export const userHandlers = [
 	http.get(buildUrl("/users/profile"), async ({ request }) => {
 		const authHeader = request.headers.get("authorization");
 
-		if (!authHeader || !authHeader.startsWith("Bearer ")) {
+		if (!authHeader?.startsWith("Bearer ")) {
 			return jsonError("Unauthorized", 401);
 		}
 

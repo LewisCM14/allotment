@@ -31,6 +31,160 @@ interface UserAllotmentPresenterProps {
 	readonly hasExistingData: boolean;
 }
 
+// Helper functions to reduce cognitive complexity
+function getDisplayText(
+	value: string | number,
+	hasData: boolean,
+	placeholder: string,
+	unit?: string,
+): string {
+	if (value) {
+		return unit ? `${value} ${unit}` : String(value);
+	}
+	return hasData ? "Not provided" : placeholder;
+}
+
+function getDisplayClassName(hasData: boolean): string {
+	return `text-lg ${!hasData ? "text-muted-foreground italic" : "text-foreground"}`;
+}
+
+function getAreaDisplayText(area: number, hasData: boolean): string {
+	if (area > 0) {
+		return `${area.toFixed(1)} m²`;
+	}
+	return hasData ? "0.0 m²" : "Will calculate automatically";
+}
+
+function getAreaClassName(hasData: boolean, area: number): string {
+	const baseClass = "text-lg font-semibold";
+	const colorClass =
+		!hasData && area === 0 ? "text-muted-foreground italic" : "text-primary";
+	return `${baseClass} ${colorClass}`;
+}
+
+function PostalCodeField({
+	isEditing,
+	register,
+	errors,
+	postalCode,
+	hasExistingData,
+	onEdit,
+}: {
+	readonly isEditing: boolean;
+	readonly register: UseFormRegister<AllotmentFormData>;
+	readonly errors: FieldErrors<AllotmentFormData>;
+	readonly postalCode: string;
+	readonly hasExistingData: boolean;
+	readonly onEdit: () => void;
+}) {
+	return (
+		<div className="border-b border-border pb-4">
+			<div className="flex items-center justify-between mb-2">
+				<Label
+					htmlFor="allotment_postal_zip_code"
+					className="font-medium text-muted-foreground"
+				>
+					Postal/Zip Code
+				</Label>
+				{!isEditing && (
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={onEdit}
+						className="h-8 px-2"
+						aria-label="Edit allotment details"
+					>
+						<Edit className="h-4 w-4" />
+					</Button>
+				)}
+			</div>
+			{isEditing ? (
+				<div className="space-y-2">
+					<Input
+						{...register("allotment_postal_zip_code")}
+						id="allotment_postal_zip_code"
+						placeholder="12345 or A1A 1A1"
+						autoComplete="postal-code"
+						className="text-lg"
+					/>
+					{errors.allotment_postal_zip_code && (
+						<p className="text-sm text-destructive">
+							{errors.allotment_postal_zip_code.message}
+						</p>
+					)}
+				</div>
+			) : (
+				<p className={getDisplayClassName(hasExistingData)}>
+					{getDisplayText(
+						postalCode,
+						hasExistingData,
+						"Enter your postal/zip code",
+					)}
+				</p>
+			)}
+		</div>
+	);
+}
+
+function DimensionField({
+	fieldName,
+	label,
+	placeholder,
+	isEditing,
+	register,
+	errors,
+	value,
+	hasExistingData,
+}: {
+	readonly fieldName: "allotment_width_meters" | "allotment_length_meters";
+	readonly label: string;
+	readonly placeholder: string;
+	readonly isEditing: boolean;
+	readonly register: UseFormRegister<AllotmentFormData>;
+	readonly errors: FieldErrors<AllotmentFormData>;
+	readonly value: number;
+	readonly hasExistingData: boolean;
+}) {
+	const placeholderText = `Enter ${label.toLowerCase()}`;
+
+	return (
+		<div className="border-b border-border pb-4">
+			<Label
+				htmlFor={fieldName}
+				className="font-medium text-muted-foreground mb-2 block"
+			>
+				{label}
+			</Label>
+			{isEditing ? (
+				<div className="space-y-2">
+					<Input
+						{...register(fieldName, {
+							setValueAs: (value) =>
+								value === "" ? undefined : Number.parseFloat(value),
+						})}
+						id={fieldName}
+						type="number"
+						step="0.1"
+						min="1"
+						max="100"
+						placeholder={placeholder}
+						className="text-lg"
+					/>
+					{errors[fieldName] && (
+						<p className="text-sm text-destructive">
+							{errors[fieldName]?.message}
+						</p>
+					)}
+				</div>
+			) : (
+				<p className={getDisplayClassName(hasExistingData)}>
+					{getDisplayText(value, hasExistingData, placeholderText, "m")}
+				</p>
+			)}
+		</div>
+	);
+}
+
 export default function UserAllotmentPresenter({
 	postalCode,
 	width,
@@ -56,160 +210,56 @@ export default function UserAllotmentPresenter({
 		);
 	}
 
+	const cardDescription = hasExistingData
+		? "Manage your allotment details"
+		: "Add your allotment details to get started";
+
 	return (
 		<Card className="w-full">
 			<CardHeader>
 				<CardTitle className="text-2xl">Your Allotment</CardTitle>
-				<CardDescription>
-					{hasExistingData
-						? "Manage your allotment details"
-						: "Add your allotment details to get started"}
-				</CardDescription>
+				<CardDescription>{cardDescription}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<div className="space-y-6">
 					<div className="grid gap-4">
-						<div className="border-b border-border pb-4">
-							<div className="flex items-center justify-between mb-2">
-								<Label
-									htmlFor="allotment_postal_zip_code"
-									className="font-medium text-muted-foreground"
-								>
-									Postal/Zip Code
-								</Label>
-								{!isEditing && (
-									<Button
-										variant="ghost"
-										size="sm"
-										onClick={onEdit}
-										className="h-8 px-2"
-										aria-label="Edit allotment details"
-									>
-										<Edit className="h-4 w-4" />
-									</Button>
-								)}
-							</div>
-							{isEditing ? (
-								<div className="space-y-2">
-									<Input
-										{...register("allotment_postal_zip_code")}
-										id="allotment_postal_zip_code"
-										placeholder="12345 or A1A 1A1"
-										autoComplete="postal-code"
-										className="text-lg"
-									/>
-									{errors.allotment_postal_zip_code && (
-										<p className="text-sm text-destructive">
-											{errors.allotment_postal_zip_code.message}
-										</p>
-									)}
-								</div>
-							) : (
-								<p
-									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
-								>
-									{postalCode ||
-										(hasExistingData
-											? "Not provided"
-											: "Enter your postal/zip code")}
-								</p>
-							)}
-						</div>
+						<PostalCodeField
+							isEditing={isEditing}
+							register={register}
+							errors={errors}
+							postalCode={postalCode}
+							hasExistingData={hasExistingData}
+							onEdit={onEdit}
+						/>
 
-						<div className="border-b border-border pb-4">
-							<Label
-								htmlFor="allotment_width_meters"
-								className="font-medium text-muted-foreground mb-2 block"
-							>
-								Width (meters)
-							</Label>
-							{isEditing ? (
-								<div className="space-y-2">
-									<Input
-										{...register("allotment_width_meters", {
-											setValueAs: (value) =>
-												value === "" ? undefined : Number.parseFloat(value),
-										})}
-										id="allotment_width_meters"
-										type="number"
-										step="0.1"
-										min="1"
-										max="100"
-										placeholder="10.5"
-										className="text-lg"
-									/>
-									{errors.allotment_width_meters && (
-										<p className="text-sm text-destructive">
-											{errors.allotment_width_meters.message}
-										</p>
-									)}
-								</div>
-							) : (
-								<p
-									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
-								>
-									{width
-										? `${width} m`
-										: hasExistingData
-											? "Not provided"
-											: "Enter width in meters"}
-								</p>
-							)}
-						</div>
+						<DimensionField
+							fieldName="allotment_width_meters"
+							label="Width (meters)"
+							placeholder="10.5"
+							isEditing={isEditing}
+							register={register}
+							errors={errors}
+							value={width}
+							hasExistingData={hasExistingData}
+						/>
 
-						<div className="border-b border-border pb-4">
-							<Label
-								htmlFor="allotment_length_meters"
-								className="font-medium text-muted-foreground mb-2 block"
-							>
-								Length (meters)
-							</Label>
-							{isEditing ? (
-								<div className="space-y-2">
-									<Input
-										{...register("allotment_length_meters", {
-											setValueAs: (value) =>
-												value === "" ? undefined : Number.parseFloat(value),
-										})}
-										id="allotment_length_meters"
-										type="number"
-										step="0.1"
-										min="1"
-										max="100"
-										placeholder="20.0"
-										className="text-lg"
-									/>
-									{errors.allotment_length_meters && (
-										<p className="text-sm text-destructive">
-											{errors.allotment_length_meters.message}
-										</p>
-									)}
-								</div>
-							) : (
-								<p
-									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
-								>
-									{length
-										? `${length} m`
-										: hasExistingData
-											? "Not provided"
-											: "Enter length in meters"}
-								</p>
-							)}
-						</div>
+						<DimensionField
+							fieldName="allotment_length_meters"
+							label="Length (meters)"
+							placeholder="20.0"
+							isEditing={isEditing}
+							register={register}
+							errors={errors}
+							value={length}
+							hasExistingData={hasExistingData}
+						/>
 
 						<div className="border-b border-border pb-4">
 							<Label className="font-medium text-muted-foreground mb-2 block">
 								Total Area
 							</Label>
-							<p
-								className={`text-lg font-semibold ${!hasExistingData && currentArea === 0 ? "text-muted-foreground italic" : "text-primary"}`}
-							>
-								{currentArea > 0
-									? `${currentArea.toFixed(1)} m²`
-									: hasExistingData
-										? "0.0 m²"
-										: "Will calculate automatically"}
+							<p className={getAreaClassName(hasExistingData, currentArea)}>
+								{getAreaDisplayText(currentArea, hasExistingData)}
 							</p>
 						</div>
 					</div>

@@ -12,7 +12,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.logging import log_timing
-from app.api.middleware.error_handler import translate_db_exceptions, validate_user_exists
+from app.api.middleware.error_handler import (
+    translate_db_exceptions,
+    validate_user_exists,
+)
 from app.api.middleware.exception_handler import InvalidTokenError
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
@@ -201,6 +204,7 @@ class UserRepository:
             user = await validate_user_exists(
                 db_session=self.db, user_model=User, user_id=user_id
             )
+            assert isinstance(user, User)
 
             log_context["email"] = user.user_email
             user.user_first_name = first_name

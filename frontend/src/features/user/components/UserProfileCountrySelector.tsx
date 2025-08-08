@@ -6,7 +6,6 @@ import {
 	CommandInput,
 	CommandItem,
 } from "@/components/ui/Command";
-import { Label } from "@/components/ui/Label";
 import {
 	Popover,
 	PopoverContent,
@@ -147,9 +146,9 @@ const UserProfileCountrySelector = memo(
 								<PopoverTrigger asChild>
 									<Button
 										variant="outline"
-										// biome-ignore lint/a11y/useSemanticElements: This is a searchable combobox pattern, not a simple select
-										role="combobox"
+										aria-haspopup="listbox"
 										aria-expanded={isDropdownOpen}
+										aria-label="Select country"
 										className="w-full justify-between"
 									>
 										{selectedCountry

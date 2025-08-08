@@ -151,8 +151,8 @@ export default function UserAllotmentContainer() {
 		createAllotmentMutation.isPending || updateAllotmentMutation.isPending;
 
 	const currentError =
-		error ||
-		createAllotmentMutation.error?.message ||
+		error ??
+		createAllotmentMutation.error?.message ??
 		updateAllotmentMutation.error?.message;
 
 	return (

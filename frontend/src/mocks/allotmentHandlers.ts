@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";
-import { jsonOk, jsonError } from "./responseHelpers";
+import { jsonOk } from "./responseHelpers";
 
 interface IAllotmentRequest {
 	allotment_postal_zip_code: string;

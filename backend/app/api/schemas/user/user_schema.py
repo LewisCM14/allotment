@@ -4,6 +4,8 @@ User Schemas
 - These schemas are used for request validation and response serialization.
 """
 
+from typing import Any
+
 from pydantic import ConfigDict, EmailStr, Field, field_validator
 
 from app.api.schemas.base_schema import SecureBaseModel
@@ -17,8 +19,11 @@ JWT_EXAMPLE = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
 FIRST_NAME_EXAMPLE = "John"
 USER_ID_EXAMPLE = "123e4567-e89b-12d3-a456-426614174000"
 NEW_PASSWORD_DESC = "New password"
+EMAIL_VERIFIED_DESC = "Indicates if the user's email is verified"
+USER_ID_DESC = "The unique ID of the user"
 
-def get_email_field() -> Field:
+
+def get_email_field() -> Any:
     """Get the standard email field definition."""
     return Field(
         ...,
@@ -26,7 +31,8 @@ def get_email_field() -> Field:
         examples=[USER_EMAIL_EXAMPLE],
     )
 
-def get_first_name_field() -> Field:
+
+def get_first_name_field() -> Any:
     """Get the standard first name field definition."""
     return Field(
         ...,
@@ -36,7 +42,8 @@ def get_first_name_field() -> Field:
         examples=[FIRST_NAME_EXAMPLE],
     )
 
-def get_country_code_field() -> Field:
+
+def get_country_code_field() -> Any:
     """Get the standard country code field definition."""
     return Field(
         ...,
@@ -47,7 +54,10 @@ def get_country_code_field() -> Field:
         pattern=r"^[A-Z]{2}$",
     )
 
-def get_password_field(description: str = "Password must be between 8 and 30 characters") -> Field:
+
+def get_password_field(
+    description: str = "Password must be between 8 and 30 characters",
+) -> Any:
     """Get the standard password field definition."""
     return Field(
         ...,
@@ -119,12 +129,12 @@ class TokenResponse(SecureBaseModel):
     )
     is_email_verified: bool = Field(
         default=False,
-        description="Indicates if the user's email is verified",
+        description=EMAIL_VERIFIED_DESC,
         examples=[True, False],
     )
     user_id: str = Field(
         ...,
-        description="The unique ID of the user",
+        description=USER_ID_DESC,
         examples=[USER_ID_EXAMPLE],
     )
 
@@ -183,12 +193,12 @@ class VerificationStatusResponse(SecureBaseModel):
 
     is_email_verified: bool = Field(
         ...,
-        description="Indicates if the user's email is verified",
+        description=EMAIL_VERIFIED_DESC,
         examples=[True, False],
     )
     user_id: str = Field(
         ...,
-        description="The unique ID of the user",
+        description=USER_ID_DESC,
         examples=[USER_ID_EXAMPLE],
     )
 
@@ -281,7 +291,7 @@ class UserProfileResponse(SecureBaseModel):
 
     user_id: str = Field(
         ...,
-        description="The unique ID of the user",
+        description=USER_ID_DESC,
         examples=[USER_ID_EXAMPLE],
     )
     user_email: str = Field(
@@ -301,7 +311,7 @@ class UserProfileResponse(SecureBaseModel):
     )
     is_email_verified: bool = Field(
         ...,
-        description="Indicates if the user's email is verified",
+        description=EMAIL_VERIFIED_DESC,
         examples=[True, False],
     )
 
@@ -324,15 +334,17 @@ class UserProfileUpdate(SecureBaseModel):
     user_first_name: str = get_first_name_field()
     user_country_code: str = get_country_code_field()
 
-    @field_validator('user_first_name')
+    @field_validator("user_first_name")
     @classmethod
     def validate_first_name(cls, v: str) -> str:
         """Validate first name contains only allowed characters."""
-        if not v.replace(' ', '').replace('-', '').replace("'", "").isalpha():
-            raise ValueError("First name can only contain letters, spaces, hyphens, and apostrophes")
+        if not v.replace(" ", "").replace("-", "").replace("'", "").isalpha():
+            raise ValueError(
+                "First name can only contain letters, spaces, hyphens, and apostrophes"
+            )
         return v.strip()
 
-    @field_validator('user_country_code')
+    @field_validator("user_country_code")
     @classmethod
     def validate_country_code(cls, v: str) -> str:
         """Validate and normalize country code."""

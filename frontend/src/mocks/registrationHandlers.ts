@@ -1,4 +1,3 @@
-import type { ITokenPair } from "@/store/auth/AuthContext";
 import { http, HttpResponse } from "msw";
 import { buildUrl } from "./buildUrl";
 import { jsonOk, jsonError } from "./responseHelpers";

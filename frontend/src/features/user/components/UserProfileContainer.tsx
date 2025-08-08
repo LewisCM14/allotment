@@ -39,17 +39,13 @@ export default function UserProfileContainer() {
 		},
 	});
 
-	const {
-		data: profileData,
-		isLoading: isProfileLoading,
-		error: profileError,
-	} = useUserProfile();
+	const { data: profileData, error: profileError } = useUserProfile();
 
 	const {
 		data: verificationData,
 		isLoading: isCheckingStatus,
 		error: verificationError,
-	} = useEmailVerificationStatus(user?.user_email || profileData?.user_email);
+	} = useEmailVerificationStatus(user?.user_email ?? profileData?.user_email);
 
 	const updateProfileMutation = useUpdateUserProfile();
 	const requestVerificationMutation = useRequestEmailVerification();
@@ -128,7 +124,7 @@ export default function UserProfileContainer() {
 
 	// Store user email
 	useEffect(() => {
-		const email = user?.user_email || profileData?.user_email;
+		const email = user?.user_email ?? profileData?.user_email;
 		if (email) {
 			localStorage.setItem("user_email", email);
 		}
@@ -187,7 +183,7 @@ export default function UserProfileContainer() {
 	);
 
 	const handleRequestVerification = useCallback(async () => {
-		const email = user?.user_email || profileData?.user_email;
+		const email = user?.user_email ?? profileData?.user_email;
 		if (!email) {
 			const noEmailError = "Email address not available";
 			setError(noEmailError);
@@ -221,7 +217,7 @@ export default function UserProfileContainer() {
 	}, [user?.user_email, profileData?.user_email, requestVerificationMutation]);
 
 	const handleRefreshStatus = useCallback(async () => {
-		const email = user?.user_email || profileData?.user_email;
+		const email = user?.user_email ?? profileData?.user_email;
 		if (!email) {
 			const noEmailError = "Email address not available";
 			setError(noEmailError);
@@ -269,10 +265,10 @@ export default function UserProfileContainer() {
 	const isSaving = updateProfileMutation.isPending;
 
 	const currentError =
-		error ||
-		verificationError?.message ||
-		requestVerificationMutation.error?.message ||
-		refreshStatusMutation.error?.message ||
+		error ??
+		verificationError?.message ??
+		requestVerificationMutation.error?.message ??
+		refreshStatusMutation.error?.message ??
 		updateProfileMutation.error?.message;
 
 	return (
