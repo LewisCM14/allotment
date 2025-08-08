@@ -3,48 +3,49 @@ import {
 	Card,
 	CardContent,
 	CardDescription,
+	CardFooter,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { FormError } from "@/components/FormError";
-import { Save, Loader2 } from "lucide-react";
-import type {
-	FieldErrors,
-	UseFormHandleSubmit,
-	UseFormRegister,
-} from "react-hook-form";
+import { Save, Loader2, Edit, X } from "lucide-react";
+import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { AllotmentFormData } from "../forms/AllotmentSchema";
 
 interface UserAllotmentPresenterProps {
-	readonly register: UseFormRegister<AllotmentFormData>;
-	readonly handleSubmit: UseFormHandleSubmit<AllotmentFormData>;
-	readonly errors: FieldErrors<AllotmentFormData>;
+	readonly postalCode: string;
+	readonly width: number;
+	readonly length: number;
 	readonly currentArea: number;
-	readonly error: string;
-	readonly isOffline: boolean;
+	readonly isEditing: boolean;
 	readonly isLoading: boolean;
-	readonly isSubmitting: boolean;
-	readonly isMutating: boolean;
-	readonly isUpdate: boolean;
-	readonly buttonText: string;
-	readonly onSubmit: (data: AllotmentFormData) => Promise<void>;
+	readonly isSaving: boolean;
+	readonly error?: string;
+	readonly register: UseFormRegister<AllotmentFormData>;
+	readonly errors: FieldErrors<AllotmentFormData>;
+	readonly onEdit: () => void;
+	readonly onSave: () => void;
+	readonly onCancel: () => void;
+	readonly hasExistingData: boolean;
 }
 
 export default function UserAllotmentPresenter({
-	register,
-	handleSubmit,
-	errors,
+	postalCode,
+	width,
+	length,
 	currentArea,
-	error,
-	isOffline,
+	isEditing,
 	isLoading,
-	isSubmitting,
-	isMutating,
-	isUpdate,
-	buttonText,
-	onSubmit,
+	isSaving,
+	error,
+	register,
+	errors,
+	onEdit,
+	onSave,
+	onCancel,
+	hasExistingData,
 }: UserAllotmentPresenterProps) {
 	if (isLoading) {
 		return (
@@ -58,113 +59,193 @@ export default function UserAllotmentPresenter({
 	return (
 		<Card className="w-full">
 			<CardHeader>
-				<CardTitle>Your Allotment</CardTitle>
+				<CardTitle className="text-2xl">Your Allotment</CardTitle>
 				<CardDescription>
-					{isUpdate
+					{hasExistingData
 						? "Manage your allotment details"
-						: "Create your allotment to get started"}
+						: "Add your allotment details to get started"}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<form onSubmit={handleSubmit(onSubmit)}>
-					{error && <FormError message={error} className="mb-4" />}
+				<div className="space-y-6">
+					<div className="grid gap-4">
+						<div className="border-b border-border pb-4">
+							<div className="flex items-center justify-between mb-2">
+								<Label
+									htmlFor="allotment_postal_zip_code"
+									className="font-medium text-muted-foreground"
+								>
+									Postal/Zip Code
+								</Label>
+								{!isEditing && (
+									<Button
+										variant="ghost"
+										size="sm"
+										onClick={onEdit}
+										className="h-8 px-2"
+										aria-label="Edit allotment details"
+									>
+										<Edit className="h-4 w-4" />
+									</Button>
+								)}
+							</div>
+							{isEditing ? (
+								<div className="space-y-2">
+									<Input
+										{...register("allotment_postal_zip_code")}
+										id="allotment_postal_zip_code"
+										placeholder="12345 or A1A 1A1"
+										autoComplete="postal-code"
+										className="text-lg"
+									/>
+									{errors.allotment_postal_zip_code && (
+										<p className="text-sm text-destructive">
+											{errors.allotment_postal_zip_code.message}
+										</p>
+									)}
+								</div>
+							) : (
+								<p
+									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
+								>
+									{postalCode ||
+										(hasExistingData
+											? "Not provided"
+											: "Enter your postal/zip code")}
+								</p>
+							)}
+						</div>
 
-					{isOffline && (
-						<div className="p-3 mb-4 text-muted-foreground bg-muted/30 rounded border border-muted">
-							<p className="text-sm">
-								You are currently offline. Connect to the internet to save your
-								allotment.
+						<div className="border-b border-border pb-4">
+							<Label
+								htmlFor="allotment_width_meters"
+								className="font-medium text-muted-foreground mb-2 block"
+							>
+								Width (meters)
+							</Label>
+							{isEditing ? (
+								<div className="space-y-2">
+									<Input
+										{...register("allotment_width_meters", {
+											setValueAs: (value) =>
+												value === "" ? undefined : Number.parseFloat(value),
+										})}
+										id="allotment_width_meters"
+										type="number"
+										step="0.1"
+										min="1"
+										max="100"
+										placeholder="10.5"
+										className="text-lg"
+									/>
+									{errors.allotment_width_meters && (
+										<p className="text-sm text-destructive">
+											{errors.allotment_width_meters.message}
+										</p>
+									)}
+								</div>
+							) : (
+								<p
+									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
+								>
+									{width
+										? `${width} m`
+										: hasExistingData
+											? "Not provided"
+											: "Enter width in meters"}
+								</p>
+							)}
+						</div>
+
+						<div className="border-b border-border pb-4">
+							<Label
+								htmlFor="allotment_length_meters"
+								className="font-medium text-muted-foreground mb-2 block"
+							>
+								Length (meters)
+							</Label>
+							{isEditing ? (
+								<div className="space-y-2">
+									<Input
+										{...register("allotment_length_meters", {
+											setValueAs: (value) =>
+												value === "" ? undefined : Number.parseFloat(value),
+										})}
+										id="allotment_length_meters"
+										type="number"
+										step="0.1"
+										min="1"
+										max="100"
+										placeholder="20.0"
+										className="text-lg"
+									/>
+									{errors.allotment_length_meters && (
+										<p className="text-sm text-destructive">
+											{errors.allotment_length_meters.message}
+										</p>
+									)}
+								</div>
+							) : (
+								<p
+									className={`text-lg ${!hasExistingData ? "text-muted-foreground italic" : "text-foreground"}`}
+								>
+									{length
+										? `${length} m`
+										: hasExistingData
+											? "Not provided"
+											: "Enter length in meters"}
+								</p>
+							)}
+						</div>
+
+						<div className="border-b border-border pb-4">
+							<Label className="font-medium text-muted-foreground mb-2 block">
+								Total Area
+							</Label>
+							<p
+								className={`text-lg font-semibold ${!hasExistingData && currentArea === 0 ? "text-muted-foreground italic" : "text-primary"}`}
+							>
+								{currentArea > 0
+									? `${currentArea.toFixed(1)} m²`
+									: hasExistingData
+										? "0.0 m²"
+										: "Will calculate automatically"}
 							</p>
 						</div>
-					)}
+					</div>
 
-					<div className="flex flex-col gap-6">
-						<div className="grid gap-3">
-							<Label htmlFor="allotment_postal_zip_code">Postal/Zip Code</Label>
-							<Input
-								id="allotment_postal_zip_code"
-								type="text"
-								placeholder="12345 or A1A 1A1"
-								autoComplete="postal-code"
-								{...register("allotment_postal_zip_code")}
-								aria-invalid={
-									errors.allotment_postal_zip_code ? "true" : "false"
-								}
-							/>
-							{errors.allotment_postal_zip_code && (
-								<p className="text-sm text-destructive">
-									{errors.allotment_postal_zip_code.message}
-								</p>
-							)}
-						</div>
-
-						<div className="grid gap-3">
-							<Label htmlFor="allotment_width_meters">Width (meters)</Label>
-							<Input
-								id="allotment_width_meters"
-								type="number"
-								step="0.1"
-								min="1"
-								max="100"
-								placeholder="10.5"
-								{...register("allotment_width_meters", {
-									setValueAs: (value) =>
-										value === "" ? undefined : Number.parseFloat(value),
-								})}
-								aria-invalid={errors.allotment_width_meters ? "true" : "false"}
-							/>
-							{errors.allotment_width_meters && (
-								<p className="text-sm text-destructive">
-									{errors.allotment_width_meters.message}
-								</p>
-							)}
-						</div>
-
-						<div className="grid gap-3">
-							<Label htmlFor="allotment_length_meters">Length (meters)</Label>
-							<Input
-								id="allotment_length_meters"
-								type="number"
-								step="0.1"
-								min="1"
-								max="100"
-								placeholder="20.0"
-								{...register("allotment_length_meters", {
-									setValueAs: (value) =>
-										value === "" ? undefined : Number.parseFloat(value),
-								})}
-								aria-invalid={errors.allotment_length_meters ? "true" : "false"}
-							/>
-							{errors.allotment_length_meters && (
-								<p className="text-sm text-destructive">
-									{errors.allotment_length_meters.message}
-								</p>
-							)}
-						</div>
-
-						{/* Real-time area display */}
-						<div className="p-4 bg-accent/20 border border-accent/30 rounded-lg">
-							<div className="flex items-center justify-between">
-								<span className="text-sm font-medium text-accent-foreground/80">
-									Total Area:
-								</span>
-								<span className="text-lg font-semibold text-primary">
-									{currentArea > 0 ? `${currentArea.toFixed(1)} m²` : "0.0 m²"}
-								</span>
-							</div>
-						</div>
-
+					{error && <FormError message={error} className="mb-4" />}
+				</div>
+			</CardContent>
+			<CardFooter className="flex justify-between">
+				<div />
+				{isEditing && (
+					<div className="flex items-center gap-2">
 						<Button
-							type="submit"
-							disabled={isSubmitting || isMutating || isOffline}
-							className="w-full"
+							variant="outline"
+							size="sm"
+							onClick={onCancel}
+							disabled={isSaving}
 						>
-							<Save className="mr-2 h-4 w-4" />
-							{buttonText}
+							<X className="h-4 w-4 mr-1" />
+							Cancel
+						</Button>
+						<Button size="sm" onClick={onSave} disabled={isSaving}>
+							{isSaving ? (
+								<>
+									<Loader2 className="h-4 w-4 animate-spin mr-1" />
+									Saving...
+								</>
+							) : (
+								<>
+									<Save className="h-4 w-4 mr-1" />
+									Save
+								</>
+							)}
 						</Button>
 					</div>
-				</form>
-			</CardContent>
+				)}
+			</CardFooter>
 		</Card>
 	);
 }

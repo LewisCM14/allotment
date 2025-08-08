@@ -22,7 +22,8 @@ export default function UserAllotmentContainer() {
 		handleSubmit,
 		setValue,
 		control,
-		formState: { errors, isSubmitting },
+		reset,
+		formState: { errors },
 	} = useForm<AllotmentFormData>({
 		resolver: zodResolver(allotmentSchema),
 		mode: "onBlur",
@@ -49,34 +50,18 @@ export default function UserAllotmentContainer() {
 		(formValues.allotment_length_meters ?? 0);
 
 	const [error, setError] = useState<string>("");
-	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+	const [isEditing, setIsEditing] = useState(false);
 	const { isAuthenticated } = useAuth();
 	const navigate = useNavigate();
 
-	// Handle online/offline events
-	useEffect(() => {
-		const handleOnline = () => setIsOffline(false);
-		const handleOffline = () => setIsOffline(true);
-
-		if (typeof window !== "undefined" && window.addEventListener) {
-			window.addEventListener("online", handleOnline);
-			window.addEventListener("offline", handleOffline);
-
-			return () => {
-				if (window.removeEventListener) {
-					window.removeEventListener("online", handleOnline);
-					window.removeEventListener("offline", handleOffline);
-				}
-			};
-		}
-	}, []);
-
+	// Handle authentication redirect
 	useEffect(() => {
 		if (!isAuthenticated) {
 			navigate("/login");
 		}
 	}, [isAuthenticated, navigate]);
 
+	// Update form when allotment data is loaded
 	useEffect(() => {
 		if (existingAllotment) {
 			setValue(
@@ -94,10 +79,12 @@ export default function UserAllotmentContainer() {
 		}
 	}, [existingAllotment, setValue]);
 
+	// Handle errors
 	useEffect(() => {
 		if (queryError) {
 			if (queryError instanceof NoAllotmentFoundError) {
 				setError(""); // Clear any error since this is expected for new users
+				setIsEditing(true); // Start in edit mode for new users
 			} else {
 				const errorMessage = formatError(queryError);
 				setError(`Failed to load allotment data: ${errorMessage}`);
@@ -107,18 +94,37 @@ export default function UserAllotmentContainer() {
 		}
 	}, [queryError]);
 
-	// Handle form submission
-	const onSubmit = useCallback(
-		async (data: AllotmentFormData) => {
+	const handleEdit = useCallback(() => {
+		setIsEditing(true);
+		setError("");
+	}, []);
+
+	const handleCancel = useCallback(() => {
+		setIsEditing(false);
+		setError("");
+		// Reset form to original values
+		if (existingAllotment) {
+			setValue(
+				"allotment_postal_zip_code",
+				existingAllotment.allotment_postal_zip_code,
+			);
+			setValue(
+				"allotment_width_meters",
+				existingAllotment.allotment_width_meters,
+			);
+			setValue(
+				"allotment_length_meters",
+				existingAllotment.allotment_length_meters,
+			);
+		} else {
+			reset();
+		}
+	}, [existingAllotment, setValue, reset]);
+
+	const handleSave = useCallback(
+		handleSubmit(async (data: AllotmentFormData) => {
 			try {
 				setError("");
-
-				if (isOffline) {
-					setError(
-						"You are offline. Please connect to the internet to save your allotment.",
-					);
-					return;
-				}
 
 				if (existingAllotment) {
 					// Update existing allotment
@@ -127,45 +133,44 @@ export default function UserAllotmentContainer() {
 					// Create new allotment
 					await createAllotmentMutation.mutateAsync(data);
 				}
+				setIsEditing(false);
 			} catch (err: unknown) {
 				const errorMessage = formatError(err);
 				setError(errorMessage);
 			}
-		},
-		[
-			existingAllotment,
-			isOffline,
-			createAllotmentMutation,
-			updateAllotmentMutation,
-		],
+		}),
+		[],
 	);
 
 	// Derive presentation data
-	const isUpdate = !!existingAllotment;
-	const isMutating =
+	const postalCode = existingAllotment?.allotment_postal_zip_code ?? "";
+	const width = existingAllotment?.allotment_width_meters ?? 0;
+	const length = existingAllotment?.allotment_length_meters ?? 0;
+
+	const isSaving =
 		createAllotmentMutation.isPending || updateAllotmentMutation.isPending;
 
-	let buttonText = isUpdate ? "Update Allotment" : "Create Allotment";
-	if (isSubmitting || isMutating) {
-		buttonText = isUpdate ? "Updating..." : "Creating...";
-	} else if (isOffline) {
-		buttonText = "Offline";
-	}
+	const currentError =
+		error ||
+		createAllotmentMutation.error?.message ||
+		updateAllotmentMutation.error?.message;
 
 	return (
 		<UserAllotmentPresenter
-			register={register}
-			handleSubmit={handleSubmit}
-			errors={errors}
+			postalCode={postalCode}
+			width={width}
+			length={length}
 			currentArea={currentArea}
-			error={error}
-			isOffline={isOffline}
+			isEditing={isEditing}
 			isLoading={isLoading}
-			isSubmitting={isSubmitting}
-			isMutating={isMutating}
-			isUpdate={isUpdate}
-			buttonText={buttonText}
-			onSubmit={onSubmit}
+			isSaving={isSaving}
+			error={currentError}
+			register={register}
+			errors={errors}
+			onEdit={handleEdit}
+			onSave={handleSave}
+			onCancel={handleCancel}
+			hasExistingData={!!existingAllotment}
 		/>
 	);
 }

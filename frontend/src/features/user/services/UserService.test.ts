@@ -33,7 +33,7 @@ describe("UserService", () => {
 		vi.clearAllMocks();
 
 		// Reset error monitoring mock
-		(errorMonitoring.errorMonitor as any) = mockErrorMonitor;
+		Object.assign(errorMonitoring.errorMonitor, mockErrorMonitor);
 	});
 
 	afterEach(() => {
