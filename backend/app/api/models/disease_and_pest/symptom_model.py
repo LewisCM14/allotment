@@ -26,9 +26,7 @@ class Symptom(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True, nullable=False
-    )
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     # Relationships
     diseases: Mapped[List["Disease"]] = relationship(

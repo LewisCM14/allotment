@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import bcrypt
 import structlog
@@ -30,6 +30,9 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
+
+if TYPE_CHECKING:
+    from app.api.models.grow_guide.guide_options_model import Day, Feed
 
 logger = structlog.get_logger()
 
@@ -67,6 +70,9 @@ class User(Base):
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
+    )
+    feed_days: Mapped[list["UserFeedDay"]] = relationship(
+        "UserFeedDay", back_populates="user", cascade="all, delete-orphan"
     )
 
     @property
@@ -197,3 +203,35 @@ class UserAllotment(Base):
             area_sqm=area_sqm,
             **log_context,
         )
+
+
+class UserFeedDay(Base):
+    """UserFeedDay model representing a user's preferred day for each type of plant feed."""
+
+    __tablename__ = "user_feed_day"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    feed_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("feed.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    day_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("day.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="feed_days")
+    feed: Mapped["Feed"] = relationship("Feed", back_populates="user_feed_days")
+    day: Mapped["Day"] = relationship("Day")
