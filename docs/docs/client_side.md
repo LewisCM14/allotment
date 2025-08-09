@@ -317,9 +317,7 @@ There are several aspects to consider when deciding on the appropriate technolog
                 - PublicRoute.tsx
             /services
                 - api.ts
-                - apiCache.ts
                 - apiConfig.ts
-                - apiService.ts
                 - errorMonitoring.ts
             /store
                 /auth

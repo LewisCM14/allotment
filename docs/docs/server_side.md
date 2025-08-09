@@ -354,7 +354,7 @@ _The server-side architecture is designed to enforce clear boundaries between la
     /app
         /api
             /core
-                - auth.py
+                - auth_utils.py
                 - config.py
                 - database.py
                 - limiter.py
