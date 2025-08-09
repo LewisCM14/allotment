@@ -86,7 +86,7 @@ The application is designed to be implemented following the Walking Skeleton app
 1. **User Preference Interface**
 
     ??? info
-        Will require the implementation of the Feed and User Feed Day tables.
+        Will require the implementation of the Day, Feed and User Feed Day tables.
         
         ???+ tip "Future Improvement"
             This is the first point where offline data synchronization would offer tangible benefit. Cross tab sync for authentication could also be considered here.
