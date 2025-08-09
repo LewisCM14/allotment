@@ -93,7 +93,7 @@ The solution must also allow for modularity in the applications architecture suc
     !!! info
         - The user email & password fields do not require the default `VARCHAR` constraint.
         - The User first name field requires the `VARCHAR` constraint applied with an additional rule, preventing the use of numbers also.
-        - When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables is required for data consistency.
+        - When an user is removed from this table a cascading delete upon the: user active varieties, user feed day, user preferences and user allotment tables is required for data consistency.
         
     ???+ tip "Future Improvement"
         - Long term the Country Code will be used in conjunction with the User Allotment table to provide live weather information to users.
@@ -115,6 +115,9 @@ The solution must also allow for modularity in the applications architecture suc
 
 === "User Feed Day"
     A junction table that uses a composite primary key for storing what day each unique users gives each type of plant food.
+
+=== "User Notifications"
+    Holds a users notification preferences. Stored in a dedicated table so their preferences can persist but also be turned off entirely if required as this is likely to be a premium feature long term. It is to default with them all turned on.
 
 ---
 

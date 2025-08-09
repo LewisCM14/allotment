@@ -52,6 +52,9 @@ The application is designed to be implemented following the Walking Skeleton app
         !!! tip "Future Improvement"
             Gmail SMTP is sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
 
+1. **User Profile Interface**
+    - At this point it is minimal effort to setup the User Profile interface in its entirety.
+
 1. **CI/CD**
     - GitHub actions are to be setup in order to automate builds and release pipelines to production. These pipelines are to ensure Docker containers, that have passed all required validations, are registered on GitHub and then deployed to a hosting provider that offers managed PostgreSQL solutions.
 
@@ -83,7 +86,7 @@ The application is designed to be implemented following the Walking Skeleton app
 1. **User Preference Interface**
 
     ??? info
-        Will require the implementation of the Feed and User Feed Day tables.
+        Will require the implementation of the Day, Feed and User Feed Day tables.
         
         ???+ tip "Future Improvement"
             This is the first point where offline data synchronization would offer tangible benefit. Cross tab sync for authentication could also be considered here.
@@ -100,12 +103,7 @@ The application is designed to be implemented following the Walking Skeleton app
 
 1. **Weekly ToDo**
 
-1. **User Profile Interface**
-
 1. **User Notification Interface**
-    
-    ??? info
-        This will require a database migration in order to store a users notification preference.
 
 1. **Public Grow Guides** 
 

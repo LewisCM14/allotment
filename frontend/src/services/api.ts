@@ -1,5 +1,3 @@
-import { AUTH_ERRORS } from "@/features/user/services/UserService";
-import { apiCache } from "@/services/apiCache";
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import { errorMonitor } from "@/services/errorMonitoring";
 import type { ITokenPair } from "@/store/auth/AuthContext";
@@ -27,15 +25,17 @@ export const handleApiError = (
 ): never => {
 	if (axios.isAxiosError(error)) {
 		if (!error.response) {
-			throw new Error(AUTH_ERRORS.NETWORK_ERROR);
+			throw new Error(
+				"Network error. Please check your connection and try again.",
+			);
 		}
 
 		if (error.response.status === 401) {
-			throw new Error(AUTH_ERRORS.INVALID_CREDENTIALS);
+			throw new Error("Invalid email or password. Please try again.");
 		}
 
 		if (error.response.status === 500) {
-			throw new Error(AUTH_ERRORS.SERVER_ERROR);
+			throw new Error("Server error. Please try again later.");
 		}
 
 		const errorDetail = error.response?.data?.detail;
@@ -67,40 +67,6 @@ const api = axios.create({
 	withCredentials: true,
 });
 
-// Add custom methods to the api object
-interface ApiExtensions {
-	cachedGet: <T>(url: string, config?: AxiosRequestConfig) => Promise<T>;
-}
-
-// Extend the api type
-const extendedApi = api as typeof api & ApiExtensions;
-
-/**
- * Cached GET request implementation
- * Checks memory cache first, then makes network request if needed
- */
-extendedApi.cachedGet = async <T>(
-	url: string,
-	config?: AxiosRequestConfig,
-): Promise<T> => {
-	// Create a unique cache key based on URL and params
-	const cacheKey = `${url}:${JSON.stringify(config?.params ?? {})}`;
-
-	// Try to get from cache first
-	const cachedData = apiCache.get(cacheKey);
-	if (cachedData) {
-		return cachedData as T;
-	}
-
-	// If not in cache, make the request
-	const response = await api.get<T>(url, config);
-
-	// Store in cache
-	apiCache.set(cacheKey, response.data);
-
-	return response.data;
-};
-
 const checkOnlineStatus = (): boolean => {
 	return navigator.onLine;
 };
@@ -113,6 +79,22 @@ const handleOnlineStatus = () => {
 
 const handleRequestCancellation = (config: AxiosRequestConfig) => {
 	if (!config.url) return;
+
+	// Only cancel requests for certain endpoints that support cancellation
+	const cancelableEndpoints = [
+		"/search", // Search queries can be safely canceled
+		"/autocomplete", // Autocomplete can be safely canceled
+		// Add other endpoints that benefit from cancellation
+	];
+
+	const shouldCancelDuplicates = cancelableEndpoints.some((endpoint) =>
+		config.url?.includes(endpoint),
+	);
+
+	if (!shouldCancelDuplicates) {
+		return; // Don't cancel for most endpoints
+	}
+
 	const requestKey = config.url + JSON.stringify(config.params ?? {});
 
 	if (pendingRequests.has(requestKey)) {
@@ -313,7 +295,7 @@ const handleTokenRefresh = async (error: AxiosError) => {
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 1000;
 
-// Response interceptor with retry logic, token refresh, and cache management
+// Response interceptor with retry logic and token refresh
 api.interceptors.response.use(
 	(response: AxiosResponse) => {
 		// Clean up from the pending requests map
@@ -321,35 +303,6 @@ api.interceptors.response.use(
 			const requestKey =
 				response.config.url + JSON.stringify(response.config.params ?? {});
 			pendingRequests.delete(requestKey);
-		}
-
-		// Cache invalidation for mutation requests
-		const { method, url: fullUrl } = response.config; // url here is the full URL
-		if (
-			method &&
-			fullUrl &&
-			["post", "put", "patch", "delete"].includes(method.toLowerCase())
-		) {
-			try {
-				const pathName = new URL(fullUrl).pathname;
-
-				let resourcePath = pathName;
-				if (API_VERSION && pathName.startsWith(API_VERSION)) {
-					resourcePath = pathName.substring(API_VERSION.length);
-				}
-				resourcePath = resourcePath.startsWith("/")
-					? resourcePath.substring(1)
-					: resourcePath;
-
-				const resourceParts = resourcePath.split("/");
-				if (resourceParts.length > 0) {
-					const resourceType = resourceParts[0];
-					apiCache.invalidateByPrefix(`/${resourceType}`);
-				}
-			} catch (e) {
-				// Log error if URL parsing or cache invalidation fails
-				errorMonitor.captureException(e, { context: "cache_invalidation" });
-			}
 		}
 
 		return response;
@@ -384,7 +337,6 @@ api.interceptors.response.use(
 
 		// Log other errors to monitoring
 		if (error.response?.status !== 401 && !axios.isCancel(error)) {
-			// Added !axios.isCancel(error) here too for safety
 			errorMonitor.captureException(error, {
 				url: error.config?.url,
 				method: error.config?.method,
@@ -398,4 +350,4 @@ api.interceptors.response.use(
 	},
 );
 
-export default extendedApi;
+export default api;

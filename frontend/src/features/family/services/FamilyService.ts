@@ -12,57 +12,57 @@ export const FAMILY_SERVICE_ERRORS = {
 };
 
 export interface IFamily {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 }
 
 export interface IBotanicalGroup {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 	recommended_rotation_years: number | null;
 	families: IFamily[];
 }
 
 export interface IFamilyInfo {
-	id: string;
+	id: string; // UUID serialized as string
 	name: string;
 	botanical_group: {
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
 		recommended_rotation_years: number | null;
 	};
 	pests?: Array<{
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
-		treatments?: Array<{ id: string; name: string }>;
-		preventions?: Array<{ id: string; name: string }>;
+		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
+		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
 	}>;
 	diseases?: Array<{
-		id: string;
+		id: string; // UUID serialized as string
 		name: string;
-		symptoms?: Array<{ id: string; name: string }>;
-		treatments?: Array<{ id: string; name: string }>;
-		preventions?: Array<{ id: string; name: string }>;
+		symptoms?: Array<{ id: string; name: string }>; // UUID serialized as string
+		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
+		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
 	}>;
-	antagonises?: Array<{ id: string; name: string }>;
-	companion_to?: Array<{ id: string; name: string }>;
+	antagonises?: Array<{ id: string; name: string }>; // UUID serialized as string
+	companion_to?: Array<{ id: string; name: string }>; // UUID serialized as string
 }
 
 export async function getBotanicalGroups(
 	signal?: AbortSignal,
 ): Promise<IBotanicalGroup[]> {
 	try {
-		const response = await api.cachedGet<IBotanicalGroup[]>(
+		const response = await api.get<IBotanicalGroup[]>(
 			"/families/botanical-groups/",
 			{ signal },
 		);
 
 		// Handle null or malformed response
-		if (!Array.isArray(response)) {
+		if (!Array.isArray(response.data)) {
 			return [];
 		}
 
-		return response.map((group) => ({
+		return response.data.map((group) => ({
 			...group,
 			recommended_rotation_years: group.recommended_rotation_years ?? null,
 		}));
@@ -80,31 +80,12 @@ export async function getFamilyInfo(
 	signal?: AbortSignal,
 ): Promise<IFamilyInfo> {
 	try {
-		const data = await api.cachedGet<IFamilyInfo>(
-			`/families/${familyId}/info`,
-			{ signal },
-		);
-		return data;
-	} catch (error: unknown) {
-		if (axios.isCancel(error)) throw error;
-		return handleApiError(error, FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
-	}
-}
-
-export async function getFamilyDetails(familyId: string, signal?: AbortSignal) {
-	try {
-		const response = await api.get(
-			`/families/${familyId}`,
-			signal ? { signal } : undefined,
-		);
-
-		if (response.data && response.data.detail === "Family not found") {
-			throw new Error("Family not found");
-		}
-
+		const response = await api.get<IFamilyInfo>(`/families/${familyId}/info`, {
+			signal,
+		});
 		return response.data;
 	} catch (error: unknown) {
 		if (axios.isCancel(error)) throw error;
-		return handleApiError(error, "Failed to fetch family details");
+		return handleApiError(error, FAMILY_SERVICE_ERRORS.UNKNOWN_ERROR);
 	}
 }
