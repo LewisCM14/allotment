@@ -13,6 +13,10 @@ from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
 )
+from app.api.schemas.user.user_preference_schema import (
+    UserFeedDayBulkUpdate,
+    UserFeedDayUpdate,
+)
 from app.api.schemas.user.user_schema import UserCreate
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
@@ -340,3 +344,63 @@ class TestUserUnitOfWork:
         ):
             with pytest.raises(HTTPException):
                 await user_unit_of_work.update_user_allotment(user_id, allotment_data)
+
+    @pytest.mark.asyncio
+    async def test_get_user_preferences(self, user_unit_of_work):
+        """Test getting user preferences."""
+        user_id = str(uuid.uuid4())
+        mock_user_feed_days = []
+        mock_feeds = []
+        mock_days = []
+
+        with patch.object(
+            user_unit_of_work.user_repo, "get_user_feed_days", return_value=mock_user_feed_days
+        ) as mock_get_feed_days, patch.object(
+            user_unit_of_work.user_repo, "get_all_feeds", return_value=mock_feeds
+        ) as mock_get_feeds, patch.object(
+            user_unit_of_work.user_repo, "get_all_days", return_value=mock_days
+        ) as mock_get_days:
+            result = await user_unit_of_work.get_user_preferences(user_id)
+
+        assert result["user_feed_days"] == mock_user_feed_days
+        assert result["available_feeds"] == mock_feeds
+        assert result["available_days"] == mock_days
+        mock_get_feed_days.assert_called_once_with(user_id)
+        mock_get_feeds.assert_called_once()
+        mock_get_days.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_user_feed_day(self, user_unit_of_work):
+        """Test updating a single user feed day preference."""
+        user_id = str(uuid.uuid4())
+        feed_id = str(uuid.uuid4())
+        day_id = str(uuid.uuid4())
+        mock_result = {"updated": True}
+
+        with patch.object(
+            user_unit_of_work.user_repo, "update_user_feed_day", return_value=mock_result
+        ) as mock_update:
+            result = await user_unit_of_work.update_user_feed_day(user_id, feed_id, day_id)
+
+        assert result == mock_result
+        mock_update.assert_called_once_with(user_id, feed_id, day_id)
+
+    @pytest.mark.asyncio
+    async def test_bulk_update_user_feed_days(self, user_unit_of_work):
+        """Test bulk updating user feed day preferences."""
+        user_id = str(uuid.uuid4())
+        preferences_data = UserFeedDayBulkUpdate(
+            preferences=[
+                UserFeedDayUpdate(feed_id=uuid.uuid4(), day_id=uuid.uuid4()),
+                UserFeedDayUpdate(feed_id=uuid.uuid4(), day_id=uuid.uuid4()),
+            ]
+        )
+        mock_results = [{"updated": True}, {"updated": True}]
+
+        with patch.object(
+            user_unit_of_work.user_repo, "bulk_update_user_feed_days", return_value=mock_results
+        ) as mock_bulk_update:
+            result = await user_unit_of_work.bulk_update_user_feed_days(user_id, preferences_data)
+
+        assert result == mock_results
+        mock_bulk_update.assert_called_once_with(user_id, preferences_data.preferences)

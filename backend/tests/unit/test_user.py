@@ -6,7 +6,6 @@ All dependencies are mocked. These tests cover logic, not integration.
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from fastapi import Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.exception_handler import (

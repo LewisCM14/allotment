@@ -444,3 +444,47 @@ class UserUnitOfWork:
             }
             logger.info("User profile updated successfully", **log_context)
             return user
+
+    @translate_db_exceptions
+    async def get_user_preferences(self, user_id: str) -> Dict[str, Any]:
+        """Get user preferences including feed days and available options."""
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "get_user_preferences_uow",
+        }
+
+        logger.info("Getting user preferences", **log_context)
+
+        with log_timing("uow_get_user_preferences", request_id=self.request_id):
+            # Get user's current feed day preferences
+            user_feed_days = await self.user_repo.get_user_feed_days(user_id)
+
+            # Get all available feeds and days
+            available_feeds = await self.user_repo.get_all_feeds()
+            available_days = await self.user_repo.get_all_days()
+
+            return {
+                "user_feed_days": user_feed_days,
+                "available_feeds": available_feeds,
+                "available_days": available_days,
+            }
+
+    @translate_db_exceptions
+    async def update_user_feed_day(
+        self, user_id: str, feed_id: str, day_id: str
+    ) -> Any:
+        """Update a single user feed day preference."""
+        log_context = {
+            "user_id": user_id,
+            "feed_id": feed_id,
+            "day_id": day_id,
+            "request_id": self.request_id,
+            "operation": "update_user_feed_day_uow",
+        }
+
+        logger.info("Updating user feed day preference", **log_context)
+
+        with log_timing("uow_update_user_feed_day", request_id=self.request_id):
+            result = await self.user_repo.update_user_feed_day(user_id, feed_id, day_id)
+            return result
