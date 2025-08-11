@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
 from fastapi import HTTPException, status
@@ -330,7 +330,7 @@ class TestUserRepository:
         day = Day()
         day.id = uuid.uuid4()
         day.day_number = 1
-        day.name = "monday"
+        day.name = "mon"
         return day
 
     @pytest.fixture
@@ -351,8 +351,10 @@ class TestUserRepository:
         """Test getting user feed day preferences."""
         # Arrange
         user_id = str(sample_user_feed_day.user_id)
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = [sample_user_feed_day]
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = [sample_user_feed_day]
+        mock_result = Mock()
+        mock_result.scalars.return_value = mock_scalars
         mock_db.execute.return_value = mock_result
 
         # Act
@@ -367,8 +369,10 @@ class TestUserRepository:
     async def test_get_all_feeds(self, user_repository, mock_db, sample_feed):
         """Test getting all available feeds."""
         # Arrange
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = [sample_feed]
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = [sample_feed]
+        mock_result = Mock()
+        mock_result.scalars.return_value = mock_scalars
         mock_db.execute.return_value = mock_result
 
         # Act
@@ -383,8 +387,10 @@ class TestUserRepository:
     async def test_get_all_days(self, user_repository, mock_db, sample_day):
         """Test getting all available days."""
         # Arrange
-        mock_result = AsyncMock()
-        mock_result.scalars.return_value.all.return_value = [sample_day]
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = [sample_day]
+        mock_result = Mock()
+        mock_result.scalars.return_value = mock_scalars
         mock_db.execute.return_value = mock_result
 
         # Act
@@ -405,7 +411,7 @@ class TestUserRepository:
         feed_id = str(sample_user_feed_day.feed_id)
         new_day_id = str(uuid.uuid4())
 
-        mock_result = AsyncMock()
+        mock_result = Mock()
         mock_result.scalar_one_or_none.return_value = sample_user_feed_day
         mock_db.execute.return_value = mock_result
 
@@ -427,7 +433,7 @@ class TestUserRepository:
         feed_id = str(uuid.uuid4())
         day_id = str(uuid.uuid4())
 
-        mock_result = AsyncMock()
+        mock_result = Mock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result
 

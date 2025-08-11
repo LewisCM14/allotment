@@ -326,10 +326,10 @@ class UserRepository:
         with log_timing(
             "db_update_user_feed_day", request_id=self.request_id, **log_context
         ):
-            # Convert string IDs to UUIDs
-            user_uuid = UUID(user_id)
-            feed_uuid = UUID(feed_id)
-            day_uuid = UUID(day_id)
+            # Convert IDs to UUIDs (handle both string and UUID inputs)
+            user_uuid = user_id if isinstance(user_id, UUID) else UUID(user_id)
+            feed_uuid = feed_id if isinstance(feed_id, UUID) else UUID(feed_id)
+            day_uuid = day_id if isinstance(day_id, UUID) else UUID(day_id)
 
             # Check if preference already exists
             query = select(UserFeedDay).where(

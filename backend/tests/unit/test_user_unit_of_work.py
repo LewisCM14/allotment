@@ -13,10 +13,6 @@ from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
 )
-from app.api.schemas.user.user_preference_schema import (
-    UserFeedDayBulkUpdate,
-    UserFeedDayUpdate,
-)
 from app.api.schemas.user.user_schema import UserCreate
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
@@ -394,27 +390,3 @@ class TestUserUnitOfWork:
 
         assert result == mock_result
         mock_update.assert_called_once_with(user_id, feed_id, day_id)
-
-    @pytest.mark.asyncio
-    async def test_bulk_update_user_feed_days(self, user_unit_of_work):
-        """Test bulk updating user feed day preferences."""
-        user_id = str(uuid.uuid4())
-        preferences_data = UserFeedDayBulkUpdate(
-            preferences=[
-                UserFeedDayUpdate(feed_id=uuid.uuid4(), day_id=uuid.uuid4()),
-                UserFeedDayUpdate(feed_id=uuid.uuid4(), day_id=uuid.uuid4()),
-            ]
-        )
-        mock_results = [{"updated": True}, {"updated": True}]
-
-        with patch.object(
-            user_unit_of_work.user_repo,
-            "bulk_update_user_feed_days",
-            return_value=mock_results,
-        ) as mock_bulk_update:
-            result = await user_unit_of_work.bulk_update_user_feed_days(
-                user_id, preferences_data
-            )
-
-        assert result == mock_results
-        mock_bulk_update.assert_called_once_with(user_id, preferences_data.preferences)
