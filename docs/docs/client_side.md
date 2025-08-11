@@ -307,10 +307,19 @@ There are several aspects to consider when deciding on the appropriate technolog
                 - Contains components that dictate page layouts.
                 - Contains UI components to use as interface building blocks.
             /features
-                - The frontend applications interfaces logic and the services that serve them.
-                - Related test files.
+                - /<FEATURE>
+                    - /components
+                        - Feature specific components, i.e. containers & presenters.
+                    - /forms
+                        - Form schemas and components.
+                    - /hooks
+                        - Caching logic (TanStack).
+                    - /pages
+                        - Component wrappers that encapsulate the page.
+                    - /services
+                        - Feature specific API services.
             /mocks
-                - Files that support the Frontend test harness
+                - Files that support the Frontend test harness.
             /routes
                 - AppRoutes.tsx
                 - ProtectedRoute.tsx
@@ -328,9 +337,9 @@ There are several aspects to consider when deciding on the appropriate technolog
                     - ThemeContext.tsx
                     - ThemeProvider.tsx
             /types
-                - Common interfaces & types, i.e. NavigationTypes.ts
+                - Common interfaces & types, i.e. NavigationTypes.ts.
             /utils
-                - Utility files used across the frontend application, i.e. errorUtils.ts
+                - Utility files used across the frontend application, i.e. errorUtils.ts.
             - App.tsx
             - global.css
             - main.tsc
