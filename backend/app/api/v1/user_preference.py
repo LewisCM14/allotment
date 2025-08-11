@@ -45,7 +45,7 @@ async def get_user_preferences(
     logger.info("Fetching user preferences", **log_context)
 
     async with UserUnitOfWork(db) as uow:
-        result = await uow.get_user_preferences(current_user.user_id)
+        result = await uow.get_user_preferences(str(current_user.user_id))
 
     logger.info("User preferences fetched", **log_context)
     return UserPreferencesRead(
@@ -90,11 +90,11 @@ async def update_user_feed_preference(
     async with UserUnitOfWork(db) as uow:
         # Update the preference
         updated_preference = await uow.update_user_feed_day(
-            current_user.user_id, feed_id, str(preference_update.day_id)
+            str(current_user.user_id), feed_id, str(preference_update.day_id)
         )
 
         # Get the updated preference with feed and day names for response
-        preferences = await uow.get_user_preferences(current_user.user_id)
+        preferences = await uow.get_user_preferences(str(current_user.user_id))
 
         # Find the updated preference in the results
         updated_feed_day = None

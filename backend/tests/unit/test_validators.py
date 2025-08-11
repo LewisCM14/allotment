@@ -69,50 +69,108 @@ class TestValidateGeneralTextField:
 
     def test_whitespace_only_raises_error(self):
         """Test whitespace-only string raises ValueError after stripping."""
-        with pytest.raises(ValueError, match="name can only contain lowercase letters, hyphens, and single spaces between words"):
+        with pytest.raises(
+            ValueError,
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
+        ):
             validate_general_text_field("   ", "name")
 
     def test_consecutive_spaces_raises_error(self):
         """Test consecutive spaces raise ValueError."""
-        with pytest.raises(ValueError, match="name can only contain lowercase letters, hyphens, and single spaces between words"):
+        with pytest.raises(
+            ValueError,
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
+        ):
             validate_general_text_field("cherry  tomato", "name")
 
     def test_multiple_consecutive_spaces_raises_error(self):
         """Test multiple consecutive spaces raise ValueError."""
-        with pytest.raises(ValueError, match="name can only contain lowercase letters, hyphens, and single spaces between words"):
+        with pytest.raises(
+            ValueError,
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
+        ):
             validate_general_text_field("cherry   tomato", "name")
 
     def test_special_characters_raise_error(self):
         """Test special characters raise ValueError."""
-        invalid_chars = ["!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "=", "+", "[", "]", "{", "}", "|", "\\", ":", ";", '"', "'", "<", ">", ",", ".", "?", "/", "~", "`"]
-        
+        invalid_chars = [
+            "!",
+            "@",
+            "#",
+            "$",
+            "%",
+            "^",
+            "&",
+            "*",
+            "(",
+            ")",
+            "=",
+            "+",
+            "[",
+            "]",
+            "{",
+            "}",
+            "|",
+            "\\",
+            ":",
+            ";",
+            '"',
+            "'",
+            "<",
+            ">",
+            ",",
+            ".",
+            "?",
+            "/",
+            "~",
+            "`",
+        ]
+
         for char in invalid_chars:
-            with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+            with pytest.raises(
+                ValueError,
+                match="can only contain lowercase letters, hyphens, and single spaces",
+            ):
                 validate_general_text_field(f"tomato{char}", "name")
 
     def test_numbers_raise_error(self):
         """Test numbers raise ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("tomato123", "name")
 
     def test_underscore_raises_error(self):
         """Test underscore raises ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("cherry_tomato", "name")
 
     def test_period_raises_error(self):
         """Test period raises ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("mr.tomato", "name")
 
     def test_starting_with_hyphen_raises_error(self):
         """Test string starting with hyphen raises ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("-tomato", "name")
 
     def test_ending_with_hyphen_raises_error(self):
         """Test string ending with hyphen raises ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("tomato-", "name")
 
     def test_starting_with_space_strips_correctly(self):
@@ -121,18 +179,24 @@ class TestValidateGeneralTextField:
         assert result == "tomato"
 
     def test_ending_with_space_strips_correctly(self):
-        """Test string ending with space is stripped and passes validation.""" 
+        """Test string ending with space is stripped and passes validation."""
         result = validate_general_text_field("tomato ", "name")
         assert result == "tomato"
 
     def test_consecutive_hyphens_raise_error(self):
         """Test consecutive hyphens raise ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("cherry--tomato", "name")
 
     def test_mixed_consecutive_separators_raise_error(self):
         """Test mixed consecutive separators raise ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("cherry- tomato", "name")
 
     def test_custom_field_name_in_error(self):
@@ -142,12 +206,18 @@ class TestValidateGeneralTextField:
 
     def test_unicode_characters_raise_error(self):
         """Test unicode characters raise ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("tomatö", "name")
 
     def test_accented_characters_raise_error(self):
         """Test accented characters raise ValueError."""
-        with pytest.raises(ValueError, match="can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_general_text_field("café", "name")
 
 
@@ -252,7 +322,9 @@ class TestValidateNotesField:
     def test_custom_field_name_in_error(self):
         """Test custom field name appears in error message."""
         text = "x" * 501
-        with pytest.raises(ValueError, match="description cannot exceed 500 characters"):
+        with pytest.raises(
+            ValueError, match="description cannot exceed 500 characters"
+        ):
             validate_notes_field(text, "description")
 
     def test_whitespace_only_trimmed_to_empty(self):
@@ -302,5 +374,8 @@ class TestValidateTextField:
 
     def test_special_characters_error_message(self):
         """Test error message for special characters is informative."""
-        with pytest.raises(ValueError, match="variety can only contain lowercase letters, hyphens, and single spaces"):
+        with pytest.raises(
+            ValueError,
+            match="variety can only contain lowercase letters, hyphens, and single spaces",
+        ):
             validate_text_field(str, "rice@home", "variety")
