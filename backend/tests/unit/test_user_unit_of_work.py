@@ -353,13 +353,19 @@ class TestUserUnitOfWork:
         mock_feeds = []
         mock_days = []
 
-        with patch.object(
-            user_unit_of_work.user_repo, "get_user_feed_days", return_value=mock_user_feed_days
-        ) as mock_get_feed_days, patch.object(
-            user_unit_of_work.user_repo, "get_all_feeds", return_value=mock_feeds
-        ) as mock_get_feeds, patch.object(
-            user_unit_of_work.user_repo, "get_all_days", return_value=mock_days
-        ) as mock_get_days:
+        with (
+            patch.object(
+                user_unit_of_work.user_repo,
+                "get_user_feed_days",
+                return_value=mock_user_feed_days,
+            ) as mock_get_feed_days,
+            patch.object(
+                user_unit_of_work.user_repo, "get_all_feeds", return_value=mock_feeds
+            ) as mock_get_feeds,
+            patch.object(
+                user_unit_of_work.user_repo, "get_all_days", return_value=mock_days
+            ) as mock_get_days,
+        ):
             result = await user_unit_of_work.get_user_preferences(user_id)
 
         assert result["user_feed_days"] == mock_user_feed_days
@@ -378,9 +384,13 @@ class TestUserUnitOfWork:
         mock_result = {"updated": True}
 
         with patch.object(
-            user_unit_of_work.user_repo, "update_user_feed_day", return_value=mock_result
+            user_unit_of_work.user_repo,
+            "update_user_feed_day",
+            return_value=mock_result,
         ) as mock_update:
-            result = await user_unit_of_work.update_user_feed_day(user_id, feed_id, day_id)
+            result = await user_unit_of_work.update_user_feed_day(
+                user_id, feed_id, day_id
+            )
 
         assert result == mock_result
         mock_update.assert_called_once_with(user_id, feed_id, day_id)
@@ -398,9 +408,13 @@ class TestUserUnitOfWork:
         mock_results = [{"updated": True}, {"updated": True}]
 
         with patch.object(
-            user_unit_of_work.user_repo, "bulk_update_user_feed_days", return_value=mock_results
+            user_unit_of_work.user_repo,
+            "bulk_update_user_feed_days",
+            return_value=mock_results,
         ) as mock_bulk_update:
-            result = await user_unit_of_work.bulk_update_user_feed_days(user_id, preferences_data)
+            result = await user_unit_of_work.bulk_update_user_feed_days(
+                user_id, preferences_data
+            )
 
         assert result == mock_results
         mock_bulk_update.assert_called_once_with(user_id, preferences_data.preferences)

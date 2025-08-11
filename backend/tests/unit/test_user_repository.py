@@ -345,7 +345,9 @@ class TestUserRepository:
         return user_feed_day
 
     @pytest.mark.asyncio
-    async def test_get_user_feed_days(self, user_repository, mock_db, sample_user_feed_day):
+    async def test_get_user_feed_days(
+        self, user_repository, mock_db, sample_user_feed_day
+    ):
         """Test getting user feed day preferences."""
         # Arrange
         user_id = str(sample_user_feed_day.user_id)
@@ -402,13 +404,15 @@ class TestUserRepository:
         user_id = str(sample_user_feed_day.user_id)
         feed_id = str(sample_user_feed_day.feed_id)
         new_day_id = str(uuid.uuid4())
-        
+
         mock_result = AsyncMock()
         mock_result.scalar_one_or_none.return_value = sample_user_feed_day
         mock_db.execute.return_value = mock_result
 
         # Act
-        result = await user_repository.update_user_feed_day(user_id, feed_id, new_day_id)
+        result = await user_repository.update_user_feed_day(
+            user_id, feed_id, new_day_id
+        )
 
         # Assert
         assert result == sample_user_feed_day
@@ -422,7 +426,7 @@ class TestUserRepository:
         user_id = str(uuid.uuid4())
         feed_id = str(uuid.uuid4())
         day_id = str(uuid.uuid4())
-        
+
         mock_result = AsyncMock()
         mock_result.scalar_one_or_none.return_value = None
         mock_db.execute.return_value = mock_result

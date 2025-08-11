@@ -34,7 +34,7 @@ class Day(Base):
         unique=True,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(10), nullable=False)
+    name: Mapped[str] = mapped_column(String(3), nullable=False)
 
     # Relationship to UserFeedDay
     user_feed_days: Mapped[list["UserFeedDay"]] = relationship(

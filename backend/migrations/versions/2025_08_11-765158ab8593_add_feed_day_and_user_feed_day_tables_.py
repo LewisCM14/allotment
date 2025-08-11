@@ -26,7 +26,7 @@ def upgrade() -> None:
         "day",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("day_number", sa.Integer(), nullable=False),
-        sa.Column("name", sa.String(length=10), nullable=False),
+        sa.Column("name", sa.String(length=3), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("day_number", name="uq_day_number"),
         sa.UniqueConstraint("name", name="uq_day_name"),
@@ -69,13 +69,13 @@ def upgrade() -> None:
 
     # Seed data for days
     days = [
-        {"day_number": 1, "name": "monday"},
-        {"day_number": 2, "name": "tuesday"},
-        {"day_number": 3, "name": "wednesday"},
-        {"day_number": 4, "name": "thursday"},
-        {"day_number": 5, "name": "friday"},
-        {"day_number": 6, "name": "saturday"},
-        {"day_number": 7, "name": "sunday"},
+        {"day_number": 1, "name": "mon"},
+        {"day_number": 2, "name": "tue"},
+        {"day_number": 3, "name": "wen"},
+        {"day_number": 4, "name": "thu"},
+        {"day_number": 5, "name": "fri"},
+        {"day_number": 6, "name": "sat"},
+        {"day_number": 7, "name": "sun"},
     ]
     day_ids = {day["name"]: uuid.uuid4() for day in days}
     op.bulk_insert(

@@ -53,10 +53,17 @@ class TestUserPreferenceIntegration:
         return ufd
 
     def test_get_user_preferences_success(
-        self, client: TestClient, sample_user, sample_user_feed_day, sample_feed, sample_day
+        self,
+        client: TestClient,
+        sample_user,
+        sample_user_feed_day,
+        sample_feed,
+        sample_day,
     ):
         """Test successful retrieval of user preferences."""
-        with patch("app.api.core.auth_utils.get_current_user", return_value=sample_user):
+        with patch(
+            "app.api.core.auth_utils.get_current_user", return_value=sample_user
+        ):
             with patch("app.api.core.database.get_db") as mock_get_db:
                 mock_db = AsyncMock(spec=AsyncSession)
                 mock_get_db.return_value = mock_db
@@ -89,10 +96,17 @@ class TestUserPreferenceIntegration:
         assert response.status_code == 401
 
     def test_update_user_preferences_success(
-        self, client: TestClient, sample_user, sample_user_feed_day, sample_feed, sample_day
+        self,
+        client: TestClient,
+        sample_user,
+        sample_user_feed_day,
+        sample_feed,
+        sample_day,
     ):
         """Test successful update of user preferences."""
-        with patch("app.api.core.auth_utils.get_current_user", return_value=sample_user):
+        with patch(
+            "app.api.core.auth_utils.get_current_user", return_value=sample_user
+        ):
             with patch("app.api.core.database.get_db") as mock_get_db:
                 mock_db = AsyncMock(spec=AsyncSession)
                 mock_get_db.return_value = mock_db
@@ -104,13 +118,15 @@ class TestUserPreferenceIntegration:
                     "available_days": [sample_day],
                 }
 
-                with patch(
-                    "app.api.services.user.user_unit_of_work.UserUnitOfWork.bulk_update_user_feed_days"
-                ) as mock_bulk_update, patch(
-                    "app.api.services.user.user_unit_of_work.UserUnitOfWork.get_user_preferences",
-                    return_value=mock_preferences_data,
+                with (
+                    patch(
+                        "app.api.services.user.user_unit_of_work.UserUnitOfWork.bulk_update_user_feed_days"
+                    ) as mock_bulk_update,
+                    patch(
+                        "app.api.services.user.user_unit_of_work.UserUnitOfWork.get_user_preferences",
+                        return_value=mock_preferences_data,
+                    ),
                 ):
-                    
                     update_data = {
                         "preferences": [
                             {
@@ -129,18 +145,26 @@ class TestUserPreferenceIntegration:
                 assert "available_days" in data
                 mock_bulk_update.assert_called_once()
 
-    def test_update_user_preferences_invalid_data(self, client: TestClient, sample_user):
+    def test_update_user_preferences_invalid_data(
+        self, client: TestClient, sample_user
+    ):
         """Test updating user preferences with invalid data."""
-        with patch("app.api.core.auth_utils.get_current_user", return_value=sample_user):
+        with patch(
+            "app.api.core.auth_utils.get_current_user", return_value=sample_user
+        ):
             # Missing required fields
             invalid_data = {"preferences": [{"feed_id": "invalid"}]}
 
             response = client.put("/v1/user-preferences/", json=invalid_data)
             assert response.status_code == 422
 
-    def test_update_user_preferences_empty_preferences(self, client: TestClient, sample_user):
+    def test_update_user_preferences_empty_preferences(
+        self, client: TestClient, sample_user
+    ):
         """Test updating user preferences with empty preferences list."""
-        with patch("app.api.core.auth_utils.get_current_user", return_value=sample_user):
+        with patch(
+            "app.api.core.auth_utils.get_current_user", return_value=sample_user
+        ):
             # Empty preferences list
             invalid_data = {"preferences": []}
 

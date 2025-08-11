@@ -43,10 +43,10 @@ async def get_user_preferences(
         "operation": "get_user_preferences",
     }
     logger.info("Fetching user preferences", **log_context)
-    
+
     async with UserUnitOfWork(db) as uow:
         result = await uow.get_user_preferences(current_user.user_id)
-    
+
     logger.info("User preferences fetched", **log_context)
     return UserPreferencesRead(
         user_feed_days=[
@@ -86,23 +86,25 @@ async def update_user_feed_preference(
         "operation": "update_user_feed_preference",
     }
     logger.info("Updating user feed preference", **log_context)
-    
+
     async with UserUnitOfWork(db) as uow:
         # Update the preference
         updated_preference = await uow.update_user_feed_day(
             current_user.user_id, feed_id, str(preference_update.day_id)
         )
-        
+
         # Get the updated preference with feed and day names for response
         preferences = await uow.get_user_preferences(current_user.user_id)
-        
+
         # Find the updated preference in the results
         updated_feed_day = None
         for ufd in preferences["user_feed_days"]:
-            if str(ufd.feed_id) == feed_id and str(ufd.day_id) == str(preference_update.day_id):
+            if str(ufd.feed_id) == feed_id and str(ufd.day_id) == str(
+                preference_update.day_id
+            ):
                 updated_feed_day = ufd
                 break
-    
+
     if not updated_feed_day:
         logger.warning("Updated preference not found in results", **log_context)
         return FeedDayRead(
@@ -111,7 +113,7 @@ async def update_user_feed_preference(
             day_id=updated_preference.day_id,
             day_name="Unknown",
         )
-    
+
     logger.info("User feed preference updated", **log_context)
     return FeedDayRead(
         feed_id=updated_feed_day.feed_id,

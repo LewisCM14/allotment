@@ -7,9 +7,10 @@ Family Schemas
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, field_validator
 
 from app.api.schemas.base_schema import SecureBaseModel
+from app.api.schemas.validators import validate_text_field
 
 
 class FamilyBaseSchema(SecureBaseModel):
@@ -110,3 +111,124 @@ class FamilyInfoSchema(SecureBaseModel):
 PestSchema.model_rebuild()
 DiseaseSchema.model_rebuild()
 FamilyInfoSchema.model_rebuild()
+
+
+# Admin Panel not yet implemented
+class FamilyCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating a family (admin only)."""
+
+    name: str = Field(..., description="Family name")
+    botanical_group_id: UUID = Field(..., description="Botanical group ID")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "tomato",
+                "botanical_group_id": "123e4567-e89b-12d3-a456-426614174000",
+            }
+        }
+    )
+
+
+class BotanicalGroupCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating a botanical group (admin only)."""
+
+    name: str = Field(..., description="Botanical group name")
+    recommended_rotation_years: int | None = Field(
+        default=None, description="Rotation years"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "nightshade",
+                "recommended_rotation_years": 3,
+            }
+        }
+    )
+
+
+class PestCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating a pest (admin only)."""
+
+    name: str = Field(..., description="Pest name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "aphid",
+            }
+        }
+    )
+
+
+class DiseaseCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating a disease (admin only)."""
+
+    name: str = Field(..., description="Disease name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "blight",
+            }
+        }
+    )
+
+
+class InterventionCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating an intervention (admin only)."""
+
+    name: str = Field(..., description="Intervention name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "neem-oil",
+            }
+        }
+    )
+
+
+class SymptomCreate(SecureBaseModel):  # pragma: no cover
+    """Schema for creating a symptom (admin only)."""
+
+    name: str = Field(..., description="Symptom name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        return validate_text_field(cls, v, "name")
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "yellow-leaves",
+            }
+        }
+    )
