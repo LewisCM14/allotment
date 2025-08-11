@@ -59,7 +59,7 @@ class Feed(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
 
     # Relationship to UserFeedDay
     user_feed_days: Mapped[list["UserFeedDay"]] = relationship(

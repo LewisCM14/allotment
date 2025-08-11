@@ -27,7 +27,7 @@ class Intervention(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
     # Relationships
     treats_diseases: Mapped[List["Disease"]] = relationship(

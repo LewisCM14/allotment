@@ -36,7 +36,7 @@ def upgrade() -> None:
     feed_table = op.create_table(
         "feed",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="uq_feed_name"),
     )

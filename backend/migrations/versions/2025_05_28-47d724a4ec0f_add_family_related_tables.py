@@ -29,12 +29,8 @@ def upgrade() -> None:
             primary_key=True,
             nullable=False,
         ),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.Column("recommended_rotation_years", sa.Integer(), nullable=True),
-        sa.CheckConstraint(
-            "name ~ '^[a-z0-9]+([ -][a-z0-9]+)*$'",
-            name="ck_botanical_group_name_format",
-        ),
         sa.CheckConstraint("name = LOWER(name)", name="ck_botanical_group_name_lower"),
         sa.UniqueConstraint("name", name="uq_botanical_group_name"),
     )
@@ -52,14 +48,11 @@ def upgrade() -> None:
             primary_key=True,
             nullable=False,
         ),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.Column(
             "botanical_group_id",
             sa.dialects.postgresql.UUID(as_uuid=True),
             nullable=False,
-        ),
-        sa.CheckConstraint(
-            "name ~ '^[a-z0-9]+([ -][a-z0-9]+)*$'", name="ck_family_name_format"
         ),
         sa.CheckConstraint("name = LOWER(name)", name="ck_family_name_lower"),
         sa.ForeignKeyConstraint(

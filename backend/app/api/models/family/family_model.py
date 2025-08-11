@@ -75,7 +75,7 @@ class Family(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     botanical_group_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("botanical_group.id", ondelete="RESTRICT"),
@@ -133,10 +133,6 @@ class Family(Base):
     __table_args__ = (
         UniqueConstraint("name", name="uq_family_name"),
         CheckConstraint("name = LOWER(name)", name="ck_family_name_lower"),
-        CheckConstraint(
-            "name ~ '^[a-z0-9]+([ -][a-z0-9]+)*$'",
-            name="ck_family_name_format",
-        ),
     )
 
     def __repr__(self) -> str:
