@@ -270,13 +270,12 @@ class TestUserPreferenceIntegration:
                     headers=headers,
                 )
 
-            assert response.status_code == 200
+            assert response.status_code == 404
             data = response.json()
-            # Should return the fallback response with "Unknown" names
-            assert data["feed_id"] == str(sample_feed.id)
-            assert data["day_id"] == str(sample_day.id)
-            assert data["feed_name"] == "Unknown"
-            assert data["day_name"] == "Unknown"
+            assert "detail" in data
+            assert len(data["detail"]) > 0
+            assert data["detail"][0]["code"] == "RES_001"
+            assert "Feed preference" in data["detail"][0]["msg"]
 
     @pytest.mark.asyncio
     async def test_get_user_preferences_with_empty_results(

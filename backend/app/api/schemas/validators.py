@@ -5,7 +5,6 @@ Common Schema Validators
 """
 
 import re
-from typing import Any
 
 
 def validate_general_text_field(value: str, field_name: str) -> str:
@@ -74,7 +73,7 @@ def validate_notes_field(value: str, field_name: str, max_length: int = 500) -> 
     return normalized
 
 
-def validate_text_field(cls: Any, v: str, field_name: str = "field") -> str:
+def validate_text_field(v: str, field_name: str = "field") -> str:
     """
     Generic Pydantic validator for text fields following the general data integrity rule.
     Can be used with @field_validator decorator.
@@ -83,11 +82,11 @@ def validate_text_field(cls: Any, v: str, field_name: str = "field") -> str:
         @field_validator("name")
         @classmethod
         def validate_name(cls, v: str) -> str:
-            return validate_text_field(cls, v, "name")
+            return validate_text_field(v, "name")
 
         @field_validator("family_name")
         @classmethod
         def validate_family_name(cls, v: str) -> str:
-            return validate_text_field(cls, v, "family_name")
+            return validate_text_field(v, "family_name")
     """
     return validate_general_text_field(v, field_name)

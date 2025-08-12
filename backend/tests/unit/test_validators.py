@@ -338,38 +338,38 @@ class TestValidateTextField:
 
     def test_valid_input_passes_through(self):
         """Test valid input passes through validate_text_field."""
-        result = validate_text_field(str, "tomato", "name")
+        result = validate_text_field("tomato", "name")
         assert result == "tomato"
 
     def test_invalid_input_raises_error(self):
         """Test invalid input raises error through validate_text_field."""
         with pytest.raises(ValueError, match="name can only contain lowercase letters"):
-            validate_text_field(str, "tomato123", "name")
+            validate_text_field("tomato123", "name")
 
     def test_normalization_works(self):
         """Test normalization works through validate_text_field."""
-        result = validate_text_field(str, "  CHERRY TOMATO  ", "name")
+        result = validate_text_field("  CHERRY TOMATO  ", "name")
         assert result == "cherry tomato"
 
     def test_default_field_name(self):
         """Test default field name is used when not provided."""
         with pytest.raises(ValueError, match="field cannot be empty"):
-            validate_text_field(str, "")
+            validate_text_field("")
 
     def test_custom_field_name(self):
         """Test custom field name is used in error messages."""
         with pytest.raises(ValueError, match="family_name cannot be empty"):
-            validate_text_field(str, "", "family_name")
+            validate_text_field("", "family_name")
 
     def test_cls_parameter_unused_but_required(self):
-        """Test cls parameter is accepted (required for Pydantic validators)."""
-        # The cls parameter is required for Pydantic field validators but not used
-        result = validate_text_field(None, "tomato", "name")
+        """Test cls parameter is no longer required (function simplified)."""
+        # The cls parameter has been removed to simplify the function
+        result = validate_text_field("tomato", "name")
         assert result == "tomato"
 
     def test_complex_valid_case(self):
         """Test complex valid case through validate_text_field."""
-        result = validate_text_field(str, "  LONG-GRAIN Brown Rice  ", "variety")
+        result = validate_text_field("  LONG-GRAIN Brown Rice  ", "variety")
         assert result == "long-grain brown rice"
 
     def test_special_characters_error_message(self):
@@ -378,4 +378,4 @@ class TestValidateTextField:
             ValueError,
             match="variety can only contain lowercase letters, hyphens, and single spaces",
         ):
-            validate_text_field(str, "rice@home", "variety")
+            validate_text_field("rice@home", "variety")

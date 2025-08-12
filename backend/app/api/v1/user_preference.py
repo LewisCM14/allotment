@@ -3,6 +3,7 @@ User Preference Endpoints
 - Provides API endpoints for user preference operations (read, update).
 """
 
+import uuid
 from typing import Any
 
 import structlog
@@ -12,6 +13,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.core.auth_utils import get_current_user
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
+from app.api.core.logging import log_timing
+from app.api.middleware.error_handler import safe_operation
+from app.api.middleware.exception_handler import (
+    BusinessLogicError,
+    ResourceNotFoundError,
+)
 from app.api.middleware.logging_middleware import request_id_ctx_var
 from app.api.schemas.user.user_preference_schema import (
     FeedDayRead,
@@ -44,23 +51,27 @@ async def get_user_preferences(
     }
     logger.info("Fetching user preferences", **log_context)
 
-    async with UserUnitOfWork(db) as uow:
-        result = await uow.get_user_preferences(str(current_user.user_id))
+    async with safe_operation("fetching user preferences", log_context):
+        with log_timing(
+            "get_user_preferences_endpoint", request_id=log_context["request_id"]
+        ):
+            async with UserUnitOfWork(db) as uow:
+                result = await uow.get_user_preferences(str(current_user.user_id))
 
-    logger.info("User preferences fetched", **log_context)
-    return UserPreferencesRead(
-        user_feed_days=[
-            FeedDayRead(
-                feed_id=ufd.feed_id,
-                feed_name=ufd.feed.name,
-                day_id=ufd.day_id,
-                day_name=ufd.day.name,
+            logger.info("User preferences fetched successfully", **log_context)
+            return UserPreferencesRead(
+                user_feed_days=[
+                    FeedDayRead(
+                        feed_id=ufd.feed_id,
+                        feed_name=ufd.feed.name,
+                        day_id=ufd.day_id,
+                        day_name=ufd.day.name,
+                    )
+                    for ufd in result["user_feed_days"]
+                ],
+                available_feeds=result["available_feeds"],
+                available_days=result["available_days"],
             )
-            for ufd in result["user_feed_days"]
-        ],
-        available_feeds=result["available_feeds"],
-        available_days=result["available_days"],
-    )
 
 
 @router.put(
@@ -87,37 +98,46 @@ async def update_user_feed_preference(
     }
     logger.info("Updating user feed preference", **log_context)
 
-    async with UserUnitOfWork(db) as uow:
-        # Update the preference
-        updated_preference = await uow.update_user_feed_day(
-            str(current_user.user_id), feed_id, str(preference_update.day_id)
-        )
+    async with safe_operation("updating user feed preference", log_context):
+        # Validate feed_id is a valid UUID
+        try:
+            uuid.UUID(feed_id)
+        except ValueError:
+            logger.warning("Invalid feed_id format", feed_id=feed_id, **log_context)
+            raise BusinessLogicError(
+                f"Invalid feed_id format: {feed_id}",
+                status_code=status.HTTP_400_BAD_REQUEST,
+            )
 
-        # Get the updated preference with feed and day names for response
-        preferences = await uow.get_user_preferences(str(current_user.user_id))
+        with log_timing(
+            "update_user_feed_preference_endpoint", request_id=log_context["request_id"]
+        ):
+            async with UserUnitOfWork(db) as uow:
+                # Update the preference
+                await uow.update_user_feed_day(
+                    str(current_user.user_id), feed_id, str(preference_update.day_id)
+                )
 
-        # Find the updated preference in the results
-        updated_feed_day = None
-        for ufd in preferences["user_feed_days"]:
-            if str(ufd.feed_id) == feed_id and str(ufd.day_id) == str(
-                preference_update.day_id
-            ):
-                updated_feed_day = ufd
-                break
+                # Get the updated preference with feed and day names for response
+                preferences = await uow.get_user_preferences(str(current_user.user_id))
 
-    if not updated_feed_day:
-        logger.warning("Updated preference not found in results", **log_context)
-        return FeedDayRead(
-            feed_id=updated_preference.feed_id,
-            feed_name="Unknown",
-            day_id=updated_preference.day_id,
-            day_name="Unknown",
-        )
+                # Find the updated preference in the results
+                updated_feed_day = None
+                for ufd in preferences["user_feed_days"]:
+                    if str(ufd.feed_id) == feed_id and str(ufd.day_id) == str(
+                        preference_update.day_id
+                    ):
+                        updated_feed_day = ufd
+                        break
 
-    logger.info("User feed preference updated", **log_context)
-    return FeedDayRead(
-        feed_id=updated_feed_day.feed_id,
-        feed_name=updated_feed_day.feed.name,
-        day_id=updated_feed_day.day_id,
-        day_name=updated_feed_day.day.name,
-    )
+            if not updated_feed_day:
+                logger.warning("Updated preference not found in results", **log_context)
+                raise ResourceNotFoundError("Feed preference", feed_id)
+
+            logger.info("User feed preference updated successfully", **log_context)
+            return FeedDayRead(
+                feed_id=updated_feed_day.feed_id,
+                feed_name=updated_feed_day.feed.name,
+                day_id=updated_feed_day.day_id,
+                day_name=updated_feed_day.day.name,
+            )

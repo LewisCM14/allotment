@@ -123,7 +123,7 @@ class FamilyCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -146,7 +146,7 @@ class BotanicalGroupCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -166,7 +166,7 @@ class PestCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -185,7 +185,7 @@ class DiseaseCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -204,7 +204,7 @@ class InterventionCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -223,7 +223,7 @@ class SymptomCreate(SecureBaseModel):  # pragma: no cover
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
-        return validate_text_field(cls, v, "name")
+        return validate_text_field(v, "name")
 
     model_config = ConfigDict(
         json_schema_extra={
