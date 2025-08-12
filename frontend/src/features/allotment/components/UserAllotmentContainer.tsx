@@ -45,14 +45,20 @@ export default function UserAllotmentContainer() {
 
 	// Watch form values for real-time area calculation
 	const formValues = useWatch({ control });
-	const currentArea =
-		(formValues.allotment_width_meters ?? 0) *
-		(formValues.allotment_length_meters ?? 0);
 
 	const [error, setError] = useState<string>("");
 	const [isEditing, setIsEditing] = useState(false);
 	const { isAuthenticated } = useAuth();
 	const navigate = useNavigate();
+
+	// Calculate area based on editing state:
+	// - When editing: use form values for real-time calculation
+	// - When not editing: use existing allotment data
+	const currentArea = isEditing
+		? (formValues.allotment_width_meters ?? 0) *
+		(formValues.allotment_length_meters ?? 0)
+		: (existingAllotment?.allotment_width_meters ?? 0) *
+		(existingAllotment?.allotment_length_meters ?? 0);
 
 	// Handle authentication redirect
 	useEffect(() => {
