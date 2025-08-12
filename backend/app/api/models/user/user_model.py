@@ -32,7 +32,8 @@ from app.api.middleware.logging_middleware import (
 )
 
 if TYPE_CHECKING:
-    from app.api.models.grow_guide.guide_options_model import Day, Feed
+    from app.api.models.grow_guide.calendar_model import Day
+    from app.api.models.grow_guide.guide_options_model import Feed
 
 logger = structlog.get_logger()
 

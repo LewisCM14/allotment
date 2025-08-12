@@ -6,7 +6,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.exception_handler import InvalidTokenError
-from app.api.models.grow_guide.guide_options_model import Day, Feed
+from app.api.models.grow_guide.calendar_model import Day
+from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.models.user.user_model import User, UserAllotment, UserFeedDay
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas.user.user_allotment_schema import (

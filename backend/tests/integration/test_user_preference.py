@@ -6,7 +6,8 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.config import settings
-from app.api.models.grow_guide.guide_options_model import Day, Feed
+from app.api.models.grow_guide.calendar_model import Day
+from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.models.user.user_model import User, UserFeedDay
 from tests.conftest import mock_email_service
 
