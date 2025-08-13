@@ -21,11 +21,14 @@ from app.api.middleware.exception_handler import (
 )
 from app.api.middleware.logging_middleware import request_id_ctx_var
 from app.api.schemas.user.user_preference_schema import (
+    DayRead,
     FeedDayRead,
+    FeedRead,
     UserFeedDayUpdate,
     UserPreferencesRead,
 )
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
+from app.api.services.grow_guide.grow_guide_unit_of_work import GrowGuideUnitOfWork
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -55,8 +58,13 @@ async def get_user_preferences(
         with log_timing(
             "get_user_preferences_endpoint", request_id=log_context["request_id"]
         ):
-            async with UserUnitOfWork(db) as uow:
-                result = await uow.get_user_preferences(str(current_user.user_id))
+            # Coordinate between both units of work at API layer
+            async with UserUnitOfWork(db) as user_uow:
+                user_feed_days = await user_uow.get_user_feed_days(str(current_user.user_id))
+            
+            async with GrowGuideUnitOfWork(db) as grow_guide_uow:
+                available_feeds = await grow_guide_uow.get_all_feeds()
+                available_days = await grow_guide_uow.get_all_days()
 
             logger.info("User preferences fetched successfully", **log_context)
             return UserPreferencesRead(
@@ -67,10 +75,16 @@ async def get_user_preferences(
                         day_id=ufd.day_id,
                         day_name=ufd.day.name,
                     )
-                    for ufd in result["user_feed_days"]
+                    for ufd in user_feed_days
                 ],
-                available_feeds=result["available_feeds"],
-                available_days=result["available_days"],
+                available_feeds=[
+                    FeedRead(id=feed.id, name=feed.name) 
+                    for feed in available_feeds
+                ],
+                available_days=[
+                    DayRead(id=day.id, day_number=day.day_number, name=day.name)
+                    for day in available_days
+                ],
             )
 
 
@@ -119,11 +133,11 @@ async def update_user_feed_preference(
                 )
 
                 # Get the updated preference with feed and day names for response
-                preferences = await uow.get_user_preferences(str(current_user.user_id))
+                user_feed_days = await uow.get_user_feed_days(str(current_user.user_id))
 
                 # Find the updated preference in the results
                 updated_feed_day = None
-                for ufd in preferences["user_feed_days"]:
+                for ufd in user_feed_days:
                     if str(ufd.feed_id) == feed_id and str(ufd.day_id) == str(
                         preference_update.day_id
                     ):

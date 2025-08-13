@@ -2,7 +2,9 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
+    day,
     family,
+    feed,
     health,
     registration,
     user,
@@ -25,3 +27,5 @@ router.include_router(
     user_preference.router, prefix="/users/preferences", tags=["User Preferences"]
 )
 router.include_router(family.router, prefix="/families", tags=["Families"])
+router.include_router(feed.router, prefix="/feed", tags=["Feed"])
+router.include_router(day.router, prefix="/days", tags=["Days"])

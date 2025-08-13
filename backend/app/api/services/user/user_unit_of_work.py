@@ -446,29 +446,19 @@ class UserUnitOfWork:
             return user
 
     @translate_db_exceptions
-    async def get_user_preferences(self, user_id: str) -> Dict[str, Any]:
-        """Get user preferences including feed days and available options."""
+    async def get_user_feed_days(self, user_id: str) -> Any:
+        """Get user's feed day preferences."""
         log_context = {
             "user_id": user_id,
             "request_id": self.request_id,
-            "operation": "get_user_preferences_uow",
+            "operation": "get_user_feed_days_uow",
         }
 
-        logger.info("Getting user preferences", **log_context)
+        logger.info("Getting user feed days", **log_context)
 
-        with log_timing("uow_get_user_preferences", request_id=self.request_id):
-            # Get user's current feed day preferences
+        with log_timing("uow_get_user_feed_days", request_id=self.request_id):
             user_feed_days = await self.user_repo.get_user_feed_days(user_id)
-
-            # Get all available feeds and days
-            available_feeds = await self.user_repo.get_all_feeds()
-            available_days = await self.user_repo.get_all_days()
-
-            return {
-                "user_feed_days": user_feed_days,
-                "available_feeds": available_feeds,
-                "available_days": available_days,
-            }
+            return user_feed_days
 
     @translate_db_exceptions
     async def update_user_feed_day(

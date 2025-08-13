@@ -22,8 +22,6 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
 from app.api.models import User
-from app.api.models.grow_guide.calendar_model import Day
-from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.models.user.user_model import UserAllotment, UserFeedDay
 from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
@@ -295,22 +293,6 @@ class UserRepository:
                 .where(UserFeedDay.user_id == user_uuid)
                 .options(selectinload(UserFeedDay.feed), selectinload(UserFeedDay.day))
             )
-            result = await self.db.execute(query)
-            return list(result.scalars().all())
-
-    @translate_db_exceptions
-    async def get_all_feeds(self) -> List[Feed]:
-        """Get all available feed types."""
-        with log_timing("db_get_all_feeds", request_id=self.request_id):
-            query = select(Feed).order_by(Feed.name)
-            result = await self.db.execute(query)
-            return list(result.scalars().all())
-
-    @translate_db_exceptions
-    async def get_all_days(self) -> List[Day]:
-        """Get all available days."""
-        with log_timing("db_get_all_days", request_id=self.request_id):
-            query = select(Day).order_by(Day.day_number)
             result = await self.db.execute(query)
             return list(result.scalars().all())
 
