@@ -89,7 +89,9 @@ class GrowGuideUnitOfWork:
                     error_type="IntegrityError",
                     exc_info=True,
                 )
-                raise DatabaseIntegrityError(message="Database integrity constraint violated")
+                raise DatabaseIntegrityError(
+                    message="Database integrity constraint violated"
+                )
 
     @translate_db_exceptions
     async def get_all_feeds(self) -> List[Feed]:

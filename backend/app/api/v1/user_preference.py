@@ -27,8 +27,8 @@ from app.api.schemas.user.user_preference_schema import (
     UserFeedDayUpdate,
     UserPreferencesRead,
 )
-from app.api.services.user.user_unit_of_work import UserUnitOfWork
 from app.api.services.grow_guide.grow_guide_unit_of_work import GrowGuideUnitOfWork
+from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
 logger = structlog.get_logger()
@@ -60,8 +60,10 @@ async def get_user_preferences(
         ):
             # Coordinate between both units of work at API layer
             async with UserUnitOfWork(db) as user_uow:
-                user_feed_days = await user_uow.get_user_feed_days(str(current_user.user_id))
-            
+                user_feed_days = await user_uow.get_user_feed_days(
+                    str(current_user.user_id)
+                )
+
             async with GrowGuideUnitOfWork(db) as grow_guide_uow:
                 available_feeds = await grow_guide_uow.get_all_feeds()
                 available_days = await grow_guide_uow.get_all_days()
@@ -78,8 +80,7 @@ async def get_user_preferences(
                     for ufd in user_feed_days
                 ],
                 available_feeds=[
-                    FeedRead(id=feed.id, name=feed.name) 
-                    for feed in available_feeds
+                    FeedRead(id=feed.id, name=feed.name) for feed in available_feeds
                 ],
                 available_days=[
                     DayRead(id=day.id, day_number=day.day_number, name=day.name)
