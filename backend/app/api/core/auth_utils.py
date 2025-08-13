@@ -167,7 +167,7 @@ async def authenticate_user(
 
 
 async def get_current_user(
-    authorization: str = Header(...),
+    authorization: Optional[str] = Header(None),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Get the current user from the authorization header."""

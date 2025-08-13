@@ -367,42 +367,6 @@ class TestUserRepository:
         mock_db.execute.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_get_all_feeds(self, user_repository, mock_db, sample_feed):
-        """Test getting all available feeds."""
-        # Arrange
-        mock_scalars = Mock()
-        mock_scalars.all.return_value = [sample_feed]
-        mock_result = Mock()
-        mock_result.scalars.return_value = mock_scalars
-        mock_db.execute.return_value = mock_result
-
-        # Act
-        result = await user_repository.get_all_feeds()
-
-        # Assert
-        assert len(result) == 1
-        assert result[0] == sample_feed
-        mock_db.execute.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_get_all_days(self, user_repository, mock_db, sample_day):
-        """Test getting all available days."""
-        # Arrange
-        mock_scalars = Mock()
-        mock_scalars.all.return_value = [sample_day]
-        mock_result = Mock()
-        mock_result.scalars.return_value = mock_scalars
-        mock_db.execute.return_value = mock_result
-
-        # Act
-        result = await user_repository.get_all_days()
-
-        # Assert
-        assert len(result) == 1
-        assert result[0] == sample_day
-        mock_db.execute.assert_called_once()
-
-    @pytest.mark.asyncio
     async def test_update_user_feed_day_existing(
         self, user_repository, mock_db, sample_user_feed_day
     ):

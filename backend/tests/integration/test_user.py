@@ -423,7 +423,7 @@ class TestUserProfile:
         """Test getting user profile without authentication."""
         response = await client.get(f"{USER_PREFIX}/profile")
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.asyncio
     async def test_update_user_profile_success(self, client, mocker):
@@ -497,7 +497,7 @@ class TestUserProfile:
             },
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.asyncio
     async def test_update_user_profile_invalid_data(self, client, mocker):

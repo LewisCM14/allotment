@@ -118,7 +118,7 @@ async def update_user_feed_preference(
         try:
             uuid.UUID(feed_id)
         except ValueError:
-            logger.warning("Invalid feed_id format", feed_id=feed_id, **log_context)
+            logger.warning("Invalid feed_id format", **log_context)
             raise BusinessLogicError(
                 f"Invalid feed_id format: {feed_id}",
                 status_code=status.HTTP_400_BAD_REQUEST,

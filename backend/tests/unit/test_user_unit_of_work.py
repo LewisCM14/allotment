@@ -342,34 +342,20 @@ class TestUserUnitOfWork:
                 await user_unit_of_work.update_user_allotment(user_id, allotment_data)
 
     @pytest.mark.asyncio
-    async def test_get_user_preferences(self, user_unit_of_work):
-        """Test getting user preferences."""
+    async def test_get_user_feed_days(self, user_unit_of_work):
+        """Test getting user feed days."""
         user_id = str(uuid.uuid4())
         mock_user_feed_days = []
-        mock_feeds = []
-        mock_days = []
 
-        with (
-            patch.object(
-                user_unit_of_work.user_repo,
-                "get_user_feed_days",
-                return_value=mock_user_feed_days,
-            ) as mock_get_feed_days,
-            patch.object(
-                user_unit_of_work.user_repo, "get_all_feeds", return_value=mock_feeds
-            ) as mock_get_feeds,
-            patch.object(
-                user_unit_of_work.user_repo, "get_all_days", return_value=mock_days
-            ) as mock_get_days,
-        ):
-            result = await user_unit_of_work.get_user_preferences(user_id)
+        with patch.object(
+            user_unit_of_work.user_repo,
+            "get_user_feed_days",
+            return_value=mock_user_feed_days,
+        ) as mock_get_feed_days:
+            result = await user_unit_of_work.get_user_feed_days(user_id)
 
-        assert result["user_feed_days"] == mock_user_feed_days
-        assert result["available_feeds"] == mock_feeds
-        assert result["available_days"] == mock_days
+        assert result == mock_user_feed_days
         mock_get_feed_days.assert_called_once_with(user_id)
-        mock_get_feeds.assert_called_once()
-        mock_get_days.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_update_user_feed_day(self, user_unit_of_work):
