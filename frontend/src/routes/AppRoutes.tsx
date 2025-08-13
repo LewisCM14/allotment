@@ -30,6 +30,9 @@ const FamilyInfoPage = React.lazy(
 const AllotmentPage = React.lazy(
 	() => import("../features/allotment/pages/UserAllotmentInfo"),
 );
+const UserPreferencePage = React.lazy(
+	() => import("../features/preference/pages/UserPreferencePage"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -108,6 +111,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<AllotmentPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/preferences"
+					element={
+						<ProtectedRoute>
+							<UserPreferencePage />
 						</ProtectedRoute>
 					}
 				/>

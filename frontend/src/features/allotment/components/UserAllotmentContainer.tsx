@@ -56,9 +56,9 @@ export default function UserAllotmentContainer() {
 	// - When not editing: use existing allotment data
 	const currentArea = isEditing
 		? (formValues.allotment_width_meters ?? 0) *
-		(formValues.allotment_length_meters ?? 0)
+			(formValues.allotment_length_meters ?? 0)
 		: (existingAllotment?.allotment_width_meters ?? 0) *
-		(existingAllotment?.allotment_length_meters ?? 0);
+			(existingAllotment?.allotment_length_meters ?? 0);
 
 	// Handle authentication redirect
 	useEffect(() => {
