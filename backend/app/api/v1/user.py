@@ -10,11 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth_utils import get_current_user
 from app.api.core.database import get_db
-from app.api.core.logging import log_timing
-from app.api.middleware.error_handler import handle_route_exceptions
-from app.api.middleware.exception_handler import (
-    validate_user_exists,
-)
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
@@ -26,15 +21,10 @@ from app.api.schemas.user.user_schema import (
     UserProfileUpdate,
     VerificationStatusResponse,
 )
-from app.api.services.email_service import (
-    send_verification_email,
-)
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
 logger = structlog.get_logger()
-
-INTERNAL_SERVER_ERROR_MSG = "Internal server error"
 
 
 @router.post(
@@ -68,27 +58,12 @@ async def request_verification_email(
         "operation": "request_verification_email",
     }
     logger.debug("Verification email requested", **log_context)
-    user = await validate_user_exists(
-        db_session=db, user_model=User, user_email=user_email
-    )
-    log_context["user_id"] = str(user.user_id)
-    try:
-        logger.debug("About to call send_verification_email", **log_context)
-        with log_timing("send_email", request_id=log_context["request_id"]):
-            await send_verification_email(
-                user_email=user_email, user_id=str(user.user_id)
-            )
-        logger.debug("send_verification_email call completed", **log_context)
-        logger.info("Verification email sent successfully", **log_context)
-        return MessageResponse(message="Verification email sent successfully")
-    except Exception as e:
-        logger.error(
-            "Failed to send verification email during operation",
-            error=str(e),
-            error_code="EMAIL_VERIFICATION_ERROR",
-            **log_context,
-        )
-        return MessageResponse(message=INTERNAL_SERVER_ERROR_MSG)
+
+    async with UserUnitOfWork(db) as uow:
+        await uow.send_verification_email_service(user_email)
+
+    logger.info("Verification email sent successfully", **log_context)
+    return MessageResponse(message="Verification email sent successfully")
 
 
 @router.get(
@@ -119,16 +94,12 @@ async def check_verification_status(
         "operation": "check_verification_status",
     }
     logger.debug("Checking email verification status", **log_context)
-    user = await validate_user_exists(
-        db_session=db, user_model=User, user_email=user_email
-    )
-    log_context["user_id"] = str(user.user_id)
-    log_context["verification_status"] = str(user.is_email_verified)
+
+    async with UserUnitOfWork(db) as uow:
+        verification_status = await uow.get_verification_status_service(user_email)
+
     logger.info("Verification status checked", **log_context)
-    return VerificationStatusResponse(
-        is_email_verified=user.is_email_verified,
-        user_id=str(user.user_id),
-    )
+    return verification_status
 
 
 @router.get(
@@ -198,29 +169,19 @@ async def update_user_profile(
     }
     logger.info("Attempting to update user profile", **log_context)
 
-    try:
-        async with UserUnitOfWork(db) as uow:
-            updated_user = await uow.update_user_profile(
-                user_id=str(current_user.user_id),
-                first_name=profile_update.user_first_name,
-                country_code=profile_update.user_country_code,
-            )
-
-            logger.info("User profile updated successfully", **log_context)
-
-            return UserProfileResponse(
-                user_id=str(updated_user.user_id),
-                user_email=updated_user.user_email,
-                user_first_name=updated_user.user_first_name,
-                user_country_code=updated_user.user_country_code,
-                is_email_verified=updated_user.is_email_verified,
-            )
-
-    except Exception as e:
-        handle_route_exceptions(
-            operation="update_user_profile",
-            log_context=log_context,
-            error=e,
-            default_message="Failed to update user profile",
+    async with UserUnitOfWork(db) as uow:
+        updated_user = await uow.update_user_profile(
+            user_id=str(current_user.user_id),
+            first_name=profile_update.user_first_name,
+            country_code=profile_update.user_country_code,
         )
-        raise
+
+        logger.info("User profile updated successfully", **log_context)
+
+        return UserProfileResponse(
+            user_id=str(updated_user.user_id),
+            user_email=updated_user.user_email,
+            user_first_name=updated_user.user_first_name,
+            user_country_code=updated_user.user_country_code,
+            is_email_verified=updated_user.is_email_verified,
+        )

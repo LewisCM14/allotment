@@ -91,21 +91,40 @@ class TestUserPreferenceIntegration:
             mock_db = AsyncMock(spec=AsyncSession)
             mock_get_db.return_value = mock_db
 
-            # Mock the new architecture - separate units of work
-            with (
-                patch(
-                    "app.api.services.user.user_unit_of_work.UserUnitOfWork.get_user_feed_days",
-                    return_value=[sample_user_feed_day],
-                ),
-                patch(
-                    "app.api.services.grow_guide.grow_guide_unit_of_work.GrowGuideUnitOfWork.get_all_feeds",
-                    return_value=[sample_feed],
-                ),
-                patch(
-                    "app.api.services.grow_guide.grow_guide_unit_of_work.GrowGuideUnitOfWork.get_all_days",
-                    return_value=[sample_day],
-                ),
-            ):
+            # Mock the new UserPreferencesUnitOfWork architecture
+            with patch(
+                "app.api.services.user.user_preferences_unit_of_work.UserPreferencesUnitOfWork.get_user_preferences"
+            ) as mock_get_preferences:
+                from app.api.schemas.user.user_preference_schema import (
+                    DayRead,
+                    FeedDayRead,
+                    FeedRead,
+                    UserPreferencesRead,
+                )
+
+                # Create the expected response structure
+                mock_preferences = UserPreferencesRead(
+                    user_feed_days=[
+                        FeedDayRead(
+                            feed_id=sample_user_feed_day.feed_id,
+                            feed_name=sample_user_feed_day.feed.name,
+                            day_id=sample_user_feed_day.day_id,
+                            day_name=sample_user_feed_day.day.name,
+                        )
+                    ],
+                    available_feeds=[
+                        FeedRead(id=sample_feed.id, name=sample_feed.name)
+                    ],
+                    available_days=[
+                        DayRead(
+                            id=sample_day.id,
+                            day_number=sample_day.day_number,
+                            name=sample_day.name,
+                        )
+                    ],
+                )
+                mock_get_preferences.return_value = mock_preferences
+
                 response = await client.get(
                     "/api/v1/users/preferences", headers=headers
                 )
@@ -149,24 +168,20 @@ class TestUserPreferenceIntegration:
             mock_db = AsyncMock(spec=AsyncSession)
             mock_get_db.return_value = mock_db
 
-            # Mock the new architecture
-            with (
-                patch(
-                    "app.api.services.user.user_unit_of_work.UserUnitOfWork.update_user_feed_day"
-                ) as mock_update,
-                patch(
-                    "app.api.services.user.user_unit_of_work.UserUnitOfWork.get_user_feed_days"
-                ) as mock_get_user_feeds,
-            ):
-                # Create mock user feed day for response
-                mock_ufd = type("MockUFD", (), {})()
-                mock_ufd.feed_id = sample_feed.id
-                mock_ufd.day_id = sample_day.id
-                mock_ufd.feed = sample_feed
-                mock_ufd.day = sample_day
+            # Mock the new UserPreferencesUnitOfWork architecture
+            with patch(
+                "app.api.services.user.user_preferences_unit_of_work.UserPreferencesUnitOfWork.update_user_feed_preference"
+            ) as mock_update_preference:
+                from app.api.schemas.user.user_preference_schema import FeedDayRead
 
-                mock_update.return_value = mock_ufd
-                mock_get_user_feeds.return_value = [mock_ufd]
+                # Create the expected response
+                mock_feed_day = FeedDayRead(
+                    feed_id=sample_feed.id,
+                    feed_name=sample_feed.name,
+                    day_id=sample_day.id,
+                    day_name=sample_day.name,
+                )
+                mock_update_preference.return_value = mock_feed_day
 
                 update_data = {"day_id": str(sample_day.id)}
                 response = await client.put(

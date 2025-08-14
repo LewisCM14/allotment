@@ -28,18 +28,18 @@ class TestUserEndpointsUnit:
 
     async def test_request_verification_email_success(self, mocker):
         """Test successful verification email request."""
-        # Mock dependencies
-        mock_user = MagicMock()
-        mock_user.user_id = "test-user-id"
-        mock_user.user_email = "test@example.com"
+        # Mock UserUnitOfWork
+        mock_uow = mocker.AsyncMock()
+        mock_uow.send_verification_email_service = mocker.AsyncMock()
 
-        # Mock validate_user_exists
-        mock_validate = mocker.patch(
-            "app.api.v1.user.validate_user_exists", return_value=mock_user
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
         )
-
-        # Mock email service
-        mock_send_email = mocker.patch("app.api.v1.user.send_verification_email")
 
         # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -52,30 +52,26 @@ class TestUserEndpointsUnit:
 
         # Assertions
         assert isinstance(result, MessageResponse)
-        assert result.message == "Verification email sent successfully"
-        mock_validate.assert_called_once_with(
-            db_session=mock_db, user_model=user.User, user_email="test@example.com"
-        )
-        mock_send_email.assert_called_once_with(
-            user_email="test@example.com", user_id="test-user-id"
+        assert "Verification email sent successfully" in result.message
+        mock_uow.send_verification_email_service.assert_called_once_with(
+            "test@example.com"
         )
 
     async def test_request_verification_email_exception(self, mocker):
         """Test verification email request with exception."""
-        # Mock dependencies
-        mock_user = MagicMock()
-        mock_user.user_id = "test-user-id"
-        mock_user.user_email = "test@example.com"
-
-        # Mock validate_user_exists
-        mock_validate = mocker.patch(
-            "app.api.v1.user.validate_user_exists", return_value=mock_user
+        # Mock UserUnitOfWork to raise an exception
+        mock_uow = mocker.AsyncMock()
+        mock_uow.send_verification_email_service = mocker.AsyncMock(
+            side_effect=Exception("Email service error")
         )
 
-        # Mock email service to raise exception
-        mock_send_email = mocker.patch(
-            "app.api.v1.user.send_verification_email",
-            side_effect=Exception("Email service error"),
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
         )
 
         # Mock database session
@@ -84,25 +80,34 @@ class TestUserEndpointsUnit:
         # Create request
         request_data = EmailRequest(user_email="test@example.com")
 
-        # Call endpoint
-        result = await user.request_verification_email(request_data, mock_db)
+        # Call endpoint - expect exception to be raised (not caught)
+        with pytest.raises(Exception, match="Email service error"):
+            await user.request_verification_email(request_data, mock_db)
 
-        # Assertions
-        assert isinstance(result, MessageResponse)
-        assert result.message == "Internal server error"
-        mock_validate.assert_called_once()
-        mock_send_email.assert_called_once()
+        mock_uow.send_verification_email_service.assert_called_once_with(
+            "test@example.com"
+        )
 
     async def test_check_verification_status_success(self, mocker):
         """Test successful verification status check."""
-        # Mock user
-        mock_user = MagicMock()
-        mock_user.user_id = "test-user-id"
-        mock_user.is_email_verified = True
+        # Create mock response
+        mock_verification_response = VerificationStatusResponse(
+            is_email_verified=True, user_id="test-user-id"
+        )
 
-        # Mock validate_user_exists
-        mock_validate = mocker.patch(
-            "app.api.v1.user.validate_user_exists", return_value=mock_user
+        # Mock UserUnitOfWork
+        mock_uow = mocker.AsyncMock()
+        mock_uow.get_verification_status_service = mocker.AsyncMock(
+            return_value=mock_verification_response
+        )
+
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
         )
 
         # Mock database session
@@ -115,8 +120,8 @@ class TestUserEndpointsUnit:
         assert isinstance(result, VerificationStatusResponse)
         assert result.is_email_verified is True
         assert result.user_id == "test-user-id"
-        mock_validate.assert_called_once_with(
-            db_session=mock_db, user_model=user.User, user_email="test@example.com"
+        mock_uow.get_verification_status_service.assert_called_once_with(
+            "test@example.com"
         )
 
     async def test_get_user_profile_success(self, mocker):
@@ -191,10 +196,19 @@ class TestUserEndpointsUnit:
 
     async def test_request_verification_email_user_not_found(self, mocker):
         """Test verification email request when user not found."""
-        # Mock validate_user_exists to raise UserNotFoundError
-        mock_validate = mocker.patch(
-            "app.api.v1.user.validate_user_exists",
-            side_effect=UserNotFoundError("User not found"),
+        # Mock UserUnitOfWork to raise UserNotFoundError
+        mock_uow = mocker.AsyncMock()
+        mock_uow.send_verification_email_service = mocker.AsyncMock(
+            side_effect=UserNotFoundError("User not found")
+        )
+
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
         )
 
         # Mock database session
@@ -207,14 +221,25 @@ class TestUserEndpointsUnit:
         with pytest.raises(UserNotFoundError):
             await user.request_verification_email(request_data, mock_db)
 
-        mock_validate.assert_called_once()
+        mock_uow.send_verification_email_service.assert_called_once_with(
+            "nonexistent@example.com"
+        )
 
     async def test_check_verification_status_user_not_found(self, mocker):
         """Test verification status check when user not found."""
-        # Mock validate_user_exists to raise UserNotFoundError
-        mock_validate = mocker.patch(
-            "app.api.v1.user.validate_user_exists",
-            side_effect=UserNotFoundError("User not found"),
+        # Mock UserUnitOfWork to raise UserNotFoundError
+        mock_uow = mocker.AsyncMock()
+        mock_uow.get_verification_status_service = mocker.AsyncMock(
+            side_effect=UserNotFoundError("User not found")
+        )
+
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
         )
 
         # Mock database session
@@ -224,7 +249,9 @@ class TestUserEndpointsUnit:
         with pytest.raises(UserNotFoundError):
             await user.check_verification_status("nonexistent@example.com", mock_db)
 
-        mock_validate.assert_called_once()
+        mock_uow.get_verification_status_service.assert_called_once_with(
+            "nonexistent@example.com"
+        )
 
     async def test_update_user_profile_uow_error(self, mocker):
         """Test user profile update with UOW error."""

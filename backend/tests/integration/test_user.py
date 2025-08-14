@@ -15,13 +15,59 @@ USER_PREFIX = f"{settings.API_PREFIX}/users"
 
 class TestVerificationStatus:
     @pytest.mark.asyncio
+    async def test_request_verification_email_success(self, client, mocker):
+        """Test requesting verification email successfully."""
+        # Mock the UserUnitOfWork
+        mock_uow = mocker.AsyncMock()
+        mock_uow.send_verification_email_service = mocker.AsyncMock()
+
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
+        )
+
+        response = await client.post(
+            f"{USER_PREFIX}/email-verifications",
+            json={"user_email": "test@example.com"},
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert "Verification email sent successfully" in data["message"]
+
+        # Verify the UOW was called with correct parameters
+        mock_uow.send_verification_email_service.assert_called_once_with(
+            "test@example.com"
+        )
+
+    @pytest.mark.asyncio
     async def test_check_verification_status_success(self, client, mocker):
         """Test checking verification status successfully."""
-        mock_user = MagicMock()
-        mock_user.user_id = "test-user-id"
-        mock_user.is_email_verified = True
+        from app.api.schemas.user.user_schema import VerificationStatusResponse
 
-        mocker.patch("app.api.v1.user.validate_user_exists", return_value=mock_user)
+        # Create mock response object
+        mock_verification_response = VerificationStatusResponse(
+            is_email_verified=True, user_id="test-user-id"
+        )
+
+        # Mock the UserUnitOfWork
+        mock_uow = mocker.AsyncMock()
+        mock_uow.get_verification_status_service.return_value = (
+            mock_verification_response
+        )
+
+        # Mock the context manager
+        mocker.patch(
+            "app.api.v1.user.UserUnitOfWork",
+            return_value=mocker.AsyncMock(
+                __aenter__=mocker.AsyncMock(return_value=mock_uow),
+                __aexit__=mocker.AsyncMock(return_value=None),
+            ),
+        )
 
         response = await client.get(
             f"{USER_PREFIX}/verification-status",
@@ -32,6 +78,11 @@ class TestVerificationStatus:
         data = response.json()
         assert data["is_email_verified"] is True
         assert data["user_id"] == "test-user-id"
+
+        # Verify the UOW was called with correct parameters
+        mock_uow.get_verification_status_service.assert_called_once_with(
+            "test@example.com"
+        )
 
 
 class TestPasswordReset:

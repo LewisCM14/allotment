@@ -39,7 +39,7 @@ from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
 )
-from app.api.schemas.user.user_schema import UserCreate
+from app.api.schemas.user.user_schema import UserCreate, VerificationStatusResponse
 from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
@@ -478,3 +478,58 @@ class UserUnitOfWork:
         with log_timing("uow_update_user_feed_day", request_id=self.request_id):
             result = await self.user_repo.update_user_feed_day(user_id, feed_id, day_id)
             return result
+
+    @translate_db_exceptions
+    async def send_verification_email_service(self, user_email: str) -> None:
+        """Send verification email through proper service layer."""
+        log_context = {
+            "email": user_email,
+            "request_id": self.request_id,
+            "operation": "send_verification_email_uow",
+        }
+
+        logger.debug("Sending verification email via unit of work", **log_context)
+
+        user = await self.user_repo.get_user_by_email(user_email)
+        if not user:
+            from app.api.middleware.exception_handler import UserNotFoundError
+
+            raise UserNotFoundError(f"User with email {user_email} not found")
+
+        log_context["user_id"] = str(user.user_id)
+
+        with log_timing("uow_send_verification_email", request_id=self.request_id):
+            await send_verification_email(
+                user_email=user_email, user_id=str(user.user_id)
+            )
+
+        logger.info("Verification email sent successfully", **log_context)
+
+    @translate_db_exceptions
+    async def get_verification_status_service(
+        self, user_email: str
+    ) -> VerificationStatusResponse:
+        """Get user verification status through repository."""
+        log_context = {
+            "email": user_email,
+            "request_id": self.request_id,
+            "operation": "get_verification_status_uow",
+        }
+
+        logger.debug("Getting verification status via unit of work", **log_context)
+
+        user = await self.user_repo.get_user_by_email(user_email)
+        if not user:
+            from app.api.middleware.exception_handler import UserNotFoundError
+
+            raise UserNotFoundError(f"User with email {user_email} not found")
+
+        log_context["user_id"] = str(user.user_id)
+        log_context["verification_status"] = str(user.is_email_verified)
+
+        logger.info("Verification status retrieved", **log_context)
+
+        return VerificationStatusResponse(
+            is_email_verified=user.is_email_verified,
+            user_id=str(user.user_id),
+        )
