@@ -14,6 +14,8 @@ from sqlalchemy.pool import StaticPool
 from app.api.core.database import Base, get_db
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
+from app.api.models.grow_guide.calendar_model import Day
+from app.api.models.grow_guide.guide_options_model import Feed
 from app.main import app
 
 # Use a shared in-memory database with a named URI
@@ -185,3 +187,78 @@ async def seed_family_data():
             "group_name": "testgroup",
             "family_name": "testfamily",
         }
+
+
+@pytest.fixture
+async def seed_day_data():
+    """Seed the test database with day data."""
+    async with TestingSessionLocal() as session:
+        days_data = [
+            {"day_number": 1, "name": "Mon"},
+            {"day_number": 2, "name": "Tue"},
+            {"day_number": 3, "name": "Wed"},
+            {"day_number": 4, "name": "Thu"},
+            {"day_number": 5, "name": "Fri"},
+            {"day_number": 6, "name": "Sat"},
+            {"day_number": 7, "name": "Sun"},
+        ]
+
+        created_days = []
+        for day_data in days_data:
+            day_id = uuid.uuid4()
+            day = Day(
+                id=day_id,
+                day_number=day_data["day_number"],
+                name=day_data["name"],
+            )
+            session.add(day)
+            created_days.append(
+                {
+                    "id": day_id,
+                    "day_number": day_data["day_number"],
+                    "name": day_data["name"],
+                }
+            )
+
+        await session.commit()
+        yield created_days
+
+
+@pytest.fixture
+async def seed_feed_data():
+    """Seed the test database with feed data."""
+    async with TestingSessionLocal() as session:
+        feeds_data = [
+            "Tomato Feed",
+            "General Purpose Feed",
+            "Organic Compost",
+            "Liquid Fertilizer",
+            "Bone Meal",
+        ]
+
+        created_feeds = []
+        for feed_name in feeds_data:
+            feed_id = uuid.uuid4()
+            feed = Feed(
+                id=feed_id,
+                name=feed_name,
+            )
+            session.add(feed)
+            created_feeds.append(
+                {
+                    "id": feed_id,
+                    "name": feed_name,
+                }
+            )
+
+        await session.commit()
+        yield created_feeds
+
+
+@pytest.fixture
+async def seed_grow_guide_data(seed_day_data, seed_feed_data):
+    """Seed the test database with both day and feed data."""
+    yield {
+        "days": seed_day_data,
+        "feeds": seed_feed_data,
+    }
