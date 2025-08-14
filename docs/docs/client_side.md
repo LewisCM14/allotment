@@ -75,7 +75,8 @@ _High level interface functionality accompanied by low fidelity designs._
 <u>_**Medium Priority**_</u>
 
 === "User Profile Interface"
-    - Ability for users to update their: first name, email address, password and country code.
+    - Ability for users to view & update their: first name, password and country code. This interface will also display a users registered email address and verification status. With the ability to request a verification email be sent.
+    
 
 === "User Password Reset Interface"
     - Ability for users to enter a new password, after having come from the magic link provided via email to their registered address.
@@ -306,19 +307,26 @@ There are several aspects to consider when deciding on the appropriate technolog
                 - Contains components that dictate page layouts.
                 - Contains UI components to use as interface building blocks.
             /features
-                - The frontend applications interfaces logic and the services that serve them.
-                - Related test files.
+                - /<FEATURE>
+                    - /components
+                        - Feature specific components, i.e. containers & presenters.
+                    - /forms
+                        - Form schemas and components.
+                    - /hooks
+                        - Caching logic (TanStack).
+                    - /pages
+                        - Component wrappers that encapsulate the page.
+                    - /services
+                        - Feature specific API services.
             /mocks
-                - Files that support the Frontend test harness
+                - Files that support the Frontend test harness.
             /routes
                 - AppRoutes.tsx
                 - ProtectedRoute.tsx
                 - PublicRoute.tsx
             /services
                 - api.ts
-                - apiCache.ts
                 - apiConfig.ts
-                - apiService.ts
                 - errorMonitoring.ts
             /store
                 /auth
@@ -329,9 +337,9 @@ There are several aspects to consider when deciding on the appropriate technolog
                     - ThemeContext.tsx
                     - ThemeProvider.tsx
             /types
-                - Common interfaces & types, i.e. NavigationTypes.ts
+                - Common interfaces & types, i.e. NavigationTypes.ts.
             /utils
-                - Utility files used across the frontend application, i.e. errorUtils.ts
+                - Utility files used across the frontend application, i.e. errorUtils.ts.
             - App.tsx
             - global.css
             - main.tsc

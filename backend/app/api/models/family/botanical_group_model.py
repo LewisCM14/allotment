@@ -33,9 +33,7 @@ class BotanicalGroup(Base):
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(
-        String(255), unique=True, index=True, nullable=False
-    )
+    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     recommended_rotation_years: Mapped[int | None] = mapped_column(
         Integer, nullable=True
     )
@@ -47,10 +45,6 @@ class BotanicalGroup(Base):
     __table_args__ = (
         UniqueConstraint("name", name="uq_botanical_group_name"),
         CheckConstraint("name = LOWER(name)", name="ck_botanical_group_name_lower"),
-        CheckConstraint(
-            name.regexp_match(r"^[a-z0-9]+([ -][a-z0-9]+)*$"),
-            name="ck_botanical_group_name_format",
-        ),
     )
 
     def __repr__(self) -> str:

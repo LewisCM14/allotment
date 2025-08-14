@@ -81,7 +81,7 @@ class Pest(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(
-        String(255),
+        String(50),
         unique=True,
         index=True,
         nullable=False,

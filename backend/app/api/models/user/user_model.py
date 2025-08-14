@@ -7,11 +7,21 @@ User Models
 from __future__ import annotations
 
 import uuid
-from typing import Any, Optional
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, Optional
 
 import bcrypt
 import structlog
-from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, String, Text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    Float,
+    ForeignKey,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +30,10 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
+
+if TYPE_CHECKING:
+    from app.api.models.grow_guide.calendar_model import Day
+    from app.api.models.grow_guide.guide_options_model import Feed
 
 logger = structlog.get_logger()
 
@@ -45,12 +59,21 @@ class User(Base):
     is_email_verified: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
+    registered_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    last_active_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
     allotment: Mapped[Optional["UserAllotment"]] = relationship(
         "UserAllotment",
         back_populates="user",
         uselist=False,
         cascade="all, delete-orphan",
+    )
+    feed_days: Mapped[list["UserFeedDay"]] = relationship(
+        "UserFeedDay", back_populates="user", cascade="all, delete-orphan"
     )
 
     @property
@@ -181,3 +204,35 @@ class UserAllotment(Base):
             area_sqm=area_sqm,
             **log_context,
         )
+
+
+class UserFeedDay(Base):
+    """UserFeedDay model representing a user's preferred day for each type of plant feed."""
+
+    __tablename__ = "user_feed_day"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("user.user_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    feed_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("feed.id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    day_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("day.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Relationships
+    user: Mapped["User"] = relationship("User", back_populates="feed_days")
+    feed: Mapped["Feed"] = relationship("Feed", back_populates="user_feed_days")
+    day: Mapped["Day"] = relationship("Day")

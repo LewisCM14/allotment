@@ -9,7 +9,7 @@ import structlog
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import get_current_user
+from app.api.core.auth_utils import get_current_user
 from app.api.core.database import get_db
 from app.api.core.limiter import limiter
 from app.api.middleware.logging_middleware import request_id_ctx_var

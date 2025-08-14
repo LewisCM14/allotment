@@ -24,7 +24,7 @@ def upgrade() -> None:
     disease_table = op.create_table(
         "disease",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="uq_disease_name"),
     )
@@ -33,7 +33,7 @@ def upgrade() -> None:
     intervention_table = op.create_table(
         "intervention",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="uq_intervention_name"),
     )
@@ -42,7 +42,7 @@ def upgrade() -> None:
     pest_table = op.create_table(
         "pest",
         sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column("name", sa.String(length=50), nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("name", name="uq_pest_name"),
     )

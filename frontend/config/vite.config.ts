@@ -88,6 +88,7 @@ export default defineConfig(() => {
         ],
         optimizeDeps: {
             include: ['react', 'react-dom'],
+            exclude: ['lucide-react'], // Allow tree-shaking for icons
         },
         resolve: {
             alias: {
@@ -99,20 +100,70 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // isolate lucide-react into its own chunk
+                        // Core React chunks
+                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+                            return 'react-vendor';
+                        }
+
+                        // UI Library chunks
+                        if (id.includes('node_modules/@radix-ui/')) {
+                            return '@radix-ui';
+                        }
+
+                        // State management and data fetching
+                        if (id.includes('node_modules/@tanstack/')) {
+                            return '@tanstack';
+                        }
+
+                        // Utility libraries
+                        if (id.includes('node_modules/zod') || id.includes('node_modules/tailwind-merge') || id.includes('node_modules/class-variance-authority')) {
+                            return 'utils';
+                        }
+
+                        // Forms and validation
+                        if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform/')) {
+                            return 'forms';
+                        }
+
+                        // Icons - keep as separate chunk for caching
                         if (id.includes('node_modules/lucide-react')) {
                             return 'vendor_lucide';
                         }
-                        // only split other node_modules
-                        if (!id.includes('node_modules')) {
-                            return;
+
+                        // Large data libraries
+                        if (id.includes('node_modules/countries-list')) {
+                            return 'countries-list';
                         }
-                        const pkg = id.split('node_modules/')[1].split('/')[0];
-                        const skip = ['detect-node-es', 'react-router-dom', 'set-cookie-parser', 'turbo-stream'];
-                        if (skip.includes(pkg)) {
-                            return;
+
+                        // HTTP client
+                        if (id.includes('node_modules/axios')) {
+                            return 'axios';
                         }
-                        return pkg;
+
+                        // Router
+                        if (id.includes('node_modules/react-router')) {
+                            return 'react-router';
+                        }
+
+                        // Notifications and UI effects
+                        if (id.includes('node_modules/sonner') || id.includes('node_modules/cmdk')) {
+                            return 'ui-effects';
+                        }
+
+                        // PWA and service workers
+                        if (id.includes('node_modules/workbox-')) {
+                            return 'workbox';
+                        }
+
+                        // Other node_modules - group remaining smaller libraries
+                        if (id.includes('node_modules/')) {
+                            const pkg = id.split('node_modules/')[1].split('/')[0];
+                            const skip = ['detect-node-es', 'set-cookie-parser', 'turbo-stream'];
+                            if (skip.includes(pkg)) {
+                                return; // Include in main bundle
+                            }
+                            return 'vendor-misc';
+                        }
                     },
                 },
             },
@@ -123,10 +174,15 @@ export default defineConfig(() => {
                 compress: {
                     drop_console: true,
                     drop_debugger: true,
+                    pure_funcs: ['console.log', 'console.debug', 'console.info'], // Remove specific console methods
+                    passes: 2, // Multiple passes for better compression
                 },
-                mangle: true,
+                mangle: {
+                    safari10: true, // Better Safari compatibility
+                },
             },
-            chunkSizeWarningLimit: 1000,
+            chunkSizeWarningLimit: 800, // Reduced from 1000 to encourage smaller chunks
+            assetsInlineLimit: 4096, // Inline smaller assets as base64
         },
     };
 });
