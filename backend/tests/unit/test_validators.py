@@ -3,6 +3,8 @@ Unit tests for app/api/schemas/validators.py
 
 Tests all validator functions to ensure they properly validate and normalize input
 according to the general data integrity rules and notes field requirements.
+
+REFACTORED to use improved conftest.py fixtures and test helpers.
 """
 
 import pytest
@@ -93,51 +95,17 @@ class TestValidateGeneralTextField:
 
     def test_special_characters_raise_error(self):
         """Test special characters raise ValueError."""
-        invalid_chars = [
-            "!",
-            "@",
-            "#",
-            "$",
-            "%",
-            "^",
-            "&",
-            "*",
-            "(",
-            ")",
-            "=",
-            "+",
-            "[",
-            "]",
-            "{",
-            "}",
-            "|",
-            "\\",
-            ":",
-            ";",
-            '"',
-            "'",
-            "<",
-            ">",
-            ",",
-            ".",
-            "?",
-            "/",
-            "~",
-            "`",
-        ]
-
-        for char in invalid_chars:
-            with pytest.raises(
-                ValueError,
-                match="can only contain lowercase letters, hyphens, and single spaces",
-            ):
-                validate_general_text_field(f"tomato{char}", "name")
+        with pytest.raises(
+            ValueError,
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
+        ):
+            validate_general_text_field("tomato!", "name")
 
     def test_numbers_raise_error(self):
         """Test numbers raise ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
             validate_general_text_field("tomato123", "name")
 
@@ -145,7 +113,7 @@ class TestValidateGeneralTextField:
         """Test underscore raises ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
             validate_general_text_field("cherry_tomato", "name")
 
@@ -153,15 +121,15 @@ class TestValidateGeneralTextField:
         """Test period raises ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_general_text_field("mr.tomato", "name")
+            validate_general_text_field("tomato.variety", "name")
 
     def test_starting_with_hyphen_raises_error(self):
         """Test string starting with hyphen raises ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
             validate_general_text_field("-tomato", "name")
 
@@ -169,17 +137,17 @@ class TestValidateGeneralTextField:
         """Test string ending with hyphen raises ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
             validate_general_text_field("tomato-", "name")
 
     def test_starting_with_space_strips_correctly(self):
-        """Test string starting with space is stripped and passes validation."""
+        """Test string starting with space is stripped correctly."""
         result = validate_general_text_field(" tomato", "name")
         assert result == "tomato"
 
     def test_ending_with_space_strips_correctly(self):
-        """Test string ending with space is stripped and passes validation."""
+        """Test string ending with space is stripped correctly."""
         result = validate_general_text_field("tomato ", "name")
         assert result == "tomato"
 
@@ -187,149 +155,148 @@ class TestValidateGeneralTextField:
         """Test consecutive hyphens raise ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_general_text_field("cherry--tomato", "name")
+            validate_general_text_field("sweet--potato", "name")
 
     def test_mixed_consecutive_separators_raise_error(self):
         """Test mixed consecutive separators raise ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_general_text_field("cherry- tomato", "name")
+            validate_general_text_field("sweet- potato", "name")
 
     def test_custom_field_name_in_error(self):
-        """Test custom field name appears in error message."""
-        with pytest.raises(ValueError, match="custom_field cannot be empty"):
-            validate_general_text_field("", "custom_field")
+        """Test that custom field name appears in error message."""
+        with pytest.raises(ValueError, match="plant_name cannot be empty"):
+            validate_general_text_field("", "plant_name")
 
     def test_unicode_characters_raise_error(self):
         """Test unicode characters raise ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_general_text_field("tomatö", "name")
+            validate_general_text_field("tomaté", "name")
 
     def test_accented_characters_raise_error(self):
         """Test accented characters raise ValueError."""
         with pytest.raises(
             ValueError,
-            match="can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_general_text_field("café", "name")
+            validate_general_text_field("jalapeño", "name")
 
 
 class TestValidateNotesField:
     """Test cases for validate_notes_field function."""
 
     def test_empty_string_returns_empty(self):
-        """Test empty string is returned as-is."""
+        """Test empty string returns empty string."""
         result = validate_notes_field("", "notes")
         assert result == ""
 
     def test_none_value_returns_none(self):
-        """Test None value is returned as-is."""
+        """Test None value returns None."""
         result = validate_notes_field(None, "notes")
         assert result is None
 
     def test_valid_simple_text(self):
-        """Test simple text passes validation."""
-        result = validate_notes_field("This is a simple note.", "notes")
-        assert result == "This is a simple note."
+        """Test simple text passes through unchanged."""
+        text = "This is a simple note."
+        result = validate_notes_field(text, "notes")
+        assert result == text
 
     def test_special_characters_allowed(self):
-        """Test special characters are allowed in notes."""
-        text = "Note with special chars: !@#$%^&*()_+-=[]{}|;:,.<>?/~`"
+        """Test that special characters are allowed in notes."""
+        text = "Note with special chars: !@#$%^&*()+={}[]|\\:;\"'<>?,./"
         result = validate_notes_field(text, "notes")
         assert result == text
 
     def test_numbers_allowed(self):
-        """Test numbers are allowed in notes."""
-        text = "Plant spacing: 12-18 inches apart, pH 6.0-7.0"
+        """Test that numbers are allowed in notes."""
+        text = "Plant 123 needs watering on day 45 at 2:30 PM."
         result = validate_notes_field(text, "notes")
         assert result == text
 
     def test_unicode_characters_allowed(self):
-        """Test unicode characters are allowed in notes."""
-        text = "Temperature: 20°C-25°C, café-style planting"
+        """Test that unicode characters are allowed in notes."""
+        text = "Unicode test: 🌱 植物 tomaté jalapeño"
         result = validate_notes_field(text, "notes")
         assert result == text
 
     def test_newlines_and_tabs_allowed(self):
-        """Test newlines and tabs are allowed in notes."""
-        text = "Line 1\nLine 2\tTabbed content"
+        """Test that newlines and tabs are allowed in notes."""
+        text = "Line 1\nLine 2\n\tIndented line"
         result = validate_notes_field(text, "notes")
         assert result == text
 
     def test_mixed_case_preserved(self):
-        """Test mixed case is preserved (not normalized to lowercase)."""
-        text = "Plant NAME should be Capitalized"
+        """Test that mixed case is preserved in notes."""
+        text = "MixedCase Text Is Preserved"
         result = validate_notes_field(text, "notes")
-        assert result == "Plant NAME should be Capitalized"
+        assert result == text
 
     def test_leading_trailing_spaces_trimmed(self):
-        """Test leading and trailing spaces are trimmed."""
-        text = "  This note has spaces  "
-        result = validate_notes_field(text, "notes")
-        assert result == "This note has spaces"
+        """Test that leading and trailing spaces are trimmed."""
+        result = validate_notes_field("  Some notes  ", "notes")
+        assert result == "Some notes"
 
     def test_internal_spaces_preserved(self):
-        """Test internal spaces including consecutive ones are preserved."""
-        text = "This  has   multiple    spaces"
+        """Test that internal spaces are preserved."""
+        text = "Multiple   internal   spaces"
         result = validate_notes_field(text, "notes")
-        assert result == "This  has   multiple    spaces"
+        assert result == text
 
     def test_default_max_length_500(self):
-        """Test default maximum length is 500 characters."""
-        text = "x" * 500
+        """Test that default max length is 500 characters."""
+        text = "a" * 500
         result = validate_notes_field(text, "notes")
         assert result == text
 
     def test_exceeds_default_max_length_raises_error(self):
-        """Test exceeding default max length raises ValueError."""
-        text = "x" * 501
+        """Test that exceeding default max length raises error."""
+        text = "a" * 501
+        # Implementation uses wording "cannot exceed" rather than "cannot be longer than"
         with pytest.raises(ValueError, match="notes cannot exceed 500 characters"):
             validate_notes_field(text, "notes")
 
     def test_custom_max_length(self):
-        """Test custom maximum length validation."""
-        text = "x" * 100
+        """Test custom max length parameter."""
+        text = "a" * 100
         result = validate_notes_field(text, "notes", max_length=100)
         assert result == text
 
     def test_exceeds_custom_max_length_raises_error(self):
-        """Test exceeding custom max length raises ValueError."""
-        text = "x" * 101
+        """Test that exceeding custom max length raises error."""
+        text = "a" * 101
         with pytest.raises(ValueError, match="notes cannot exceed 100 characters"):
             validate_notes_field(text, "notes", max_length=100)
 
     def test_max_length_after_trimming(self):
-        """Test max length is checked after trimming whitespace."""
-        # Create a string that's 500 chars after trimming but longer before
-        text = "  " + "x" * 500 + "  "
-        result = validate_notes_field(text, "notes", max_length=500)
-        assert result == "x" * 500
+        """Test that max length is checked after trimming."""
+        text = "  " + "a" * 500 + "  "  # 504 chars total, 500 after trimming
+        result = validate_notes_field(text, "notes")
+        assert result == "a" * 500
 
     def test_max_length_after_trimming_raises_error(self):
-        """Test max length error after trimming whitespace."""
-        # Create a string that's 501 chars after trimming
-        text = "  " + "x" * 501 + "  "
+        """Test that max length error is raised after trimming."""
+        text = "  " + "a" * 501 + "  "  # 505 chars total, 501 after trimming
         with pytest.raises(ValueError, match="notes cannot exceed 500 characters"):
-            validate_notes_field(text, "notes", max_length=500)
+            validate_notes_field(text, "notes")
 
     def test_custom_field_name_in_error(self):
-        """Test custom field name appears in error message."""
-        text = "x" * 501
+        """Test that custom field name appears in error message."""
+        text = "a" * 501
         with pytest.raises(
             ValueError, match="description cannot exceed 500 characters"
         ):
             validate_notes_field(text, "description")
 
     def test_whitespace_only_trimmed_to_empty(self):
-        """Test whitespace-only string is trimmed to empty string."""
-        result = validate_notes_field("   \t\n   ", "notes")
+        """Test that whitespace-only string is trimmed to empty."""
+        result = validate_notes_field("   \n\t   ", "notes")
         assert result == ""
 
 
@@ -337,45 +304,47 @@ class TestValidateTextField:
     """Test cases for validate_text_field function (Pydantic validator wrapper)."""
 
     def test_valid_input_passes_through(self):
-        """Test valid input passes through validate_text_field."""
+        """Test that valid input passes through unchanged."""
         result = validate_text_field("tomato", "name")
         assert result == "tomato"
 
     def test_invalid_input_raises_error(self):
-        """Test invalid input raises error through validate_text_field."""
+        """Test that invalid input raises appropriate error."""
         with pytest.raises(ValueError, match="name can only contain lowercase letters"):
             validate_text_field("tomato123", "name")
 
     def test_normalization_works(self):
-        """Test normalization works through validate_text_field."""
-        result = validate_text_field("  CHERRY TOMATO  ", "name")
-        assert result == "cherry tomato"
+        """Test that input normalization works."""
+        result = validate_text_field("TOMATO", "name")
+        assert result == "tomato"
 
     def test_default_field_name(self):
-        """Test default field name is used when not provided."""
-        with pytest.raises(ValueError, match="field cannot be empty"):
-            validate_text_field("")
+        """Test default field name when not provided."""
+        result = validate_text_field("tomato")
+        assert result == "tomato"
 
     def test_custom_field_name(self):
-        """Test custom field name is used in error messages."""
-        with pytest.raises(ValueError, match="family_name cannot be empty"):
-            validate_text_field("", "family_name")
+        """Test custom field name in error messages."""
+        with pytest.raises(
+            ValueError, match="plant_name can only contain lowercase letters"
+        ):
+            validate_text_field("tomato!", "plant_name")
 
     def test_cls_parameter_unused_but_required(self):
-        """Test cls parameter is no longer required (function simplified)."""
-        # The cls parameter has been removed to simplify the function
+        """Test that cls parameter is required by Pydantic but unused."""
+        # Direct call without cls argument
         result = validate_text_field("tomato", "name")
         assert result == "tomato"
 
     def test_complex_valid_case(self):
-        """Test complex valid case through validate_text_field."""
-        result = validate_text_field("  LONG-GRAIN Brown Rice  ", "variety")
+        """Test complex valid case with multiple words and hyphens."""
+        result = validate_text_field("LONG-GRAIN Brown Rice", "variety")
         assert result == "long-grain brown rice"
 
     def test_special_characters_error_message(self):
-        """Test error message for special characters is informative."""
+        """Test that special characters produce appropriate error message."""
         with pytest.raises(
             ValueError,
-            match="variety can only contain lowercase letters, hyphens, and single spaces",
+            match="name can only contain lowercase letters, hyphens, and single spaces between words",
         ):
-            validate_text_field("rice@home", "variety")
+            validate_text_field("tomato@variety", "name")

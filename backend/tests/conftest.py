@@ -7,10 +7,12 @@ import os
 import uuid
 
 import pytest
+from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
+from app.api.core.config import settings
 from app.api.core.database import Base, get_db
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
@@ -262,3 +264,323 @@ async def seed_grow_guide_data(seed_day_data, seed_feed_data):
         "days": seed_day_data,
         "feeds": seed_feed_data,
     }
+
+
+# ==============================================================================
+# ENHANCED DATABASE SEEDING FIXTURES
+# ==============================================================================
+
+
+@pytest.fixture
+async def complete_family_seed_data():
+    """Seed comprehensive family data with relationships."""
+    async with TestingSessionLocal() as session:
+        # Create multiple botanical groups
+        groups_data = [
+            {"name": "Brassicas", "rotation_years": 3},
+            {"name": "Legumes", "rotation_years": 2},
+            {"name": "Solanaceae", "rotation_years": 4},
+        ]
+
+        created_groups = []
+        created_families = []
+
+        for group_data in groups_data:
+            group_id = uuid.uuid4()
+            group = BotanicalGroup(
+                id=group_id,
+                name=group_data["name"],
+                recommended_rotation_years=group_data["rotation_years"],
+            )
+            session.add(group)
+            created_groups.append(
+                {
+                    "id": group_id,
+                    "name": group_data["name"],
+                    "recommended_rotation_years": group_data["rotation_years"],
+                }
+            )
+
+            # Add families for each group
+            families_per_group = {
+                "Brassicas": ["Cabbage", "Broccoli", "Kale"],
+                "Legumes": ["Peas", "Beans", "Lentils"],
+                "Solanaceae": ["Tomatoes", "Peppers", "Eggplant"],
+            }
+
+            for family_name in families_per_group.get(group_data["name"], []):
+                family_id = uuid.uuid4()
+                family = Family(
+                    id=family_id,
+                    name=family_name,
+                    botanical_group_id=group_id,
+                )
+                session.add(family)
+                created_families.append(
+                    {
+                        "id": family_id,
+                        "name": family_name,
+                        "botanical_group_id": group_id,
+                        "botanical_group_name": group_data["name"],
+                    }
+                )
+
+        await session.commit()
+        yield {
+            "botanical_groups": created_groups,
+            "families": created_families,
+        }
+
+
+@pytest.fixture
+async def user_in_database(sample_user_data):
+    """Create a user directly in the database without going through API."""
+    import uuid
+    from datetime import datetime, timezone
+
+    from app.api.core.auth_utils import hash_password
+    from app.api.models.user.user_model import User
+
+    async with TestingSessionLocal() as session:
+        user_id = uuid.uuid4()
+        hashed_password = hash_password(sample_user_data["user_password"])
+
+        user = User(
+            user_id=user_id,
+            user_email=sample_user_data["user_email"],
+            user_password=hashed_password,
+            user_first_name=sample_user_data["user_first_name"],
+            user_country_code=sample_user_data["user_country_code"],
+            is_email_verified=False,
+            registered_date=datetime.now(timezone.utc),
+            last_active_date=datetime.now(timezone.utc),
+        )
+
+        session.add(user)
+        await session.commit()
+
+        user_data = {
+            "user_id": str(user_id),
+            "user_email": sample_user_data["user_email"],
+            "user_first_name": sample_user_data["user_first_name"],
+            "user_country_code": sample_user_data["user_country_code"],
+            "is_email_verified": False,
+        }
+        user_data.update(sample_user_data)  # Include password for login tests
+        yield user_data
+
+
+@pytest.fixture
+async def verified_user_in_database(user_in_database):
+    """Create a verified user directly in the database."""
+    from sqlalchemy import update
+
+    from app.api.models.user.user_model import User
+
+    async with TestingSessionLocal() as session:
+        # Update the user to be verified
+        await session.execute(
+            update(User)
+            .where(User.user_id == user_in_database["user_id"])
+            .values(is_email_verified=True)
+        )
+        await session.commit()
+
+        user_data = user_in_database.copy()
+        user_data["is_email_verified"] = True
+        yield user_data
+
+
+# ==============================================================================
+# USER TEST FIXTURES
+# ==============================================================================
+
+
+@pytest.fixture
+def sample_user_data():
+    """Standard user data for testing."""
+    return {
+        "user_email": "test@example.com",
+        "user_password": "TestPass123!@",
+        "user_first_name": "Test",
+        "user_country_code": "GB",
+    }
+
+
+@pytest.fixture
+def sample_user_data_variant():
+    """Alternative user data for testing multiple users."""
+    return {
+        "user_email": "test2@example.com",
+        "user_password": "TestPass123!@",
+        "user_first_name": "TestUser",
+        "user_country_code": "US",
+    }
+
+
+@pytest.fixture
+async def registered_user(client, mocker, sample_user_data):
+    """Create and return a registered user with tokens."""
+    # Mock email service to prevent actual emails
+    mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
+
+    response = await client.post(
+        f"{settings.API_PREFIX}/registration",
+        json=sample_user_data,
+    )
+    assert response.status_code == status.HTTP_201_CREATED
+
+    user_data = response.json()
+    user_data.update(sample_user_data)  # Include original data
+    return user_data
+
+
+@pytest.fixture
+def mock_user():
+    """Create a mock user object for unit testing."""
+    import uuid
+    from unittest.mock import MagicMock
+
+    mock_user = MagicMock()
+    mock_user.user_id = uuid.uuid4()
+    mock_user.user_email = "test@example.com"
+    mock_user.user_first_name = "Test"
+    mock_user.user_country_code = "GB"
+    mock_user.is_email_verified = True
+    return mock_user
+
+
+@pytest.fixture
+def auth_headers(mock_user):
+    """Generate authorization headers for API requests."""
+    from app.api.core.auth_utils import create_token
+
+    token = create_token(str(mock_user.user_id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def api_endpoints():
+    """Common API endpoint paths."""
+    return {
+        "auth": f"{settings.API_PREFIX}/auth",
+        "users": f"{settings.API_PREFIX}/users",
+        "registration": f"{settings.API_PREFIX}/registration",
+        "families": f"{settings.API_PREFIX}/families",
+        "health": f"{settings.API_PREFIX}/health",
+        "user_preferences": f"{settings.API_PREFIX}/user-preferences",
+        "user_allotments": f"{settings.API_PREFIX}/user-allotments",
+    }
+
+
+@pytest.fixture
+def token_factory():
+    """Factory for creating various types of tokens."""
+    import uuid
+
+    from app.api.core.auth_utils import create_token
+
+    def _create_token(token_type="access", user_id=None):
+        if user_id is None:
+            user_id = str(uuid.uuid4())
+        return create_token(user_id=user_id, token_type=token_type)
+
+    return _create_token
+
+
+# ==============================================================================
+# MOCK FACTORIES
+# ==============================================================================
+
+
+@pytest.fixture
+def mock_uow_factory():
+    """Factory for creating mocked Unit of Work instances."""
+
+    def _create_mock_uow(mocker, uow_path, methods=None):
+        mock_uow = mocker.AsyncMock()
+
+        if methods:
+            for method_name, return_value in methods.items():
+                if callable(return_value):
+                    setattr(
+                        mock_uow,
+                        method_name,
+                        mocker.AsyncMock(side_effect=return_value),
+                    )
+                else:
+                    setattr(
+                        mock_uow,
+                        method_name,
+                        mocker.AsyncMock(return_value=return_value),
+                    )
+
+        mock_uow_class = mocker.patch(uow_path)
+        mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
+        mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
+
+        return mock_uow
+
+    return _create_mock_uow
+
+
+# ==============================================================================
+# UNIT TEST SPECIFIC FIXTURES
+# ==============================================================================
+
+
+@pytest.fixture
+def mock_request_and_db(mocker):
+    """Create standardized mock Request and AsyncSession objects for unit tests."""
+    from fastapi import Request
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    return {
+        "request": mocker.MagicMock(spec=Request),
+        "db": mocker.MagicMock(spec=AsyncSession),
+    }
+
+
+@pytest.fixture
+def standard_unit_mocks(mocker):
+    """Set up standard mocks for unit tests that don't need external dependencies."""
+    mocks = {}
+
+    # Mock logging and timing
+    mocks["log_timing"] = mocker.patch("app.api.v1.auth.log_timing")
+    mocks["logger"] = mocker.patch("app.api.v1.auth.logger")
+
+    # Mock request context
+    mock_ctx = mocker.MagicMock()
+    mock_ctx.get.return_value = "test-request-id"
+    mocks["request_ctx"] = mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
+
+    # Mock safe_operation context manager
+    mock_safe_operation = mocker.patch(
+        "app.api.middleware.error_handler.safe_operation"
+    )
+    mock_safe_operation.return_value.__aenter__.return_value = None
+    mock_safe_operation.return_value.__aexit__.return_value = False
+    mocks["safe_operation"] = mock_safe_operation
+
+    return mocks
+
+
+@pytest.fixture
+def mock_email_in_unit_test(mocker):
+    """Mock email service for unit tests."""
+    return mocker.patch("app.api.v1.registration.send_verification_email")
+
+
+@pytest.fixture
+def mock_token_creation(mocker):
+    """Mock token creation functions."""
+    return mocker.patch(
+        "app.api.v1.auth.create_token", side_effect=["access_token", "refresh_token"]
+    )
+
+
+@pytest.fixture
+def sample_user_login_data():
+    """Standard login data for auth unit tests."""
+    return {"user_email": "test@example.com", "user_password": "SecurePass123!"}

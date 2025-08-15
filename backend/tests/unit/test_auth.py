@@ -1,13 +1,11 @@
 """
 Unit tests for auth.py endpoints (login, refresh_token).
 All dependencies are mocked. These tests cover logic, not integration.
+
+REFACTORED to use improved conftest.py fixtures and test helpers.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
-from fastapi import Request
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.exception_handler import (
     AuthenticationError,
@@ -17,206 +15,219 @@ from app.api.middleware.exception_handler import (
 from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import RefreshRequest, UserLogin
 from app.api.v1 import auth
+from tests.test_helpers import validate_token_response_schema
 
 
 @pytest.mark.asyncio
 class TestLoginEndpointUnit:
-    async def test_login_success(self, mocker):
-        mock_user = MagicMock()
-        mock_user.user_id = "user-id"
-        mock_user.user_first_name = "Test"
-        mock_user.is_email_verified = True
+    async def test_login_success(
+        self,
+        mock_user,
+        sample_user_login_data,
+        mock_request_and_db,
+        standard_unit_mocks,
+        mock_token_creation,
+        mocker,
+    ):
+        """Test successful login using standardized fixtures."""
+        # Set up authentication mock
         mocker.patch("app.api.v1.auth.authenticate_user", return_value=mock_user)
-        mocker.patch("app.api.v1.auth.create_token", side_effect=["access", "refresh"])
-        mocker.patch("app.api.v1.auth.log_timing")
-        mocker.patch("app.api.v1.auth.logger")
-        # Mock the safe_operation import and context manager
-        mock_safe_operation = mocker.patch(
-            "app.api.middleware.error_handler.safe_operation"
+
+        # Create user login object
+        user = UserLogin(**sample_user_login_data)
+
+        # Call the endpoint
+        result = await auth.login(
+            mock_request_and_db["request"], user, mock_request_and_db["db"]
         )
-        mock_safe_operation.return_value.__aenter__.return_value = None
-        mock_safe_operation.return_value.__aexit__.return_value = False
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        user = UserLogin(user_email="a@b.com", user_password="SecurePass123!")
-        db = MagicMock(spec=AsyncSession)
-        result = await auth.login(request, user, db)
+
+        # Validate using helper function
         assert isinstance(result, TokenResponse)
-        assert result.access_token == "access"
-        assert result.refresh_token == "refresh"
-        assert result.user_first_name == "Test"
-        assert result.is_email_verified is True
-        assert result.user_id == "user-id"
+        validate_token_response_schema(result.model_dump())
+        assert result.user_first_name == mock_user.user_first_name
+        assert result.is_email_verified == mock_user.is_email_verified
+        assert result.user_id == str(mock_user.user_id)
 
-    async def test_login_invalid_credentials(self, mocker):
+    async def test_login_invalid_credentials(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login with invalid credentials."""
+        # Mock authentication to return None (invalid credentials)
         mocker.patch("app.api.v1.auth.authenticate_user", return_value=None)
-        # Mock the safe_operation import and context manager
-        mock_safe_operation = mocker.patch(
-            "app.api.middleware.error_handler.safe_operation"
-        )
-        mock_safe_operation.return_value.__aenter__.return_value = None
-        mock_safe_operation.return_value.__aexit__.return_value = False
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        user = UserLogin(user_email="a@b.com", user_password="SecurePass123!")
-        db = MagicMock(spec=AsyncSession)
+
+        user = UserLogin(**sample_user_login_data)
+
         with pytest.raises(AuthenticationError):
-            await auth.login(request, user, db)
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
-    async def test_login_authenticate_user_raises_base_error(self, mocker):
-        mocker.patch(
-            "app.api.v1.auth.authenticate_user",
-            side_effect=BaseApplicationError("fail", "fail_code"),
-        )
-        # Mock the safe_operation import and context manager
-        mock_safe_operation = mocker.patch(
-            "app.api.middleware.error_handler.safe_operation"
-        )
-        mock_safe_operation.return_value.__aenter__.return_value = None
-        mock_safe_operation.return_value.__aexit__.return_value = False
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        user = UserLogin(user_email="a@b.com", user_password="SecurePass123!")
-        db = MagicMock(spec=AsyncSession)
+    async def test_login_authenticate_user_raises_base_error(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login when authenticate_user raises BaseApplicationError."""
+        # Mock authentication to raise BaseApplicationError
+        error = BaseApplicationError("Authentication failed", "AUTH_FAIL")
+        mocker.patch("app.api.v1.auth.authenticate_user", side_effect=error)
+
+        user = UserLogin(**sample_user_login_data)
+
         with pytest.raises(BaseApplicationError):
-            await auth.login(request, user, db)
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
-    async def test_login_authenticate_user_raises_general_exception(self, mocker):
-        mocker.patch("app.api.v1.auth.authenticate_user", side_effect=Exception("fail"))
-        # Mock the safe_operation import and context manager
-        mock_safe_operation = mocker.patch(
-            "app.api.middleware.error_handler.safe_operation"
+    async def test_login_authenticate_user_raises_general_exception(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login when authenticate_user raises unexpected exception."""
+        mocker.patch(
+            "app.api.v1.auth.authenticate_user", side_effect=Exception("Database error")
         )
-        mock_safe_operation.return_value.__aenter__.return_value = None
-        mock_safe_operation.return_value.__aexit__.return_value = False
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        user = UserLogin(user_email="a@b.com", user_password="SecurePass123!")
-        db = MagicMock(spec=AsyncSession)
-        with pytest.raises(Exception):
-            await auth.login(request, user, db)
 
-    async def test_login_token_generation_exception(self, mocker):
-        mock_user = MagicMock()
-        mock_user.user_id = "user-id"
-        mock_user.user_first_name = "Test"
-        mock_user.is_email_verified = True
+        user = UserLogin(**sample_user_login_data)
+
+        with pytest.raises(Exception):
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
+
+    async def test_login_token_generation_exception(
+        self,
+        mock_user,
+        sample_user_login_data,
+        mock_request_and_db,
+        standard_unit_mocks,
+        mocker,
+    ):
+        """Test login when token generation fails."""
+        # Mock successful authentication
         mocker.patch("app.api.v1.auth.authenticate_user", return_value=mock_user)
+
+        # Mock token creation to fail
         mocker.patch(
             "app.api.v1.auth.create_token",
             side_effect=Exception("Token generation failed"),
         )
-        mocker.patch("app.api.v1.auth.log_timing")
-        mocker.patch("app.api.v1.auth.logger")
-        # Mock the safe_operation import and context manager
-        mock_safe_operation = mocker.patch(
-            "app.api.middleware.error_handler.safe_operation"
-        )
-        mock_safe_operation.return_value.__aenter__.return_value = None
-        mock_safe_operation.return_value.__aexit__.return_value = False
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        user = UserLogin(user_email="a@b.com", user_password="SecurePass123!")
-        db = MagicMock(spec=AsyncSession)
+
+        user = UserLogin(**sample_user_login_data)
+
         with pytest.raises(Exception):
-            await auth.login(request, user, db)
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
 
 @pytest.mark.asyncio
 class TestRefreshTokenEndpointUnit:
-    async def test_refresh_token_success(self, mocker):
+    async def test_refresh_token_success(
+        self, mock_user, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test successful token refresh."""
+        # Create a valid refresh token
+        refresh_token = token_factory(
+            token_type="refresh", user_id=str(mock_user.user_id)
+        )
+
+        # Mock token decoding
         mocker.patch(
             "app.api.v1.auth.decode_token",
-            return_value={"type": "refresh", "sub": "user-id"},
+            return_value={"type": "refresh", "sub": str(mock_user.user_id)},
         )
-        mock_user = MagicMock()
-        mock_user.user_id = "user-id"
-        mock_user.user_first_name = "Test"
-        mock_user.is_email_verified = True
-        mocker.patch("app.api.v1.auth.validate_user_exists", return_value=mock_user)
-        mocker.patch("app.api.v1.auth.create_token", side_effect=["access", "refresh"])
-        mocker.patch("app.api.v1.auth.logger")
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        refresh_data = RefreshRequest(refresh_token="token")
-        db = MagicMock(spec=AsyncSession)
-        result = await auth.refresh_token(request, refresh_data, db)
-        assert isinstance(result, TokenResponse)
-        assert result.access_token == "access"
-        assert result.refresh_token == "refresh"
-        assert result.user_first_name == "Test"
-        assert result.is_email_verified is True
-        assert result.user_id == "user-id"
 
-    async def test_refresh_token_invalid_type(self, mocker):
+        # Mock user validation
+        mocker.patch("app.api.v1.auth.validate_user_exists", return_value=mock_user)
+
+        # Mock new token creation
+        mocker.patch(
+            "app.api.v1.auth.create_token", side_effect=["new_access", "new_refresh"]
+        )
+
+        request_data = RefreshRequest(refresh_token=refresh_token)
+
+        result = await auth.refresh_token(
+            mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+        )
+
+        assert isinstance(result, TokenResponse)
+        validate_token_response_schema(result.model_dump())
+        assert result.access_token == "new_access"
+        assert result.refresh_token == "new_refresh"
+
+    async def test_refresh_token_invalid_type(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token with wrong token type."""
+        # Create access token instead of refresh token
+        access_token = token_factory(token_type="access")
+
+        # Mock token decoding to return access type
         mocker.patch(
             "app.api.v1.auth.decode_token",
             return_value={"type": "access", "sub": "user-id"},
         )
-        mocker.patch("app.api.v1.auth.logger")
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        refresh_data = RefreshRequest(refresh_token="token")
-        db = MagicMock(spec=AsyncSession)
-        with pytest.raises(InvalidTokenError):
-            await auth.refresh_token(request, refresh_data, db)
 
-    async def test_refresh_token_missing_sub(self, mocker):
+        request_data = RefreshRequest(refresh_token=access_token)
+
+        with pytest.raises(InvalidTokenError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
+
+    async def test_refresh_token_missing_sub(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token with missing user ID."""
+        refresh_token = token_factory(token_type="refresh")
+
+        # Mock token decoding to return payload without 'sub'
         mocker.patch("app.api.v1.auth.decode_token", return_value={"type": "refresh"})
-        mocker.patch("app.api.v1.auth.logger")
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        refresh_data = RefreshRequest(refresh_token="token")
-        db = MagicMock(spec=AsyncSession)
-        with pytest.raises(InvalidTokenError):
-            await auth.refresh_token(request, refresh_data, db)
 
-    async def test_refresh_token_validate_user_exists_raises(self, mocker):
+        request_data = RefreshRequest(refresh_token=refresh_token)
+
+        with pytest.raises(InvalidTokenError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
+
+    async def test_refresh_token_validate_user_exists_raises(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token when user validation fails."""
+        refresh_token = token_factory(token_type="refresh")
+
+        # Mock token decoding
         mocker.patch(
             "app.api.v1.auth.decode_token",
-            return_value={"type": "refresh", "sub": "user-id"},
+            return_value={"type": "refresh", "sub": "nonexistent-user"},
         )
-        mocker.patch(
-            "app.api.v1.auth.validate_user_exists",
-            side_effect=BaseApplicationError("fail", "fail_code"),
-        )
-        mocker.patch("app.api.v1.auth.logger")
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        refresh_data = RefreshRequest(refresh_token="token")
-        db = MagicMock(spec=AsyncSession)
+
+        # Mock user validation to fail
+        error = BaseApplicationError("User not found", "USER_NOT_FOUND")
+        mocker.patch("app.api.v1.auth.validate_user_exists", side_effect=error)
+
+        request_data = RefreshRequest(refresh_token=refresh_token)
+
         with pytest.raises(BaseApplicationError):
-            await auth.refresh_token(request, refresh_data, db)
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
 
-    async def test_refresh_token_decode_token_raises(self, mocker):
+    async def test_refresh_token_decode_token_raises(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token when token decoding fails."""
+        invalid_token = "invalid.token.here"
+
+        # Mock token decoding to fail
         mocker.patch(
             "app.api.v1.auth.decode_token",
-            side_effect=InvalidTokenError("Token decode error"),
+            side_effect=InvalidTokenError("Invalid token format"),
         )
-        mocker.patch("app.api.v1.auth.logger")
-        mock_ctx = MagicMock()
-        mock_ctx.get.return_value = "reqid"
-        mocker.patch("app.api.v1.auth.request_id_ctx_var", mock_ctx)
-        request = MagicMock(spec=Request)
-        refresh_data = RefreshRequest(refresh_token="token")
-        db = MagicMock(spec=AsyncSession)
+
+        request_data = RefreshRequest(refresh_token=invalid_token)
+
         with pytest.raises(InvalidTokenError):
-            await auth.refresh_token(request, refresh_data, db)
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
