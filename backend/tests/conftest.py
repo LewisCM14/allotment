@@ -584,3 +584,96 @@ def mock_token_creation(mocker):
 def sample_user_login_data():
     """Standard login data for auth unit tests."""
     return {"user_email": "test@example.com", "user_password": "SecurePass123!"}
+
+
+# ==============================================================================
+# INTEGRATION TEST HELPERS (NEW)
+# ==============================================================================
+
+
+@pytest.fixture
+def user_payload_factory(sample_user_data):
+    """Factory to build a registration payload with optional overrides and unique email."""
+    import uuid as _uuid
+
+    def _build(**overrides):
+        payload = sample_user_data.copy()
+        # ensure uniqueness unless caller provides explicit email
+        if "user_email" not in overrides:
+            payload["user_email"] = f"{_uuid.uuid4().hex[:8]}@example.com"
+        payload.update(overrides)
+        return payload
+
+    return _build
+
+
+@pytest.fixture
+def login_helper(client):
+    """Helper to perform login and return the raw response."""
+
+    async def _login(email: str, password: str):
+        return await client.post(
+            f"{settings.API_PREFIX}/auth/token",
+            json={"user_email": email, "user_password": password},
+        )
+
+    return _login
+
+
+@pytest.fixture
+def user_factory(client, mocker, user_payload_factory):
+    """Async factory to register a user (mocking email) and return the response."""
+
+    async def _create(payload=None):
+        if payload is None:
+            payload = user_payload_factory()
+        # mock email each call (idempotent)
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
+        return await client.post(f"{settings.API_PREFIX}/registration", json=payload)
+
+    return _create
+
+
+@pytest.fixture
+def tokens_factory(user_factory, login_helper):
+    """Provision user then login; returns (registration_json, login_json)."""
+
+    async def _provision(payload=None):
+        reg_resp = await user_factory(payload)
+        assert reg_resp.status_code == 201
+        reg_json = reg_resp.json()
+        pwd = payload["user_password"] if payload else "TestPass123!@"
+        login_resp = await login_helper(reg_json["user_email"], pwd)
+        assert login_resp.status_code == 200
+        return reg_json, login_resp.json()
+
+    return _provision
+
+
+# ==============================================================================
+# AUXILIARY/UTILITY FIXTURES FOR INTEGRATION TESTS
+# ==============================================================================
+
+
+@pytest.fixture
+def suppress_logging(monkeypatch):
+    """Suppress structlog output for noisy error-path tests by replacing get_logger."""
+    import structlog as _structlog
+
+    real_get = _structlog.get_logger
+    monkeypatch.setattr(
+        _structlog, "get_logger", lambda *a, **k: real_get("test-suppressed")
+    )
+    yield
+    monkeypatch.setattr(_structlog, "get_logger", real_get)
+
+
+@pytest.fixture
+def reset_health_state():
+    """Reset internal health module resource state before & after a test."""
+    import app.api.v1.health as health_mod
+
+    orig = health_mod._previous_resources_state.copy()
+    health_mod._previous_resources_state = {k: False for k in orig.keys()}
+    yield
+    health_mod._previous_resources_state = {k: False for k in orig.keys()}
