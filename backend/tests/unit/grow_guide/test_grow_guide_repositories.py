@@ -98,4 +98,3 @@ async def test_variety_repository_sqlalchemy_error_translation():
     repo = VarietyRepository(mock_db)
     with pytest.raises(BusinessLogicError):
         await repo.get_all_feeds()
-

@@ -48,4 +48,3 @@ class TestDayEndpointUnit:
         async with TestingSessionLocal() as db:
             result = await get_days(mock_request, db)
         assert result == []
-

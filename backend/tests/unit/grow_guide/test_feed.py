@@ -39,4 +39,3 @@ class TestFeedEndpointUnit:
         async with TestingSessionLocal() as db:
             result = await get_feeds(mock_request, db)
         assert result == []
-
