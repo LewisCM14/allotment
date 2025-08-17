@@ -1,5 +1,3 @@
-"""Email Service integration tests for utility /test-email endpoint."""
-
 import pytest
 from fastapi import HTTPException, status
 

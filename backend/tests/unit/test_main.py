@@ -1,7 +1,3 @@
-"""
-Tests for main.py module - refactored to use conftest.py fixtures
-"""
-
 from unittest.mock import MagicMock, patch
 
 import pytest

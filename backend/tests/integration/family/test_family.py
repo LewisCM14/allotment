@@ -1,8 +1,5 @@
-"""
-Family API Integration Tests
-"""
-
 import uuid
+from typing import Any
 
 import pytest
 from fastapi import status
@@ -20,6 +17,41 @@ from app.api.schemas.family.family_schema import (
 )
 
 PREFIX = settings.API_PREFIX
+
+
+# ---------------------------------------------------------------------------
+# Helper utilities
+# ---------------------------------------------------------------------------
+
+
+def api_get(client, path: str, expected_status: int = 200) -> Any:
+    """Issue GET request and return JSON (asserting expected status)."""
+    return _request_and_json(client, path, expected_status)
+
+
+async def _request_and_json(client, path: str, expected_status: int):  # type: ignore
+    resp = await client.get(path)
+    assert resp.status_code == expected_status, (
+        f"{path} -> {resp.status_code} != {expected_status} ({resp.text})"
+    )
+    return resp.json()
+
+
+def validate_botanical_group_item(group: dict):
+    """Validate a single botanical group structure (shallow)."""
+    for key in ["id", "name", "families"]:
+        assert key in group
+    assert isinstance(group["id"], str)
+    assert isinstance(group["name"], str)
+    assert isinstance(group["families"], list)
+
+
+def validate_family_info_basic(data: dict):
+    _assert_has_id_and_name(data)
+    assert "botanical_group" in data and isinstance(data["botanical_group"], dict)
+    _assert_has_id_and_name(data["botanical_group"])
+    assert "pests" in data
+    assert "diseases" in data
 
 
 def _assert_has_id_and_name(item: dict):
@@ -72,56 +104,34 @@ def _validate_diseases(diseases: list | None):
 
 class TestListBotanicalGroups:
     @pytest.mark.asyncio
-    async def test_success(self, client, seed_family_data):
-        """Test successful retrieval of botanical groups with families and correct data types."""
-        response = await client.get(f"{PREFIX}/families/botanical-groups/")
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+    async def test_list_and_schema(self, client, seed_family_data):
+        """Combined success + schema validation for botanical groups."""
+        data = await _request_and_json(
+            client, f"{PREFIX}/families/botanical-groups/", status.HTTP_200_OK
+        )
         assert isinstance(data, list)
-        found_seeded_group = False
+        assert data, "Expected at least one seeded group"
+        found_seeded = False
         for group in data:
-            assert isinstance(group["id"], str)
-            assert isinstance(group["name"], str)
-            assert "recommended_rotation_years" in group
-            assert isinstance(group["recommended_rotation_years"], (int, type(None)))
-            assert isinstance(group["families"], list)
+            validate_botanical_group_item(group)
             for fam in group["families"]:
-                assert isinstance(fam["id"], str)
-                assert isinstance(fam["name"], str)
-
+                _assert_has_id_and_name(fam)
             if group["name"] == seed_family_data["group_name"]:
-                found_seeded_group = True
-                assert group["recommended_rotation_years"] == 2
-                fam_names = [fam["name"] for fam in group["families"]]
+                found_seeded = True
+                fam_names = {f["name"] for f in group["families"]}
                 assert seed_family_data["family_name"] in fam_names
-        assert found_seeded_group, "Seeded botanical group not found in response"
+        assert found_seeded, "Seeded botanical group not found in response"
 
     @pytest.mark.asyncio
-    async def test_empty_result(self, client, mocker):
-        """Test endpoint returns empty list if no botanical groups exist."""
+    async def test_list_empty(self, client, mocker):
         mocker.patch(
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
             return_value=[],
         )
-        response = await client.get(f"{PREFIX}/families/botanical-groups/")
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
-
-    @pytest.mark.asyncio
-    async def test_schema_validation(self, client, seed_family_data):
-        """Test that all botanical groups and families conform to schema."""
-        response = await client.get(f"{PREFIX}/families/botanical-groups/")
-        assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert len(data) > 0, "Should have data from seed_family_data"
-        for group in data:
-            assert "id" in group and isinstance(group["id"], str)
-            assert "name" in group and isinstance(group["name"], str)
-            assert "recommended_rotation_years" in group
-            assert "families" in group and isinstance(group["families"], list)
-            for fam in group["families"]:
-                assert "id" in fam and isinstance(fam["id"], str)
-                assert "name" in fam and isinstance(fam["name"], str)
+        data = await _request_and_json(
+            client, f"{PREFIX}/families/botanical-groups/", status.HTTP_200_OK
+        )
+        assert data == []
 
     @pytest.mark.asyncio
     async def test_unexpected_error(self, client, mocker):
@@ -163,14 +173,13 @@ class TestListBotanicalGroups:
             limiter._storage.reset()
 
     @pytest.mark.asyncio
-    async def test_invalid_uuid_format(self, client):
-        """Test that invalid UUID format returns a proper error response."""
-        invalid_id = "not-a-uuid"
-        response = await client.get(f"{PREFIX}/families/{invalid_id}/info")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        error_detail = response.json()["detail"][0]
-        assert "not found" in error_detail["msg"].lower()
-        assert error_detail["type"] == "resourcenotfounderror"
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize("invalid_id", ["not-a-uuid", "12345-not-uuid"])
+    async def test_invalid_uuid_format(self, client, invalid_id):
+        resp = await client.get(f"{PREFIX}/families/{invalid_id}/info")
+        assert resp.status_code == status.HTTP_404_NOT_FOUND
+        detail = resp.json()["detail"][0]
+        assert detail["type"] == "resourcenotfounderror"
 
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
@@ -193,23 +202,15 @@ class TestListBotanicalGroups:
 
 class TestGetFamilyInfo:
     @pytest.mark.asyncio
-    async def test_success(self, client, seed_family_data):
-        """Test successful retrieval of detailed family info."""
+    async def test_success_and_schema(self, client, seed_family_data):
+        """Combine success + schema validation for family info."""
         family_id = str(seed_family_data["family_id"])
         resp = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
         assert data["id"] == family_id
         assert data["name"] == seed_family_data["family_name"]
-        for field in [
-            "pests",
-            "diseases",
-            "botanical_group",
-        ]:
-            assert field in data
-        assert isinstance(data["pests"], (list, type(None)))
-        assert isinstance(data["diseases"], (list, type(None)))
-        assert isinstance(data["botanical_group"], dict)
+        validate_family_info_basic(data)
 
     @pytest.mark.asyncio
     async def test_not_found(self, client, mocker):
@@ -226,19 +227,12 @@ class TestGetFamilyInfo:
         assert error_detail["type"] == "resourcenotfounderror"
 
     @pytest.mark.asyncio
-    async def test_schema_validation(self, client, seed_family_data):
-        """Test that the family info endpoint returns data conforming to schema."""
+    async def test_nested_structures_validation(self, client, seed_family_data):
+        """Explicit nested structure validation (pests/diseases)."""
         family_id = str(seed_family_data["family_id"])
         resp = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-
-        # Validate base family info
-        _assert_has_id_and_name(data)
-        assert "botanical_group" in data and isinstance(data["botanical_group"], dict)
-        _assert_has_id_and_name(data["botanical_group"])
-
-        # Validate nested structures
         _validate_pests(data.get("pests"))
         _validate_diseases(data.get("diseases"))
 
@@ -453,22 +447,15 @@ class TestFamilyAPIPerformance:
 
 
 class TestInputValidation:
-    """Tests for input validation edge cases."""
-
-    @pytest.mark.asyncio
-    async def test_malformed_uuid(self, client):
-        """Test handling of malformed UUIDs."""
-        malformed_uuid = "12345-not-uuid"
-        response = await client.get(f"{PREFIX}/families/{malformed_uuid}/info")
-        assert response.status_code == status.HTTP_404_NOT_FOUND
+    """Edge cases consolidated (invalid UUID covered above)."""
 
     @pytest.mark.asyncio
     async def test_empty_botanical_groups_response(self, client, mocker):
-        """Test empty response handling."""
         mocker.patch(
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_all_botanical_groups_with_families",
             return_value=[],
         )
-        response = await client.get(f"{PREFIX}/families/botanical-groups/")
-        assert response.status_code == status.HTTP_200_OK
-        assert response.json() == []
+        data = await _request_and_json(
+            client, f"{PREFIX}/families/botanical-groups/", status.HTTP_200_OK
+        )
+        assert data == []

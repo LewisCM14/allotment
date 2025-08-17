@@ -269,6 +269,88 @@ class TestFamilyRepository:
         family_repository.add_family()
         family_repository.add_family("arg1", "arg2", kwarg1="value1")
 
+    def test_validate_family_id_with_none(self, family_repository):
+        """_validate_family_id returns None when input is None."""
+        assert family_repository._validate_family_id(None) is None
+
+    @pytest.mark.asyncio
+    async def test_get_all_botanical_groups_with_families_error(
+        self, family_repository, mock_db
+    ):
+        """Error path propagates when underlying execution raises."""
+        mock_db.execute.side_effect = RuntimeError("boom")
+        with pytest.raises(RuntimeError):
+            await family_repository.get_all_botanical_groups_with_families()
+
+    @pytest.mark.asyncio
+    async def test_fetch_pests_for_family_empty(self, family_repository):
+        """_fetch_pests_for_family returns empty list when no pests found."""
+        family_id = uuid.uuid4()
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            mock_result = MagicMock()
+            mock_result.scalars.return_value.all.return_value = []
+            mock_execute.return_value = mock_result
+            result = await family_repository._fetch_pests_for_family(family_id)
+            assert result == []
+
+    @pytest.mark.asyncio
+    async def test_fetch_diseases_for_family_empty(self, family_repository):
+        """_fetch_diseases_for_family returns empty list when no diseases found."""
+        family_id = uuid.uuid4()
+        with patch.object(family_repository.db, "execute") as mock_execute:
+            mock_result = MagicMock()
+            mock_result.scalars.return_value.all.return_value = []
+            mock_execute.return_value = mock_result
+            result = await family_repository._fetch_diseases_for_family(family_id)
+            assert result == []
+
+    @pytest.mark.asyncio
+    async def test_get_family_info_with_components(
+        self, family_repository, sample_family
+    ):
+        """get_family_info aggregates pests, diseases, antagonises, companions."""
+        fam_id = sample_family.id
+        pest_schema = PestSchema(
+            id=uuid.uuid4(), name="Pest A", treatments=None, preventions=None
+        )
+        disease_schema = DiseaseSchema(
+            id=uuid.uuid4(),
+            name="Disease A",
+            symptoms=None,
+            treatments=None,
+            preventions=None,
+        )
+        relation_family = Family(
+            id=uuid.uuid4(),
+            name="RelFam",
+            botanical_group=sample_family.botanical_group,
+        )
+        with (
+            patch.object(
+                family_repository, "_fetch_family_by_uuid", return_value=sample_family
+            ),
+            patch.object(
+                family_repository, "_fetch_pests_for_family", return_value=[pest_schema]
+            ),
+            patch.object(
+                family_repository,
+                "_fetch_diseases_for_family",
+                return_value=[disease_schema],
+            ),
+            patch.object(
+                family_repository,
+                "_fetch_related_families",
+                side_effect=[[relation_family], [relation_family]],
+            ),
+        ):
+            result = await family_repository.get_family_info(fam_id)
+            assert result is not None
+            assert isinstance(result, FamilyInfoSchema)
+            assert result.pests and result.pests[0].name == "Pest A"
+            assert result.diseases and result.diseases[0].name == "Disease A"
+            assert result.antagonises and result.antagonises[0].name == "RelFam"
+            assert result.companion_to and result.companion_to[0].name == "RelFam"
+
     @pytest.mark.asyncio
     async def test_map_interventions_to_items_with_data(self, family_repository):
         """Test mapping interventions to items when data exists."""

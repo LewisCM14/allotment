@@ -1,10 +1,3 @@
-"""
-Unit tests for registration.py endpoints.
-All dependencies are mocked. These tests cover logic, not integration.
-
-REFACTORED to use improved conftest.py fixtures and test helpers.
-"""
-
 from unittest.mock import MagicMock
 
 import pytest

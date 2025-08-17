@@ -1,7 +1,3 @@
-"""
-Tests for exception handler middleware - refactored to use conftest.py fixtures
-"""
-
 import json
 import uuid
 

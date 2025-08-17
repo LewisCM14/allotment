@@ -1,12 +1,3 @@
-"""
-Unit tests for app/api/schemas/validators.py
-
-Tests all validator functions to ensure they properly validate and normalize input
-according to the general data integrity rules and notes field requirements.
-
-REFACTORED to use improved conftest.py fixtures and test helpers.
-"""
-
 import pytest
 
 from app.api.schemas.validators import (

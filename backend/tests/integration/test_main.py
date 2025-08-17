@@ -1,5 +1,3 @@
-"""Integration tests for a few top-level endpoints (condensed)."""
-
 import pytest
 from fastapi import status
 from httpx import AsyncClient

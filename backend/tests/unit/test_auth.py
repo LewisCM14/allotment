@@ -1,10 +1,3 @@
-"""
-Unit tests for auth.py endpoints (login, refresh_token).
-All dependencies are mocked. These tests cover logic, not integration.
-
-REFACTORED to use improved conftest.py fixtures and test helpers.
-"""
-
 import pytest
 
 from app.api.middleware.exception_handler import (

@@ -1,9 +1,3 @@
-"""
-Unit tests for app.api.services.email_service
-
-REFACTORED to use improved conftest.py fixtures and test helpers.
-"""
-
 import pytest
 from fastapi import HTTPException
 

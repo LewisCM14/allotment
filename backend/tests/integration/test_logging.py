@@ -1,5 +1,3 @@
-"""Logging integration tests (simplified & stable)."""
-
 import asyncio
 from unittest.mock import MagicMock, mock_open, patch
 

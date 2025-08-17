@@ -1,7 +1,3 @@
-"""
-Tests for logging functionality - refactored to use conftest.py fixtures
-"""
-
 import logging
 import os
 from logging.handlers import RotatingFileHandler
