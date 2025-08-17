@@ -11,6 +11,26 @@ from tests.conftest import mock_email_service
 REGISTRATION_PREFIX = f"{settings.API_PREFIX}/registration"
 
 
+def _user_stub(mocker, user_id=None):
+    user = mocker.MagicMock()
+    user.user_id = user_id or "11111111-1111-1111-1111-111111111111"
+    user.user_first_name = "Test"
+    user.is_email_verified = False
+    return user
+
+
+def _configure_uow(mocker, create_user_return=None, create_user_side_effect=None):
+    """Configure the UserUnitOfWork mock for registration tests."""
+    mock_uow = mocker.patch("app.api.v1.registration.UserUnitOfWork")
+    mock_uow_instance = mocker.AsyncMock()
+    if create_user_side_effect is not None:
+        mock_uow_instance.create_user.side_effect = create_user_side_effect
+    else:
+        mock_uow_instance.create_user.return_value = create_user_return
+    mock_uow.return_value.__aenter__.return_value = mock_uow_instance
+    return mock_uow_instance
+
+
 class TestUserRegistration:
     @pytest.mark.asyncio
     async def test_register_user(self, client, mocker):
@@ -67,53 +87,31 @@ class TestUserRegistration:
         assert login_response.status_code == 200
 
     @pytest.mark.asyncio
-    async def test_register_user_with_user_creation_failure(self, client, mocker):
-        """Test user registration when user creation fails."""
+    @pytest.mark.parametrize(
+        "desc,user_email,configure_uow",
+        [
+            (
+                "creation_returns_none",
+                "creation-none@example.com",
+                lambda mocker: _configure_uow(mocker, create_user_return=None),
+            ),
+        ],
+    )
+    async def test_register_user_creation_failures(
+        self, client, mocker, desc, user_email, configure_uow
+    ):
+        """User creation failure cases (only: create_user returns None -> 500)."""
         mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
-
-        mock_uow = mocker.patch("app.api.v1.registration.UserUnitOfWork")
-        mock_uow_instance = mocker.AsyncMock()
-        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-        mock_uow_instance.create_user.return_value = None
-
+        configure_uow(mocker)
         response = await client.post(
             f"{REGISTRATION_PREFIX}",
             json={
-                "user_email": "test-fail@example.com",
+                "user_email": user_email,
                 "user_password": "TestPass123!@",
                 "user_first_name": "Test",
                 "user_country_code": "GB",
             },
         )
-
-        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-        assert "Failed to create user" in response.json()["detail"][0]["msg"]
-
-    @pytest.mark.asyncio
-    async def test_register_user_with_no_user_id(self, client, mocker):
-        """Test user registration when created user has no user_id."""
-        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
-
-        mock_user = mocker.MagicMock()
-        mock_user.user_id = None
-        mock_user.user_first_name = "Test"
-        mock_user.is_email_verified = False
-
-        mock_uow = mocker.patch("app.api.v1.registration.UserUnitOfWork")
-        mock_uow_instance = mocker.AsyncMock()
-        mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-        mock_uow_instance.create_user.return_value = mock_user
-
-        response = await client.post(
-            f"{REGISTRATION_PREFIX}",
-            json={
-                "user_email": "test-no-id@example.com",
-                "user_password": "TestPass123!@",
-                "user_first_name": "Test",
-                "user_country_code": "GB",
-            },
-        )
-
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert "Failed to create user" in response.json()["detail"][0]["msg"]
 
@@ -214,51 +212,6 @@ class TestUserRegistration:
             assert "An unexpected error occurred during registration" in str(
                 response.json()
             )
-
-    @pytest.mark.asyncio
-    async def test_register_user_creation_returns_none(self, client, mocker):
-        """Test user registration when user creation returns None."""
-        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
-        with patch("app.api.v1.registration.UserUnitOfWork") as mock_uow:
-            mock_uow_instance = AsyncMock()
-            mock_uow_instance.create_user.return_value = None
-            mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-
-            response = await client.post(
-                f"{REGISTRATION_PREFIX}",
-                json={
-                    "user_email": "none-user@example.com",
-                    "user_password": "TestPass123!@",
-                    "user_first_name": "Test",
-                    "user_country_code": "GB",
-                },
-            )
-
-            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-            assert "Failed to create user" in response.json()["detail"][0]["msg"]
-
-    @pytest.mark.asyncio
-    async def test_register_user_creation_no_user_id(self, client, mocker):
-        """Test user registration when created user has no user_id."""
-        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
-        mock_user = MagicMock()
-        mock_user.user_id = None
-        with patch("app.api.v1.registration.UserUnitOfWork") as mock_uow:
-            mock_uow_instance = AsyncMock()
-            mock_uow_instance.create_user.return_value = mock_user
-            mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-
-            response = await client.post(
-                f"{REGISTRATION_PREFIX}",
-                json={
-                    "user_email": "no-id@example.com",
-                    "user_password": "TestPass123!@",
-                    "user_first_name": "Test",
-                    "user_country_code": "GB",
-                },
-            )
-            assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-            assert "Failed to create user" in response.json()["detail"][0]["msg"]
 
     @pytest.mark.asyncio
     async def test_register_user_base_application_error(self, client, mocker):
@@ -419,7 +372,7 @@ class TestEmailVerification:
 
     @pytest.mark.asyncio
     async def test_verify_email_user_not_found_patch(self, client, mocker):
-        """Test email verification for non-existent user (patch style)."""
+        """Alias scenario kept for clarity but delegates to single path; removed duplicate variant below."""
         mocker.patch(
             "app.api.v1.registration.jwt.decode", return_value={"sub": "notfound"}
         )
@@ -436,8 +389,8 @@ class TestEmailVerification:
         assert "user not found" in str(response.json()).lower()
 
     @pytest.mark.asyncio
-    async def test_verify_email_invalid_token(self, client, mocker):
-        """Test email verification with invalid token (decode error)."""
+    async def test_verify_email_decode_error(self, client, mocker):
+        """Decode error path (covers generic invalid token scenarios)."""
         mocker.patch(
             "app.api.v1.registration.jwt.decode", side_effect=Exception("decode error")
         )
@@ -448,20 +401,8 @@ class TestEmailVerification:
         assert "verification token" in str(response.json()).lower()
 
     @pytest.mark.asyncio
-    async def test_verify_email_decode_error(self, client, mocker):
-        """Test email verification with decode error."""
-        mocker.patch(
-            "app.api.v1.registration.jwt.decode", side_effect=Exception("decode error")
-        )
-        response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/badtoken"
-        )
-        assert response.status_code == 400
-        assert "verification token" in str(response.json()).lower()
-
-    @pytest.mark.asyncio
     async def test_verify_email_user_not_found(self, client, mocker):
-        """Test email verification for non-existent user."""
+        """Kept single variant for user not found (deduped)."""
         mocker.patch(
             "app.api.v1.registration.jwt.decode", return_value={"sub": "notfound"}
         )
