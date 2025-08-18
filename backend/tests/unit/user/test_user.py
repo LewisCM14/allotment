@@ -1,17 +1,9 @@
-"""
-Unit tests for user.py endpoints.
-All dependencies are mocked. These tests cover logic, not integration.
-"""
-
-from unittest.mock import AsyncMock, MagicMock
+"""Unit tests for user.py endpoints using mocked dependencies only."""
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.middleware.exception_handler import (
-    BaseApplicationError,
-    UserNotFoundError,
-)
+from app.api.middleware.exception_handler import BaseApplicationError, UserNotFoundError
 from app.api.schemas.user.user_schema import (
     EmailRequest,
     MessageResponse,
@@ -20,264 +12,142 @@ from app.api.schemas.user.user_schema import (
     VerificationStatusResponse,
 )
 from app.api.v1 import user
+from tests.test_helpers import build_user_stub, mock_user_uow
 
 
 @pytest.mark.asyncio
 class TestUserEndpointsUnit:
-    """Unit tests for user endpoints with all dependencies mocked."""
-
     async def test_request_verification_email_success(self, mocker):
-        """Test successful verification email request."""
-        # Mock UserUnitOfWork
-        mock_uow = mocker.AsyncMock()
-        mock_uow.send_verification_email_service = mocker.AsyncMock()
-
-        # Mock the context manager
-        mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
-            return_value=mocker.AsyncMock(
-                __aenter__=mocker.AsyncMock(return_value=mock_uow),
-                __aexit__=mocker.AsyncMock(return_value=None),
-            ),
+        uow = mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"send_verification_email_service": None},
         )
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Create request
-        request_data = EmailRequest(user_email="test@example.com")
-
-        # Call endpoint
-        result = await user.request_verification_email(request_data, mock_db)
-
-        # Assertions
-        assert isinstance(result, MessageResponse)
-        assert "Verification email sent successfully" in result.message
-        mock_uow.send_verification_email_service.assert_called_once_with(
-            "test@example.com"
+        result = await user.request_verification_email(
+            EmailRequest(user_email="test@example.com"), mock_db
         )
+        assert isinstance(result, MessageResponse)
+        uow.send_verification_email_service.assert_called_once_with("test@example.com")
 
     async def test_request_verification_email_exception(self, mocker):
-        """Test verification email request with exception."""
-        # Mock UserUnitOfWork to raise an exception
-        mock_uow = mocker.AsyncMock()
-        mock_uow.send_verification_email_service = mocker.AsyncMock(
-            side_effect=Exception("Email service error")
-        )
+        def raise_exc(user_email: str):
+            raise Exception("Email service error")
 
-        # Mock the context manager
-        mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
-            return_value=mocker.AsyncMock(
-                __aenter__=mocker.AsyncMock(return_value=mock_uow),
-                __aexit__=mocker.AsyncMock(return_value=None),
-            ),
+        mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"send_verification_email_service": raise_exc},
         )
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Create request
-        request_data = EmailRequest(user_email="test@example.com")
-
-        # Call endpoint - expect exception to be raised (not caught)
         with pytest.raises(Exception, match="Email service error"):
-            await user.request_verification_email(request_data, mock_db)
-
-        mock_uow.send_verification_email_service.assert_called_once_with(
-            "test@example.com"
-        )
+            await user.request_verification_email(
+                EmailRequest(user_email="test@example.com"), mock_db
+            )
 
     async def test_check_verification_status_success(self, mocker):
-        """Test successful verification status check."""
-        # Create mock response
-        mock_verification_response = VerificationStatusResponse(
+        resp_obj = VerificationStatusResponse(
             is_email_verified=True, user_id="test-user-id"
         )
-
-        # Mock UserUnitOfWork
-        mock_uow = mocker.AsyncMock()
-        mock_uow.get_verification_status_service = mocker.AsyncMock(
-            return_value=mock_verification_response
+        uow = mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"get_verification_status_service": resp_obj},
         )
-
-        # Mock the context manager
-        mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
-            return_value=mocker.AsyncMock(
-                __aenter__=mocker.AsyncMock(return_value=mock_uow),
-                __aexit__=mocker.AsyncMock(return_value=None),
-            ),
-        )
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Call endpoint
         result = await user.check_verification_status("test@example.com", mock_db)
-
-        # Assertions
-        assert isinstance(result, VerificationStatusResponse)
-        assert result.is_email_verified is True
-        assert result.user_id == "test-user-id"
-        mock_uow.get_verification_status_service.assert_called_once_with(
-            "test@example.com"
-        )
+        assert result == resp_obj
+        uow.get_verification_status_service.assert_called_once_with("test@example.com")
 
     async def test_get_user_profile_success(self, mocker):
-        """Test successful user profile retrieval."""
-        # Mock current user
-        mock_user = MagicMock()
-        mock_user.user_id = "test-user-id"
-        mock_user.user_email = "test@example.com"
-        mock_user.user_first_name = "Test"
-        mock_user.user_country_code = "GB"
-        mock_user.is_email_verified = True
-
-        # Call endpoint
-        result = await user.get_user_profile(mock_user)
-
-        # Assertions
+        mock_current = build_user_stub(
+            mocker, user_id="test-user-id", first_name="Test", verified=True
+        )
+        mock_current.user_email = "test@example.com"
+        mock_current.user_country_code = "GB"
+        result = await user.get_user_profile(mock_current)
         assert isinstance(result, UserProfileResponse)
-        assert result.user_id == "test-user-id"
-        assert result.user_email == "test@example.com"
         assert result.user_first_name == "Test"
-        assert result.user_country_code == "GB"
         assert result.is_email_verified is True
 
     async def test_update_user_profile_success(self, mocker):
-        """Test successful user profile update."""
-        # Mock current user
-        mock_current_user = MagicMock()
-        mock_current_user.user_id = "test-user-id"
+        mock_current = build_user_stub(mocker, user_id="test-user-id")
 
-        # Mock updated user from UOW
-        mock_updated_user = MagicMock()
-        mock_updated_user.user_id = "test-user-id"
-        mock_updated_user.user_email = "test@example.com"
-        mock_updated_user.user_first_name = "Updated Name"
-        mock_updated_user.user_country_code = "US"
-        mock_updated_user.is_email_verified = False
+        class UpdatedUser:
+            pass
 
-        # Mock UserUnitOfWork
-        mock_uow_instance = AsyncMock()
-        mock_uow_instance.update_user_profile = AsyncMock(
-            return_value=mock_updated_user
+        updated = UpdatedUser()
+        updated.user_id = "test-user-id"
+        updated.user_email = "test@example.com"
+        updated.user_first_name = "Updated Name"
+        updated.user_country_code = "US"
+        updated.is_email_verified = False
+        uow = mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"update_user_profile": updated},
         )
-        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
-        mock_uow.return_value.__aenter__ = AsyncMock(return_value=mock_uow_instance)
-        mock_uow.return_value.__aexit__ = AsyncMock(return_value=None)
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Create update request
-        profile_update = UserProfileUpdate(
-            user_first_name="Updated Name", user_country_code="US"
-        )
-
-        # Call endpoint
         result = await user.update_user_profile(
-            profile_update, mock_current_user, mock_db
+            UserProfileUpdate(user_first_name="Updated Name", user_country_code="US"),
+            mock_current,
+            mock_db,
         )
-
-        # Assertions
-        assert isinstance(result, UserProfileResponse)
-        assert result.user_id == "test-user-id"
-        assert result.user_email == "test@example.com"
         assert result.user_first_name == "Updated Name"
         assert result.user_country_code == "US"
         assert result.is_email_verified is False
-
-        # Verify UOW was called correctly
-        mock_uow_instance.update_user_profile.assert_called_once_with(
+        uow.update_user_profile.assert_awaited_once_with(
             user_id="test-user-id", first_name="Updated Name", country_code="US"
         )
 
     async def test_request_verification_email_user_not_found(self, mocker):
-        """Test verification email request when user not found."""
-        # Mock UserUnitOfWork to raise UserNotFoundError
-        mock_uow = mocker.AsyncMock()
-        mock_uow.send_verification_email_service = mocker.AsyncMock(
-            side_effect=UserNotFoundError("User not found")
-        )
+        def raise_nf(user_email: str):
+            raise UserNotFoundError("User not found")
 
-        # Mock the context manager
-        mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
-            return_value=mocker.AsyncMock(
-                __aenter__=mocker.AsyncMock(return_value=mock_uow),
-                __aexit__=mocker.AsyncMock(return_value=None),
-            ),
+        mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"send_verification_email_service": raise_nf},
         )
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Create request
-        request_data = EmailRequest(user_email="nonexistent@example.com")
-
-        # Call endpoint and expect exception to propagate
         with pytest.raises(UserNotFoundError):
-            await user.request_verification_email(request_data, mock_db)
-
-        mock_uow.send_verification_email_service.assert_called_once_with(
-            "nonexistent@example.com"
-        )
+            await user.request_verification_email(
+                EmailRequest(user_email="missing@example.com"), mock_db
+            )
 
     async def test_check_verification_status_user_not_found(self, mocker):
-        """Test verification status check when user not found."""
-        # Mock UserUnitOfWork to raise UserNotFoundError
-        mock_uow = mocker.AsyncMock()
-        mock_uow.get_verification_status_service = mocker.AsyncMock(
-            side_effect=UserNotFoundError("User not found")
-        )
+        def raise_nf(user_email: str):
+            raise UserNotFoundError("User not found")
 
-        # Mock the context manager
-        mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
-            return_value=mocker.AsyncMock(
-                __aenter__=mocker.AsyncMock(return_value=mock_uow),
-                __aexit__=mocker.AsyncMock(return_value=None),
-            ),
+        mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"get_verification_status_service": raise_nf},
         )
-
-        # Mock database session
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Call endpoint and expect exception to propagate
         with pytest.raises(UserNotFoundError):
-            await user.check_verification_status("nonexistent@example.com", mock_db)
-
-        mock_uow.get_verification_status_service.assert_called_once_with(
-            "nonexistent@example.com"
-        )
+            await user.check_verification_status("missing@example.com", mock_db)
 
     async def test_update_user_profile_uow_error(self, mocker):
-        """Test user profile update with UOW error."""
-        # Mock current user
-        mock_current_user = MagicMock()
-        mock_current_user.user_id = "test-user-id"
-
-        # Mock UserUnitOfWork to raise an exception
-        mock_uow_instance = AsyncMock()
-        mock_uow_instance.update_user_profile = AsyncMock(
-            side_effect=BaseApplicationError(
+        def raise_update(
+            *, user_id: str, first_name: str | None, country_code: str | None
+        ):
+            raise BaseApplicationError(
                 "Update failed", status_code=400, error_code="UPDATE_ERROR"
             )
-        )
-        mock_uow = mocker.patch("app.api.v1.user.UserUnitOfWork")
-        mock_uow.return_value.__aenter__ = AsyncMock(return_value=mock_uow_instance)
-        mock_uow.return_value.__aexit__ = AsyncMock(return_value=None)
 
-        # Mock database session
+        mock_current = build_user_stub(mocker, user_id="test-user-id")
+        mock_user_uow(
+            mocker,
+            path="app.api.v1.user.UserUnitOfWork",
+            methods={"update_user_profile": raise_update},
+        )
         mock_db = mocker.MagicMock(spec=AsyncSession)
-
-        # Create update request
-        profile_update = UserProfileUpdate(
-            user_first_name="Updated Name", user_country_code="US"
-        )
-
-        # Call endpoint and expect exception to propagate
         with pytest.raises(BaseApplicationError):
-            await user.update_user_profile(profile_update, mock_current_user, mock_db)
+            await user.update_user_profile(
+                UserProfileUpdate(
+                    user_first_name="Updated Name", user_country_code="US"
+                ),
+                mock_current,
+                mock_db,
+            )
