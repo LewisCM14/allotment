@@ -266,11 +266,6 @@ async def seed_grow_guide_data(seed_day_data, seed_feed_data):
     }
 
 
-# ==============================================================================
-# ENHANCED DATABASE SEEDING FIXTURES
-# ==============================================================================
-
-
 @pytest.fixture
 async def complete_family_seed_data():
     """Seed comprehensive family data with relationships."""
@@ -391,11 +386,6 @@ async def verified_user_in_database(user_in_database):
         yield user_data
 
 
-# ==============================================================================
-# USER TEST FIXTURES
-# ==============================================================================
-
-
 @pytest.fixture
 def sample_user_data():
     """Standard user data for testing."""
@@ -488,11 +478,6 @@ def token_factory():
     return _create_token
 
 
-# ==============================================================================
-# MOCK FACTORIES
-# ==============================================================================
-
-
 @pytest.fixture
 def mock_uow_factory():
     """Factory for creating mocked Unit of Work instances."""
@@ -522,11 +507,6 @@ def mock_uow_factory():
         return mock_uow
 
     return _create_mock_uow
-
-
-# ==============================================================================
-# UNIT TEST SPECIFIC FIXTURES
-# ==============================================================================
 
 
 @pytest.fixture
@@ -584,11 +564,6 @@ def mock_token_creation(mocker):
 def sample_user_login_data():
     """Standard login data for auth unit tests."""
     return {"user_email": "test@example.com", "user_password": "SecurePass123!"}
-
-
-# ==============================================================================
-# INTEGRATION TEST HELPERS
-# ==============================================================================
 
 
 @pytest.fixture
@@ -650,9 +625,32 @@ def tokens_factory(user_factory, login_helper):
     return _provision
 
 
-# ==============================================================================
-# AUXILIARY/UTILITY FIXTURES FOR INTEGRATION TESTS
-# ==============================================================================
+@pytest.fixture
+def register_user(client, mocker):
+    """Return an async factory that registers a user and yields Authorization headers.
+
+    Args:
+        prefix: Optional string to prefix the generated unique email for readability.
+
+    Returns:
+        async function(prefix:str="user") -> dict  (Authorization header)
+    """
+
+    async def _register(prefix: str = "user") -> dict:
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
+        email = f"{prefix}_{uuid.uuid4().hex[:8]}@example.com"
+        payload = {
+            "user_email": email,
+            "user_password": "SecurePass123!",
+            "user_first_name": "TestUser",
+            "user_country_code": "US",
+        }
+        resp = await client.post(f"{settings.API_PREFIX}/registration", json=payload)
+        assert resp.status_code == status.HTTP_201_CREATED
+        token = resp.json()["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    return _register
 
 
 @pytest.fixture

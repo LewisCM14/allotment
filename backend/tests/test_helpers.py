@@ -2,7 +2,7 @@
 Test Helper Functions and Utilities
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 def validate_user_response_schema(user_data: Dict[str, Any]) -> None:
@@ -50,33 +50,18 @@ def assert_http_error_response(
             assert expected_message_contains.lower() in str(response_data).lower()
 
 
-def create_mock_user_unit_of_work(mocker, methods_to_mock: Dict[str, Any] = None):
-    """
-    Create a mocked UserUnitOfWork with async context manager support.
-
-    Args:
-        mocker: pytest-mock mocker
-        methods_to_mock: Dict of method names to return values
-    """
-    mock_uow = mocker.AsyncMock()
-
-    if methods_to_mock:
-        for method_name, return_value in methods_to_mock.items():
-            if callable(return_value):
-                setattr(
-                    mock_uow, method_name, mocker.AsyncMock(side_effect=return_value)
-                )
-            else:
-                setattr(
-                    mock_uow, method_name, mocker.AsyncMock(return_value=return_value)
-                )
-
-    # Mock the context manager
-    mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
-    mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
-    mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
-
-    return mock_uow
+def build_user_stub(
+    mocker,
+    user_id: Optional[str] = None,
+    first_name: str = "Test",
+    verified: bool = False,
+):
+    """Construct a lightweight user stub object."""
+    user = mocker.MagicMock()
+    user.user_id = user_id or "11111111-1111-1111-1111-111111111111"
+    user.user_first_name = first_name
+    user.is_email_verified = verified
+    return user
 
 
 def create_test_user_data(email_suffix: str = "", **overrides) -> Dict[str, Any]:
@@ -137,48 +122,38 @@ def create_mock_request_and_db(mocker):
     }
 
 
-def setup_user_uow_mock(mocker, methods_to_mock: Dict[str, Any] = None):
-    """
-    Set up UserUnitOfWork mock with common patterns.
+def mock_user_uow(
+    mocker,
+    path: str = "app.api.v1.registration.UserUnitOfWork",
+    methods: Optional[Dict[str, Any]] = None,
+):
+    """Unified helper to patch a UserUnitOfWork (or compatible) and configure async methods.
 
     Args:
-        mocker: pytest-mock mocker
-        methods_to_mock: Dict of method names to return values or side effects
+        mocker: pytest-mock fixture
+        path: import path to the UoW class
+        methods: mapping of method name -> return value or side-effect callable
+    Returns:
+        The mocked UoW instance (AsyncMock) inside the context manager.
     """
-    mock_uow = mocker.AsyncMock()
-
-    if methods_to_mock:
-        for method_name, return_value in methods_to_mock.items():
-            if callable(return_value):
-                setattr(
-                    mock_uow, method_name, mocker.AsyncMock(side_effect=return_value)
-                )
-            else:
-                setattr(
-                    mock_uow, method_name, mocker.AsyncMock(return_value=return_value)
-                )
-
-    mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
-    mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
-    mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
-
-    return mock_uow
+    uow_cls = mocker.patch(path)
+    uow = mocker.AsyncMock()
+    if methods:
+        for name, val in methods.items():
+            setattr(
+                uow,
+                name,
+                mocker.AsyncMock(side_effect=val)
+                if callable(val)
+                else mocker.AsyncMock(return_value=val),
+            )
+    uow_cls.return_value.__aenter__ = mocker.AsyncMock(return_value=uow)
+    uow_cls.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
+    return uow
 
 
 def setup_auth_unit_test_mocks(
     mocker, mock_uow_path: str = "app.api.v1.auth.UserUnitOfWork"
 ):
-    """
-    Set up UserUnitOfWork mock specifically for auth endpoints.
-
-    Args:
-        mocker: pytest-mock mocker
-        mock_uow_path: Import path to the UoW class to mock
-    """
-    mock_uow = mocker.AsyncMock()
-
-    mock_uow_class = mocker.patch(mock_uow_path)
-    mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
-    mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
-
-    return mock_uow
+    """Backward compatible thin wrapper pointing to mock_user_uow for auth endpoints."""
+    return mock_user_uow(mocker, path=mock_uow_path)

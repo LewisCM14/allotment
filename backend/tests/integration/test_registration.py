@@ -7,28 +7,9 @@ from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
 from app.api.middleware.exception_handler import BaseApplicationError
 from tests.conftest import mock_email_service
+from tests.test_helpers import mock_user_uow
 
 REGISTRATION_PREFIX = f"{settings.API_PREFIX}/registration"
-
-
-def _user_stub(mocker, user_id=None):
-    user = mocker.MagicMock()
-    user.user_id = user_id or "11111111-1111-1111-1111-111111111111"
-    user.user_first_name = "Test"
-    user.is_email_verified = False
-    return user
-
-
-def _configure_uow(mocker, create_user_return=None, create_user_side_effect=None):
-    """Configure the UserUnitOfWork mock for registration tests."""
-    mock_uow = mocker.patch("app.api.v1.registration.UserUnitOfWork")
-    mock_uow_instance = mocker.AsyncMock()
-    if create_user_side_effect is not None:
-        mock_uow_instance.create_user.side_effect = create_user_side_effect
-    else:
-        mock_uow_instance.create_user.return_value = create_user_return
-    mock_uow.return_value.__aenter__.return_value = mock_uow_instance
-    return mock_uow_instance
 
 
 class TestUserRegistration:
@@ -93,7 +74,7 @@ class TestUserRegistration:
             (
                 "creation_returns_none",
                 "creation-none@example.com",
-                lambda mocker: _configure_uow(mocker, create_user_return=None),
+                lambda mocker: mock_user_uow(mocker, methods={"create_user": None}),
             ),
         ],
     )
