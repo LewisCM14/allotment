@@ -1,12 +1,6 @@
-"""
-User Allotment API Tests
-"""
-
 import uuid
-
 import pytest
 from fastapi import status
-
 from app.api.core.config import settings
 from tests.conftest import mock_email_service
 
@@ -150,14 +144,9 @@ class TestUserAllotment:
         ],
     )
     @pytest.mark.asyncio
-    async def test_validation_errors_on_create(
-        self, client, mocker, payload, expected_status
-    ):
-        """Test validation errors when creating allotment with invalid data."""
-        _ = mock_email_service(
-            mocker, "app.api.v1.registration.send_verification_email"
-        )
-        # Register user
+    async def test_validation_errors_on_create(self, client, mocker, payload, expected_status):
+        """Test validation errors when creating allotment with invalid data (single attempt)."""
+        _ = mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
         reg_resp = await client.post(
             f"{PREFIX}/registration",
             json={
@@ -167,32 +156,9 @@ class TestUserAllotment:
                 "user_country_code": "UK",
             },
         )
-        token = reg_resp.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-
-        resp = await client.post(
-            f"{PREFIX}/users/allotment", json=payload, headers=headers
-        )
-        assert resp.status_code == expected_status
-        # Try to create an allotment with invalid payload, expect 422
-        _ = mock_email_service(
-            mocker, "app.api.v1.registration.send_verification_email"
-        )
-        reg_resp = await client.post(
-            f"{PREFIX}/registration",
-            json={
-                "user_email": f"allotment3_{uuid.uuid4().hex}@example.com",
-                "user_password": "SecurePass123!",
-                "user_first_name": "Allot",
-                "user_country_code": "US",
-            },
-        )
         assert reg_resp.status_code == status.HTTP_201_CREATED
-        token = reg_resp.json()["access_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-        resp = await client.post(
-            f"{PREFIX}/users/allotment", json=payload, headers=headers
-        )
+        headers = {"Authorization": f"Bearer {reg_resp.json()['access_token']}"}
+        resp = await client.post(f"{PREFIX}/users/allotment", json=payload, headers=headers)
         assert resp.status_code == expected_status
 
     @pytest.mark.asyncio
