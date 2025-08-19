@@ -683,11 +683,6 @@ def reset_health_state():
     health_mod._previous_resources_state = {k: False for k in orig.keys()}
 
 
-# ---------------------------------------------------------------------------
-
-# ---------------------------------------------------------------------------
-
-
 @pytest.fixture
 def mock_db():
     """Provide an AsyncSession mock for repository/unit tests that don't hit the DB."""
