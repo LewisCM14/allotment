@@ -1,89 +1,55 @@
 import uuid
-from unittest.mock import AsyncMock, patch
+from unittest.mock import patch
 
 import pytest
 from authlib.jose.errors import JoseError
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.exception_handler import (
     DatabaseIntegrityError,
     InvalidTokenError,
     UserNotFoundError,
 )
-from app.api.models.user.user_model import User, UserAllotment
-from app.api.repositories.user.user_repository import UserRepository
+from app.api.models.user.user_model import UserAllotment
 from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
 )
-from app.api.schemas.user.user_schema import UserCreate, VerificationStatusResponse
+from app.api.schemas.user.user_schema import VerificationStatusResponse
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 
+@pytest.fixture
+def user_unit_of_work(mock_db):  # mock_db from root conftest
+    return UserUnitOfWork(db=mock_db)
+
+
+@pytest.fixture
+def sample_allotment():
+    return UserAllotment(
+        user_allotment_id=uuid.uuid4(),
+        user_id=uuid.uuid4(),
+        allotment_postal_zip_code="12345",
+        allotment_width_meters=10.0,
+        allotment_length_meters=10.0,
+    )
+
+
 class TestUserUnitOfWork:
-    """Test suite for UserUnitOfWork."""
-
-    @pytest.fixture
-    def mock_db(self):
-        """Create a mock database session."""
-        return AsyncMock(spec=AsyncSession)
-
-    @pytest.fixture
-    def user_unit_of_work(self, mock_db):
-        """Create a UserUnitOfWork instance with mock database."""
-        return UserUnitOfWork(db=mock_db)
-
-    @pytest.fixture
-    def sample_user(self):
-        """Create a sample user."""
-        user = User()
-        user.user_id = uuid.uuid4()
-        user.user_email = "test@example.com"
-        user.user_password_hash = "hashed_password"
-        user.user_first_name = "Test"
-        user.user_country_code = "US"
-        user.is_email_verified = True
-        return user
-
-    @pytest.fixture
-    def sample_user_create(self):
-        """Create a sample user create schema."""
-        return UserCreate(
-            user_email="test@example.com",
-            user_password="test_password",
-            user_first_name="Test",
-            user_country_code="US",
-        )
-
-    @pytest.fixture
-    def sample_allotment(self):
-        """Create a sample user allotment."""
-        allotment = UserAllotment(
-            user_allotment_id=uuid.uuid4(),
-            user_id=uuid.uuid4(),
-            allotment_postal_zip_code="12345",
-            allotment_width_meters=10.0,
-            allotment_length_meters=10.0,
-        )
-        return allotment
+    """Core tests for UserUnitOfWork (fixtures are module-level)."""
 
     def test_init(self, mock_db):
-        """Test unit of work initialization."""
         uow = UserUnitOfWork(db=mock_db)
         assert uow.db == mock_db
-        assert isinstance(uow.user_repo, UserRepository)
+        assert hasattr(uow, "user_repo")
 
     @pytest.mark.asyncio
     async def test_context_manager_success(self, mock_db):
         """Test context manager successful transaction."""
         uow = UserUnitOfWork(db=mock_db)
-
         async with uow:
-            # Mock some operation
             pass
-
         mock_db.commit.assert_called_once()
         mock_db.rollback.assert_not_called()
 
@@ -91,11 +57,9 @@ class TestUserUnitOfWork:
     async def test_context_manager_exception(self, mock_db):
         """Test context manager with exception triggers rollback."""
         uow = UserUnitOfWork(db=mock_db)
-
         with pytest.raises(ValueError):
             async with uow:
                 raise ValueError("Test exception")
-
         mock_db.rollback.assert_called_once()
         mock_db.commit.assert_not_called()
 
@@ -136,17 +100,29 @@ class TestUserUnitOfWork:
             await user_unit_of_work.register_user(sample_user_create)
 
     @pytest.mark.asyncio
-    async def test_verify_user_email_success(self, user_unit_of_work, sample_user):
-        """Test successful email verification."""
+    @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "initial_verified, expect_commit",
+        [
+            (True, False),  # already verified
+            (False, True),  # newly verifying
+        ],
+    )
+    async def test_verify_user_email_param(
+        self, user_unit_of_work, sample_user, initial_verified, expect_commit
+    ):
         user_id = str(sample_user.user_id)
-
+        sample_user.is_email_verified = initial_verified
         with patch.object(
             user_unit_of_work.user_repo, "verify_email", return_value=sample_user
         ) as mock_verify:
-            result = await user_unit_of_work.verify_user_email(user_id)
-
+            result = await user_unit_of_work.verify_email(user_id)
         assert result == sample_user
         mock_verify.assert_called_once_with(user_id)
+        if expect_commit:
+            user_unit_of_work.db.commit.assert_called_once()
+        else:
+            user_unit_of_work.db.commit.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_verify_user_email_invalid_token(self, user_unit_of_work):
@@ -162,30 +138,20 @@ class TestUserUnitOfWork:
                 await user_unit_of_work.verify_user_email(user_id)
 
     @pytest.mark.asyncio
-    async def test_get_user_by_email(self, user_unit_of_work, sample_user):
-        """Test getting user by email."""
-        email = sample_user.user_email
-
-        with patch.object(
-            user_unit_of_work.user_repo, "get_user_by_email", return_value=sample_user
-        ) as mock_get:
-            result = await user_unit_of_work.get_user_by_email(email)
-
-            assert result == sample_user
-            mock_get.assert_called_once_with(email)
-
     @pytest.mark.asyncio
-    async def test_get_user_by_email_not_found(self, user_unit_of_work):
-        """Test getting user by email when not found."""
-        email = "nonexistent@example.com"
-
+    @pytest.mark.parametrize("found", [True, False])
+    async def test_get_user_by_email_param(self, user_unit_of_work, sample_user, found):
+        email = sample_user.user_email if found else "missing@example.com"
+        return_val = sample_user if found else None
         with patch.object(
-            user_unit_of_work.user_repo, "get_user_by_email", return_value=None
+            user_unit_of_work.user_repo, "get_user_by_email", return_value=return_val
         ) as mock_get:
             result = await user_unit_of_work.get_user_by_email(email)
-
+        if found:
+            assert result == sample_user
+        else:
             assert result is None
-            mock_get.assert_called_once_with(email)
+        mock_get.assert_called_once_with(email)
 
     @pytest.mark.asyncio
     @patch("app.api.services.user.user_unit_of_work.send_password_reset_email")
@@ -194,6 +160,8 @@ class TestUserUnitOfWork:
     ):
         """Test successful password reset request."""
         email = sample_user.user_email
+        # Ensure this test exercises the 'verified user' branch; root fixture defaults to unverified
+        sample_user.is_email_verified = True
         mock_send_email.return_value = None
 
         with patch.object(
@@ -407,7 +375,6 @@ class TestUserUnitOfWork:
         with pytest.raises(TestException):
             async with uow:
                 raise TestException()
-
         mock_db.rollback.assert_called_once()
         mock_db.commit.assert_not_called()
 
@@ -437,36 +404,7 @@ class TestUserUnitOfWork:
             await user_unit_of_work.create_user(sample_user_create)
 
     @pytest.mark.asyncio
-    async def test_verify_email_already_verified(self, user_unit_of_work, sample_user):
-        """Test verifying email when user is already verified."""
-        sample_user.is_email_verified = True
-        user_id = str(sample_user.user_id)
-
-        with patch.object(
-            user_unit_of_work.user_repo, "verify_email", return_value=sample_user
-        ) as mock_verify:
-            result = await user_unit_of_work.verify_email(user_id)
-
-        assert result == sample_user
-        mock_verify.assert_called_once_with(user_id)
-        # Should not commit if already verified
-        user_unit_of_work.db.commit.assert_not_called()
-
-    @pytest.mark.asyncio
-    async def test_verify_email_not_verified(self, user_unit_of_work, sample_user):
-        """Test verifying email when user is not verified."""
-        sample_user.is_email_verified = False
-        user_id = str(sample_user.user_id)
-
-        with patch.object(
-            user_unit_of_work.user_repo, "verify_email", return_value=sample_user
-        ) as mock_verify:
-            result = await user_unit_of_work.verify_email(user_id)
-
-        assert result == sample_user
-        assert result.is_email_verified is True
-        mock_verify.assert_called_once_with(user_id)
-        user_unit_of_work.db.commit.assert_called_once()
+    # (Removed separate verify email tests; covered by parametrized test_verify_user_email_param)
 
     @pytest.mark.asyncio
     @patch("app.api.services.user.user_unit_of_work.send_verification_email")

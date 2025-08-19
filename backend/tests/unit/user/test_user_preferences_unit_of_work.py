@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from sqlalchemy.exc import IntegrityError
@@ -9,9 +9,6 @@ from app.api.middleware.exception_handler import (
     BusinessLogicError,
     ResourceNotFoundError,
 )
-from app.api.models.grow_guide.calendar_model import Day
-from app.api.models.grow_guide.guide_options_model import Feed
-from app.api.models.user.user_model import UserFeedDay
 from app.api.repositories.grow_guide.day_repository import DayRepository
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
 from app.api.repositories.user.user_repository import UserRepository
@@ -23,6 +20,11 @@ from app.api.schemas.user.user_preference_schema import (
 )
 from app.api.services.user.user_preferences_unit_of_work import (
     UserPreferencesUnitOfWork,
+)
+from tests.test_helpers import (
+    build_sample_feeds,
+    build_week_days,
+    make_user_feed_day,
 )
 
 
@@ -41,54 +43,17 @@ class TestUserPreferencesUnitOfWork:
 
     @pytest.fixture
     def sample_user_feed_day(self):
-        """Create a sample user feed day."""
-        user_feed_day = MagicMock(spec=UserFeedDay)
-        user_feed_day.feed_id = uuid.uuid4()
-        user_feed_day.day_id = uuid.uuid4()
-
-        # Mock the relationships
-        user_feed_day.feed = MagicMock(spec=Feed)
-        user_feed_day.feed.name = "Tomato Feed"
-        user_feed_day.feed.id = user_feed_day.feed_id
-
-        user_feed_day.day = MagicMock(spec=Day)
-        user_feed_day.day.name = "Monday"
-        user_feed_day.day.id = user_feed_day.day_id
-        user_feed_day.day.day_number = 1
-
-        return user_feed_day
+        return make_user_feed_day(
+            feed_name="Tomato Feed", day_name="Monday", day_number=1
+        )
 
     @pytest.fixture
     def sample_feeds(self):
-        """Create sample feeds."""
-        feeds = []
-        for i, name in enumerate(["Tomato Feed", "General Feed", "Organic Compost"]):
-            feed = MagicMock(spec=Feed)
-            feed.id = uuid.uuid4()
-            feed.name = name
-            feeds.append(feed)
-        return feeds
+        return build_sample_feeds()
 
     @pytest.fixture
     def sample_days(self):
-        """Create sample days."""
-        days = []
-        day_names = [
-            "Monday",
-            "Tuesday",
-            "Wednesday",
-            "Thursday",
-            "Friday",
-            "Saturday",
-            "Sunday",
-        ]
-        for i, name in enumerate(day_names):
-            day = MagicMock(spec=Day)
-            day.id = uuid.uuid4()
-            day.name = name
-            day.day_number = i + 1
-            days.append(day)
-        return days
+        return build_week_days()
 
     def test_init(self, mock_db):
         """Test unit of work initialization."""
@@ -99,7 +64,7 @@ class TestUserPreferencesUnitOfWork:
         assert isinstance(uow.day_repo, DayRepository)
 
     @pytest.mark.asyncio
-    async def test_context_manager_success(self, mock_db):
+    async def test_context_manager_commit(self, mock_db):
         """Test context manager successful transaction."""
         uow = UserPreferencesUnitOfWork(db=mock_db)
 
@@ -111,7 +76,7 @@ class TestUserPreferencesUnitOfWork:
         mock_db.rollback.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_context_manager_exception(self, mock_db):
+    async def test_context_manager_rollback_on_exception(self, mock_db):
         """Test context manager with exception triggers rollback."""
         uow = UserPreferencesUnitOfWork(db=mock_db)
 
@@ -123,7 +88,7 @@ class TestUserPreferencesUnitOfWork:
         mock_db.commit.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_context_manager_exception_without_value(self, mock_db):
+    async def test_context_manager_rollback_on_empty_exception(self, mock_db):
         """Test context manager with exception that has no value."""
         uow = UserPreferencesUnitOfWork(db=mock_db)
 
@@ -239,6 +204,8 @@ class TestUserPreferencesUnitOfWork:
         # Update the sample to match the test parameters
         sample_user_feed_day.feed_id = uuid.UUID(feed_id)
         sample_user_feed_day.day_id = uuid.UUID(day_id)
+        sample_user_feed_day.feed.id = sample_user_feed_day.feed_id
+        sample_user_feed_day.day.id = sample_user_feed_day.day_id
         user_feed_days = [sample_user_feed_day]
 
         with (
@@ -350,21 +317,22 @@ class TestUserPreferencesUnitOfWork:
         day_id = str(uuid.uuid4())
 
         # Create two matching preferences
-        user_feed_day1 = MagicMock(spec=UserFeedDay)
-        user_feed_day1.feed_id = uuid.UUID(feed_id)
-        user_feed_day1.day_id = uuid.UUID(day_id)
-        user_feed_day1.feed = MagicMock(spec=Feed)
-        user_feed_day1.feed.name = "Feed 1"
-        user_feed_day1.day = MagicMock(spec=Day)
-        user_feed_day1.day.name = "Day 1"
-
-        user_feed_day2 = MagicMock(spec=UserFeedDay)
-        user_feed_day2.feed_id = uuid.UUID(feed_id)
-        user_feed_day2.day_id = uuid.UUID(day_id)
-        user_feed_day2.feed = MagicMock(spec=Feed)
-        user_feed_day2.feed.name = "Feed 2"
-        user_feed_day2.day = MagicMock(spec=Day)
-        user_feed_day2.day.name = "Day 2"
+        user_feed_day1 = make_user_feed_day(
+            user_id=user_id,
+            feed_id=feed_id,
+            day_id=day_id,
+            feed_name="Feed 1",
+            day_name="Day 1",
+            day_number=1,
+        )
+        user_feed_day2 = make_user_feed_day(
+            user_id=user_id,
+            feed_id=feed_id,
+            day_id=day_id,
+            feed_name="Feed 2",
+            day_name="Day 2",
+            day_number=1,
+        )
 
         user_feed_days = [user_feed_day1, user_feed_day2]
 
@@ -425,28 +393,28 @@ class TestUserPreferencesUnitOfWork:
                 )
 
     @pytest.mark.asyncio
-    async def test_feed_read_schema_creation(self, sample_feeds):
-        """Test FeedRead schema creation from feed objects."""
-        feeds = sample_feeds
-        feed_reads = [FeedRead(id=feed.id, name=feed.name) for feed in feeds]
-
-        assert len(feed_reads) == 3
-        for i, feed_read in enumerate(feed_reads):
-            assert isinstance(feed_read, FeedRead)
-            assert feed_read.id == feeds[i].id
-            assert feed_read.name == feeds[i].name
-
-    @pytest.mark.asyncio
-    async def test_day_read_schema_creation(self, sample_days):
-        """Test DayRead schema creation from day objects."""
-        days = sample_days
-        day_reads = [
-            DayRead(id=day.id, day_number=day.day_number, name=day.name) for day in days
+    @pytest.mark.parametrize(
+        "schema_cls, builder_list, attr_map",
+        [
+            (FeedRead, "sample_feeds", [("id", "id"), ("name", "name")]),
+            (
+                DayRead,
+                "sample_days",
+                [("id", "id"), ("day_number", "day_number"), ("name", "name")],
+            ),
+        ],
+    )
+    async def test_schema_creation_lists(
+        self, request, schema_cls, builder_list, attr_map
+    ):
+        objects = request.getfixturevalue(builder_list)
+        schema_items = [
+            schema_cls(
+                **{attr: getattr(obj, source_attr) for attr, source_attr in attr_map}
+            )
+            for obj in objects
         ]
-
-        assert len(day_reads) == 7
-        for i, day_read in enumerate(day_reads):
-            assert isinstance(day_read, DayRead)
-            assert day_read.id == days[i].id
-            assert day_read.day_number == days[i].day_number
-            assert day_read.name == days[i].name
+        assert len(schema_items) == len(objects)
+        for schema_obj, orig in zip(schema_items, objects):
+            for attr, source_attr in attr_map:
+                assert getattr(schema_obj, attr) == getattr(orig, source_attr)

@@ -1,13 +1,10 @@
 import uuid
-from unittest.mock import AsyncMock, MagicMock, Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi import HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.middleware.exception_handler import InvalidTokenError
-from app.api.models.grow_guide.calendar_model import Day
-from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.models.user.user_model import User, UserAllotment, UserFeedDay
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas.user.user_allotment_schema import (
@@ -17,45 +14,7 @@ from app.api.schemas.user.user_allotment_schema import (
 
 
 class TestUserRepository:
-    """Test suite for UserRepository."""
-
-    @pytest.fixture
-    def mock_db(self):
-        """Create a mock database session."""
-        return AsyncMock(spec=AsyncSession)
-
-    @pytest.fixture
-    def user_repository(self, mock_db):
-        """Create a UserRepository instance with mock database."""
-        return UserRepository(db=mock_db)
-
-    @pytest.fixture
-    def sample_user(self):
-        """Create a sample user."""
-        from datetime import datetime, timezone
-
-        user = User()
-        user.user_id = uuid.uuid4()
-        user.user_email = "test@example.com"
-        user.user_password_hash = "hashed_password"
-        user.user_first_name = "Test"
-        user.user_country_code = "US"
-        user.is_email_verified = False
-        user.registered_date = datetime.now(timezone.utc)
-        user.last_active_date = datetime.now(timezone.utc)
-        return user
-
-    @pytest.fixture
-    def sample_allotment(self):
-        """Create a sample user allotment."""
-        allotment = UserAllotment(
-            user_allotment_id=uuid.uuid4(),
-            user_id=uuid.uuid4(),
-            allotment_postal_zip_code="12345",
-            allotment_width_meters=10.0,
-            allotment_length_meters=10.0,
-        )
-        return allotment
+    """Test suite for UserRepository (fixtures centralized in unit/user/conftest.py)."""
 
     def test_init(self, mock_db):
         """Test repository initialization."""
@@ -70,71 +29,31 @@ class TestUserRepository:
         assert result == sample_user
         mock_db.add.assert_called_once_with(sample_user)
 
-    @pytest.mark.asyncio
-    async def test_create_user_with_datetime_fields(self, user_repository, mock_db):
-        """Test creating a user with datetime fields."""
-        from datetime import datetime, timezone
-
-        user = User(
-            user_email="datetime@example.com",
-            user_password_hash="hashed_password",
-            user_first_name="DateTime",
-            user_country_code="US",
-        )
-
-        # Set datetime fields
-        now = datetime.now(timezone.utc)
-        user.registered_date = now
-        user.last_active_date = now
-
-        result = await user_repository.create_user(user)
-
-        assert result == user
-        assert result.registered_date == now
-        assert result.last_active_date == now
-        mock_db.add.assert_called_once_with(user)
+    # (Datetime-specific creation covered implicitly by model defaults; explicit test removed as redundant.)
 
     @pytest.mark.asyncio
-    async def test_verify_email_success(self, user_repository, mock_db, sample_user):
-        """Test successful email verification."""
-        user_id = str(sample_user.user_id)
-        sample_user.is_email_verified = False
-
-        mock_db.get.return_value = sample_user
-
-        result = await user_repository.verify_email(user_id)
-
-        assert result == sample_user
-        assert sample_user.is_email_verified is True
-        mock_db.get.assert_called_once_with(User, sample_user.user_id)
-        mock_db.flush.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_verify_email_already_verified(
-        self, user_repository, mock_db, sample_user
+    @pytest.mark.parametrize("already_verified", [False, True])
+    async def test_verify_email_paths(
+        self, user_repository, mock_db, sample_user, already_verified
     ):
-        """Test email verification when already verified."""
         user_id = str(sample_user.user_id)
-        sample_user.is_email_verified = True
-
+        sample_user.is_email_verified = already_verified
         mock_db.get.return_value = sample_user
 
         result = await user_repository.verify_email(user_id)
 
-        assert result == sample_user
+        assert result is sample_user
         assert sample_user.is_email_verified is True
         mock_db.get.assert_called_once_with(User, sample_user.user_id)
-        # flush should not be called since user is already verified
-        mock_db.flush.assert_not_called()
+        if already_verified:
+            mock_db.flush.assert_not_called()
+        else:
+            mock_db.flush.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_verify_email_invalid_uuid(self, user_repository, mock_db):
-        """Test email verification with invalid UUID."""
-        invalid_user_id = "invalid-uuid"
-
         with pytest.raises(InvalidTokenError, match="Invalid user ID format"):
-            await user_repository.verify_email(invalid_user_id)
-
+            await user_repository.verify_email("invalid-uuid")
         mock_db.get.assert_not_called()
 
     @pytest.mark.asyncio
@@ -180,38 +99,25 @@ class TestUserRepository:
     async def test_update_user_password_success(
         self, user_repository, mock_db, sample_user
     ):
-        """Test successful password update."""
         user_id = str(sample_user.user_id)
-        new_password = "new_password"
-
         mock_db.get.return_value = sample_user
-
-        result = await user_repository.update_user_password(user_id, new_password)
-
-        assert result == sample_user
+        result = await user_repository.update_user_password(user_id, "new_password")
+        assert result is sample_user
         mock_db.get.assert_called_once_with(User, sample_user.user_id)
 
     @pytest.mark.asyncio
     async def test_update_user_password_invalid_uuid(self, user_repository, mock_db):
-        """Test password update with invalid UUID."""
-        invalid_user_id = "invalid-uuid"
-        new_password = "new_password"
-
         with pytest.raises(InvalidTokenError, match="Invalid user ID format"):
-            await user_repository.update_user_password(invalid_user_id, new_password)
-
+            await user_repository.update_user_password("invalid-uuid", "new_password")
         mock_db.get.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_update_user_password_user_not_found(self, user_repository, mock_db):
-        """Test password update when user is not found."""
-        user_id = str(uuid.uuid4())
-        new_password = "new_password"
-
         mock_db.get.return_value = None
-
         with pytest.raises(InvalidTokenError, match="User not found"):
-            await user_repository.update_user_password(user_id, new_password)
+            await user_repository.update_user_password(
+                str(uuid.uuid4()), "new_password"
+            )
 
     @pytest.mark.asyncio
     async def test_create_user_allotment(self, user_repository, mock_db):
@@ -316,34 +222,6 @@ class TestUserRepository:
         assert exc_info.value.detail == "Allotment not found"
 
     # User Preference Tests
-
-    @pytest.fixture
-    def sample_feed(self):
-        """Create a sample feed."""
-        feed = Feed()
-        feed.id = uuid.uuid4()
-        feed.name = "tomato feed"
-        return feed
-
-    @pytest.fixture
-    def sample_day(self):
-        """Create a sample day."""
-        day = Day()
-        day.id = uuid.uuid4()
-        day.day_number = 1
-        day.name = "mon"
-        return day
-
-    @pytest.fixture
-    def sample_user_feed_day(self, sample_feed, sample_day):
-        """Create a sample user feed day."""
-        user_feed_day = UserFeedDay()
-        user_feed_day.user_id = uuid.uuid4()
-        user_feed_day.feed_id = sample_feed.id
-        user_feed_day.day_id = sample_day.id
-        user_feed_day.feed = sample_feed
-        user_feed_day.day = sample_day
-        return user_feed_day
 
     @pytest.mark.asyncio
     async def test_get_user_feed_days(

@@ -1,10 +1,7 @@
-"""
-Testing Configuration
-"""
-
 import asyncio
 import os
 import uuid
+from unittest.mock import AsyncMock
 
 import pytest
 from fastapi import status
@@ -18,7 +15,14 @@ from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
 from app.api.models.grow_guide.calendar_model import Day
 from app.api.models.grow_guide.guide_options_model import Feed
+from app.api.repositories.user.user_repository import UserRepository
 from app.main import app
+from tests.test_helpers import (
+    make_user_allotment,
+    make_user_create_schema,
+    make_user_feed_day,
+    make_user_model,
+)
 
 # Use a shared in-memory database with a named URI
 TEST_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared&uri=true"
@@ -673,5 +677,58 @@ def reset_health_state():
 
     orig = health_mod._previous_resources_state.copy()
     health_mod._previous_resources_state = {k: False for k in orig.keys()}
+    # Run test
     yield
+    # Restore original state
     health_mod._previous_resources_state = {k: False for k in orig.keys()}
+
+
+# ---------------------------------------------------------------------------
+# User repository unit-test fixtures (migrated from tests/unit/user/conftest.py)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def mock_db():
+    """Provide an AsyncSession mock for repository/unit tests that don't hit the DB."""
+    return AsyncMock(spec=AsyncSession)
+
+
+@pytest.fixture
+def user_repository(mock_db):
+    """Instantiate UserRepository bound to mocked DB session."""
+    return UserRepository(db=mock_db)
+
+
+@pytest.fixture
+def sample_user():
+    """Real User model instance (unpersisted) for unit tests."""
+    return make_user_model(
+        email="test@example.com",
+        password_hash="hashed_password",
+        first_name="Test",
+        country_code="US",
+    )
+
+
+@pytest.fixture
+def sample_allotment():
+    """Real UserAllotment model instance (unpersisted)."""
+    return make_user_allotment(postal_code="12345", width=10.0, length=10.0)
+
+
+@pytest.fixture
+def sample_user_feed_day():
+    """UserFeedDay linking a feed/day for preference tests (unpersisted)."""
+    return make_user_feed_day(feed_name="tomato feed", day_name="mon", day_number=1)
+
+
+@pytest.fixture
+def sample_user_create():
+    """UserCreate schema instance for user creation/unit tests."""
+    return make_user_create_schema(
+        email="test@example.com",
+        password="test_password",
+        first_name="Test",
+        country_code="US",
+    )
