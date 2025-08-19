@@ -23,8 +23,10 @@ def silence_db_logger(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_get_db_yields_single_session(silence_db_logger):
+async def test_get_db_yields_single_session(silence_db_logger, monkeypatch):
     """get_db() yields one session then closes (StopAsyncIteration on second pull)."""
+    # Patch the database module to use the test session factory (SQLite)
+    monkeypatch.setattr(database, "AsyncSessionLocal", TestingSessionLocal)
     agen = database.get_db()
     session = await agen.__anext__()
     assert session is not None
