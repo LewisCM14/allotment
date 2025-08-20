@@ -2,8 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	getUserFeedPreferences,
 	updateUserFeedPreference,
-	getFeedTypes,
-	getDays,
 } from "../services/PreferenceService";
 import type {
 	IFeedPreferenceRequest,
@@ -12,38 +10,16 @@ import type {
 
 // Query keys
 export const PREFERENCE_QUERY_KEYS = {
-	preferences: ["userFeedPreferences"] as const,
-	feedTypes: ["feedTypes"] as const,
-	days: ["days"] as const,
+	preferences: ["userPreferencesAggregate"] as const,
 };
 
-// Hook for fetching user feed preferences
-export const useUserFeedPreferences = () => {
+// Hook for fetching all user preferences aggregate (preferences, feedTypes, days)
+export const useUserPreferencesAggregate = () => {
 	return useQuery({
 		queryKey: PREFERENCE_QUERY_KEYS.preferences,
 		queryFn: getUserFeedPreferences,
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		gcTime: 10 * 60 * 1000, // 10 minutes
-	});
-};
-
-// Hook for fetching feed types
-export const useFeedTypes = () => {
-	return useQuery({
-		queryKey: PREFERENCE_QUERY_KEYS.feedTypes,
-		queryFn: getFeedTypes,
-		staleTime: 60 * 60 * 1000, // 1 hour (reference data doesn't change often)
-		gcTime: 2 * 60 * 60 * 1000, // 2 hours
-	});
-};
-
-// Hook for fetching days
-export const useDays = () => {
-	return useQuery({
-		queryKey: PREFERENCE_QUERY_KEYS.days,
-		queryFn: getDays,
-		staleTime: 60 * 60 * 1000, // 1 hour (reference data doesn't change often)
-		gcTime: 2 * 60 * 60 * 1000, // 2 hours
 	});
 };
 

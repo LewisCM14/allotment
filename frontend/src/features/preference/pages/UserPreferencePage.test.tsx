@@ -63,32 +63,29 @@ describe("UserPreferencePage", () => {
 		// Set up MSW handlers to return mock data
 		server.use(
 			http.get(buildUrl("/users/preferences"), () => {
-				return HttpResponse.json([
-					{
-						user_id: "user-123",
-						feed_id: "feed-1",
-						day_id: "day-1",
-						feed: { id: "feed-1", name: "Bone Meal" },
-						day: { id: "day-1", name: "Monday" },
-					},
-				]);
-			}),
-			http.get(buildUrl("/feed"), () => {
-				return HttpResponse.json([
-					{ id: "feed-1", name: "Bone Meal" },
-					{ id: "feed-2", name: "Tomato Feed" },
-				]);
-			}),
-			http.get(buildUrl("/days"), () => {
-				return HttpResponse.json([
-					{ id: "day-1", name: "Monday" },
-					{ id: "day-2", name: "Tuesday" },
-					{ id: "day-3", name: "Wednesday" },
-					{ id: "day-4", name: "Thursday" },
-					{ id: "day-5", name: "Friday" },
-					{ id: "day-6", name: "Saturday" },
-					{ id: "day-7", name: "Sunday" },
-				]);
+				return HttpResponse.json({
+					user_feed_days: [
+						{
+							feed_id: "feed-1",
+							feed_name: "Bone Meal",
+							day_id: "day-1",
+							day_name: "Monday",
+						},
+					],
+					available_feeds: [
+						{ id: "feed-1", name: "Bone Meal" },
+						{ id: "feed-2", name: "Tomato Feed" },
+					],
+					available_days: [
+						{ id: "day-1", day_number: 1, name: "Monday" },
+						{ id: "day-2", day_number: 2, name: "Tuesday" },
+						{ id: "day-3", day_number: 3, name: "Wednesday" },
+						{ id: "day-4", day_number: 4, name: "Thursday" },
+						{ id: "day-5", day_number: 5, name: "Friday" },
+						{ id: "day-6", day_number: 6, name: "Saturday" },
+						{ id: "day-7", day_number: 7, name: "Sunday" },
+					],
+				});
 			}),
 		);
 
@@ -124,36 +121,31 @@ describe("UserPreferencePage", () => {
 	it("updates feed preference successfully", async () => {
 		// Set up MSW handlers for the test flow
 		server.use(
-			// Initial data
 			http.get(buildUrl("/users/preferences"), () => {
-				return HttpResponse.json([
-					{
-						user_id: "user-123",
-						feed_id: "feed-1",
-						day_id: "day-1",
-						feed: { id: "feed-1", name: "Bone Meal" },
-						day: { id: "day-1", name: "Monday" },
-					},
-				]);
+				return HttpResponse.json({
+					user_feed_days: [
+						{
+							feed_id: "feed-1",
+							feed_name: "Bone Meal",
+							day_id: "day-1",
+							day_name: "Monday",
+						},
+					],
+					available_feeds: [
+						{ id: "feed-1", name: "Bone Meal" },
+						{ id: "feed-2", name: "Tomato Feed" },
+					],
+					available_days: [
+						{ id: "day-1", day_number: 1, name: "Monday" },
+						{ id: "day-2", day_number: 2, name: "Tuesday" },
+						{ id: "day-3", day_number: 3, name: "Wednesday" },
+						{ id: "day-4", day_number: 4, name: "Thursday" },
+						{ id: "day-5", day_number: 5, name: "Friday" },
+						{ id: "day-6", day_number: 6, name: "Saturday" },
+						{ id: "day-7", day_number: 7, name: "Sunday" },
+					],
+				});
 			}),
-			http.get(buildUrl("/feed"), () => {
-				return HttpResponse.json([
-					{ id: "feed-1", name: "Bone Meal" },
-					{ id: "feed-2", name: "Tomato Feed" },
-				]);
-			}),
-			http.get(buildUrl("/days"), () => {
-				return HttpResponse.json([
-					{ id: "day-1", name: "Monday" },
-					{ id: "day-2", name: "Tuesday" },
-					{ id: "day-3", name: "Wednesday" },
-					{ id: "day-4", name: "Thursday" },
-					{ id: "day-5", name: "Friday" },
-					{ id: "day-6", name: "Saturday" },
-					{ id: "day-7", name: "Sunday" },
-				]);
-			}),
-			// PUT to update preference succeeds
 			http.put(buildUrl("/users/preferences/feed-1"), () => {
 				return HttpResponse.json({
 					user_id: "user-123",
@@ -210,28 +202,24 @@ describe("UserPreferencePage", () => {
 	it("creates new preference for feed without existing preference", async () => {
 		// Set up MSW handlers for creating new preference
 		server.use(
-			// Initial data - no existing preferences
 			http.get(buildUrl("/users/preferences"), () => {
-				return HttpResponse.json([]);
+				return HttpResponse.json({
+					user_feed_days: [],
+					available_feeds: [
+						{ id: "feed-1", name: "Bone Meal" },
+						{ id: "feed-2", name: "Tomato Feed" },
+					],
+					available_days: [
+						{ id: "day-1", day_number: 1, name: "Monday" },
+						{ id: "day-2", day_number: 2, name: "Tuesday" },
+						{ id: "day-3", day_number: 3, name: "Wednesday" },
+						{ id: "day-4", day_number: 4, name: "Thursday" },
+						{ id: "day-5", day_number: 5, name: "Friday" },
+						{ id: "day-6", day_number: 6, name: "Saturday" },
+						{ id: "day-7", day_number: 7, name: "Sunday" },
+					],
+				});
 			}),
-			http.get(buildUrl("/feed"), () => {
-				return HttpResponse.json([
-					{ id: "feed-1", name: "Bone Meal" },
-					{ id: "feed-2", name: "Tomato Feed" },
-				]);
-			}),
-			http.get(buildUrl("/days"), () => {
-				return HttpResponse.json([
-					{ id: "day-1", name: "Monday" },
-					{ id: "day-2", name: "Tuesday" },
-					{ id: "day-3", name: "Wednesday" },
-					{ id: "day-4", name: "Thursday" },
-					{ id: "day-5", name: "Friday" },
-					{ id: "day-6", name: "Saturday" },
-					{ id: "day-7", name: "Sunday" },
-				]);
-			}),
-			// POST to create preference succeeds
 			http.post(buildUrl("/users/preferences"), () => {
 				return HttpResponse.json({
 					user_id: "user-123",
@@ -338,13 +326,11 @@ describe("UserPreferencePage", () => {
 		// Set up MSW handlers to return empty data
 		server.use(
 			http.get(buildUrl("/users/preferences"), () => {
-				return HttpResponse.json([]);
-			}),
-			http.get(buildUrl("/feed"), () => {
-				return HttpResponse.json([]);
-			}),
-			http.get(buildUrl("/days"), () => {
-				return HttpResponse.json([{ id: "day-1", name: "Monday" }]);
+				return HttpResponse.json({
+					user_feed_days: [],
+					available_feeds: [],
+					available_days: [{ id: "day-1", day_number: 1, name: "Monday" }],
+				});
 			}),
 		);
 

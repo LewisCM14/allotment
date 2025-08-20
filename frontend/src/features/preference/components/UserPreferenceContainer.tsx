@@ -3,9 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { formatError } from "@/utils/errorUtils";
 import {
-	useUserFeedPreferences,
-	useFeedTypes,
-	useDays,
+	useUserPreferencesAggregate,
 	useUpdateUserFeedPreference,
 } from "../hooks/usePreferences";
 import UserPreferencePresenter from "./UserPreferencePresenter";
@@ -15,24 +13,16 @@ export default function UserPreferenceContainer() {
 	const navigate = useNavigate();
 	const [error, setError] = useState<string>("");
 
-	// Data queries
+	// Data query (aggregate)
 	const {
-		data: preferences = [],
+		data: preferencesAggregate,
 		isLoading: preferencesLoading,
 		error: preferencesError,
-	} = useUserFeedPreferences();
+	} = useUserPreferencesAggregate();
 
-	const {
-		data: feedTypes = [],
-		isLoading: feedTypesLoading,
-		error: feedTypesError,
-	} = useFeedTypes();
-
-	const {
-		data: days = [],
-		isLoading: daysLoading,
-		error: daysError,
-	} = useDays();
+	const preferences = preferencesAggregate?.user_feed_days ?? [];
+	const feedTypes = preferencesAggregate?.available_feeds ?? [];
+	const days = preferencesAggregate?.available_days ?? [];
 
 	// Mutation
 	const updatePreferenceMutation = useUpdateUserFeedPreference();
@@ -46,16 +36,13 @@ export default function UserPreferenceContainer() {
 
 	// Handle errors
 	useEffect(() => {
-		const errors = [preferencesError, feedTypesError, daysError].filter(
-			Boolean,
-		);
-		if (errors.length > 0) {
-			const errorMessage = formatError(errors[0]);
+		if (preferencesError) {
+			const errorMessage = formatError(preferencesError);
 			setError(`Failed to load data: ${errorMessage}`);
 		} else {
 			setError("");
 		}
-	}, [preferencesError, feedTypesError, daysError]);
+	}, [preferencesError]);
 
 	const handleUpdatePreference = useCallback(
 		async (feedId: string, dayId: string) => {
@@ -75,7 +62,7 @@ export default function UserPreferenceContainer() {
 	);
 
 	// Calculate loading and saving states
-	const isLoading = preferencesLoading || feedTypesLoading || daysLoading;
+	const isLoading = preferencesLoading;
 	const isSaving = updatePreferenceMutation.isPending;
 
 	// Derive current error

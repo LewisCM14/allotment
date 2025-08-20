@@ -3,7 +3,7 @@ User Repository
 - Encapsulates database operations for User model
 """
 
-from typing import List, Optional
+from typing import Any, List, Optional
 from uuid import UUID
 
 import structlog
@@ -32,6 +32,26 @@ logger = structlog.get_logger()
 
 
 class UserRepository:
+    @translate_db_exceptions
+    async def ensure_user_feed_days(
+        self, user_id: str, feeds: list[Any], default_day: Any
+    ) -> None:
+        """Ensure a UserFeedDay exists for each feed for the user, creating any missing ones with the default day."""
+        user_uuid = UUID(user_id)
+        # Get all user_feed_day for this user
+        query = select(UserFeedDay).where(UserFeedDay.user_id == user_uuid)
+        result = await self.db.execute(query)
+        user_feed_days = result.scalars().all()
+        existing_feed_ids = {ufd.feed_id for ufd in user_feed_days}
+        for feed in feeds:
+            if feed.id not in existing_feed_ids and default_day:
+                new_preference = UserFeedDay()
+                new_preference.user_id = user_uuid
+                new_preference.feed_id = feed.id
+                new_preference.day_id = default_day.id
+                self.db.add(new_preference)
+        await self.db.flush()
+
     """User repository for database operations."""
 
     def __init__(self, db: AsyncSession) -> None:

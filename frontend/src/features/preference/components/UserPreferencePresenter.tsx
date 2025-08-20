@@ -1,17 +1,12 @@
 import { FormError } from "@/components/FormError";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-
-import type {
-	IFeedType,
-	IDay,
-	IUserFeedPreference,
-} from "../forms/PreferenceSchema";
+import type { FeedRead, DayRead, FeedDayRead } from "../forms/PreferenceSchema";
 
 interface UserPreferencePresenterProps {
-	feedTypes?: IFeedType[];
-	days?: IDay[];
-	preferences?: IUserFeedPreference[];
+	feedTypes?: FeedRead[];
+	days?: DayRead[];
+	preferences?: FeedDayRead[];
 	isLoading: boolean;
 	isSaving: boolean;
 	error: string | undefined;
@@ -29,13 +24,15 @@ export default function UserPreferencePresenter({
 }: UserPreferencePresenterProps) {
 	// Helper function to get current day for a feed type
 	const getCurrentDayForFeed = (feedId: string): string => {
-		const preference = preferences.find((p) => p.feed_id === feedId);
+		const preference = preferences.find(
+			(p: FeedDayRead) => p.feed_id === feedId,
+		);
 		return preference?.day_id || "";
 	};
 
 	// Helper function to get day name by ID
 	const getDayName = (dayId: string): string => {
-		return days.find((d) => d.id === dayId)?.name || "";
+		return days.find((d: DayRead) => d.id === dayId)?.name || "";
 	};
 
 	if (isLoading) {
@@ -66,7 +63,7 @@ export default function UserPreferencePresenter({
 					{error && <FormError message={error} />}
 
 					<div className="space-y-6">
-						{feedTypes.map((feedType) => {
+						{feedTypes.map((feedType: FeedRead) => {
 							const currentDayId = getCurrentDayForFeed(feedType.id);
 							const currentDayName = getDayName(currentDayId);
 
@@ -79,25 +76,20 @@ export default function UserPreferencePresenter({
 										<h3 className="font-medium text-foreground">
 											{feedType.name}
 										</h3>
-										{currentDayName && (
-											<p className="text-sm text-muted-foreground">
-												Currently set to: {currentDayName}
-											</p>
-										)}
 									</div>
 
-									<div className="flex items-center space-x-2">
+									<div className="flex items-center space-x-2 ml-auto">
 										{Array.isArray(days) && days.length > 0 ? (
 											<select
 												className="w-48 h-10 border rounded-md px-3 bg-background"
 												value={currentDayId || ""}
-												onChange={(e) =>
+												onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
 													onUpdatePreference(feedType.id, e.target.value)
 												}
 												disabled={isSaving}
 											>
 												<option value="">Select a day</option>
-												{days.map((day) => (
+												{days.map((day: DayRead) => (
 													<option key={day.id} value={day.id}>
 														{day.name}
 													</option>

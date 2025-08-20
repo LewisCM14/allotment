@@ -5,12 +5,8 @@ import { server } from "../../../mocks/server";
 import {
 	getUserFeedPreferences,
 	updateUserFeedPreference,
-	getFeedTypes,
-	getDays,
 	type IUserFeedPreference,
 	type IFeedPreferenceUpdateRequest,
-	type IFeedType,
-	type IDay,
 } from "./PreferenceService";
 
 describe("PreferenceService", () => {
@@ -30,26 +26,34 @@ describe("PreferenceService", () => {
 
 	describe("getUserFeedPreferences", () => {
 		it("should fetch user feed preferences successfully", async () => {
-			const mockResponse: IUserFeedPreference[] = [
-				{
-					user_id: "user-123",
-					feed_id: "feed-1",
-					day_id: "day-1",
-					feed: { id: "feed-1", name: "Bone Meal" },
-					day: { id: "day-1", name: "Monday" },
-				},
-				{
-					user_id: "user-123",
-					feed_id: "feed-2",
-					day_id: "day-3",
-					feed: { id: "feed-2", name: "Tomato Feed" },
-					day: { id: "day-3", name: "Wednesday" },
-				},
-			];
+			const mockResponse = {
+				user_feed_days: [
+					{
+						feed_id: "feed-1",
+						feed_name: "Bone Meal",
+						day_id: "day-1",
+						day_name: "Monday",
+					},
+					{
+						feed_id: "feed-2",
+						feed_name: "Tomato Feed",
+						day_id: "day-3",
+						day_name: "Wednesday",
+					},
+				],
+				available_feeds: [
+					{ id: "feed-1", name: "Bone Meal" },
+					{ id: "feed-2", name: "Tomato Feed" },
+				],
+				available_days: [
+					{ id: "day-1", day_number: 1, name: "Monday" },
+					{ id: "day-3", day_number: 3, name: "Wednesday" },
+				],
+			};
 
 			server.use(
 				http.get(buildUrl("/users/preferences"), () => {
-					return HttpResponse.json({ preferences: mockResponse });
+					return HttpResponse.json(mockResponse);
 				}),
 			);
 
@@ -100,7 +104,7 @@ describe("PreferenceService", () => {
 				feed_id: "feed-1",
 				day_id: "day-5",
 				feed: { id: "feed-1", name: "Bone Meal" },
-				day: { id: "day-5", name: "Friday" },
+				day: { id: "day-5", day_number: 5, name: "Friday" },
 			};
 
 			server.use(
@@ -164,108 +168,6 @@ describe("PreferenceService", () => {
 			await expect(
 				updateUserFeedPreference(feedId, mockRequest),
 			).rejects.toThrow("Invalid UUID format");
-		});
-	});
-
-	describe("getFeedTypes", () => {
-		it("should fetch feed types successfully", async () => {
-			const mockResponse: IFeedType[] = [
-				{ id: "feed-1", name: "Bone Meal" },
-				{ id: "feed-2", name: "Tomato Feed" },
-				{ id: "feed-3", name: "Compost" },
-			];
-
-			server.use(
-				http.get(buildUrl("/feed"), () => {
-					return HttpResponse.json(mockResponse);
-				}),
-			);
-
-			const result = await getFeedTypes();
-			expect(result).toEqual(mockResponse);
-		});
-
-		it("should handle server errors (500)", async () => {
-			server.use(
-				http.get(buildUrl("/feed"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
-			await expect(getFeedTypes()).rejects.toThrow(
-				"Server error. Please try again later.",
-			);
-		});
-	});
-
-	describe("getDays", () => {
-		it("should fetch days successfully", async () => {
-			const mockResponse: IDay[] = [
-				{ id: "day-1", name: "Monday" },
-				{ id: "day-2", name: "Tuesday" },
-				{ id: "day-3", name: "Wednesday" },
-				{ id: "day-4", name: "Thursday" },
-				{ id: "day-5", name: "Friday" },
-				{ id: "day-6", name: "Saturday" },
-				{ id: "day-7", name: "Sunday" },
-			];
-
-			server.use(
-				http.get(buildUrl("/days"), () => {
-					return HttpResponse.json(mockResponse);
-				}),
-			);
-
-			const result = await getDays();
-			expect(result).toEqual(mockResponse);
-		});
-
-		it("should handle authentication errors (401)", async () => {
-			server.use(
-				http.get(buildUrl("/days"), () => {
-					return HttpResponse.json(
-						{ detail: "Not authenticated" },
-						{ status: 401 },
-					);
-				}),
-			);
-
-			await expect(getDays()).rejects.toThrow(
-				"Invalid email or password. Please try again.",
-			);
-		});
-
-		it("should handle server errors (500)", async () => {
-			server.use(
-				http.get(buildUrl("/days"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
-			await expect(getDays()).rejects.toThrow(
-				"Server error. Please try again later.",
-			);
-		});
-
-		it("should handle network errors", async () => {
-			Object.defineProperty(navigator, "onLine", {
-				value: false,
-				writable: true,
-			});
-
-			server.use(
-				http.get(buildUrl("/days"), () => {
-					return HttpResponse.error();
-				}),
-			);
-
-			await expect(getDays()).rejects.toThrow();
 		});
 	});
 });

@@ -40,6 +40,7 @@ from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
 )
+from app.api.services.grow_guide.grow_guide_unit_of_work import GrowGuideUnitOfWork
 from app.api.services.user.user_unit_of_work import UserUnitOfWork
 
 router = APIRouter()
@@ -93,6 +94,18 @@ async def create_user(
         with log_timing("create_user_account", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
                 new_user = await uow.create_user(user)
+
+        # --- Fail-safe: Ensure user_feed_day exists for all feeds ---
+        if new_user and new_user.user_id:
+            async with GrowGuideUnitOfWork(db) as grow_guide_uow:
+                feeds = await grow_guide_uow.get_all_feeds()
+                days = await grow_guide_uow.get_all_days()
+            default_day = days[0] if days else None
+            async with UserUnitOfWork(db) as uow:
+                await uow.ensure_user_feed_days(
+                    str(new_user.user_id), feeds, default_day
+                )
+
     except BaseApplicationError:
         raise
     except Exception as e:

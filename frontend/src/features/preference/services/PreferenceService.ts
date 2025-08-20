@@ -3,8 +3,9 @@ import type {
 	IUserFeedPreference,
 	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
-	IFeedType,
-	IDay,
+	FeedRead,
+	DayRead,
+	FeedDayRead,
 	UserPreferencesRead,
 } from "../forms/PreferenceSchema";
 
@@ -13,8 +14,9 @@ export type {
 	IUserFeedPreference,
 	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
-	IFeedType,
-	IDay,
+	FeedRead,
+	DayRead,
+	FeedDayRead,
 };
 
 export class NoPreferencesFoundError extends Error {
@@ -24,21 +26,23 @@ export class NoPreferencesFoundError extends Error {
 	}
 }
 
-export const getUserFeedPreferences = async (): Promise<
-	IUserFeedPreference[]
-> => {
-	try {
-		const response = await api.get<UserPreferencesRead>("/users/preferences");
-		// Always return an array, never undefined
-		return response.data.preferences ?? [];
-	} catch (error: unknown) {
-		handleApiError(
-			error,
-			"Failed to fetch feed preferences. Please try again.",
-		);
-		throw new Error("Unreachable");
-	}
-};
+export const getUserFeedPreferences =
+	async (): Promise<UserPreferencesRead> => {
+		try {
+			const response = await api.get<UserPreferencesRead>("/users/preferences");
+			return {
+				user_feed_days: response.data.user_feed_days ?? [],
+				available_feeds: response.data.available_feeds ?? [],
+				available_days: response.data.available_days ?? [],
+			};
+		} catch (error: unknown) {
+			handleApiError(
+				error,
+				"Failed to fetch feed preferences. Please try again.",
+			);
+			throw new Error("Unreachable");
+		}
+	};
 
 export const updateUserFeedPreference = async (
 	feedId: string,
@@ -55,26 +59,6 @@ export const updateUserFeedPreference = async (
 			error,
 			"Failed to update feed preference. Please try again.",
 		);
-		throw new Error("Unreachable");
-	}
-};
-
-export const getFeedTypes = async (): Promise<IFeedType[]> => {
-	try {
-		const response = await api.get<IFeedType[]>("/feed");
-		return response.data;
-	} catch (error: unknown) {
-		handleApiError(error, "Failed to fetch feed types. Please try again.");
-		throw new Error("Unreachable");
-	}
-};
-
-export const getDays = async (): Promise<IDay[]> => {
-	try {
-		const response = await api.get<IDay[]>("/days");
-		return response.data;
-	} catch (error: unknown) {
-		handleApiError(error, "Failed to fetch days. Please try again.");
 		throw new Error("Unreachable");
 	}
 };

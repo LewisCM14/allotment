@@ -52,6 +52,12 @@ logger = structlog.get_logger()
 
 
 class UserUnitOfWork:
+    async def ensure_user_feed_days(
+        self, user_id: str, feeds: list[Any], default_day: Any
+    ) -> None:
+        """Ensure a UserFeedDay exists for each feed for the user, creating any missing ones with the default day."""
+        await self.user_repo.ensure_user_feed_days(user_id, feeds, default_day)
+
     """Unit of Work for managing user-related transactions."""
 
     def __init__(self, db: AsyncSession):

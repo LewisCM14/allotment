@@ -39,7 +39,11 @@ const mockUserPreferences = [
 export const preferenceHandlers = [
 	// Get user feed preferences
 	http.get(buildUrl("/users/preferences"), () => {
-		return HttpResponse.json(mockUserPreferences);
+		return HttpResponse.json({
+			user_feed_days: mockUserPreferences,
+			available_feeds: mockFeedTypes,
+			available_days: mockDays,
+		});
 	}),
 
 	// Create user feed preference
