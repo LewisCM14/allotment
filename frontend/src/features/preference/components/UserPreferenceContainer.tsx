@@ -6,7 +6,6 @@ import {
 	useUserFeedPreferences,
 	useFeedTypes,
 	useDays,
-	useCreateUserFeedPreference,
 	useUpdateUserFeedPreference,
 } from "../hooks/usePreferences";
 import UserPreferencePresenter from "./UserPreferencePresenter";
@@ -35,8 +34,7 @@ export default function UserPreferenceContainer() {
 		error: daysError,
 	} = useDays();
 
-	// Mutations
-	const createPreferenceMutation = useCreateUserFeedPreference();
+	// Mutation
 	const updatePreferenceMutation = useUpdateUserFeedPreference();
 
 	// Handle authentication redirect
@@ -63,43 +61,25 @@ export default function UserPreferenceContainer() {
 		async (feedId: string, dayId: string) => {
 			try {
 				setError("");
-
-				// Check if preference already exists
-				const existingPreference = preferences.find(
-					(p) => p.feed_id === feedId,
-				);
-
-				if (existingPreference) {
-					// Update existing preference
-					await updatePreferenceMutation.mutateAsync({
-						feedId,
-						data: { day_id: dayId },
-					});
-				} else {
-					// Create new preference
-					await createPreferenceMutation.mutateAsync({
-						feed_id: feedId,
-						day_id: dayId,
-					});
-				}
+				// Always update the preference (PUT)
+				await updatePreferenceMutation.mutateAsync({
+					feedId,
+					data: { day_id: dayId },
+				});
 			} catch (err: unknown) {
 				const errorMessage = formatError(err);
 				setError(errorMessage);
 			}
 		},
-		[preferences, createPreferenceMutation, updatePreferenceMutation],
+		[updatePreferenceMutation],
 	);
 
 	// Calculate loading and saving states
 	const isLoading = preferencesLoading || feedTypesLoading || daysLoading;
-	const isSaving =
-		createPreferenceMutation.isPending || updatePreferenceMutation.isPending;
+	const isSaving = updatePreferenceMutation.isPending;
 
 	// Derive current error
-	const currentError =
-		error ||
-		createPreferenceMutation.error?.message ||
-		updatePreferenceMutation.error?.message;
+	const currentError = error || updatePreferenceMutation.error?.message;
 
 	return (
 		<UserPreferencePresenter

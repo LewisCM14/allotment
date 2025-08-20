@@ -5,6 +5,7 @@ import type {
 	IFeedPreferenceUpdateRequest,
 	IFeedType,
 	IDay,
+	UserPreferencesRead,
 } from "../forms/PreferenceSchema";
 
 // Re-export types for easier importing in tests
@@ -27,30 +28,15 @@ export const getUserFeedPreferences = async (): Promise<
 	IUserFeedPreference[]
 > => {
 	try {
-		const response = await api.get<IUserFeedPreference[]>("/users/preferences");
-		return response.data;
+		const response = await api.get<UserPreferencesRead>("/users/preferences");
+		// Always return an array, never undefined
+		return response.data.preferences ?? [];
 	} catch (error: unknown) {
-		return handleApiError(
+		handleApiError(
 			error,
 			"Failed to fetch feed preferences. Please try again.",
 		);
-	}
-};
-
-export const createUserFeedPreference = async (
-	preferenceData: IFeedPreferenceRequest,
-): Promise<IUserFeedPreference> => {
-	try {
-		const response = await api.post<IUserFeedPreference>(
-			"/users/preferences",
-			preferenceData,
-		);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(
-			error,
-			"Failed to create feed preference. Please try again.",
-		);
+		throw new Error("Unreachable");
 	}
 };
 
@@ -65,10 +51,11 @@ export const updateUserFeedPreference = async (
 		);
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(
+		handleApiError(
 			error,
 			"Failed to update feed preference. Please try again.",
 		);
+		throw new Error("Unreachable");
 	}
 };
 
@@ -77,10 +64,8 @@ export const getFeedTypes = async (): Promise<IFeedType[]> => {
 		const response = await api.get<IFeedType[]>("/feed");
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(
-			error,
-			"Failed to fetch feed types. Please try again.",
-		);
+		handleApiError(error, "Failed to fetch feed types. Please try again.");
+		throw new Error("Unreachable");
 	}
 };
 
@@ -89,6 +74,7 @@ export const getDays = async (): Promise<IDay[]> => {
 		const response = await api.get<IDay[]>("/days");
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(error, "Failed to fetch days. Please try again.");
+		handleApiError(error, "Failed to fetch days. Please try again.");
+		throw new Error("Unreachable");
 	}
 };

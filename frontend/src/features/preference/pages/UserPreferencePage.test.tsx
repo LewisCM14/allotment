@@ -109,8 +109,16 @@ describe("UserPreferencePage", () => {
 		expect(screen.getByText("Bone Meal")).toBeInTheDocument();
 		expect(screen.getByText("Tomato Feed")).toBeInTheDocument();
 
-		// Should show current preference
-		expect(screen.getByText("Currently set to: Monday")).toBeInTheDocument();
+		// Should show current preference in the select dropdown for Bone Meal
+		const selects = screen.getAllByRole("combobox");
+		// Find the select for Bone Meal
+		const boneMealSelect = Array.from(selects).find((select) => {
+			const parentRow = select.closest(".flex.flex-col");
+			return parentRow?.querySelector("h3")?.textContent?.includes("Bone Meal");
+		});
+		expect(boneMealSelect).toBeInTheDocument();
+		// The value should be set to day-1 (Monday)
+		expect((boneMealSelect as HTMLSelectElement).value).toBe("day-1");
 	});
 
 	it("updates feed preference successfully", async () => {

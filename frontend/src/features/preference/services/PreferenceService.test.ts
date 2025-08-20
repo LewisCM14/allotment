@@ -4,12 +4,10 @@ import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import {
 	getUserFeedPreferences,
-	createUserFeedPreference,
 	updateUserFeedPreference,
 	getFeedTypes,
 	getDays,
 	type IUserFeedPreference,
-	type IFeedPreferenceRequest,
 	type IFeedPreferenceUpdateRequest,
 	type IFeedType,
 	type IDay,
@@ -51,7 +49,7 @@ describe("PreferenceService", () => {
 
 			server.use(
 				http.get(buildUrl("/users/preferences"), () => {
-					return HttpResponse.json(mockResponse);
+					return HttpResponse.json({ preferences: mockResponse });
 				}),
 			);
 
@@ -87,87 +85,6 @@ describe("PreferenceService", () => {
 			);
 
 			await expect(getUserFeedPreferences()).rejects.toThrow();
-		});
-	});
-
-	describe("createUserFeedPreference", () => {
-		it("should create a user feed preference successfully", async () => {
-			const mockRequest: IFeedPreferenceRequest = {
-				feed_id: "feed-1",
-				day_id: "day-2",
-			};
-
-			const mockResponse: IUserFeedPreference = {
-				user_id: "user-123",
-				feed_id: "feed-1",
-				day_id: "day-2",
-				feed: { id: "feed-1", name: "Bone Meal" },
-				day: { id: "day-2", name: "Tuesday" },
-			};
-
-			server.use(
-				http.post(buildUrl("/users/preferences"), async ({ request }) => {
-					const body = (await request.json()) as IFeedPreferenceRequest;
-					expect(body).toEqual(mockRequest);
-					return HttpResponse.json(mockResponse);
-				}),
-			);
-
-			const result = await createUserFeedPreference(mockRequest);
-			expect(result).toEqual(mockResponse);
-		});
-
-		it("should handle validation errors (422)", async () => {
-			const mockRequest: IFeedPreferenceRequest = {
-				feed_id: "invalid-uuid",
-				day_id: "invalid-uuid",
-			};
-
-			server.use(
-				http.post(buildUrl("/users/preferences"), () => {
-					return HttpResponse.json(
-						{
-							detail: [
-								{
-									loc: ["body", "feed_id"],
-									msg: "Invalid UUID format",
-									type: "value_error",
-								},
-								{
-									loc: ["body", "day_id"],
-									msg: "Invalid UUID format",
-									type: "value_error",
-								},
-							],
-						},
-						{ status: 422 },
-					);
-				}),
-			);
-
-			await expect(createUserFeedPreference(mockRequest)).rejects.toThrow(
-				"Invalid UUID format",
-			);
-		});
-
-		it("should handle server errors (500)", async () => {
-			const mockRequest: IFeedPreferenceRequest = {
-				feed_id: "feed-1",
-				day_id: "day-2",
-			};
-
-			server.use(
-				http.post(buildUrl("/users/preferences"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
-
-			await expect(createUserFeedPreference(mockRequest)).rejects.toThrow(
-				"Server error. Please try again later.",
-			);
 		});
 	});
 

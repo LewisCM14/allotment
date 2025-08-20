@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
 	getUserFeedPreferences,
-	createUserFeedPreference,
 	updateUserFeedPreference,
 	getFeedTypes,
 	getDays,
@@ -45,22 +44,6 @@ export const useDays = () => {
 		queryFn: getDays,
 		staleTime: 60 * 60 * 1000, // 1 hour (reference data doesn't change often)
 		gcTime: 2 * 60 * 60 * 1000, // 2 hours
-	});
-};
-
-// Hook for creating a user feed preference
-export const useCreateUserFeedPreference = () => {
-	const queryClient = useQueryClient();
-
-	return useMutation({
-		mutationFn: (data: IFeedPreferenceRequest) =>
-			createUserFeedPreference(data),
-		onSuccess: () => {
-			// Invalidate and refetch preferences
-			queryClient.invalidateQueries({
-				queryKey: PREFERENCE_QUERY_KEYS.preferences,
-			});
-		},
 	});
 };
 

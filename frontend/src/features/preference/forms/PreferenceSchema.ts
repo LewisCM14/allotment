@@ -1,3 +1,6 @@
+export interface UserPreferencesRead {
+	preferences: IUserFeedPreference[];
+}
 import { z } from "zod";
 
 export const feedPreferenceSchema = z.object({
