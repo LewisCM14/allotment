@@ -1,16 +1,20 @@
 import { FormError } from "@/components/FormError";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import type { FeedRead, DayRead, FeedDayRead } from "../forms/PreferenceSchema";
+import type {
+	IFeedType,
+	IDay,
+	IUserFeedPreference,
+} from "../forms/PreferenceSchema";
 
 interface UserPreferencePresenterProps {
-	feedTypes?: FeedRead[];
-	days?: DayRead[];
-	preferences?: FeedDayRead[];
-	isLoading: boolean;
-	isSaving: boolean;
-	error: string | undefined;
-	onUpdatePreference: (feedId: string, dayId: string) => void;
+	readonly feedTypes?: ReadonlyArray<IFeedType>;
+	readonly days?: ReadonlyArray<IDay>;
+	readonly preferences?: ReadonlyArray<IUserFeedPreference>;
+	readonly isLoading: boolean;
+	readonly isSaving: boolean;
+	readonly error?: string;
+	readonly onUpdatePreference: (feedId: string, dayId: string) => void;
 }
 
 export default function UserPreferencePresenter({
@@ -25,14 +29,9 @@ export default function UserPreferencePresenter({
 	// Helper function to get current day for a feed type
 	const getCurrentDayForFeed = (feedId: string): string => {
 		const preference = preferences.find(
-			(p: FeedDayRead) => p.feed_id === feedId,
+			(p: IUserFeedPreference) => p.feed_id === feedId,
 		);
-		return preference?.day_id || "";
-	};
-
-	// Helper function to get day name by ID
-	const getDayName = (dayId: string): string => {
-		return days.find((d: DayRead) => d.id === dayId)?.name || "";
+		return preference?.day_id ?? "";
 	};
 
 	if (isLoading) {
@@ -63,9 +62,8 @@ export default function UserPreferencePresenter({
 					{error && <FormError message={error} />}
 
 					<div className="space-y-6">
-						{feedTypes.map((feedType: FeedRead) => {
+						{feedTypes.map((feedType: IFeedType) => {
 							const currentDayId = getCurrentDayForFeed(feedType.id);
-							const currentDayName = getDayName(currentDayId);
 
 							return (
 								<div
@@ -89,7 +87,7 @@ export default function UserPreferencePresenter({
 												disabled={isSaving}
 											>
 												<option value="">Select a day</option>
-												{days.map((day: DayRead) => (
+												{days.map((day: IDay) => (
 													<option key={day.id} value={day.id}>
 														{day.name}
 													</option>

@@ -3,9 +3,6 @@ import type {
 	IUserFeedPreference,
 	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
-	FeedRead,
-	DayRead,
-	FeedDayRead,
 	UserPreferencesRead,
 } from "../forms/PreferenceSchema";
 
@@ -14,9 +11,6 @@ export type {
 	IUserFeedPreference,
 	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
-	FeedRead,
-	DayRead,
-	FeedDayRead,
 };
 
 export class NoPreferencesFoundError extends Error {

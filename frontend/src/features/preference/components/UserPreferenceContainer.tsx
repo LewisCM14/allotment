@@ -8,6 +8,8 @@ import {
 } from "../hooks/usePreferences";
 import UserPreferencePresenter from "./UserPreferencePresenter";
 
+import { feedPreferenceSchema } from "../forms/PreferenceSchema";
+
 export default function UserPreferenceContainer() {
 	const { isAuthenticated } = useAuth();
 	const navigate = useNavigate();
@@ -48,7 +50,7 @@ export default function UserPreferenceContainer() {
 		async (feedId: string, dayId: string) => {
 			try {
 				setError("");
-				// Always update the preference (PUT)
+				feedPreferenceSchema.parse({ feed_id: feedId, day_id: dayId });
 				await updatePreferenceMutation.mutateAsync({
 					feedId,
 					data: { day_id: dayId },

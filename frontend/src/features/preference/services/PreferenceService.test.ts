@@ -104,7 +104,7 @@ describe("PreferenceService", () => {
 				feed_id: "feed-1",
 				day_id: "day-5",
 				feed: { id: "feed-1", name: "Bone Meal" },
-				day: { id: "day-5", day_number: 5, name: "Friday" },
+				day: { id: "day-5", name: "Friday" },
 			};
 
 			server.use(

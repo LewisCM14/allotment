@@ -1,5 +1,7 @@
 export interface UserPreferencesRead {
-	preferences: IUserFeedPreference[];
+	user_feed_days: IUserFeedPreference[];
+	available_feeds: IFeedType[];
+	available_days: IDay[];
 }
 import { z } from "zod";
 

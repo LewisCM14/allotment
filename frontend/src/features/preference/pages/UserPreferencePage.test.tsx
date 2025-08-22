@@ -27,6 +27,13 @@ vi.mock("react-router-dom", async () => {
 	};
 });
 
+import {
+	feedPreferenceSchema,
+	type FeedPreferenceFormData,
+	type IFeedPreferenceRequest,
+	type IFeedPreferenceUpdateRequest,
+} from "../forms/PreferenceSchema";
+
 function renderPage() {
 	const result = renderWithReactQuery(<UserPreferencePage />);
 	return result;
@@ -36,6 +43,60 @@ describe("UserPreferencePage", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		(useAuth as unknown as Mock).mockReturnValue({ isAuthenticated: true });
+	});
+
+	it("shows validation error if invalid dayId is selected (runtime Zod schema)", async () => {
+		// Set up MSW handlers to return normal data
+		server.use(
+			http.get(buildUrl("/users/preferences"), () => {
+				return HttpResponse.json({
+					user_feed_days: [
+						{
+							feed_id: "feed-1",
+							feed_name: "Bone Meal",
+							day_id: "day-1",
+							day_name: "Monday",
+						},
+					],
+					available_feeds: [{ id: "feed-1", name: "Bone Meal" }],
+					available_days: [
+						{ id: "day-1", day_number: 1, name: "Monday" },
+						{ id: "day-2", day_number: 2, name: "Tuesday" },
+					],
+				});
+			}),
+		);
+
+		const { container } = renderPage();
+		await waitFor(
+			() => expect(screen.getByText("Feed Preferences")).toBeInTheDocument(),
+			{ container },
+		);
+
+		// Wait for data to be loaded
+		await waitFor(
+			() => {
+				expect(
+					screen.queryByText("Loading feed preferences..."),
+				).not.toBeInTheDocument();
+			},
+			{ container },
+		);
+
+		// Find the select for Bone Meal and set an invalid value
+		const select = screen.getByRole("combobox");
+		expect(select).toBeInTheDocument();
+
+		// Simulate selecting an invalid dayId (not a UUID)
+		fireEvent.change(select, { target: { value: "not-a-uuid" } });
+
+		// Should show a validation error from Zod
+		await waitFor(
+			() => {
+				expect(screen.getByText(/Invalid day ID/i)).toBeInTheDocument();
+			},
+			{ container },
+		);
 	});
 
 	it("renders loading state initially", async () => {

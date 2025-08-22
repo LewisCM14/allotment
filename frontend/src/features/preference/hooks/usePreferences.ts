@@ -3,10 +3,7 @@ import {
 	getUserFeedPreferences,
 	updateUserFeedPreference,
 } from "../services/PreferenceService";
-import type {
-	IFeedPreferenceRequest,
-	IFeedPreferenceUpdateRequest,
-} from "../forms/PreferenceSchema";
+import type { IFeedPreferenceUpdateRequest } from "../forms/PreferenceSchema";
 
 // Query keys
 export const PREFERENCE_QUERY_KEYS = {
