@@ -1,6 +1,6 @@
 import { screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import UserPreferencePage from "./UserPreferencePage";
+import UserPreference from "./UserPreference";
 import { useAuth } from "@/store/auth/AuthContext";
 import React from "react";
 import { renderWithReactQuery } from "@/test-utils";
@@ -35,7 +35,7 @@ import {
 } from "../forms/PreferenceSchema";
 
 function renderPage() {
-	const result = renderWithReactQuery(<UserPreferencePage />);
+	const result = renderWithReactQuery(<UserPreference />);
 	return result;
 }
 

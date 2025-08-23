@@ -36,30 +36,32 @@ export default function UserPreferencePresenter({
 
 	if (isLoading) {
 		return (
-			<div className="container mx-auto max-w-4xl space-y-6 p-4">
-				<Card>
-					<CardHeader>
-						<CardTitle>Feed Preferences</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4">
-						<p className="text-muted-foreground">Loading feed preferences...</p>
-					</CardContent>
-				</Card>
+			<div className="flex justify-center items-center h-64">
+				<div className="w-full max-w-2xl">
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-2xl">Feed Preferences</CardTitle>
+							<p className="text-muted-foreground">
+								Loading feed preferences...
+							</p>
+						</CardHeader>
+					</Card>
+				</div>
 			</div>
 		);
 	}
 
 	return (
-		<div className="container mx-auto max-w-4xl space-y-6 p-4">
-			<Card>
+		<div className="w-full max-w-2xl mx-auto space-y-6 p-4">
+			<Card className="w-full">
 				<CardHeader>
-					<CardTitle>Feed Preferences</CardTitle>
+					<CardTitle className="text-2xl">Feed Preferences</CardTitle>
 					<p className="text-muted-foreground">
 						Set your preferred day for giving each type of plant feed
 					</p>
 				</CardHeader>
 				<CardContent>
-					{error && <FormError message={error} />}
+					{error && <FormError message={error} className="mb-4" />}
 
 					<div className="space-y-6">
 						{feedTypes.map((feedType: IFeedType) => {
@@ -68,10 +70,10 @@ export default function UserPreferencePresenter({
 							return (
 								<div
 									key={feedType.id}
-									className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:space-x-4"
+									className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0 sm:space-x-4 border-b border-border pb-4"
 								>
 									<div className="min-w-0 flex-1">
-										<h3 className="font-medium text-foreground">
+										<h3 className="font-medium text-lg text-foreground">
 											{feedType.name}
 										</h3>
 									</div>
@@ -79,14 +81,16 @@ export default function UserPreferencePresenter({
 									<div className="flex items-center space-x-2 ml-auto">
 										{Array.isArray(days) && days.length > 0 ? (
 											<select
-												className="w-48 h-10 border rounded-md px-3 bg-background"
+												className="w-48 h-10 border rounded-md px-3 bg-background text-lg"
 												value={currentDayId || ""}
 												onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
 													onUpdatePreference(feedType.id, e.target.value)
 												}
 												disabled={isSaving}
 											>
-												<option value="">Select a day</option>
+												<option value="" disabled>
+													Select a day
+												</option>
 												{days.map((day: IDay) => (
 													<option key={day.id} value={day.id}>
 														{day.name}
