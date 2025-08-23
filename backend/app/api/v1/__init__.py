@@ -2,11 +2,15 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
-    day,
-    family,
-    feed,
     health,
     registration,
+)
+from app.api.v1.family import family
+from app.api.v1.grow_guide import (
+    day,
+    feed,
+)
+from app.api.v1.user import (
     user,
     user_allotment,
     user_preference,

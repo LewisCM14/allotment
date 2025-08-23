@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
-from app.api.v1.feed import get_feeds
+from app.api.v1.grow_guide.feed import get_feeds
 from tests.conftest import TestingSessionLocal
 
 

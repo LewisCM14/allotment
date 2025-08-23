@@ -18,7 +18,7 @@ class TestVerificationStatus:
         mock_ctx = AsyncMock()
         mock_ctx.send_verification_email_service = AsyncMock()
         mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
+            "app.api.v1.user.user.UserUnitOfWork",
             return_value=AsyncMock(
                 __aenter__=AsyncMock(return_value=mock_ctx),
                 __aexit__=AsyncMock(return_value=None),
@@ -44,7 +44,7 @@ class TestVerificationStatus:
         mock_ctx = AsyncMock()
         mock_ctx.get_verification_status_service.return_value = verification
         mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
+            "app.api.v1.user.user.UserUnitOfWork",
             return_value=AsyncMock(
                 __aenter__=AsyncMock(return_value=mock_ctx),
                 __aexit__=AsyncMock(return_value=None),
@@ -294,7 +294,7 @@ class TestUserProfile:
         ctx = AsyncMock()
         ctx.update_user_profile.return_value = updated
         mocker.patch(
-            "app.api.v1.user.UserUnitOfWork",
+            "app.api.v1.user.user.UserUnitOfWork",
             return_value=AsyncMock(
                 __aenter__=AsyncMock(return_value=ctx),
                 __aexit__=AsyncMock(return_value=None),

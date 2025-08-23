@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 from fastapi import Request
 
-from app.api.v1.day import get_days
+from app.api.v1.grow_guide.day import get_days
 from tests.conftest import TestingSessionLocal
 
 

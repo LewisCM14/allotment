@@ -20,7 +20,7 @@ class TestUserEndpointsUnit:
     async def test_request_verification_email_success(self, mocker):
         uow = mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"send_verification_email_service": None},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -36,7 +36,7 @@ class TestUserEndpointsUnit:
 
         mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"send_verification_email_service": raise_exc},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -51,7 +51,7 @@ class TestUserEndpointsUnit:
         )
         uow = mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"get_verification_status_service": resp_obj},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -84,7 +84,7 @@ class TestUserEndpointsUnit:
         updated.is_email_verified = False
         uow = mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"update_user_profile": updated},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -106,7 +106,7 @@ class TestUserEndpointsUnit:
 
         mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"send_verification_email_service": raise_nf},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -121,7 +121,7 @@ class TestUserEndpointsUnit:
 
         mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"get_verification_status_service": raise_nf},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
@@ -139,7 +139,7 @@ class TestUserEndpointsUnit:
         mock_current = build_user_stub(mocker, user_id="test-user-id")
         mock_user_uow(
             mocker,
-            path="app.api.v1.user.UserUnitOfWork",
+            path="app.api.v1.user.user.UserUnitOfWork",
             methods={"update_user_profile": raise_update},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
