@@ -83,18 +83,66 @@ def configure_logging() -> None:
     ]
 
     if settings.LOG_TO_FILE is True:
-        file_handler = RotatingFileHandler(
-            settings.LOG_FILE,
-            maxBytes=10 * 1024 * 1024,  # 10MB
-            backupCount=5,
-        )
-        handlers.append(file_handler)
+        existing = False
+        root_logger = logging.getLogger()
+        for h in root_logger.handlers:
+            try:
+                if (
+                    isinstance(h, RotatingFileHandler)
+                    and getattr(h, "baseFilename", None) == settings.LOG_FILE
+                ):
+                    existing = True
+                    break
+            except Exception:
+                # If handler doesn't expose baseFilename or comparison fails,
+                # ignore and continue checking other handlers.
+                continue
+
+        if not existing:
+            file_handler = RotatingFileHandler(
+                settings.LOG_FILE,
+                maxBytes=getattr(settings, "LOG_MAX_BYTES", 10 * 1024 * 1024),
+                backupCount=getattr(settings, "LOG_BACKUP_COUNT", 5),
+            )
+            handlers.append(file_handler)
 
     logging.basicConfig(
         format="%(message)s",
         level=getattr(logging, settings.LOG_LEVEL.upper()),
         handlers=handlers,
     )
+
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        for h in handlers:
+            duplicate = False
+            for existing_handler in root_logger.handlers:
+                try:
+                    # RotatingFileHandler: compare filename
+                    if isinstance(h, RotatingFileHandler) and isinstance(
+                        existing_handler, RotatingFileHandler
+                    ):
+                        if getattr(existing_handler, "baseFilename", None) == getattr(
+                            h, "baseFilename", None
+                        ):
+                            duplicate = True
+                            break
+                    # StreamHandler: compare stream object (stdout)
+                    if isinstance(h, logging.StreamHandler) and isinstance(
+                        existing_handler, logging.StreamHandler
+                    ):
+                        if getattr(existing_handler, "stream", None) == getattr(
+                            h, "stream", None
+                        ):
+                            duplicate = True
+                            break
+                except Exception:
+                    continue
+            if not duplicate:
+                root_logger.addHandler(h)
+    else:
+        # No existing handlers so basicConfig above applied; ensure level set
+        root_logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
 
     processors: List[ProcessorType]
 
@@ -117,7 +165,6 @@ def configure_logging() -> None:
             structlog.stdlib.add_logger_name,
             structlog.stdlib.add_log_level,
             structlog.processors.StackInfoRenderer(),
-            sync_log_to_file,
             structlog.processors.format_exc_info,
             structlog.processors.UnicodeDecoder(),
             structlog.processors.JSONRenderer(),
@@ -143,34 +190,3 @@ def add_container_context(
     hostname = os.environ.get("HOSTNAME", "unknown")
     event_dict["container_id"] = hostname
     return event_dict
-
-
-# Configure log rotation
-LOG_FILE = "app/app.log"
-LOG_MAX_BYTES = 10 * 1024 * 1024  # 10 MB
-LOG_BACKUP_COUNT = 5
-
-# Set up the RotatingFileHandler
-file_handler = RotatingFileHandler(
-    LOG_FILE, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT
-)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(
-    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-)
-
-# Configure structlog to use the RotatingFileHandler
-structlog.configure(
-    processors=[
-        structlog.processors.JSONRenderer(),
-    ],
-    logger_factory=structlog.stdlib.LoggerFactory(),
-    wrapper_class=structlog.stdlib.BoundLogger,
-    cache_logger_on_first_use=True,
-)
-
-# Add the file handler to the root logger
-logging.getLogger().addHandler(file_handler)
-
-configure_logging()
-logger = structlog.get_logger()

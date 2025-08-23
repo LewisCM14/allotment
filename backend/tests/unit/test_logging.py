@@ -4,6 +4,9 @@ from logging.handlers import RotatingFileHandler
 
 import pytest
 
+from app.api.core import logging as core_logging
+from app.api.core.config import settings
+
 
 class TestLoggingRotation:
     """Test log rotation functionality."""
@@ -92,3 +95,52 @@ class TestLoggingRotation:
         with open(f"{log_file}.1", "r") as f:
             content = f.read()
             assert "Test log entry" in content
+
+
+def _has_rotating_filehandler_for(path: str) -> bool:
+    for h in logging.getLogger().handlers:
+        if isinstance(h, RotatingFileHandler):
+            try:
+                if getattr(h, "baseFilename", None) == path:
+                    return True
+            except Exception:
+                continue
+    return False
+
+
+def test_no_file_handler_when_log_to_file_false():
+    # Ensure environment default for tests is false
+    assert settings.LOG_TO_FILE is False
+    # Re-configure logging to reflect current settings
+    core_logging.configure_logging()
+    assert _has_rotating_filehandler_for(settings.LOG_FILE) is False
+
+
+def test_configure_logging_idempotent(tmp_path, monkeypatch):
+    # Temporarily enable file logging and set a temporary path
+    monkeypatch.setattr(settings, "LOG_TO_FILE", True)
+    tmp_file = str(tmp_path / "test_app.log")
+    monkeypatch.setattr(settings, "LOG_FILE", tmp_file)
+
+    # First call should add a handler
+    core_logging.configure_logging()
+    assert _has_rotating_filehandler_for(tmp_file) is True
+
+    # Capture number of handlers matching that file
+    count_before = sum(
+        1
+        for h in logging.getLogger().handlers
+        if isinstance(h, RotatingFileHandler)
+        and getattr(h, "baseFilename", None) == tmp_file
+    )
+
+    # Second call should not add a duplicate
+    core_logging.configure_logging()
+    count_after = sum(
+        1
+        for h in logging.getLogger().handlers
+        if isinstance(h, RotatingFileHandler)
+        and getattr(h, "baseFilename", None) == tmp_file
+    )
+
+    assert count_after == count_before

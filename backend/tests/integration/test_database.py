@@ -6,20 +6,23 @@ from tests.conftest import TestingSessionLocal
 
 
 @pytest.fixture
-def silence_db_logger(monkeypatch):
-    """Silence noisy database logger levels for deterministic assertions."""
+def silence_db_logger(monkeypatch, tmp_path):
+    """Silence noisy database logger levels for deterministic assertions.
+
+    Uses a temporary log file and patches application settings so tests do not
+    create or modify `app/app.log` inside the repository.
+    """
     for level in ["debug", "error", "info", "warning"]:
         monkeypatch.setattr(database.logger, level, lambda *a, **k: None)
-    # Ensure log file directory exists to prevent RotatingFileHandler FileNotFoundError
-    import os
 
-    log_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app", "app.log"
-    )
-    os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    if not os.path.exists(log_path):
-        with open(log_path, "a"):
-            pass
+    # Use a temporary file for logging and patch settings to point at it.
+    temp_log_file = tmp_path / "app.log"
+    temp_log_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Patch the settings LOG_FILE to the temporary path to avoid repo writes
+    from app.api.core.config import settings
+
+    monkeypatch.setattr(settings, "LOG_FILE", str(temp_log_file))
 
 
 @pytest.mark.asyncio

@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str
     LOG_TO_FILE: bool
     LOG_FILE: str
+    LOG_MAX_BYTES: int
+    LOG_BACKUP_COUNT: int
 
     ENVIRONMENT: str
     SLOW_QUERY_THRESHOLD: float

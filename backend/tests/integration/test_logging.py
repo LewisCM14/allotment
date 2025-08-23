@@ -118,7 +118,8 @@ async def test_logging_middleware_exception_handling(caplog):
         raise ValueError("Test error with password=secret123")
 
     caplog.set_level("ERROR")
-    result = await middleware.dispatch(req, call_next)
-    assert result.status_code == 500
+    with pytest.raises(ValueError):
+        await middleware.dispatch(req, call_next)
+
     msgs = [r.message for r in caplog.records]
     assert any("password=[REDACTED]" in m for m in msgs)

@@ -24,6 +24,8 @@ from tests.test_helpers import (
     make_user_model,
 )
 
+os.environ.setdefault("LOG_TO_FILE", "false")
+
 # Use a shared in-memory database with a named URI
 TEST_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared&uri=true"
 
