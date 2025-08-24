@@ -20,6 +20,9 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 logger = structlog.get_logger()
 request_id_ctx_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
 
+# Standard redaction text used across sanitizers
+REDACTED = "[REDACTED]"
+
 # Headers that should be redacted for security reasons
 SENSITIVE_HEADERS = {
     "authorization",
@@ -59,7 +62,7 @@ def sanitize_headers(headers: Dict) -> Dict:
     for key, value in headers.items():
         key_lower = key.lower()
         if any(sensitive in key_lower for sensitive in SENSITIVE_HEADERS):
-            sanitized[key] = "[REDACTED]"
+            sanitized[key] = REDACTED
         else:
             sanitized[key] = value
     return sanitized
@@ -71,7 +74,7 @@ def sanitize_params(params: Dict) -> Dict:
     for key, value in params.items():
         key_lower = key.lower()
         if any(sensitive in key_lower for sensitive in SENSITIVE_PARAMS):
-            sanitized[key] = "[REDACTED]"
+            sanitized[key] = REDACTED
         else:
             sanitized[key] = value
     return sanitized
@@ -86,25 +89,12 @@ def sanitize_error_message(error_msg: str) -> str:
     Returns:
         A sanitized version of the error message with sensitive data redacted
     """
-    # First, try to parse free-form JSON and scrub known sensitive keys.
+    # Try to parse free-form JSON and scrub known sensitive keys.
     try:
         parsed = json.loads(error_msg)
-        if isinstance(parsed, dict):
-
-            def _scrub(obj: Any) -> Any:
-                if isinstance(obj, dict):
-                    return {
-                        k: (
-                            "[REDACTED]" if k.lower() in SENSITIVE_FIELDS else _scrub(v)
-                        )
-                        for k, v in obj.items()
-                    }
-                if isinstance(obj, list):
-                    return [_scrub(v) for v in obj]
-                return obj
-
+        if isinstance(parsed, (dict, list)):
             try:
-                return json.dumps(_scrub(parsed))
+                return json.dumps(_scrub_obj(parsed))
             except Exception:
                 # Fall back to textual redaction if JSON re-dump fails
                 pass
@@ -112,14 +102,31 @@ def sanitize_error_message(error_msg: str) -> str:
         # Not JSON or failed to parse — fall back to regex scrubbing below
         pass
 
+    # Textual regex-based redaction for known sensitive fields
+    lower_msg = error_msg.lower()
     for field in SENSITIVE_FIELDS:
-        if field in error_msg.lower():
-            # Replace any content that might contain the actual value
+        if field in lower_msg:
             pattern = rf"{field}[^\s]*\s*[=:]\s*[^\s]+"
             error_msg = re.sub(
-                pattern, f"{field}=[REDACTED]", error_msg, flags=re.IGNORECASE
+                pattern, f"{field}={REDACTED}", error_msg, flags=re.IGNORECASE
             )
     return error_msg
+
+
+def _scrub_obj(obj: Any) -> Any:
+    """Recursively scrub sensitive keys from parsed JSON-like objects.
+
+    Extracted to module scope to simplify `sanitize_error_message` and lower its
+    cognitive complexity.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: (REDACTED if k.lower() in SENSITIVE_FIELDS else _scrub_obj(v))
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list):
+        return [_scrub_obj(v) for v in obj]
+    return obj
 
 
 tracer = trace.get_tracer(__name__)

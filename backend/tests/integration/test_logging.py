@@ -30,7 +30,7 @@ async def test_file_logging():
     event = {"event": "Test Event", "level": "info"}
     with patch("builtins.open", mock_open()) as mocked_file:
         with patch("app.api.core.logging.settings.LOG_TO_FILE", True):
-            sync_log_to_file(structlog.get_logger(), "info", event)
+            sync_log_to_file(event)
             mocked_file.assert_called_once_with(settings.LOG_FILE, "a")
 
 
