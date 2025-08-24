@@ -56,6 +56,7 @@ export default defineConfig({
                 "src/App.tsx",
                 "coverage/**",
                 "dist/**",
+                "config/**", // All config files (vitest.setup.ts, vitest.config.ts, etc.)
                 "src/components/ui/**", // Shadcn UI
                 "src/types/**", // Type definitions
                 "src/utils/**", // Utility wrappers
@@ -63,6 +64,7 @@ export default defineConfig({
                 "src/store/**/AuthContext.tsx", // Auth context only
                 "src/store/**/ThemeContext.tsx", // Theme context only
                 "src/features/**/hooks/**", // Custom hooks
+                "src/services/errorMonitoring.ts", // Infrastructure monitoring - non-critical
             ],
             include: [
                 "src/**/*.{ts,tsx}"

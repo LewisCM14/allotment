@@ -8,19 +8,19 @@ import PublicRoute from "./PublicRoute";
 import * as AuthContext from "@/store/auth/AuthContext";
 
 // Mock all lazy-loaded components
-vi.mock("../features/user/forms/LoginForm", () => ({
+vi.mock("../features/auth/forms/LoginForm", () => ({
 	default: () => <div data-testid="login-form">Login Form</div>,
 }));
 
-vi.mock("../features/user/forms/RegisterForm", () => ({
+vi.mock("../features/registration/forms/RegisterForm", () => ({
 	default: () => <div data-testid="register-form">Register Form</div>,
 }));
 
-vi.mock("../features/user/forms/ResetPassword", () => ({
+vi.mock("../features/auth/forms/ResetPassword", () => ({
 	default: () => <div data-testid="reset-password">Reset Password</div>,
 }));
 
-vi.mock("../features/user/forms/SetNewPassword", () => ({
+vi.mock("../features/auth/forms/SetNewPassword", () => ({
 	default: () => <div data-testid="set-new-password">Set New Password</div>,
 }));
 
@@ -40,11 +40,11 @@ vi.mock("../features/family/pages/FamilyInfo", () => ({
 	default: () => <div data-testid="family-info">Family Info</div>,
 }));
 
-vi.mock("../features/user/pages/EmailVerification", () => ({
+vi.mock("../features/registration/pages/EmailVerification", () => ({
 	default: () => <div data-testid="email-verification">Email Verification</div>,
 }));
 
-vi.mock("../features/user/pages/UserAllotmentInfo", () => ({
+vi.mock("../features/allotment/pages/UserAllotmentInfo", () => ({
 	default: () => <div data-testid="allotment-page">Allotment Page</div>,
 }));
 

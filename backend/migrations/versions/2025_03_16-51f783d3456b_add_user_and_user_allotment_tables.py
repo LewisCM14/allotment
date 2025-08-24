@@ -27,6 +27,18 @@ def upgrade() -> None:
         sa.Column("user_password_hash", sa.Text(), nullable=False),
         sa.Column("user_first_name", sa.String(length=50), nullable=False),
         sa.Column("user_country_code", sa.String(length=2), nullable=False),
+        sa.Column(
+            "registered_date",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
+        sa.Column(
+            "last_active_date",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.text("now()"),
+        ),
         sa.CheckConstraint(
             "LENGTH(user_country_code) = 2", name="correct_country_code_format"
         ),

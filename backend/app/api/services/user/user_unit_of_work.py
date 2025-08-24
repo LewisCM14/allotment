@@ -12,9 +12,10 @@ import structlog
 from authlib.jose import jwt
 from fastapi import HTTPException, status
 from pydantic import ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.core.auth import (
+from app.api.core.auth_utils import (
     create_token,
 )
 from app.api.core.config import settings
@@ -24,7 +25,10 @@ from app.api.middleware.error_handler import (
     translate_db_exceptions,
     translate_token_exceptions,
 )
-from app.api.middleware.exception_handler import InvalidTokenError
+from app.api.middleware.exception_handler import (
+    DatabaseIntegrityError,
+    InvalidTokenError,
+)
 from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
@@ -35,7 +39,7 @@ from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
 )
-from app.api.schemas.user.user_schema import UserCreate
+from app.api.schemas.user.user_schema import UserCreate, VerificationStatusResponse
 from app.api.services.email_service import (
     send_password_reset_email,
     send_verification_email,
@@ -48,6 +52,12 @@ logger = structlog.get_logger()
 
 
 class UserUnitOfWork:
+    async def ensure_user_feed_days(
+        self, user_id: str, feeds: list[Any], default_day: Any
+    ) -> None:
+        """Ensure a UserFeedDay exists for each feed for the user, creating any missing ones with the default day."""
+        await self.user_repo.ensure_user_feed_days(user_id, feeds, default_day)
+
     """Unit of Work for managing user-related transactions."""
 
     def __init__(self, db: AsyncSession):
@@ -93,10 +103,6 @@ class UserUnitOfWork:
                 "Transaction rolled back", transaction="rollback", **log_context
             )
         else:
-            from sqlalchemy.exc import IntegrityError
-
-            from app.api.middleware.exception_handler import DatabaseIntegrityError
-
             try:
                 with log_timing("db_commit"):
                     await self.db.commit()
@@ -406,3 +412,130 @@ class UserUnitOfWork:
 
         logger.debug("Getting user by email via unit of work", **log_context)
         return await self.user_repo.get_user_by_email(email)
+
+    @translate_db_exceptions
+    async def update_user_profile(
+        self, user_id: str, first_name: str, country_code: str
+    ) -> User:
+        """Update a user's profile information.
+
+        Args:
+            user_id: The user's ID
+            first_name: The new first name
+            country_code: The new country code
+
+        Returns:
+            The updated user
+
+        Raises:
+            UserNotFoundError: If the user is not found
+            InvalidTokenError: If the user ID format is invalid
+        """
+        log_context: dict[str, Any] = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "update_user_profile_uow",
+        }
+
+        logger.info("Updating user profile", **log_context)
+
+        with log_timing("uow_update_user_profile", request_id=self.request_id):
+            user = await self.user_repo.update_user_profile(
+                user_id, first_name, country_code
+            )
+
+            log_context["updated_fields"] = {
+                "first_name": first_name,
+                "country_code": country_code,
+            }
+            logger.info("User profile updated successfully", **log_context)
+            return user
+
+    @translate_db_exceptions
+    async def get_user_feed_days(self, user_id: str) -> Any:
+        """Get user's feed day preferences."""
+        log_context = {
+            "user_id": user_id,
+            "request_id": self.request_id,
+            "operation": "get_user_feed_days_uow",
+        }
+
+        logger.info("Getting user feed days", **log_context)
+
+        with log_timing("uow_get_user_feed_days", request_id=self.request_id):
+            user_feed_days = await self.user_repo.get_user_feed_days(user_id)
+            return user_feed_days
+
+    @translate_db_exceptions
+    async def update_user_feed_day(
+        self, user_id: str, feed_id: str, day_id: str
+    ) -> Any:
+        """Update a single user feed day preference."""
+        log_context = {
+            "user_id": user_id,
+            "feed_id": feed_id,
+            "day_id": day_id,
+            "request_id": self.request_id,
+            "operation": "update_user_feed_day_uow",
+        }
+
+        logger.info("Updating user feed day preference", **log_context)
+
+        with log_timing("uow_update_user_feed_day", request_id=self.request_id):
+            result = await self.user_repo.update_user_feed_day(user_id, feed_id, day_id)
+            return result
+
+    @translate_db_exceptions
+    async def send_verification_email_service(self, user_email: str) -> None:
+        """Send verification email through proper service layer."""
+        log_context = {
+            "email": user_email,
+            "request_id": self.request_id,
+            "operation": "send_verification_email_uow",
+        }
+
+        logger.debug("Sending verification email via unit of work", **log_context)
+
+        user = await self.user_repo.get_user_by_email(user_email)
+        if not user:
+            from app.api.middleware.exception_handler import UserNotFoundError
+
+            raise UserNotFoundError(f"User with email {user_email} not found")
+
+        log_context["user_id"] = str(user.user_id)
+
+        with log_timing("uow_send_verification_email", request_id=self.request_id):
+            await send_verification_email(
+                user_email=user_email, user_id=str(user.user_id)
+            )
+
+        logger.info("Verification email sent successfully", **log_context)
+
+    @translate_db_exceptions
+    async def get_verification_status_service(
+        self, user_email: str
+    ) -> VerificationStatusResponse:
+        """Get user verification status through repository."""
+        log_context = {
+            "email": user_email,
+            "request_id": self.request_id,
+            "operation": "get_verification_status_uow",
+        }
+
+        logger.debug("Getting verification status via unit of work", **log_context)
+
+        user = await self.user_repo.get_user_by_email(user_email)
+        if not user:
+            from app.api.middleware.exception_handler import UserNotFoundError
+
+            raise UserNotFoundError(f"User with email {user_email} not found")
+
+        log_context["user_id"] = str(user.user_id)
+        log_context["verification_status"] = str(user.is_email_verified)
+
+        logger.info("Verification status retrieved", **log_context)
+
+        return VerificationStatusResponse(
+            is_email_verified=user.is_email_verified,
+            user_id=str(user.user_id),
+        )

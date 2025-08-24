@@ -18,121 +18,110 @@ precacheAndRoute(self.__WB_MANIFEST);
 
 const API_VERSION = import.meta.env.VITE_API_VERSION;
 
+// Authentication endpoints should NEVER be cached
 registerRoute(
 	({ url }) =>
-		url.pathname.startsWith(`${API_VERSION}/user/auth/`) ||
-		url.pathname.startsWith(`${API_VERSION}/user/send-verification-email`) ||
-		url.pathname.startsWith(`${API_VERSION}/user/verify-email`) ||
-		url.pathname.startsWith(`${API_VERSION}/user/verification-status`),
+		url.pathname.startsWith(`${API_VERSION}/auth/`) ||
+		url.pathname.startsWith(`${API_VERSION}/users/email-verifications/`) ||
+		url.pathname.startsWith(`${API_VERSION}/users/password-resets/`) ||
+		url.pathname.startsWith(`${API_VERSION}/users/verification-status`) ||
+		url.pathname.includes("verify-email") ||
+		url.pathname.includes("send-verification"),
 	new NetworkOnly(),
 );
 
-// User profile data
+// Static reference data that changes rarely - can be cached aggressively
 registerRoute(
-	({ url }) => url.pathname.startsWith(`${API_VERSION}/user/profile`),
+	({ url }) =>
+		url.pathname === `${API_VERSION}/families/botanical-groups/` ||
+		(url.pathname.startsWith(`${API_VERSION}/families/`) &&
+			!url.pathname.includes("user-specific")),
 	new StaleWhileRevalidate({
-		cacheName: "user-data-cache",
-		plugins: [
-			new ExpirationPlugin({
-				maxEntries: 10,
-				maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-			}),
-		],
-	}),
-);
-
-// User allotment data
-registerRoute(
-	({ url }) => url.pathname.startsWith(`${API_VERSION}/users/allotment`),
-	new StaleWhileRevalidate({
-		cacheName: "user-allotment-cache",
-		plugins: [
-			new ExpirationPlugin({
-				maxEntries: 5,
-				maxAgeSeconds: 60 * 60 * 24, // 1 day
-			}),
-			new CacheableResponsePlugin({
-				statuses: [0, 200],
-			}),
-		],
-	}),
-);
-
-// Botanical groups data
-registerRoute(
-	({ url }) => url.pathname === `${API_VERSION}/families/botanical-groups/`,
-	new StaleWhileRevalidate({
-		cacheName: "botanical-groups-cache",
-		plugins: [
-			new ExpirationPlugin({
-				maxEntries: 18,
-				maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
-			}),
-			new CacheableResponsePlugin({
-				statuses: [0, 200],
-			}),
-		],
-	}),
-);
-
-// Other API responses with network-first strategy
-registerRoute(
-	({ url }) => url.pathname.startsWith(API_VERSION),
-	new NetworkFirst({
-		cacheName: "api-cache",
+		cacheName: "reference-data-cache",
 		plugins: [
 			new ExpirationPlugin({
 				maxEntries: 50,
-				maxAgeSeconds: 60 * 60 * 24, // 1 day
+				maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200],
 			}),
 		],
 	}),
 );
 
-// Cache assets
+// User-specific data - short cache for offline functionality only
+// React Query handles the real caching and invalidation
 registerRoute(
-	({ request }) =>
-		request.destination === "image" || request.destination === "style",
-	new CacheFirst({
-		cacheName: "assets-cache",
+	({ url }) =>
+		url.pathname.startsWith(`${API_VERSION}/users/`) ||
+		url.pathname.startsWith(`${API_VERSION}/grow-guides/`) ||
+		url.pathname.startsWith(`${API_VERSION}/todos/`),
+	new NetworkFirst({
+		cacheName: "user-data-cache",
 		plugins: [
 			new ExpirationPlugin({
-				maxEntries: 60,
+				maxEntries: 30,
+				maxAgeSeconds: 60 * 5, // 5 minutes - very short for offline only
+			}),
+			new CacheableResponsePlugin({
+				statuses: [0, 200],
+			}),
+		],
+	}),
+);
+
+// Other API responses - minimal caching for offline support
+registerRoute(
+	({ url }) => url.pathname.startsWith(API_VERSION),
+	new NetworkFirst({
+		cacheName: "api-fallback-cache",
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 20,
+				maxAgeSeconds: 60 * 2, // 2 minutes - minimal offline support
+			}),
+		],
+	}),
+);
+
+// Static assets - can be cached aggressively
+registerRoute(
+	({ request }) =>
+		request.destination === "image" ||
+		request.destination === "style" ||
+		request.destination === "script",
+	new CacheFirst({
+		cacheName: "static-assets-cache",
+		plugins: [
+			new ExpirationPlugin({
+				maxEntries: 100,
 				maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
 			}),
 		],
 	}),
 );
 
-// Static resources (scripts, styles)
-registerRoute(
-	({ request }) =>
-		request.destination === "script" || request.destination === "style",
-	new StaleWhileRevalidate({
-		cacheName: "static-resources",
-	}),
-);
-
-// Cache the fonts
+// Fonts - cache for a very long time
 registerRoute(
 	({ request }) => request.destination === "font",
 	new CacheFirst({
 		cacheName: "font-cache",
 		plugins: [
 			new ExpirationPlugin({
-				maxEntries: 10,
+				maxEntries: 20,
 				maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
 			}),
 		],
 	}),
 );
 
-// Fallback page for when offline and navigation fails
+// Navigation fallback - serve app shell when offline
 const navStrategy = new NetworkFirst({
-	cacheName: "pages",
+	cacheName: "pages-cache",
 	plugins: [
 		new CacheableResponsePlugin({ statuses: [200] }),
-		new ExpirationPlugin({ maxEntries: 50 }),
+		new ExpirationPlugin({ maxEntries: 10 }),
 	],
 });
 
@@ -142,8 +131,11 @@ registerRoute(
 		try {
 			const response = await navStrategy.handle({ request, event });
 			if (response) return response;
+
+			// Fallback to app shell
 			const index = await caches.match("/index.html");
 			if (index) return index;
+
 			return (
 				(await caches.match("/offline.html")) ??
 				new Response("Offline", { status: 503 })
@@ -157,22 +149,8 @@ registerRoute(
 	},
 );
 
-// Listen for message events - this allows communication with the main thread
+// Handle app updates
 self.addEventListener("message", (event) => {
-	// Check if the message is about auth state
-	if (event.data && event.data.type === "AUTH_STATE_CHANGE") {
-		// Notify the main thread about the auth state change
-		self.clients.matchAll({ includeUncontrolled: true }).then((clients) => {
-			for (const client of clients) {
-				client.postMessage({
-					type: "AUTH_STATE_UPDATED",
-					payload: event.data.payload,
-				});
-			}
-		});
-	}
-
-	// Handle app update checks
 	if (event.data && event.data.type === "SKIP_WAITING") {
 		self.skipWaiting();
 	}
@@ -182,13 +160,12 @@ self.addEventListener("activate", (event) => {
 	event.waitUntil(self.clients.claim());
 });
 
-// Cache the app shell for offline use
+// Install event - cache app shell
 self.addEventListener("install", (event) => {
-	// take control immediately
 	self.skipWaiting();
 
 	event.waitUntil(
-		caches.open("app-shell").then((cache) => {
+		caches.open("app-shell-cache").then((cache) => {
 			return cache.addAll([
 				"/",
 				"/index.html",

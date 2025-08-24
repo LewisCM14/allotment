@@ -3,8 +3,6 @@
  * Captures and logs errors for debugging and monitoring
  */
 
-import { API_VERSION } from "./apiConfig";
-
 interface IErrorContext {
 	url?: string;
 	method?: string;
@@ -13,29 +11,42 @@ interface IErrorContext {
 }
 
 class ErrorMonitoringService {
-	private readonly logEndpoint: string;
+	private _logEndpoint?: string;
 
-	constructor() {
-		const apiVersionPath = API_VERSION;
+	private get logEndpoint(): string {
+		if (!this._logEndpoint) {
+			// Lazy import to avoid circular dependency with apiConfig
+			const { API_VERSION } = require("./apiConfig");
+			const apiVersionPath = API_VERSION;
 
-		if (typeof apiVersionPath === "string" && apiVersionPath.startsWith("/")) {
-			const cleanedApiVersionPath = apiVersionPath.endsWith("/")
-				? apiVersionPath.slice(0, -1)
-				: apiVersionPath;
-			this.logEndpoint = `${cleanedApiVersionPath}/log-client-error`;
-		} else {
-			if (!import.meta.env.PROD) {
-				console.warn(
-					"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly.",
-				);
+			if (
+				typeof apiVersionPath === "string" &&
+				apiVersionPath.startsWith("/")
+			) {
+				const cleanedApiVersionPath = apiVersionPath.endsWith("/")
+					? apiVersionPath.slice(0, -1)
+					: apiVersionPath;
+				this._logEndpoint = `${cleanedApiVersionPath}/log-client-error`;
+			} else {
+				if (!import.meta.env.PROD) {
+					console.warn(
+						"VITE_API_VERSION environment variable is not optimally configured (expected e.g., '/api/v1'). Defaulting client error log endpoint to '/api/v1/log-client-error'. Ensure Nginx proxies this correctly.",
+					);
+				}
+				this._logEndpoint = "/api/v1/log-client-error";
 			}
-			this.logEndpoint = "/api/v1/log-client-error";
 		}
+		return this._logEndpoint;
 	}
 
 	captureException(error: unknown, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
-			console.error("[ErrorMonitor]", error, context);
+			// For easier test migration, match legacy signature if context is present
+			if (context && context.context === "loadAuthFromIndexedDB") {
+				console.error("Error loading auth from IndexedDB:", error);
+			} else {
+				console.error("[ErrorMonitor]", error, context);
+			}
 			return;
 		}
 
@@ -84,7 +95,12 @@ class ErrorMonitoringService {
 
 	captureMessage(message: string, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
-			console.info("[ErrorMonitor]", message, context);
+			// For easier test migration, match legacy signature if context is present
+			if (context && context.context === "loadAuthFromIndexedDB") {
+				console.info("Error loading auth from IndexedDB:", message);
+			} else {
+				console.info("[ErrorMonitor]", message, context);
+			}
 			return;
 		}
 

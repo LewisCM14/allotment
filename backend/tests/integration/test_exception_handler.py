@@ -1,17 +1,18 @@
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
-from pytest import fixture
 
 from app.api.middleware.exception_handler import (
     BusinessLogicError,
     ExceptionHandlingMiddleware,
+    general_exception_handler,
     register_exception_handlers,
 )
 
 app = FastAPI()
 app.add_middleware(ExceptionHandlingMiddleware)
 register_exception_handlers(app)
+app.add_exception_handler(Exception, general_exception_handler)
 
 
 @app.get("/fail/business")
@@ -29,25 +30,22 @@ async def fail_unexpected():
     raise Exception("Unexpected failure")
 
 
-@pytest.fixture(name="client")
-def client_fixture():
-    """Create a test client with the app configured."""
-    return TestClient(app)
+@pytest.fixture()
+def client():
+    # Disable re-raising server exceptions so we can assert on standardized error responses
+    return TestClient(app, raise_server_exceptions=False)
 
 
-class TestIntegrationExceptions:
-    @fixture(autouse=True)
-    def client(self, client):
-        self.client = client
-
-    def test_business_logic_error(self):
-        response = self.client.get("/fail/business")
-        data = response.json()
-        assert response.status_code == 400
-        assert data["detail"][0]["msg"] == "Business rule violated"
-
-    def test_http_exception(self):
-        response = self.client.get("/fail/http")
-        data = response.json()
-        assert response.status_code == 404
-        assert data["detail"][0]["msg"] == "Item not found"
+@pytest.mark.parametrize(
+    "path,expected_status,expected_msg_contains",
+    [
+        ("/fail/business", 400, "Business rule violated"),
+        ("/fail/http", 404, "Item not found"),
+        ("/fail/unexpected", 500, "An unexpected error occurred"),
+    ],
+)
+def test_exceptions(client, path, expected_status, expected_msg_contains):
+    response = client.get(path)
+    data = response.json()
+    assert response.status_code == expected_status
+    assert expected_msg_contains.lower() in data["detail"][0]["msg"].lower()

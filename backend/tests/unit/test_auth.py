@@ -1,305 +1,370 @@
-"""
-Auth module unit tests.
-"""
-
-import uuid
-from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+import types
+from unittest.mock import MagicMock
 
 import bcrypt
 import pytest
-from authlib.jose import JoseError, jwt
 from fastapi import HTTPException
 
-from app.api.core.auth import (
-    authenticate_user,
-    create_token,
-    get_current_user,
-    verify_password,
+from app.api.core import auth_utils
+from app.api.middleware.exception_handler import (
+    AuthenticationError,
+    BaseApplicationError,
+    InvalidTokenError,
 )
-from app.api.core.config import settings
-from app.api.models import User
+from app.api.schemas import TokenResponse
+from app.api.schemas.user.user_schema import RefreshRequest, UserLogin
+from app.api.v1 import auth
+from tests.test_helpers import validate_token_response_schema
 
 
-class TestPasswordVerification:
-    """Tests for password verification functionality."""
+class TestAuthUtilsCoverage:
+    def test_create_token_missing_private_key(self, monkeypatch):
+        monkeypatch.setattr(auth_utils.settings, "PRIVATE_KEY", None)
+        with pytest.raises(ValueError, match="Private key is not loaded"):
+            auth_utils.create_token("user-id")
 
-    @pytest.mark.asyncio
-    async def test_password_hashing(self):
-        """Test that passwords are properly hashed and verified."""
-        plain_password = "SecurePass123!"
-        hashed_password = bcrypt.hashpw(
-            plain_password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+    def test_create_token_unknown_type(self, monkeypatch):
+        monkeypatch.setattr(auth_utils.settings, "PRIVATE_KEY", "key")
+        with pytest.raises(ValueError, match="Unknown token type"):
+            auth_utils.create_token("user-id", token_type="badtype")
 
-        assert isinstance(hashed_password, str)
-        assert verify_password(plain_password, hashed_password) is True
-        assert verify_password("WrongPassword", hashed_password) is False
+    def test_create_token_exception_logging(self, monkeypatch):
+        monkeypatch.setattr(auth_utils.settings, "PRIVATE_KEY", "key")
+        monkeypatch.setattr(auth_utils.settings, "JWT_ALGORITHM", "alg")
+        # Patch jwt.encode to raise
+        monkeypatch.setattr(
+            auth_utils.jwt,
+            "encode",
+            lambda *a, **k: (_ for _ in ()).throw(Exception("fail")),
+        )
+        with pytest.raises(Exception, match="fail"):
+            auth_utils.create_token("user-id")
 
-    @pytest.mark.asyncio
-    async def test_verify_password_edge_cases(self):
-        """Test verify_password with edge cases."""
-        plain_password = "SecurePass123!"
-        hashed_password = bcrypt.hashpw(
-            plain_password.encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
+    def test_verify_password_success(self):
+        pw = "pw"
+        hashed = bcrypt.hashpw(pw.encode(), bcrypt.gensalt()).decode()
+        assert auth_utils.verify_password(pw, hashed)
 
-        assert verify_password("", hashed_password) is False
+    def test_verify_password_failure(self):
+        pw = "pw"
+        hashed = bcrypt.hashpw(b"other", bcrypt.gensalt()).decode()
+        assert not auth_utils.verify_password(pw, hashed)
 
-        long_password = "x" * 1000
-        assert verify_password(long_password, hashed_password) is False
+    def test_verify_password_exception(self, monkeypatch):
+        monkeypatch.setattr(
+            bcrypt, "checkpw", lambda *a, **k: (_ for _ in ()).throw(Exception("fail"))
+        )
+        assert not auth_utils.verify_password("pw", "hash")
 
-    @pytest.mark.asyncio
-    async def test_verify_password_error_handling(self):
-        """Test error handling in verify_password."""
-        assert verify_password("password", "invalid-hash-format") is False
+    def test_decode_token_success(self, monkeypatch):
+        monkeypatch.setattr(auth_utils.settings, "PUBLIC_KEY", "pub")
+        monkeypatch.setattr(auth_utils.jwt, "decode", lambda t, k: {"sub": "u"})
+        assert auth_utils.decode_token("tok") == {"sub": "u"}
 
-
-class TestTokenCreation:
-    """Tests for JWT token creation functionality."""
-
-    @pytest.mark.asyncio
-    async def test_create_token_access(self):
-        """Test creating an access token."""
-        user_id = str(uuid.uuid4())
-        token = create_token(user_id=user_id, token_type="access")
-
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-
-        assert payload["sub"] == user_id
-        assert payload["type"] == "access"
-        assert "exp" in payload
-        assert "iat" in payload
-        assert "jti" in payload
-
-    @pytest.mark.asyncio
-    async def test_create_token_refresh(self):
-        """Test creating a refresh token."""
-        user_id = str(uuid.uuid4())
-        token = create_token(user_id=user_id, token_type="refresh")
-
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-
-        assert payload["sub"] == user_id
-        assert payload["type"] == "refresh"
-        assert "exp" in payload
+    def test_decode_token_invalid(self, monkeypatch):
+        monkeypatch.setattr(auth_utils.settings, "PUBLIC_KEY", "pub")
+        monkeypatch.setattr(
+            auth_utils.jwt,
+            "decode",
+            lambda t, k: (_ for _ in ()).throw(auth_utils.JoseError("fail")),
+        )
+        with pytest.raises(auth_utils.InvalidTokenError):
+            auth_utils.decode_token("tok")
 
     @pytest.mark.asyncio
-    async def test_create_token_reset(self):
-        """Test creating a password reset token."""
-        user_id = str(uuid.uuid4())
-        token = create_token(user_id=user_id, token_type="reset")
-
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-
-        assert payload["sub"] == user_id
-        assert payload["type"] == "reset"
-        assert "exp" in payload
-
-    @pytest.mark.asyncio
-    async def test_create_token_custom_expiry(self):
-        """Test creating a token with custom expiry time."""
-        user_id = str(uuid.uuid4())
-        expiry_seconds = 300
-        token = create_token(user_id=user_id, expiry_seconds=expiry_seconds)
-
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-
-        expected_exp = datetime.now(UTC) + timedelta(seconds=expiry_seconds)
-        assert abs(payload["exp"] - expected_exp.timestamp()) < 2
+    async def test_authenticate_user_success(self, mocker):
+        db = MagicMock()
+        user = MagicMock()
+        user.user_password_hash = bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode()
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: user)
+        )
+        mocker.patch("app.api.core.auth_utils.verify_password", return_value=True)
+        db.commit = mocker.AsyncMock()
+        db.refresh = mocker.AsyncMock()
+        result = await auth_utils.authenticate_user(db, "e", "pw")
+        assert result == user
 
     @pytest.mark.asyncio
-    async def test_create_token_expires_delta(self):
-        """Test creating a token with expires_delta."""
-        user_id = str(uuid.uuid4())
-        expires_delta = timedelta(minutes=30)
-        now = datetime.now(UTC)
-        token = create_token(user_id=user_id, expires_delta=expires_delta)
-
-        payload = jwt.decode(token, settings.PUBLIC_KEY)
-
-        expected_exp = now + expires_delta
-        assert abs(payload["exp"] - expected_exp.timestamp()) < 2
+    async def test_authenticate_user_not_found(self, mocker):
+        db = MagicMock()
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: None)
+        )
+        result = await auth_utils.authenticate_user(db, "e", "pw")
+        assert result is None
 
     @pytest.mark.asyncio
-    @patch("app.api.core.auth.jwt.encode")
-    async def test_create_token_exception(self, mock_encode):
-        """Test error handling in create_token."""
-        mock_encode.side_effect = JoseError("JWT encoding error")
-
-        user_id = str(uuid.uuid4())
-
-        with pytest.raises(JoseError):
-            create_token(user_id=user_id)
-
-
-class TestUserAuthentication:
-    """Tests for user authentication functionality."""
+    async def test_authenticate_user_password_mismatch(self, mocker):
+        db = MagicMock()
+        user = MagicMock()
+        user.user_password_hash = "hash"
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: user)
+        )
+        mocker.patch("app.api.core.auth_utils.verify_password", return_value=False)
+        result = await auth_utils.authenticate_user(db, "e", "pw")
+        assert result is None
 
     @pytest.mark.asyncio
-    async def test_authenticate_user_success(self):
-        """Test successful authentication."""
-        mock_user = MagicMock(spec=User)
-        mock_user.user_password_hash = bcrypt.hashpw(
-            "correct_password".encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
-        mock_user.user_id = uuid.uuid4()
+    async def test_authenticate_user_exception(self, mocker):
+        db = MagicMock()
+        db.execute = mocker.AsyncMock(side_effect=Exception("fail"))
+        result = await auth_utils.authenticate_user(db, "e", "pw")
+        assert result is None
 
-        # Mock async SQLAlchemy result
-        class MockResult:
-            def scalar_one_or_none(self):
-                return mock_user
+    @pytest.mark.asyncio
+    async def test_get_current_user_missing_header(self, mocker):
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(authorization=None, db=MagicMock())
+        assert e.value.status_code == 401
 
-        mock_db = MagicMock()
-        mock_db.execute = AsyncMock(return_value=MockResult())
+    @pytest.mark.asyncio
+    async def test_get_current_user_invalid_token_type(self, mocker):
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(
+                authorization="Basic token", db=MagicMock()
+            )
+        assert e.value.status_code == 401
 
-        result = await authenticate_user(
-            mock_db, "user@example.com", "correct_password"
+    @pytest.mark.asyncio
+    async def test_get_current_user_missing_token(self, mocker):
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(authorization="Bearer ", db=MagicMock())
+        assert e.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_invalid_payload(self, mocker):
+        mocker.patch("app.api.core.auth_utils.decode_token", return_value={})
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(
+                authorization="Bearer tok", db=MagicMock()
+            )
+        assert e.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_user_not_found(self, mocker):
+        mocker.patch("app.api.core.auth_utils.decode_token", return_value={"sub": "u"})
+        mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists",
+            side_effect=HTTPException(status_code=401, detail="not found"),
+        )
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(
+                authorization="Bearer tok", db=MagicMock()
+            )
+        assert e.value.status_code == 401
+
+
+class TestLoginEndpointUnit:
+    async def test_login_success(
+        self,
+        mock_user,
+        sample_user_login_data,
+        mock_request_and_db,
+        standard_unit_mocks,
+        mock_token_creation,
+        mocker,
+    ):
+        """Test successful login using standardized fixtures."""
+        # Set up authentication mock
+        mocker.patch("app.api.v1.auth.authenticate_user", return_value=mock_user)
+
+        # Create user login object
+        user = UserLogin(**sample_user_login_data)
+
+        # Call the endpoint
+        result = await auth.login(
+            mock_request_and_db["request"], user, mock_request_and_db["db"]
         )
 
-        assert result is mock_user
-        mock_db.execute.assert_called_once()
+        # Validate using helper function
+        assert isinstance(result, TokenResponse)
+        validate_token_response_schema(result.model_dump())
+        assert result.user_first_name == mock_user.user_first_name
+        assert result.is_email_verified == mock_user.is_email_verified
+        assert result.user_id == str(mock_user.user_id)
 
-    @pytest.mark.asyncio
-    async def test_authenticate_user_wrong_password(self):
-        """Test authentication with wrong password."""
-        mock_user = MagicMock(spec=User)
-        mock_user.user_password_hash = bcrypt.hashpw(
-            "correct_password".encode("utf-8"), bcrypt.gensalt()
-        ).decode("utf-8")
-        mock_user.user_id = uuid.uuid4()
+    async def test_login_invalid_credentials(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login with invalid credentials."""
+        # Mock authentication to return None (invalid credentials)
+        mocker.patch("app.api.v1.auth.authenticate_user", return_value=None)
 
-        class MockResult:
-            def scalar_one_or_none(self):
-                return mock_user
+        user = UserLogin(**sample_user_login_data)
 
-        mock_db = MagicMock()
-        mock_db.execute = AsyncMock(return_value=MockResult())
+        with pytest.raises(AuthenticationError):
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
-        result = await authenticate_user(mock_db, "user@example.com", "wrong_password")
+    async def test_login_authenticate_user_raises_base_error(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login when authenticate_user raises BaseApplicationError."""
+        # Mock authentication to raise BaseApplicationError
+        error = BaseApplicationError("Authentication failed", "AUTH_FAIL")
+        mocker.patch("app.api.v1.auth.authenticate_user", side_effect=error)
 
-        assert result is None
+        user = UserLogin(**sample_user_login_data)
 
-    @pytest.mark.asyncio
-    async def test_authenticate_user_nonexistent(self):
-        """Test authentication with non-existent user."""
+        with pytest.raises(BaseApplicationError):
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
-        class MockResult:
-            def scalar_one_or_none(self):
-                return None
-
-        mock_db = MagicMock()
-        mock_db.execute = AsyncMock(return_value=MockResult())
-
-        result = await authenticate_user(
-            mock_db, "nonexistent@example.com", "any_password"
+    async def test_login_authenticate_user_raises_general_exception(
+        self, sample_user_login_data, mock_request_and_db, standard_unit_mocks, mocker
+    ):
+        """Test login when authenticate_user raises unexpected exception."""
+        mocker.patch(
+            "app.api.v1.auth.authenticate_user", side_effect=Exception("Database error")
         )
 
-        assert result is None
+        user = UserLogin(**sample_user_login_data)
 
-    @pytest.mark.asyncio
-    async def test_authenticate_user_exception(self):
-        """Test error handling in authenticate_user."""
-        mock_db = MagicMock()
-        mock_db.execute = AsyncMock(side_effect=Exception("Database error"))
+        with pytest.raises(Exception):
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
-        result = await authenticate_user(mock_db, "user@example.com", "password")
+    async def test_login_token_generation_exception(
+        self,
+        mock_user,
+        sample_user_login_data,
+        mock_request_and_db,
+        standard_unit_mocks,
+        mocker,
+    ):
+        """Test login when token generation fails."""
+        # Mock successful authentication
+        mocker.patch("app.api.v1.auth.authenticate_user", return_value=mock_user)
 
-        assert result is None
+        # Mock token creation to fail
+        mocker.patch(
+            "app.api.v1.auth.create_token",
+            side_effect=Exception("Token generation failed"),
+        )
+
+        user = UserLogin(**sample_user_login_data)
+
+        with pytest.raises(Exception):
+            await auth.login(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
 
 
-class TestCurrentUserValidation:
-    """Tests for current user validation functionality."""
+@pytest.mark.asyncio
+class TestRefreshTokenEndpointUnit:
+    async def test_refresh_token_success(
+        self, mock_user, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test successful token refresh."""
+        # Create a valid refresh token
+        refresh_token = token_factory(
+            token_type="refresh", user_id=str(mock_user.user_id)
+        )
 
-    @pytest.mark.asyncio
-    @patch("app.api.core.auth.jwt.decode")
-    async def test_get_current_user_success(self, mock_decode):
-        """Test get_current_user with valid token."""
-        user_id = str(uuid.uuid4())
-        mock_decode.return_value = {"sub": user_id}
+        # Mock token decoding
+        mocker.patch(
+            "app.api.v1.auth.decode_token",
+            return_value={"type": "refresh", "sub": str(mock_user.user_id)},
+        )
 
-        mock_user = MagicMock(spec=User)
-        mock_user.user_id = user_id
+        # Mock user validation
+        mocker.patch("app.api.v1.auth.validate_user_exists", return_value=mock_user)
 
-        # Patch validate_user_exists to return mock_user (async)
-        from app.api.core import auth as auth_module
+        # Mock new token creation
+        mocker.patch(
+            "app.api.v1.auth.create_token", side_effect=["new_access", "new_refresh"]
+        )
 
-        auth_module.validate_user_exists = AsyncMock(return_value=mock_user)
+        request_data = RefreshRequest(refresh_token=refresh_token)
 
-        token = "sometoken"
-        authorization = f"Bearer {token}"
+        result = await auth.refresh_token(
+            mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+        )
 
-        mock_db = MagicMock()
+        assert isinstance(result, TokenResponse)
+        validate_token_response_schema(result.model_dump())
+        assert result.access_token == "new_access"
+        assert result.refresh_token == "new_refresh"
 
-        result = await get_current_user(authorization, mock_db)
+    async def test_refresh_token_invalid_type(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token with wrong token type."""
+        # Create access token instead of refresh token
+        access_token = token_factory(token_type="access")
 
-        assert result is mock_user
-        mock_decode.assert_called_once_with(token, settings.PUBLIC_KEY)
+        # Mock token decoding to return access type
+        mocker.patch(
+            "app.api.v1.auth.decode_token",
+            return_value={"type": "access", "sub": "user-id"},
+        )
 
-    @pytest.mark.asyncio
-    @patch("app.api.core.auth.jwt.decode")
-    async def test_get_current_user_invalid_token(self, mock_decode):
-        """Test get_current_user with invalid token."""
-        mock_decode.side_effect = JoseError("Invalid token")
+        request_data = RefreshRequest(refresh_token=access_token)
 
-        token = "badtoken"
-        authorization = f"Bearer {token}"
+        with pytest.raises(InvalidTokenError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
 
-        with pytest.raises(Exception) as exc_info:
-            await get_current_user(authorization, MagicMock())
+    async def test_refresh_token_missing_sub(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token with missing user ID."""
+        refresh_token = token_factory(token_type="refresh")
 
-        # Accept either InvalidTokenError or HTTPException depending on middleware
-        assert "Invalid token" in str(exc_info.value)
+        # Mock token decoding to return payload without 'sub'
+        mocker.patch("app.api.v1.auth.decode_token", return_value={"type": "refresh"})
 
-    @pytest.mark.asyncio
-    @patch("app.api.core.auth.jwt.decode")
-    async def test_get_current_user_missing_sub(self, mock_decode):
-        """Test get_current_user with token missing sub claim."""
-        mock_decode.return_value = {}
+        request_data = RefreshRequest(refresh_token=refresh_token)
 
-        token = "tokennosub"
-        authorization = f"Bearer {token}"
+        with pytest.raises(InvalidTokenError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
 
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(authorization, MagicMock())
+    async def test_refresh_token_validate_user_exists_raises(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token when user validation fails."""
+        refresh_token = token_factory(token_type="refresh")
 
-        assert exc_info.value.status_code == 401
-        assert "Invalid token payload" in exc_info.value.detail
+        # Mock token decoding
+        mocker.patch(
+            "app.api.v1.auth.decode_token",
+            return_value={"type": "refresh", "sub": "nonexistent-user"},
+        )
 
-    @pytest.mark.asyncio
-    @patch("app.api.core.auth.jwt.decode")
-    async def test_get_current_user_user_not_found(self, mock_decode):
-        """Test get_current_user with token for non-existent user."""
-        user_id = str(uuid.uuid4())
-        mock_decode.return_value = {"sub": user_id}
+        # Mock user validation to fail
+        error = BaseApplicationError("User not found", "USER_NOT_FOUND")
+        mocker.patch("app.api.v1.auth.validate_user_exists", side_effect=error)
 
-        # Patch validate_user_exists to raise HTTPException(404)
-        from app.api.core import auth as auth_module
+        request_data = RefreshRequest(refresh_token=refresh_token)
 
-        exc = HTTPException(status_code=404, detail="User not found")
-        auth_module.validate_user_exists = AsyncMock(side_effect=exc)
+        with pytest.raises(BaseApplicationError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )
 
-        token = "validtoken"
-        authorization = f"Bearer {token}"
+    async def test_refresh_token_decode_token_raises(
+        self, mock_request_and_db, standard_unit_mocks, token_factory, mocker
+    ):
+        """Test refresh token when token decoding fails."""
+        invalid_token = "invalid.token.here"
 
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(authorization, MagicMock())
+        # Mock token decoding to fail
+        mocker.patch(
+            "app.api.v1.auth.decode_token",
+            side_effect=InvalidTokenError("Invalid token format"),
+        )
 
-        assert exc_info.value.status_code == 404
-        assert "User not found" in exc_info.value.detail
-        mock_decode.return_value = {"sub": user_id}
+        request_data = RefreshRequest(refresh_token=invalid_token)
 
-        # Patch validate_user_exists to raise HTTPException(404)
-        from app.api.core import auth as auth_module
-
-        exc = HTTPException(status_code=404, detail="User not found")
-        auth_module.validate_user_exists = AsyncMock(side_effect=exc)
-
-        token = "validtoken"
-        authorization = f"Bearer {token}"
-
-        with pytest.raises(HTTPException) as exc_info:
-            await get_current_user(authorization, MagicMock())
-
-        assert exc_info.value.status_code == 404
-        assert "User not found" in exc_info.value.detail
+        with pytest.raises(InvalidTokenError):
+            await auth.refresh_token(
+                mock_request_and_db["request"], request_data, mock_request_and_db["db"]
+            )

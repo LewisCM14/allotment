@@ -1,4 +1,4 @@
-import { API_URL, API_VERSION } from "@/services/apiConfig";
+import { API_URL, API_VERSION } from "../services/apiConfig";
 
 export const buildUrl = (path: string) => {
 	const apiVersionSegment = API_VERSION.startsWith("/")

@@ -1,72 +1,17 @@
 @import "tailwindcss";
 
-@font-face {
-	font-family: "Oswald";
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url("/assets/fonts/Oswald-Regular.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Oswald";
-	font-style: normal;
-	font-weight: 500;
-	font-display: swap;
-	src: url("/assets/fonts/Oswald-Medium.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Oswald";
-	font-style: normal;
-	font-weight: 600;
-	font-display: swap;
-	src: url("/assets/fonts/Oswald-SemiBold.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Oswald";
-	font-style: normal;
-	font-weight: 700;
-	font-display: swap;
-	src: url("/assets/fonts/Oswald-Bold.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Noto Sans";
-	font-style: normal;
-	font-weight: 400;
-	font-display: swap;
-	src: url("/assets/fonts/NotoSans-Regular.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Noto Sans";
-	font-style: normal;
-	font-weight: 500;
-	font-display: swap;
-	src: url("/assets/fonts/NotoSans-Medium.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Noto Sans";
-	font-style: normal;
-	font-weight: 600;
-	font-display: swap;
-	src: url("/assets/fonts/NotoSans-SemiBold.woff2") format("woff2");
-}
-
-@font-face {
-	font-family: "Noto Sans";
-	font-style: normal;
-	font-weight: 700;
-	font-display: swap;
-	src: url("/assets/fonts/NotoSans-Bold.woff2") format("woff2");
-}
-
-@custom-variant dark (&:is(.dark *));
-
+/* Viewport height fallback for better mobile browser compatibility */
 :root {
+	/* Dynamic viewport height - adjusts to browser UI */
+	--vh-dynamic: 100dvh;
+	/* Small viewport height - excludes browser UI */
+	--vh-small: 100svh;
+	/* Fallback for older browsers */
+	--vh-fallback: 100vh;
+	/* Custom property that will be set by JavaScript for precise control */
+	--vh: 1vh;
+
+	/* Font families */
 	--font-heading: "Oswald", "Georgia", sans-serif;
 	--font-body: "Noto Sans", "Verdana", sans-serif;
 	--radius: 0.625rem;
@@ -146,6 +91,89 @@
 	--chart-4: oklch(0.828 0.189 84.429);
 	--chart-5: oklch(0.769 0.188 70.08);
 }
+
+/* Support for older browsers that don't support dvh/svh */
+@supports not (height: 100dvh) {
+	:root {
+		--vh-dynamic: 100vh;
+		--vh-small: 100vh;
+	}
+}
+
+/* Mobile Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+	/* This targets WebKit browsers (Safari) */
+	.mobile-vh-fix {
+		height: calc(var(--vh, 1vh) * 100);
+		min-height: calc(var(--vh, 1vh) * 100);
+	}
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Oswald";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/assets/fonts/Oswald-Bold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 400;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Regular.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Medium.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 600;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-SemiBold.woff2") format("woff2");
+}
+
+@font-face {
+	font-family: "Noto Sans";
+	font-style: normal;
+	font-weight: 700;
+	font-display: swap;
+	src: url("/assets/fonts/NotoSans-Bold.woff2") format("woff2");
+}
+
+@custom-variant dark (&:is(.dark *));
 
 .dark {
 	/* main page/component background */
@@ -267,6 +295,11 @@
 @layer base {
 	* {
 		@apply border-border outline-ring/50;
+		/* Hide scrollbars completely */
+		scrollbar-width: none;
+		/* Firefox */
+		-ms-overflow-style: none;
+		/* Internet Explorer 10+ */
 	}
 
 	h1,
@@ -289,6 +322,11 @@
 	body {
 		@apply bg-background text-foreground;
 		font-family: var(--font-body);
+	}
+
+	*::-webkit-scrollbar {
+		display: none;
+		/* WebKit browsers (Chrome, Safari, Edge) */
 	}
 
 	header[class*="fixed"],

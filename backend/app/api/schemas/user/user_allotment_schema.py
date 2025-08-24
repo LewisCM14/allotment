@@ -6,11 +6,13 @@ User Allotment Schema
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import Field, field_validator
 from pydantic.config import ConfigDict
 
+from app.api.schemas.base_schema import SecureBaseModel
 
-class UserAllotmentBase(BaseModel):
+
+class UserAllotmentBase(SecureBaseModel):
     allotment_postal_zip_code: str = Field(
         ..., min_length=5, max_length=7, description="Postal/zip code"
     )
@@ -33,13 +35,13 @@ class UserAllotmentCreate(UserAllotmentBase):
     pass
 
 
-class UserAllotmentUpdate(BaseModel):
+class UserAllotmentUpdate(SecureBaseModel):
     allotment_postal_zip_code: Optional[str] = Field(None, min_length=5, max_length=7)
     allotment_width_meters: Optional[float] = Field(None, ge=1.0, le=100.0)
     allotment_length_meters: Optional[float] = Field(None, ge=1.0, le=100.0)
 
 
-class UserAllotmentRead(BaseModel):
+class UserAllotmentRead(SecureBaseModel):
     """Schema for reading a user allotment."""
 
     user_allotment_id: UUID

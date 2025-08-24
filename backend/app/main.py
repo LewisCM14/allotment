@@ -14,7 +14,7 @@ from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
-from app.api.core.logging import log_timing
+from app.api.core.logging import configure_logging, log_timing
 from app.api.middleware.exception_handler import register_exception_handlers
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
@@ -24,6 +24,8 @@ from app.api.middleware.logging_middleware import (
 from app.api.schemas.client_error_schema import ClientErrorLog
 from app.api.services.email_service import send_test_email
 from app.api.v1 import router as api_router
+
+configure_logging()
 
 logger = structlog.get_logger()
 
@@ -172,7 +174,7 @@ async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
         raise
 
 
-@app.post("/api/v1/log-client-error")
+@app.post("/api/v1/log-client-error", tags=["Utility"])
 async def handle_log_client_error(
     error_log: ClientErrorLog, request: Request
 ) -> Dict[str, str]:

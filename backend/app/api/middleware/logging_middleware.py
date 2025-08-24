@@ -2,11 +2,12 @@
 Logging Middleware
 """
 
+import json
 import re
 import time
 import uuid
 from contextvars import ContextVar
-from typing import Awaitable, Callable, Dict, Optional
+from typing import Any, Awaitable, Callable, Dict, Optional
 
 import structlog
 from fastapi import Request, Response
@@ -18,6 +19,9 @@ from structlog.contextvars import bind_contextvars, clear_contextvars
 
 logger = structlog.get_logger()
 request_id_ctx_var: ContextVar[Optional[str]] = ContextVar("request_id", default=None)
+
+# Standard redaction text used across sanitizers
+REDACTED = "[REDACTED]"
 
 # Headers that should be redacted for security reasons
 SENSITIVE_HEADERS = {
@@ -58,7 +62,7 @@ def sanitize_headers(headers: Dict) -> Dict:
     for key, value in headers.items():
         key_lower = key.lower()
         if any(sensitive in key_lower for sensitive in SENSITIVE_HEADERS):
-            sanitized[key] = "[REDACTED]"
+            sanitized[key] = REDACTED
         else:
             sanitized[key] = value
     return sanitized
@@ -70,7 +74,7 @@ def sanitize_params(params: Dict) -> Dict:
     for key, value in params.items():
         key_lower = key.lower()
         if any(sensitive in key_lower for sensitive in SENSITIVE_PARAMS):
-            sanitized[key] = "[REDACTED]"
+            sanitized[key] = REDACTED
         else:
             sanitized[key] = value
     return sanitized
@@ -85,14 +89,44 @@ def sanitize_error_message(error_msg: str) -> str:
     Returns:
         A sanitized version of the error message with sensitive data redacted
     """
+    # Try to parse free-form JSON and scrub known sensitive keys.
+    try:
+        parsed = json.loads(error_msg)
+        if isinstance(parsed, (dict, list)):
+            try:
+                return json.dumps(_scrub_obj(parsed))
+            except Exception:
+                # Fall back to textual redaction if JSON re-dump fails
+                pass
+    except Exception:
+        # Not JSON or failed to parse — fall back to regex scrubbing below
+        pass
+
+    # Textual regex-based redaction for known sensitive fields
+    lower_msg = error_msg.lower()
     for field in SENSITIVE_FIELDS:
-        if field in error_msg.lower():
-            # Replace any content that might contain the actual value
+        if field in lower_msg:
             pattern = rf"{field}[^\s]*\s*[=:]\s*[^\s]+"
             error_msg = re.sub(
-                pattern, f"{field}=[REDACTED]", error_msg, flags=re.IGNORECASE
+                pattern, f"{field}={REDACTED}", error_msg, flags=re.IGNORECASE
             )
     return error_msg
+
+
+def _scrub_obj(obj: Any) -> Any:
+    """Recursively scrub sensitive keys from parsed JSON-like objects.
+
+    Extracted to module scope to simplify `sanitize_error_message` and lower its
+    cognitive complexity.
+    """
+    if isinstance(obj, dict):
+        return {
+            k: (REDACTED if k.lower() in SENSITIVE_FIELDS else _scrub_obj(v))
+            for k, v in obj.items()
+        }
+    if isinstance(obj, list):
+        return [_scrub_obj(v) for v in obj]
+    return obj
 
 
 tracer = trace.get_tracer(__name__)
@@ -123,6 +157,25 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
                 "http.client_ip", client_ip if client_ip is not None else ""
             )
 
+            # Add trace/span ids into the context for log correlation
+            span_ctx = span.get_span_context()
+            trace_id = None
+            span_id = None
+            try:
+                trace_id = (
+                    format(span_ctx.trace_id, "032x")
+                    if getattr(span_ctx, "trace_id", None)
+                    else None
+                )
+                span_id = (
+                    format(span_ctx.span_id, "016x")
+                    if getattr(span_ctx, "span_id", None)
+                    else None
+                )
+            except Exception:
+                trace_id = None
+                span_id = None
+
             logger.info(
                 "Incoming request",
                 request_id=request_id,
@@ -141,6 +194,7 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
                     if isinstance(exc, (OSError, ConnectionError))
                     else "ProgrammerError"
                 )
+                # Log the exception with sanitized message and exc_info, then re-raise
                 logger.error(
                     "Unhandled Exception",
                     request_id=request_id_ctx_var.get(),
@@ -150,12 +204,10 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
                     exc_info=True,
                     path=request.url.path,
                     method=request.method,
+                    trace_id=trace_id,
+                    span_id=span_id,
                 )
-                return Response(
-                    "Internal Server Error",
-                    status_code=500,
-                    headers={"X-Request-ID": request_id},
-                )
+                raise
 
             rate_limit_remaining = response.headers.get("X-RateLimit-Remaining", None)
             if rate_limit_remaining == "0":

@@ -1,17 +1,10 @@
-import { useParams } from "react-router-dom";
-import { FamilyInfoPresenter } from "../components/FamilyInfoPresenter";
-import { useFamilyInfo } from "../hooks/useFamilyInfo";
+import { PageLayout } from "@/components/layouts/PageLayout";
+import FamilyInfoContainer from "../components/FamilyInfoContainer";
 
 export default function FamilyInfoPage() {
-	const { familyId } = useParams<{ familyId: string }>();
-	const { data, isLoading, error, isSuccess } = useFamilyInfo(familyId);
-
 	return (
-		<FamilyInfoPresenter
-			data={data || null}
-			isLoading={isLoading}
-			error={error || null}
-			isSuccess={isSuccess}
-		/>
+		<PageLayout>
+			<FamilyInfoContainer />
+		</PageLayout>
 	);
 }

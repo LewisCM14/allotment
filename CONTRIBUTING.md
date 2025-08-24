@@ -275,13 +275,26 @@ npm run test:coverage
 
 ## Database Migrations
 
-_Database migrations and managed with Alembic and can be ran from inside the backed virtual env with the following commands._
+_Database migrations and managed with Alembic and can be ran from inside the backed virtual env with the following commands. The basic commands are listed below, visit the Alembic documentation for the full specification._
 
 Autogenerate Alembic Migration
 ```
 alembic revision --autogenerate -m <REVISION MSG>
 ```
+> This will auto generate a migration based on alternations to the database models
 
+
+Running Migrations
+```
+alembic upgrade head
+```
+> Update the database to the most recent migration
+
+```
+alembic upgrade <VERSION NO>
+alembic downgrade <VERSION NO>
+```
+> Set the database to be at a specific point in the migrations history
 ---
 
 ## Documentation

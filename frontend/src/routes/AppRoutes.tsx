@@ -4,22 +4,22 @@ import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
 
-const LoginForm = React.lazy(() => import("../features/user/forms/LoginForm"));
+const LoginForm = React.lazy(() => import("../features/auth/forms/LoginForm"));
 const RegisterForm = React.lazy(
-	() => import("../features/user/forms/RegisterForm"),
+	() => import("../features/registration/forms/RegisterForm"),
 );
 const ResetPassword = React.lazy(
-	() => import("../features/user/forms/ResetPassword"),
+	() => import("../features/auth/forms/ResetPassword"),
 );
 const EmailVerificationPage = React.lazy(
-	() => import("../features/user/pages/EmailVerification"),
+	() => import("../features/registration/pages/EmailVerification"),
 );
 const UserProfile = React.lazy(
 	() => import("../features/user/pages/UserProfile"),
 );
 const NotFound = React.lazy(() => import("../components/NotFound"));
 const SetNewPassword = React.lazy(
-	() => import("../features/user/forms/SetNewPassword"),
+	() => import("../features/auth/forms/SetNewPassword"),
 );
 const BotanicalGroupsPage = React.lazy(
 	() => import("../features/family/pages/BotanicalGroups"),
@@ -28,7 +28,10 @@ const FamilyInfoPage = React.lazy(
 	() => import("../features/family/pages/FamilyInfo"),
 );
 const AllotmentPage = React.lazy(
-	() => import("../features/user/pages/UserAllotmentInfo"),
+	() => import("../features/allotment/pages/UserAllotmentInfo"),
+);
+const UserPreference = React.lazy(
+	() => import("../features/preference/pages/UserPreference"),
 );
 
 const AppRoutes = () => {
@@ -108,6 +111,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<AllotmentPage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/preferences"
+					element={
+						<ProtectedRoute>
+							<UserPreference />
 						</ProtectedRoute>
 					}
 				/>

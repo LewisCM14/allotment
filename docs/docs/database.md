@@ -93,7 +93,7 @@ The solution must also allow for modularity in the applications architecture suc
     !!! info
         - The user email & password fields do not require the default `VARCHAR` constraint.
         - The User first name field requires the `VARCHAR` constraint applied with an additional rule, preventing the use of numbers also.
-        - When an user is removed from this table a cascading delete upon the: user active varieties, user feed day and user allotment tables is required for data consistency.
+        - When an user is removed from this table a cascading delete upon the: user active varieties, user feed day, user preferences and user allotment tables is required for data consistency.
         
     ???+ tip "Future Improvement"
         - Long term the Country Code will be used in conjunction with the User Allotment table to provide live weather information to users.
@@ -111,10 +111,15 @@ The solution must also allow for modularity in the applications architecture suc
 
     !!! info
         - There is currently no method of preventing users from following multiple guides for same specific variety of plant, it is down to users themselves to monitor this.
-        - A trigger is required at the database layer that when users activate varieties the User Feed Day table is checked to ensure they have a nominated day for the guides applicable feed. If there is no nominated day a default is added that can then be updated later within the Users Preferences page. This ensures data consistency at both the database and backend layers.
 
 === "User Feed Day"
     A junction table that uses a composite primary key for storing what day each unique users gives each type of plant food.
+
+    !!! info
+        - When a new user account is created, a database trigger is required to automatically insert a default User Feed Day entry for every available feed, assigning a default day (the first in the Day table). This ensures every user always has a nominated day for each feed, which can later be updated within the Users Preferences page.
+
+=== "User Notifications"
+    Holds a users notification preferences. Stored in a dedicated table so their preferences can persist but also be turned off entirely if required as this is likely to be a premium feature long term. It is to default with them all turned on.
 
 ---
 
