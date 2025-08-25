@@ -100,8 +100,8 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // Core React chunks
-                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+                        // Core React + Router chunks (keep React and react-router together to avoid circular ESM runtime issues)
+                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router/')) {
                             return 'react-vendor';
                         }
 
@@ -140,10 +140,9 @@ export default defineConfig(() => {
                             return 'axios';
                         }
 
-                        // Router
-                        if (id.includes('node_modules/react-router')) {
-                            return 'react-router';
-                        }
+                        // NOTE: react-router is intentionally grouped with React above to avoid a circular import
+                        // runtime issue where react-router and the inlined React runtime can end up in separate
+                        // chunks and create a circular dependency that leaves React undefined at runtime.
 
                         // Notifications and UI effects
                         if (id.includes('node_modules/sonner') || id.includes('node_modules/cmdk')) {
