@@ -61,3 +61,5 @@ dev/*
 # SonarQube scanner reports
 .scannerwork/
 .scannerwork/report-task.txt
+
+prompt.md
