@@ -100,8 +100,12 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // Core React + Router chunks (keep React and react-router together to avoid circular ESM runtime issues)
-                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router/')) {
+                        // Ensure React and closely-related router/runtime packages are isolated into
+                        // a single chunk to avoid circular ESM evaluation issues where other vendor
+                        // chunks import back into the React runtime before it's initialized.
+                        // Use a cross-platform regex to match both POSIX and Windows paths.
+                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is)[\\\/]/;
+                        if (reactPkgRe.test(id)) {
                             return 'react-vendor';
                         }
 
@@ -140,10 +144,6 @@ export default defineConfig(() => {
                             return 'axios';
                         }
 
-                        // NOTE: react-router is intentionally grouped with React above to avoid a circular import
-                        // runtime issue where react-router and the inlined React runtime can end up in separate
-                        // chunks and create a circular dependency that leaves React undefined at runtime.
-
                         // Notifications and UI effects
                         if (id.includes('node_modules/sonner') || id.includes('node_modules/cmdk')) {
                             return 'ui-effects';
@@ -154,12 +154,12 @@ export default defineConfig(() => {
                             return 'workbox';
                         }
 
-                        // Other node_modules - group remaining smaller libraries
+                        // Other node_modules - group remaining smaller libraries into vendor-misc.
                         if (id.includes('node_modules/')) {
                             const pkg = id.split('node_modules/')[1].split('/')[0];
                             const skip = ['detect-node-es', 'set-cookie-parser', 'turbo-stream'];
                             if (skip.includes(pkg)) {
-                                return; // Include in main bundle
+                                return; // keep in main bundle
                             }
                             return 'vendor-misc';
                         }

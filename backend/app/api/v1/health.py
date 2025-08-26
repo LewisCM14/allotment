@@ -41,6 +41,7 @@ _previous_resources_state = {
     summary="Health check",
     description="Returns system health information",
 )
+@router.get("/", include_in_schema=False)
 @limiter.limit("30/minute")
 async def health_check(
     request: Request,
