@@ -104,7 +104,7 @@ export default defineConfig(() => {
                         // a single chunk to avoid circular ESM evaluation issues where other vendor
                         // chunks import back into the React runtime before it's initialized.
                         // Use a cross-platform regex to match both POSIX and Windows paths.
-                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack)[\\\/]/;
+                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack|@hookform|react-window|react-hook-form)[\\\/]/;
                         if (reactPkgRe.test(id)) {
                             return 'react-vendor';
                         }
@@ -114,19 +114,9 @@ export default defineConfig(() => {
                             return '@radix-ui';
                         }
 
-                        // State management and data fetching
-                        if (id.includes('node_modules/@tanstack/')) {
-                            return '@tanstack';
-                        }
-
                         // Utility libraries
                         if (id.includes('node_modules/zod') || id.includes('node_modules/tailwind-merge') || id.includes('node_modules/class-variance-authority')) {
                             return 'utils';
-                        }
-
-                        // Forms and validation
-                        if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform/')) {
-                            return 'forms';
                         }
 
                         // Icons - keep as separate chunk for caching
