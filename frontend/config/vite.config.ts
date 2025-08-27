@@ -98,6 +98,22 @@ export default defineConfig(() => {
             dedupe: ['react', 'react-dom'],
         },
         build: {
+            sourcemap: false,
+            cssCodeSplit: false,
+            minify: 'terser' as const,
+            terserOptions: {
+                compress: {
+                    drop_console: true,
+                    drop_debugger: true,
+                    pure_funcs: ['console.log', 'console.debug', 'console.info'], // Remove specific console methods
+                    passes: 2, // Multiple passes for better compression
+                },
+                mangle: {
+                    safari10: true, // Better Safari compatibility
+                },
+            },
+            chunkSizeWarningLimit: 800, // Reduced from 1000 to encourage smaller chunks
+            assetsInlineLimit: 4096, // Inline smaller assets as base64
             rollupOptions: {
                 output: {
                     manualChunks(id) {
