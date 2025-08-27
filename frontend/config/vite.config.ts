@@ -9,6 +9,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig(() => {
     return {
+        base: './', // Ensures assets load correctly in production
         plugins: [
             legacy({
                 targets: ['defaults', 'not IE 11'],
@@ -104,7 +105,7 @@ export default defineConfig(() => {
                         // a single chunk to avoid circular ESM evaluation issues where other vendor
                         // chunks import back into the React runtime before it's initialized.
                         // Use a cross-platform regex to match both POSIX and Windows paths.
-                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack)[\\\/]/;
+                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack|@hookform|react-window|react-hook-form)[\\\/]/;
                         if (reactPkgRe.test(id)) {
                             return 'react-vendor';
                         }
@@ -114,19 +115,9 @@ export default defineConfig(() => {
                             return '@radix-ui';
                         }
 
-                        // State management and data fetching
-                        if (id.includes('node_modules/@tanstack/')) {
-                            return '@tanstack';
-                        }
-
                         // Utility libraries
                         if (id.includes('node_modules/zod') || id.includes('node_modules/tailwind-merge') || id.includes('node_modules/class-variance-authority')) {
                             return 'utils';
-                        }
-
-                        // Forms and validation
-                        if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform/')) {
-                            return 'forms';
                         }
 
                         // Icons - keep as separate chunk for caching
@@ -166,22 +157,10 @@ export default defineConfig(() => {
                     },
                 },
             },
-            sourcemap: false,
-            cssCodeSplit: false,
-            minify: 'terser' as const,
-            terserOptions: {
-                compress: {
-                    drop_console: true,
-                    drop_debugger: true,
-                    pure_funcs: ['console.log', 'console.debug', 'console.info'], // Remove specific console methods
-                    passes: 2, // Multiple passes for better compression
-                },
-                mangle: {
-                    safari10: true, // Better Safari compatibility
-                },
-            },
-            chunkSizeWarningLimit: 800, // Reduced from 1000 to encourage smaller chunks
-            assetsInlineLimit: 4096, // Inline smaller assets as base64
+        },
+        server: {
+            host: true, // Listen on all addresses for Docker
+            port: 5173,
         },
     };
 });
