@@ -104,7 +104,7 @@ export default defineConfig(() => {
                         // a single chunk to avoid circular ESM evaluation issues where other vendor
                         // chunks import back into the React runtime before it's initialized.
                         // Use a cross-platform regex to match both POSIX and Windows paths.
-                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is)[\\\/]/;
+                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack)[\\\/]/;
                         if (reactPkgRe.test(id)) {
                             return 'react-vendor';
                         }
