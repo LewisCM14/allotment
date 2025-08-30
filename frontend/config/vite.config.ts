@@ -117,15 +117,6 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // Ensure React and closely-related router/runtime packages are isolated into
-                        // a single chunk to avoid circular ESM evaluation issues where other vendor
-                        // chunks import back into the React runtime before it's initialized.
-                        // Use a cross-platform regex to match both POSIX and Windows paths.
-                        const reactPkgRe = /node_modules[\\\/](?:react|react-dom|react-router|react-router-dom|react-is|next-themes|@tanstack|@hookform|react-window|react-hook-form)[\\\/]/;
-                        if (reactPkgRe.test(id)) {
-                            return 'react-vendor';
-                        }
-
                         // UI Library chunks
                         if (id.includes('node_modules/@radix-ui/')) {
                             return '@radix-ui';
