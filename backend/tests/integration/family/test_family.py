@@ -39,25 +39,27 @@ async def _request_and_json(client, path: str, expected_status: int):  # type: i
 
 def validate_botanical_group_item(group: dict):
     """Validate a single botanical group structure (shallow)."""
-    for key in ["id", "name", "families"]:
+    for key in ["botanical_group_id", "botanical_group_name", "families"]:
         assert key in group
-    assert isinstance(group["id"], str)
-    assert isinstance(group["name"], str)
+    assert isinstance(group["botanical_group_id"], str)
+    assert isinstance(group["botanical_group_name"], str)
     assert isinstance(group["families"], list)
 
 
 def validate_family_info_basic(data: dict):
-    _assert_has_id_and_name(data)
+    _assert_has_id_and_name(data, "family_id", "family_name")
     assert "botanical_group" in data and isinstance(data["botanical_group"], dict)
-    _assert_has_id_and_name(data["botanical_group"])
+    _assert_has_id_and_name(
+        data["botanical_group"], "botanical_group_id", "botanical_group_name"
+    )
     assert "pests" in data
     assert "diseases" in data
 
 
-def _assert_has_id_and_name(item: dict):
-    """Assert that a dictionary has 'id' (string) and 'name' (string) keys."""
-    assert "id" in item and isinstance(item["id"], str)
-    assert "name" in item and isinstance(item["name"], str)
+def _assert_has_id_and_name(item: dict, id_field: str = "id", name_field: str = "name"):
+    """Assert that a dictionary has the specified ID and name field keys."""
+    assert id_field in item and isinstance(item[id_field], str)
+    assert name_field in item and isinstance(item[name_field], str)
 
 
 def _validate_interventions(interventions: list | None):
@@ -65,7 +67,9 @@ def _validate_interventions(interventions: list | None):
     assert isinstance(interventions, (list, type(None)))
     if interventions:
         for intervention in interventions:
-            _assert_has_id_and_name(intervention)
+            _assert_has_id_and_name(
+                intervention, "intervention_id", "intervention_name"
+            )
 
 
 def _validate_symptoms(symptoms: list | None):
@@ -73,7 +77,7 @@ def _validate_symptoms(symptoms: list | None):
     assert isinstance(symptoms, (list, type(None)))
     if symptoms:
         for symptom in symptoms:
-            _assert_has_id_and_name(symptom)
+            _assert_has_id_and_name(symptom, "symptom_id", "symptom_name")
 
 
 def _validate_pests(pests: list | None):
@@ -81,7 +85,7 @@ def _validate_pests(pests: list | None):
     assert isinstance(pests, (list, type(None)))
     if pests:
         for pest in pests:
-            _assert_has_id_and_name(pest)
+            _assert_has_id_and_name(pest, "pest_id", "pest_name")
             assert "treatments" in pest
             _validate_interventions(pest.get("treatments"))
             assert "preventions" in pest
@@ -93,7 +97,7 @@ def _validate_diseases(diseases: list | None):
     assert isinstance(diseases, (list, type(None)))
     if diseases:
         for disease in diseases:
-            _assert_has_id_and_name(disease)
+            _assert_has_id_and_name(disease, "disease_id", "disease_name")
             assert "symptoms" in disease
             _validate_symptoms(disease.get("symptoms"))
             assert "treatments" in disease
@@ -115,10 +119,10 @@ class TestListBotanicalGroups:
         for group in data:
             validate_botanical_group_item(group)
             for fam in group["families"]:
-                _assert_has_id_and_name(fam)
-            if group["name"] == seed_family_data["group_name"]:
+                _assert_has_id_and_name(fam, "family_id", "family_name")
+            if group["botanical_group_name"] == seed_family_data["group_name"]:
                 found_seeded = True
-                fam_names = {f["name"] for f in group["families"]}
+                fam_names = {f["family_name"] for f in group["families"]}
                 assert seed_family_data["family_name"] in fam_names
         assert found_seeded, "Seeded botanical group not found in response"
 
@@ -197,7 +201,7 @@ class TestListBotanicalGroups:
         data = response.json()
         assert len(data) > 0
 
-        assert data[0]["name"] == expected_first
+        assert data[0]["botanical_group_name"] == expected_first
 
 
 class TestGetFamilyInfo:
@@ -208,8 +212,8 @@ class TestGetFamilyInfo:
         resp = await client.get(f"{PREFIX}/families/{family_id}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert data["id"] == family_id
-        assert data["name"] == seed_family_data["family_name"]
+        assert data["family_id"] == family_id
+        assert data["family_name"] == seed_family_data["family_name"]
         validate_family_info_basic(data)
 
     @pytest.mark.asyncio
@@ -245,22 +249,22 @@ class TestGetFamilyInfo:
         mocker.patch(
             "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_family_details",
             return_value=FamilyInfoSchema(
-                id=uuid.UUID(family_id_str),
-                name=seed_family_data["family_name"],
+                family_id=uuid.UUID(family_id_str),
+                family_name=seed_family_data["family_name"],
                 pests=None,
                 diseases=None,
                 botanical_group=BotanicalGroupInfoSchema(
-                    id=uuid.UUID(botanical_group_id_str),
-                    name=seed_family_data["group_name"],
-                    recommended_rotation_years=2,
+                    botanical_group_id=uuid.UUID(botanical_group_id_str),
+                    botanical_group_name=seed_family_data["group_name"],
+                    rotate_years=2,
                 ),
             ),
         )
         resp = await client.get(f"{PREFIX}/families/{family_id_str}/info")
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert data["id"] == family_id_str
-        assert data["name"] == seed_family_data["family_name"]
+        assert data["family_id"] == family_id_str
+        assert data["family_name"] == seed_family_data["family_name"]
         assert data["pests"] is None
         assert data["diseases"] is None
 
@@ -296,14 +300,14 @@ class TestGetFamilyInfo:
             mocker.patch(
                 "app.api.services.family.family_unit_of_work.FamilyUnitOfWork.get_family_details",
                 return_value=FamilyInfoSchema(
-                    id=uuid.UUID(family_id_str),
-                    name="Test Family",
+                    family_id=uuid.UUID(family_id_str),
+                    family_name="Test Family",
                     pests=None,
                     diseases=None,
                     botanical_group=BotanicalGroupInfoSchema(
-                        id=uuid.UUID(mock_botanical_group_id_str),
-                        name="Some Group",
-                        recommended_rotation_years=3,
+                        botanical_group_id=uuid.UUID(mock_botanical_group_id_str),
+                        botanical_group_name="Some Group",
+                        rotate_years=3,
                     ),
                 ),
             )
@@ -325,64 +329,70 @@ class TestGetFamilyInfo:
         botanical_group_id = str(uuid.uuid4())
 
         mock_data = FamilyInfoSchema(
-            id=uuid.UUID(family_id),
-            name="Complete Family",
+            family_id=uuid.UUID(family_id),
+            family_name="Complete Family",
             botanical_group=BotanicalGroupInfoSchema(
-                id=uuid.UUID(botanical_group_id),
-                name="Complete Group",
-                recommended_rotation_years=3,
+                botanical_group_id=uuid.UUID(botanical_group_id),
+                botanical_group_name="Complete Group",
+                rotate_years=3,
             ),
             pests=[
                 PestSchema(
-                    id=uuid.UUID(str(uuid.uuid4())),
-                    name="test pest",
+                    pest_id=uuid.UUID(str(uuid.uuid4())),
+                    pest_name="test pest",
                     treatments=[
                         InterventionSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="treatment 1"
+                            intervention_id=uuid.UUID(str(uuid.uuid4())),
+                            intervention_name="treatment 1",
                         ),
                         InterventionSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="treatment 2"
+                            intervention_id=uuid.UUID(str(uuid.uuid4())),
+                            intervention_name="treatment 2",
                         ),
                     ],
                     preventions=[
                         InterventionSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="prevention 1"
+                            intervention_id=uuid.UUID(str(uuid.uuid4())),
+                            intervention_name="prevention 1",
                         ),
                     ],
                 )
             ],
             diseases=[
                 DiseaseSchema(
-                    id=uuid.UUID(str(uuid.uuid4())),
-                    name="test disease",
+                    disease_id=uuid.UUID(str(uuid.uuid4())),
+                    disease_name="test disease",
                     symptoms=[
                         SymptomSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="symptom 1"
+                            symptom_id=uuid.UUID(str(uuid.uuid4())),
+                            symptom_name="symptom 1",
                         ),
                     ],
                     treatments=[
                         InterventionSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="disease treatment"
+                            intervention_id=uuid.UUID(str(uuid.uuid4())),
+                            intervention_name="disease treatment",
                         ),
                     ],
                     preventions=[
                         InterventionSchema(
-                            id=uuid.UUID(str(uuid.uuid4())), name="disease prevention"
+                            intervention_id=uuid.UUID(str(uuid.uuid4())),
+                            intervention_name="disease prevention",
                         ),
                     ],
                 )
             ],
             antagonises=[
                 FamilyRelationSchema(
-                    id=uuid.UUID(str(uuid.uuid4())), name="antagonist 1"
+                    family_id=uuid.UUID(str(uuid.uuid4())), family_name="antagonist 1"
                 ),
             ],
             companion_to=[
                 FamilyRelationSchema(
-                    id=uuid.UUID(str(uuid.uuid4())), name="companion 1"
+                    family_id=uuid.UUID(str(uuid.uuid4())), family_name="companion 1"
                 ),
                 FamilyRelationSchema(
-                    id=uuid.UUID(str(uuid.uuid4())), name="companion 2"
+                    family_id=uuid.UUID(str(uuid.uuid4())), family_name="companion 2"
                 ),
             ],
         )
@@ -396,9 +406,9 @@ class TestGetFamilyInfo:
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
 
-        assert data["pests"][0]["treatments"][0]["name"] == "treatment 1"
-        assert data["diseases"][0]["symptoms"][0]["name"] == "symptom 1"
-        assert data["antagonises"][0]["name"] == "antagonist 1"
+        assert data["pests"][0]["treatments"][0]["intervention_name"] == "treatment 1"
+        assert data["diseases"][0]["symptoms"][0]["symptom_name"] == "symptom 1"
+        assert data["antagonises"][0]["family_name"] == "antagonist 1"
         assert len(data["companion_to"]) == 2
 
 
@@ -422,13 +432,15 @@ class TestFamilyAPIPerformance:
             group_id = uuid.uuid4()
             families = []
             for j in range(10):
-                families.append({"id": str(uuid.uuid4()), "name": f"family_{i}_{j}"})
+                families.append(
+                    {"family_id": str(uuid.uuid4()), "family_name": f"family_{i}_{j}"}
+                )
 
             large_data.append(
                 {
-                    "id": str(group_id),
-                    "name": f"botanical_group_{i}",
-                    "recommended_rotation_years": i % 5,
+                    "botanical_group_id": str(group_id),
+                    "botanical_group_name": f"botanical_group_{i}",
+                    "rotate_years": i % 5,
                     "families": families,
                 }
             )

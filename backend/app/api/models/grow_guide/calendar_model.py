@@ -22,7 +22,7 @@ class Day(Base):
 
     __tablename__ = "day"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    day_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
@@ -34,7 +34,7 @@ class Day(Base):
         unique=True,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(3), nullable=False)
+    day_name: Mapped[str] = mapped_column(String(3), nullable=False)
 
     # Relationship to UserFeedDay
     user_feed_days: Mapped[list["UserFeedDay"]] = relationship(
@@ -42,6 +42,59 @@ class Day(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("name", name="uq_day_name"),
+        UniqueConstraint("day_name", name="uq_day_name"),
         UniqueConstraint("day_number", name="uq_day_number"),
+    )
+
+
+class Week(Base):
+    """Week model representing the 52 weeks of the year with start and end dates."""
+
+    __tablename__ = "week"
+
+    week_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        nullable=False,
+        index=True,
+    )
+    week_number: Mapped[int] = mapped_column(
+        nullable=False,
+        unique=True,
+    )
+    start_month_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), nullable=False
+    )
+    week_start_date: Mapped[str] = mapped_column(
+        String(5), nullable=False
+    )  # Format: MM/DD
+    week_end_date: Mapped[str] = mapped_column(
+        String(5), nullable=False
+    )  # Format: MM/DD
+
+    __table_args__ = (UniqueConstraint("week_number", name="uq_week_number"),)
+
+
+class Month(Base):
+    """Month model representing the twelve months of the year."""
+
+    __tablename__ = "month"
+
+    month_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        nullable=False,
+        index=True,
+    )
+    month_number: Mapped[int] = mapped_column(
+        nullable=False,
+        unique=True,
+    )
+    month_name: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("month_number", name="uq_month_number"),
+        UniqueConstraint("month_name", name="uq_month_name"),
     )

@@ -37,9 +37,9 @@ async def test_day_repository_get_all_days_success_and_ordering():
     mock_db = Mock(spec=AsyncSession)
     # Intentionally unsorted input (repository query applies ordering)
     days = [
-        Day(id=1, day_number=5, name="Fri"),
-        Day(id=2, day_number=1, name="Mon"),
-        Day(id=3, day_number=3, name="Wed"),
+        Day(day_id=1, day_number=5, day_name="Fri"),
+        Day(day_id=2, day_number=1, day_name="Mon"),
+        Day(day_id=3, day_number=3, day_name="Wed"),
     ]
     mock_db.execute.return_value = _mock_result(days)
     repo = DayRepository(mock_db)
@@ -66,9 +66,9 @@ async def test_variety_repository_get_all_feeds_empty():
 async def test_variety_repository_get_all_feeds_success_and_ordering():
     mock_db = Mock(spec=AsyncSession)
     feeds = [
-        Feed(id=1, name="Zinc Mix"),
-        Feed(id=2, name="All Purpose"),
-        Feed(id=3, name="Bone Meal"),
+        Feed(feed_id=1, feed_name="Zinc Mix"),
+        Feed(feed_id=2, feed_name="All Purpose"),
+        Feed(feed_id=3, feed_name="Bone Meal"),
     ]
     mock_db.execute.return_value = _mock_result(feeds)
     repo = VarietyRepository(mock_db)

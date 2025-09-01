@@ -49,4 +49,4 @@ async def get_feeds(
                 count=len(feeds),
                 **log_context,
             )
-            return [FeedRead(id=feed.id, name=feed.name) for feed in feeds]
+            return [FeedRead(id=feed.feed_id, name=feed.feed_name) for feed in feeds]

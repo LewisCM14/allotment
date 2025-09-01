@@ -26,7 +26,7 @@ def _patch_feeds(return_value=None, side_effect=None):
 
 def _standard_feeds():
     names = ["Tomato Feed", "General Purpose Feed", "Organic Feed"]
-    return [Feed(id=uuid.uuid4(), name=n) for n in names]
+    return [Feed(feed_id=uuid.uuid4(), feed_name=n) for n in names]
 
 
 @pytest.mark.asyncio
@@ -42,7 +42,7 @@ async def test_feeds_success(client):
     assert len(data) == 3
     for i, feed in enumerate(data):
         assert set(feed.keys()) == {"id", "name"}
-        assert feed["name"] == items[i].name
+        assert feed["name"] == items[i].feed_name
 
 
 @pytest.mark.asyncio
@@ -71,7 +71,9 @@ async def test_feeds_large_dataset(client):
     with _patch_db() as mock_get_db:
         mock_db = AsyncMock(spec=AsyncSession)
         mock_get_db.return_value = mock_db
-        items = [Feed(id=uuid.uuid4(), name=f"Feed Type {i}") for i in range(60)]
+        items = [
+            Feed(feed_id=uuid.uuid4(), feed_name=f"Feed Type {i}") for i in range(60)
+        ]
         with _patch_feeds(return_value=items):
             response = await client.get(f"{PREFIX}/feed")
     assert response.status_code == status.HTTP_200_OK

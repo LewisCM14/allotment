@@ -28,5 +28,5 @@ class VarietyRepository:
     async def get_all_feeds(self) -> List[Feed]:
         """Get all available feed types."""
         with log_timing("db_get_all_feeds", request_id=self.request_id):
-            result = await self.db.execute(select(Feed).order_by(Feed.name))
+            result = await self.db.execute(select(Feed).order_by(Feed.feed_name))
             return list(result.scalars().all())

@@ -220,8 +220,8 @@ def make_feed(name: str = "Feed", feed_id=None):
     from app.api.models.grow_guide.guide_options_model import Feed
 
     f = Feed()
-    f.id = UUID(str(feed_id)) if feed_id else uuid4()
-    f.name = name
+    f.feed_id = UUID(str(feed_id)) if feed_id else uuid4()
+    f.feed_name = name
     return f
 
 
@@ -231,8 +231,8 @@ def make_day(name: str = "Monday", day_number: int = 1, day_id=None):
     from app.api.models.grow_guide.calendar_model import Day
 
     d = Day()
-    d.id = UUID(str(day_id)) if day_id else uuid4()
-    d.name = name
+    d.day_id = UUID(str(day_id)) if day_id else uuid4()
+    d.day_name = name
     d.day_number = day_number
     return d
 

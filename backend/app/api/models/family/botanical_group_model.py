@@ -26,27 +26,34 @@ class BotanicalGroup(Base):
 
     __tablename__ = "botanical_group"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    botanical_group_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
-    recommended_rotation_years: Mapped[int | None] = mapped_column(
-        Integer, nullable=True
+    botanical_group_name: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False
     )
+    rotate_years: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     families: Mapped[List["Family"]] = relationship(
         "Family", back_populates="botanical_group"
     )
 
     __table_args__ = (
-        UniqueConstraint("name", name="uq_botanical_group_name"),
-        CheckConstraint("name = LOWER(name)", name="ck_botanical_group_name_lower"),
+        UniqueConstraint("botanical_group_name", name="uq_botanical_group_name"),
+        CheckConstraint(
+            "botanical_group_name = LOWER(botanical_group_name)",
+            name="ck_botanical_group_name_lower",
+        ),
     )
 
     def __repr__(self) -> str:
-        logger.debug("BotanicalGroup repr called", id=self.id, name=self.name)
-        return f"<BotanicalGroup(id={self.id}, name='{self.name}')>"
+        logger.debug(
+            "BotanicalGroup repr called",
+            id=self.botanical_group_id,
+            name=self.botanical_group_name,
+        )
+        return f"<BotanicalGroup(id={self.botanical_group_id}, name='{self.botanical_group_name}')>"

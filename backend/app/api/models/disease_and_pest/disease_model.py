@@ -25,13 +25,13 @@ disease_treatment = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.id", ondelete="CASCADE"),
+        ForeignKey("disease.disease_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "intervention_id",
         UUID(as_uuid=True),
-        ForeignKey("intervention.id", ondelete="CASCADE"),
+        ForeignKey("intervention.intervention_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -42,13 +42,13 @@ disease_prevention = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.id", ondelete="CASCADE"),
+        ForeignKey("disease.disease_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "intervention_id",
         UUID(as_uuid=True),
-        ForeignKey("intervention.id", ondelete="CASCADE"),
+        ForeignKey("intervention.intervention_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -59,13 +59,13 @@ disease_symptom = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.id", ondelete="CASCADE"),
+        ForeignKey("disease.disease_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "symptom_id",
         UUID(as_uuid=True),
-        ForeignKey("symptom.id", ondelete="CASCADE"),
+        ForeignKey("symptom.symptom_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -76,13 +76,13 @@ family_disease = Table(
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.id", ondelete="CASCADE"),
+        ForeignKey("disease.disease_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -90,14 +90,14 @@ family_disease = Table(
 
 class Disease(Base):
     __tablename__ = "disease"
-    id: Mapped[uuid.UUID] = mapped_column(
+    disease_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    disease_name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
 
     # Relationships
     treatments: Mapped[List["Intervention"]] = relationship(
@@ -113,4 +113,4 @@ class Disease(Base):
         "Family", secondary=family_disease, back_populates="diseases"
     )
 
-    __table_args__ = (UniqueConstraint("name", name="uq_disease_name"),)
+    __table_args__ = (UniqueConstraint("disease_name", name="uq_disease_name"),)

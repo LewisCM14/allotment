@@ -24,13 +24,13 @@ pest_treatment = Table(
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.id", ondelete="CASCADE"),
+        ForeignKey("pest.pest_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "intervention_id",
         UUID(as_uuid=True),
-        ForeignKey("intervention.id", ondelete="CASCADE"),
+        ForeignKey("intervention.intervention_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -41,13 +41,13 @@ pest_prevention = Table(
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.id", ondelete="CASCADE"),
+        ForeignKey("pest.pest_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "intervention_id",
         UUID(as_uuid=True),
-        ForeignKey("intervention.id", ondelete="CASCADE"),
+        ForeignKey("intervention.intervention_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -58,13 +58,13 @@ family_pest = Table(
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.id", ondelete="CASCADE"),
+        ForeignKey("pest.pest_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -73,21 +73,21 @@ family_pest = Table(
 class Pest(Base):
     __tablename__ = "pest"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    pest_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(
+    pest_name: Mapped[str] = mapped_column(
         String(50),
         unique=True,
         index=True,
         nullable=False,
     )
 
-    __table_args__ = (UniqueConstraint("name", name="uq_pest_name"),)
+    __table_args__ = (UniqueConstraint("pest_name", name="uq_pest_name"),)
 
     # Relationships
     treatments: Mapped[List["Intervention"]] = relationship(
@@ -101,4 +101,4 @@ class Pest(Base):
     )
 
     def __repr__(self) -> str:
-        return f"<Pest(id={self.id}, name='{self.name}')>"
+        return f"<Pest(id={self.pest_id}, name='{self.pest_name}')>"

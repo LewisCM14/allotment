@@ -50,6 +50,6 @@ async def get_days(
                 **log_context,
             )
             return [
-                DayRead(id=day.id, day_number=day.day_number, name=day.name)
+                DayRead(id=day.day_id, day_number=day.day_number, name=day.day_name)
                 for day in days
             ]

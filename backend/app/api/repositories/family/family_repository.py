@@ -68,7 +68,7 @@ class FamilyRepository:
             query = (
                 select(BotanicalGroup)
                 .options(joinedload(BotanicalGroup.families))
-                .order_by(BotanicalGroup.name)
+                .order_by(BotanicalGroup.botanical_group_name)
             )
             result = await self.db.execute(query)
             botanical_groups = list(result.unique().scalars().all())
@@ -97,7 +97,7 @@ class FamilyRepository:
                 joinedload(Family.antagonises),
                 joinedload(Family.companion_to),
             )
-            .filter(Family.id == family_id)
+            .filter(Family.family_id == family_id)
         )
         result = await self.db.execute(query)
         return result.scalar_one_or_none()
@@ -127,7 +127,7 @@ class FamilyRepository:
                 joinedload(Family.antagonises),
                 joinedload(Family.companion_to),
             )
-            .where(Family.id == family_id_uuid)
+            .where(Family.family_id == family_id_uuid)
         )
         result = await self.db.execute(query)
         return result.unique().scalar_one_or_none()
@@ -145,7 +145,10 @@ class FamilyRepository:
         item_id_column = getattr(association_table.c, item_id_column_name)
         query = (
             select(item_id_column, Intervention)
-            .join(Intervention, Intervention.id == association_table.c.intervention_id)
+            .join(
+                Intervention,
+                Intervention.intervention_id == association_table.c.intervention_id,
+            )
             .where(item_id_column.in_(item_ids))
         )
         result = await self.db.execute(query)
@@ -163,7 +166,7 @@ class FamilyRepository:
             return symptoms_map
         symptoms_query = (
             select(disease_symptom.c.disease_id, Symptom)
-            .join(Symptom, Symptom.id == disease_symptom.c.symptom_id)
+            .join(Symptom, Symptom.symptom_id == disease_symptom.c.symptom_id)
             .where(disease_symptom.c.disease_id.in_(disease_ids))
         )
         symptoms_result = await self.db.execute(symptoms_query)
@@ -177,14 +180,14 @@ class FamilyRepository:
         """Fetches pests and their details for a given family."""
         family_pests_result = await self.db.execute(
             select(Pest)
-            .join(family_pest, Pest.id == family_pest.c.pest_id)
+            .join(family_pest, Pest.pest_id == family_pest.c.pest_id)
             .where(family_pest.c.family_id == family_id_uuid)
         )
         pests = list(family_pests_result.scalars().all())
         if not pests:
             return []
 
-        pest_ids = [pest.id for pest in pests]
+        pest_ids = [pest.pest_id for pest in pests]
         treatments_map = await self._map_interventions_to_items(
             pest_ids, pest_treatment, "pest_id"
         )
@@ -194,16 +197,16 @@ class FamilyRepository:
 
         return [
             PestSchema(
-                id=pest.id,
-                name=pest.name,
+                pest_id=pest.pest_id,
+                pest_name=pest.pest_name,
                 treatments=[
                     InterventionSchema.model_validate(t)
-                    for t in treatments_map.get(pest.id, [])
+                    for t in treatments_map.get(pest.pest_id, [])
                 ]
                 or None,
                 preventions=[
                     InterventionSchema.model_validate(p)
-                    for p in preventions_map.get(pest.id, [])
+                    for p in preventions_map.get(pest.pest_id, [])
                 ]
                 or None,
             )
@@ -216,14 +219,14 @@ class FamilyRepository:
         """Fetches diseases and their details for a given family."""
         family_diseases_result = await self.db.execute(
             select(Disease)
-            .join(family_disease, Disease.id == family_disease.c.disease_id)
+            .join(family_disease, Disease.disease_id == family_disease.c.disease_id)
             .where(family_disease.c.family_id == family_id_uuid)
         )
         diseases = list(family_diseases_result.scalars().all())
         if not diseases:
             return []
 
-        disease_ids = [disease.id for disease in diseases]
+        disease_ids = [disease.disease_id for disease in diseases]
         symptoms_map = await self._map_symptoms_to_diseases(disease_ids)
         treatments_map = await self._map_interventions_to_items(
             disease_ids, disease_treatment, "disease_id"
@@ -234,21 +237,21 @@ class FamilyRepository:
 
         return [
             DiseaseSchema(
-                id=disease.id,
-                name=disease.name,
+                disease_id=disease.disease_id,
+                disease_name=disease.disease_name,
                 symptoms=[
                     SymptomSchema.model_validate(s)
-                    for s in symptoms_map.get(disease.id, [])
+                    for s in symptoms_map.get(disease.disease_id, [])
                 ]
                 or None,
                 treatments=[
                     InterventionSchema.model_validate(t)
-                    for t in treatments_map.get(disease.id, [])
+                    for t in treatments_map.get(disease.disease_id, [])
                 ]
                 or None,
                 preventions=[
                     InterventionSchema.model_validate(p)
-                    for p in preventions_map.get(disease.id, [])
+                    for p in preventions_map.get(disease.disease_id, [])
                 ]
                 or None,
             )
@@ -269,7 +272,8 @@ class FamilyRepository:
             select(Family)
             .join(
                 association_table,
-                (Family.id == family_id_col) | (Family.id == related_family_id_col),
+                (Family.family_id == family_id_col)
+                | (Family.family_id == related_family_id_col),
             )
             .where(
                 or_(
@@ -280,7 +284,9 @@ class FamilyRepository:
         )
         result = await self.db.execute(query)
         return {
-            fam for fam in result.unique().scalars().all() if fam.id != family_id_uuid
+            fam
+            for fam in result.unique().scalars().all()
+            if fam.family_id != family_id_uuid
         }
 
     async def get_family_info(self, family_id: Any) -> Optional[FamilyInfoSchema]:
@@ -307,12 +313,12 @@ class FamilyRepository:
         )
 
         return FamilyInfoSchema(
-            id=family.id,
-            name=family.name,
+            family_id=family.family_id,
+            family_name=family.family_name,
             botanical_group=BotanicalGroupInfoSchema(
-                id=family.botanical_group.id,
-                name=family.botanical_group.name,
-                recommended_rotation_years=family.botanical_group.recommended_rotation_years,
+                botanical_group_id=family.botanical_group.botanical_group_id,
+                botanical_group_name=family.botanical_group.botanical_group_name,
+                rotate_years=family.botanical_group.rotate_years,
             ),
             pests=pests or None,
             diseases=diseases or None,

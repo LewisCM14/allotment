@@ -34,6 +34,7 @@ from app.api.middleware.logging_middleware import (
 if TYPE_CHECKING:
     from app.api.models.grow_guide.calendar_model import Day
     from app.api.models.grow_guide.guide_options_model import Feed
+    from app.api.models.grow_guide.variety_model import Variety
 
 logger = structlog.get_logger()
 
@@ -74,6 +75,12 @@ class User(Base):
     )
     feed_days: Mapped[list["UserFeedDay"]] = relationship(
         "UserFeedDay", back_populates="user", cascade="all, delete-orphan"
+    )
+    varieties: Mapped[list["Variety"]] = relationship(
+        "Variety",
+        back_populates="user",
+        foreign_keys="[Variety.owner_user_id]",
+        cascade="all, delete-orphan",
     )
 
     @property
@@ -220,14 +227,14 @@ class UserFeedDay(Base):
     )
     feed_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("feed.id", ondelete="CASCADE"),
+        ForeignKey("feed.feed_id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
         index=True,
     )
     day_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("day.id", ondelete="CASCADE"),
+        ForeignKey("day.day_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )

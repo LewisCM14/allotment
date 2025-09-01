@@ -174,17 +174,17 @@ async def seed_family_data():
         # Create a botanical group
         group_id = uuid.uuid4()
         group = BotanicalGroup(
-            id=group_id,
-            name="testgroup",
-            recommended_rotation_years=2,
+            botanical_group_id=group_id,
+            botanical_group_name="testgroup",
+            rotate_years=2,
         )
         session.add(group)
         await session.flush()
         # Create a family
         family_id = uuid.uuid4()
         family = Family(
-            id=family_id,
-            name="testfamily",
+            family_id=family_id,
+            family_name="testfamily",
             botanical_group_id=group_id,
         )
         session.add(family)
@@ -215,9 +215,9 @@ async def seed_day_data():
         for day_data in days_data:
             day_id = uuid.uuid4()
             day = Day(
-                id=day_id,
+                day_id=day_id,
                 day_number=day_data["day_number"],
-                name=day_data["name"],
+                day_name=day_data["name"],
             )
             session.add(day)
             created_days.append(
@@ -248,8 +248,8 @@ async def seed_feed_data():
         for feed_name in feeds_data:
             feed_id = uuid.uuid4()
             feed = Feed(
-                id=feed_id,
-                name=feed_name,
+                feed_id=feed_id,
+                feed_name=feed_name,
             )
             session.add(feed)
             created_feeds.append(
@@ -289,9 +289,9 @@ async def complete_family_seed_data():
         for group_data in groups_data:
             group_id = uuid.uuid4()
             group = BotanicalGroup(
-                id=group_id,
-                name=group_data["name"],
-                recommended_rotation_years=group_data["rotation_years"],
+                botanical_group_id=group_id,
+                botanical_group_name=group_data["name"],
+                rotate_years=group_data["rotation_years"],
             )
             session.add(group)
             created_groups.append(
@@ -312,8 +312,8 @@ async def complete_family_seed_data():
             for family_name in families_per_group.get(group_data["name"], []):
                 family_id = uuid.uuid4()
                 family = Family(
-                    id=family_id,
-                    name=family_name,
+                    family_id=family_id,
+                    family_name=family_name,
                     botanical_group_id=group_id,
                 )
                 session.add(family)
