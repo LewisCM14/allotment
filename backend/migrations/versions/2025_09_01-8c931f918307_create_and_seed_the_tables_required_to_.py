@@ -2319,6 +2319,7 @@ def upgrade() -> None:
         {"condition": "partial sun"},
         {"condition": "partial shade"},
         {"condition": "full shade"},
+        {"condition": "greenhouse"},
     ]
     planting_condition_ids = {
         pc["condition"]: uuid.uuid4() for pc in planting_conditions
