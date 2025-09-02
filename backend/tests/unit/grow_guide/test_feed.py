@@ -12,10 +12,10 @@ def _assert_feed_objects(feeds):
     ids = set()
     names = set()
     for f in feeds:
-        assert f.id is not None
-        assert f.name and isinstance(f.name, str)
-        ids.add(f.id)
-        names.add(f.name)
+        assert f.feed_id is not None
+        assert f.feed_name and isinstance(f.feed_name, str)
+        ids.add(f.feed_id)
+        names.add(f.feed_name)
     assert len(ids) == len(feeds), "Duplicate feed IDs detected"
     assert len(names) == len(feeds), "Duplicate feed names detected"
 
@@ -28,7 +28,7 @@ class TestFeedEndpointUnit:
             result = await get_feeds(mock_request, db)
         assert len(result) == 5
         _assert_feed_objects(result)
-        names = {f.name for f in result}
+        names = {f.feed_name for f in result}
         # Spot check a few seeded feeds (allow flexible set membership)
         expected_any = {"Tomato Feed", "General Purpose Feed"}
         assert expected_any.issubset(names)

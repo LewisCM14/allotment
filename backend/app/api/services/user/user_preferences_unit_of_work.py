@@ -130,11 +130,15 @@ class UserPreferencesUnitOfWork:
                     for ufd in user_feed_days
                 ],
                 available_feeds=[
-                    FeedRead(id=feed.feed_id, name=feed.feed_name)
+                    FeedRead(feed_id=feed.feed_id, feed_name=feed.feed_name)
                     for feed in available_feeds
                 ],
                 available_days=[
-                    DayRead(id=day.day_id, day_number=day.day_number, name=day.day_name)
+                    DayRead(
+                        day_id=day.day_id,
+                        day_number=day.day_number,
+                        day_name=day.day_name,
+                    )
                     for day in available_days
                 ],
             )

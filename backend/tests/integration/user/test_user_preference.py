@@ -35,8 +35,8 @@ class TestUserPreferenceIntegration:
                     day_name="Mon",
                 )
             ],
-            available_feeds=[FeedRead(id=feed_id, name="Tomato Feed")],
-            available_days=[DayRead(id=day_id, day_number=1, name="Mon")],
+            available_feeds=[FeedRead(feed_id=feed_id, feed_name="Tomato Feed")],
+            available_days=[DayRead(day_id=day_id, day_number=1, day_name="Mon")],
         )
         with patch(
             "app.api.services.user.user_preferences_unit_of_work.UserPreferencesUnitOfWork.get_user_preferences",

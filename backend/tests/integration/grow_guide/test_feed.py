@@ -41,8 +41,8 @@ async def test_feeds_success(client):
     data = response.json()
     assert len(data) == 3
     for i, feed in enumerate(data):
-        assert set(feed.keys()) == {"id", "name"}
-        assert feed["name"] == items[i].feed_name
+        assert set(feed.keys()) == {"feed_id", "feed_name"}
+        assert feed["feed_name"] == items[i].feed_name
 
 
 @pytest.mark.asyncio
@@ -113,5 +113,5 @@ async def test_feeds_basic_field_validation(client):
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     for f in data:
-        assert isinstance(f["name"], str)
-        assert len(f["name"]) >= 3
+        assert isinstance(f["feed_name"], str)
+        assert len(f["feed_name"]) >= 3

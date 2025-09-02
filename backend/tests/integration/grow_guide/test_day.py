@@ -44,8 +44,8 @@ async def test_days_success(client):
     data = response.json()
     assert len(data) == 7
     for i, day in enumerate(data):
-        assert set(day.keys()) == {"id", "name", "day_number"}
-        assert day["name"] == items[i].day_name
+        assert set(day.keys()) == {"day_id", "day_name", "day_number"}
+        assert day["day_name"] == items[i].day_name
         assert day["day_number"] == items[i].day_number
 
 
@@ -120,4 +120,4 @@ async def test_days_basic_field_validation(client):
     for d in data:
         assert isinstance(d["day_number"], int)
         assert 1 <= d["day_number"] <= 7
-        assert len(d["name"]) >= 3
+        assert len(d["day_name"]) >= 3

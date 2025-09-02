@@ -396,11 +396,19 @@ class TestUserPreferencesUnitOfWork:
     @pytest.mark.parametrize(
         "schema_cls, builder_list, attr_map",
         [
-            (FeedRead, "sample_feeds", [("id", "feed_id"), ("name", "feed_name")]),
+            (
+                FeedRead,
+                "sample_feeds",
+                [("feed_id", "feed_id"), ("feed_name", "feed_name")],
+            ),
             (
                 DayRead,
                 "sample_days",
-                [("id", "day_id"), ("day_number", "day_number"), ("name", "day_name")],
+                [
+                    ("day_id", "day_id"),
+                    ("day_number", "day_number"),
+                    ("day_name", "day_name"),
+                ],
             ),
         ],
     )

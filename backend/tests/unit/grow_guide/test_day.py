@@ -13,10 +13,10 @@ def _assert_day_objects(days):
     ids = set()
     numbers = []
     for d in days:
-        assert d.id is not None
-        assert d.name and isinstance(d.name, str)
+        assert d.day_id is not None
+        assert d.day_name and isinstance(d.day_name, str)
         assert isinstance(d.day_number, int)
-        ids.add(d.id)
+        ids.add(d.day_id)
         numbers.append(d.day_number)
     assert len(ids) == len(days), "Duplicate day IDs detected"
     assert len(set(numbers)) == len(days), "Duplicate day numbers detected"
@@ -36,9 +36,9 @@ class TestDayEndpointUnit:
         assert len(result) == 7
         _assert_day_objects(result)
         # Spot check boundary days
-        names = {d.name for d in result}
+        names = {d.day_name for d in result}
         assert {"Mon", "Sun"}.issubset(names)
-        day_map = {d.name: d.day_number for d in result}
+        day_map = {d.day_name: d.day_number for d in result}
         assert day_map["Mon"] == 1
         assert day_map["Sun"] == 7
 

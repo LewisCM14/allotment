@@ -14,7 +14,7 @@ from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import safe_operation
 from app.api.middleware.logging_middleware import request_id_ctx_var
-from app.api.schemas.user.user_preference_schema import DayRead
+from app.api.schemas.grow_guide.variety_schema import DayRead
 from app.api.services.grow_guide.grow_guide_unit_of_work import GrowGuideUnitOfWork
 
 router = APIRouter()
@@ -50,6 +50,8 @@ async def get_days(
                 **log_context,
             )
             return [
-                DayRead(id=day.day_id, day_number=day.day_number, name=day.day_name)
+                DayRead(
+                    day_id=day.day_id, day_number=day.day_number, day_name=day.day_name
+                )
                 for day in days
             ]
