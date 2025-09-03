@@ -10,6 +10,7 @@ from app.api.v1.grow_guide import (
     day,
     feed,
     grow_guide,
+    week,
 )
 from app.api.v1.user import (
     user,
@@ -34,4 +35,5 @@ router.include_router(
 router.include_router(family.router, prefix="/families", tags=["Families"])
 router.include_router(feed.router, prefix="/feed", tags=["Feed"])
 router.include_router(day.router, prefix="/days", tags=["Days"])
+router.include_router(week.router, prefix="/weeks", tags=["Weeks"])
 router.include_router(grow_guide.router, prefix="/grow-guide", tags=["Grow Guide"])

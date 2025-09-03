@@ -7,7 +7,7 @@ from __future__ import annotations
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, UniqueConstraint
+from sqlalchemy import CheckConstraint, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -73,7 +73,26 @@ class Week(Base):
         String(5), nullable=False
     )  # Format: MM/DD
 
-    __table_args__ = (UniqueConstraint("week_number", name="uq_week_number"),)
+    __table_args__ = (
+        UniqueConstraint("week_number", name="uq_week_number"),
+        # Cross-compatible format constraints
+        CheckConstraint(
+            "LENGTH(week_start_date) = 5",
+            name="check_week_start_date_length"
+        ),
+        CheckConstraint(
+            "LENGTH(week_end_date) = 5",
+            name="check_week_end_date_length"
+        ),
+        CheckConstraint(
+            "SUBSTR(week_start_date, 3, 1) = '/'",
+            name="check_week_start_date_slash"
+        ),
+        CheckConstraint(
+            "SUBSTR(week_end_date, 3, 1) = '/'",
+            name="check_week_end_date_slash"
+        ),
+    )
 
 
 class Month(Base):

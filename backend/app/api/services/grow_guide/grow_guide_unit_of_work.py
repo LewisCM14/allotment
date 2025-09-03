@@ -24,11 +24,12 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
-from app.api.models.grow_guide.calendar_model import Day
+from app.api.models.grow_guide.calendar_model import Day, Week
 from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.models.grow_guide.variety_model import Variety
 from app.api.repositories.grow_guide.day_repository import DayRepository
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
+from app.api.repositories.grow_guide.week_repository import WeekRepository
 from app.api.schemas.grow_guide.variety_schema import VarietyCreate, VarietyUpdate
 
 logger = structlog.get_logger()
@@ -41,6 +42,7 @@ class GrowGuideUnitOfWork:
         self.db = db
         self.day_repo = DayRepository(db)
         self.variety_repo = VarietyRepository(db)
+        self.week_repo = WeekRepository(db)
         self.request_id = request_id_ctx_var.get()
 
     async def __aenter__(self) -> "GrowGuideUnitOfWork":
@@ -130,6 +132,20 @@ class GrowGuideUnitOfWork:
             days = await self.day_repo.get_all_days()
             return days
 
+    @translate_db_exceptions
+    async def get_all_weeks(self) -> List[Week]:
+        """Get all available weeks."""
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_weeks_uow",
+        }
+
+        logger.info("Getting all weeks", **log_context)
+
+        with log_timing("uow_get_all_weeks", request_id=self.request_id):
+            weeks = await self.week_repo.get_all_weeks()
+            return weeks
+
     # Variety option operations
     @translate_db_exceptions
     async def get_variety_options(self) -> dict:
@@ -146,7 +162,7 @@ class GrowGuideUnitOfWork:
             planting_conditions = await self.variety_repo.get_all_planting_conditions()
             frequencies = await self.variety_repo.get_all_frequencies()
             feeds = await self.variety_repo.get_all_feeds()
-            weeks = await self.variety_repo.get_all_weeks()
+            weeks = await self.week_repo.get_all_weeks()
             families = await self.variety_repo.get_all_families()
 
             return {
