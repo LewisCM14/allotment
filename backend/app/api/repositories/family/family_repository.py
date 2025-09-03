@@ -86,6 +86,29 @@ class FamilyRepository:
             )
             raise
 
+    async def get_all_families(self) -> List[Family]:
+        """Get all available plant families."""
+        log_context = {"operation": "get_all_families"}
+        logger.info("Fetching all families", **log_context)
+
+        try:
+            query = select(Family).order_by(Family.family_name)
+            result = await self.db.execute(query)
+            families = list(result.scalars().all())
+            logger.info(
+                "Successfully fetched families",
+                count=len(families),
+                **log_context,
+            )
+            return families
+        except Exception as e:
+            logger.error(
+                "Error fetching families",
+                error=str(e),
+                **log_context,
+            )
+            raise
+
     async def get_family_by_id(self, family_id: int) -> Family | None:
         """
         Retrieves a single family by its ID, with antagonists and companions.

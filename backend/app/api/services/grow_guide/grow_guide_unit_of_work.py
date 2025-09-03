@@ -25,11 +25,12 @@ from app.api.middleware.logging_middleware import (
     sanitize_error_message,
 )
 from app.api.models.grow_guide.calendar_model import Day, Week
-from app.api.models.grow_guide.guide_options_model import Feed
+from app.api.models.grow_guide.guide_options_model import Feed, Frequency, Lifecycle, PlantingConditions
 from app.api.models.grow_guide.variety_model import Variety
 from app.api.repositories.grow_guide.day_repository import DayRepository
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
 from app.api.repositories.grow_guide.week_repository import WeekRepository
+from app.api.repositories.family.family_repository import FamilyRepository
 from app.api.schemas.grow_guide.variety_schema import VarietyCreate, VarietyUpdate
 
 logger = structlog.get_logger()
@@ -43,6 +44,7 @@ class GrowGuideUnitOfWork:
         self.day_repo = DayRepository(db)
         self.variety_repo = VarietyRepository(db)
         self.week_repo = WeekRepository(db)
+        self.family_repo = FamilyRepository(db)
         self.request_id = request_id_ctx_var.get()
 
     async def __aenter__(self) -> "GrowGuideUnitOfWork":
@@ -146,6 +148,48 @@ class GrowGuideUnitOfWork:
             weeks = await self.week_repo.get_all_weeks()
             return weeks
 
+    @translate_db_exceptions
+    async def get_all_frequencies(self) -> List[Frequency]:
+        """Get all available frequencies."""
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_frequencies_uow",
+        }
+
+        logger.info("Getting all frequencies", **log_context)
+
+        with log_timing("uow_get_all_frequencies", request_id=self.request_id):
+            frequencies = await self.variety_repo.get_all_frequencies()
+            return frequencies
+
+    @translate_db_exceptions
+    async def get_all_lifecycles(self) -> List[Lifecycle]:
+        """Get all available lifecycles."""
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_lifecycles_uow",
+        }
+
+        logger.info("Getting all lifecycles", **log_context)
+
+        with log_timing("uow_get_all_lifecycles", request_id=self.request_id):
+            lifecycles = await self.variety_repo.get_all_lifecycles()
+            return lifecycles
+
+    @translate_db_exceptions
+    async def get_all_planting_conditions(self) -> List[PlantingConditions]:
+        """Get all available planting conditions."""
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_planting_conditions_uow",
+        }
+
+        logger.info("Getting all planting conditions", **log_context)
+
+        with log_timing("uow_get_all_planting_conditions", request_id=self.request_id):
+            planting_conditions = await self.variety_repo.get_all_planting_conditions()
+            return planting_conditions
+
     # Variety option operations
     @translate_db_exceptions
     async def get_variety_options(self) -> dict:
@@ -163,7 +207,7 @@ class GrowGuideUnitOfWork:
             frequencies = await self.variety_repo.get_all_frequencies()
             feeds = await self.variety_repo.get_all_feeds()
             weeks = await self.week_repo.get_all_weeks()
-            families = await self.variety_repo.get_all_families()
+            families = await self.family_repo.get_all_families()
 
             return {
                 "lifecycles": lifecycles,
