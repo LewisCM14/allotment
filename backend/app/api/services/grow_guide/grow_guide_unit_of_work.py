@@ -24,12 +24,13 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
-from app.api.models.grow_guide.calendar_model import Day, Week
+from app.api.models.grow_guide.calendar_model import Day, Week, Month
 from app.api.models.grow_guide.guide_options_model import Feed, Frequency, Lifecycle, PlantingConditions
 from app.api.models.grow_guide.variety_model import Variety
 from app.api.repositories.grow_guide.day_repository import DayRepository
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
 from app.api.repositories.grow_guide.week_repository import WeekRepository
+from app.api.repositories.grow_guide.month_repository import MonthRepository
 from app.api.repositories.family.family_repository import FamilyRepository
 from app.api.schemas.grow_guide.variety_schema import VarietyCreate, VarietyUpdate
 
@@ -44,6 +45,7 @@ class GrowGuideUnitOfWork:
         self.day_repo = DayRepository(db)
         self.variety_repo = VarietyRepository(db)
         self.week_repo = WeekRepository(db)
+        self.month_repo = MonthRepository(db)
         self.family_repo = FamilyRepository(db)
         self.request_id = request_id_ctx_var.get()
 
@@ -147,6 +149,20 @@ class GrowGuideUnitOfWork:
         with log_timing("uow_get_all_weeks", request_id=self.request_id):
             weeks = await self.week_repo.get_all_weeks()
             return weeks
+
+    @translate_db_exceptions
+    async def get_all_months(self) -> List[Month]:
+        """Get all available months."""
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "get_all_months_uow",
+        }
+
+        logger.info("Getting all months", **log_context)
+
+        with log_timing("uow_get_all_months", request_id=self.request_id):
+            months = await self.month_repo.get_all_months()
+            return months
 
     @translate_db_exceptions
     async def get_all_frequencies(self) -> List[Frequency]:

@@ -72,6 +72,16 @@ class WeekRead(SecureBaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+class MonthRead(SecureBaseModel):
+    """Schema for reading month information."""
+
+    month_id: UUID
+    month_number: int
+    month_name: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FamilyRead(SecureBaseModel):
     """Schema for reading family information."""
 

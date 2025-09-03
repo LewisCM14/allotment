@@ -12,6 +12,7 @@ from app.api.v1.grow_guide import (
     frequency,
     grow_guide,
     lifecycle,
+    month,
     planting_conditions,
     week,
 )
@@ -39,6 +40,7 @@ router.include_router(family.router, prefix="/families", tags=["Families"])
 router.include_router(feed.router, prefix="/feed", tags=["Feed"])
 router.include_router(day.router, prefix="/days", tags=["Days"])
 router.include_router(week.router, prefix="/weeks", tags=["Weeks"])
+router.include_router(month.router, prefix="/months", tags=["Months"])
 router.include_router(frequency.router, prefix="/frequencies", tags=["Frequencies"])
 router.include_router(lifecycle.router, prefix="/lifecycles", tags=["Lifecycles"])
 router.include_router(planting_conditions.router, prefix="/planting-conditions", tags=["Planting Conditions"])
