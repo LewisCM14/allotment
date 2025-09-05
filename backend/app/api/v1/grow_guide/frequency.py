@@ -40,7 +40,9 @@ async def get_frequencies(
     logger.info("Fetching available frequencies", **log_context)
 
     async with safe_operation("fetching frequencies", log_context):
-        with log_timing("get_frequencies_endpoint", request_id=log_context["request_id"]):
+        with log_timing(
+            "get_frequencies_endpoint", request_id=log_context["request_id"]
+        ):
             async with GrowGuideUnitOfWork(db) as uow:
                 frequencies = await uow.get_all_frequencies()
 
@@ -50,10 +52,5 @@ async def get_frequencies(
                 **log_context,
             )
             return [
-                FrequencyRead(
-                    frequency_id=frequency.frequency_id,
-                    frequency_name=frequency.frequency_name,
-                    frequency_days_per_year=frequency.frequency_days_per_year,
-                )
-                for frequency in frequencies
+                FrequencyRead.model_validate(frequency) for frequency in frequencies
             ]

@@ -49,7 +49,4 @@ async def get_feeds(
                 count=len(feeds),
                 **log_context,
             )
-            return [
-                FeedRead(feed_id=feed.feed_id, feed_name=feed.feed_name)
-                for feed in feeds
-            ]
+            return [FeedRead.model_validate(feed) for feed in feeds]

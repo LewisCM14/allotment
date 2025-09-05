@@ -63,12 +63,25 @@ class TestVarietyEndpointsIntegration:
         integration_auth_headers,
         seed_lifecycle_data,
         seed_planting_conditions_data,
+        complete_family_seed_data,
+        seed_frequency_data,
+        seed_week_data,
     ):
         """Test successful variety creation."""
         variety_data = {
             "variety_name": "Test Tomato",
+            "family_id": str(complete_family_seed_data["families"][0]["id"]),
             "lifecycle_id": str(seed_lifecycle_data[0]["id"]),
+            "sow_week_start_id": str(seed_week_data[0]["id"]),
+            "sow_week_end_id": str(seed_week_data[1]["id"]),
             "planting_conditions_id": str(seed_planting_conditions_data[0]["id"]),
+            "soil_ph": 6.5,
+            "plant_depth_cm": 2,
+            "plant_space_cm": 30,
+            "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "harvest_week_start_id": str(seed_week_data[1]["id"]),
+            "harvest_week_end_id": str(seed_week_data[2]["id"]),
             "is_public": False,
             "water_days": [],
         }
@@ -95,13 +108,26 @@ class TestVarietyEndpointsIntegration:
         integration_auth_headers,
         seed_lifecycle_data,
         seed_planting_conditions_data,
+        complete_family_seed_data,
+        seed_frequency_data,
+        seed_week_data,
         seed_day_data,
     ):
         """Test variety creation with water days."""
         variety_data = {
             "variety_name": "Watered Tomato",
+            "family_id": str(complete_family_seed_data["families"][0]["id"]),
             "lifecycle_id": str(seed_lifecycle_data[0]["id"]),
+            "sow_week_start_id": str(seed_week_data[0]["id"]),
+            "sow_week_end_id": str(seed_week_data[1]["id"]),
             "planting_conditions_id": str(seed_planting_conditions_data[0]["id"]),
+            "soil_ph": 6.5,
+            "plant_depth_cm": 2,
+            "plant_space_cm": 30,
+            "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "harvest_week_start_id": str(seed_week_data[1]["id"]),
+            "harvest_week_end_id": str(seed_week_data[2]["id"]),
             "is_public": False,
             "water_days": [
                 {"day_id": str(seed_day_data[0]["id"])},  # Monday
@@ -122,7 +148,7 @@ class TestVarietyEndpointsIntegration:
         assert len(data["water_days"]) == 2
 
         # Check water days are correct
-        water_day_names = {wd["day_name"] for wd in data["water_days"]}
+        water_day_names = {wd["day"]["day_name"] for wd in data["water_days"]}
         assert "Mon" in water_day_names
         assert "Wed" in water_day_names
 
@@ -133,12 +159,25 @@ class TestVarietyEndpointsIntegration:
         integration_auth_headers,
         seed_lifecycle_data,
         seed_planting_conditions_data,
+        complete_family_seed_data,
+        seed_frequency_data,
+        seed_week_data,
     ):
         """Test variety creation with validation error."""
         variety_data = {
             "variety_name": "Test Tomato",
+            "family_id": str(complete_family_seed_data["families"][0]["id"]),
             "lifecycle_id": str(seed_lifecycle_data[0]["id"]),
+            "sow_week_start_id": str(seed_week_data[0]["id"]),
+            "sow_week_end_id": str(seed_week_data[1]["id"]),
             "planting_conditions_id": str(seed_planting_conditions_data[0]["id"]),
+            "soil_ph": 6.5,
+            "plant_depth_cm": 2,
+            "plant_space_cm": 30,
+            "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "harvest_week_start_id": str(seed_week_data[1]["id"]),
+            "harvest_week_end_id": str(seed_week_data[2]["id"]),
             "transplant_week_start_id": str(uuid4()),  # Only start provided
             # transplant_week_end_id missing - should cause validation error
         }
@@ -178,7 +217,8 @@ class TestVarietyEndpointsIntegration:
         for variety in data:
             assert "variety_id" in variety
             assert "variety_name" in variety
-            assert "lifecycle_name" in variety
+            assert "lifecycle" in variety
+            assert "lifecycle_name" in variety["lifecycle"]
             assert "is_public" in variety
             assert "last_updated" in variety
 
@@ -336,12 +376,25 @@ class TestVarietyEndpointsIntegration:
         integration_auth_headers,
         seed_lifecycle_data,
         seed_planting_conditions_data,
+        complete_family_seed_data,
+        seed_frequency_data,
+        seed_week_data,
     ):
         """Test that variety names must be unique per user."""
         variety_data = {
             "variety_name": "Duplicate Tomato",
+            "family_id": str(complete_family_seed_data["families"][0]["id"]),
             "lifecycle_id": str(seed_lifecycle_data[0]["id"]),
+            "sow_week_start_id": str(seed_week_data[0]["id"]),
+            "sow_week_end_id": str(seed_week_data[1]["id"]),
             "planting_conditions_id": str(seed_planting_conditions_data[0]["id"]),
+            "soil_ph": 6.5,
+            "plant_depth_cm": 2,
+            "plant_space_cm": 30,
+            "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "harvest_week_start_id": str(seed_week_data[1]["id"]),
+            "harvest_week_end_id": str(seed_week_data[2]["id"]),
             "is_public": False,
         }
 

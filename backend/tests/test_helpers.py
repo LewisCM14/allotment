@@ -327,3 +327,41 @@ def build_week_days(names: Optional[list[str]] = None):
             "Sunday",
         ]
     return [make_day(name=n, day_number=i + 1) for i, n in enumerate(names)]
+
+
+def make_variety(owner_user_id, **overrides):
+    """Create a valid Variety model instance for testing.
+
+    Args:
+        owner_user_id: UUID of the user who owns this variety
+        **overrides: Fields to override in the default variety data
+
+    Returns:
+        Variety model instance with sensible defaults
+    """
+    from uuid import uuid4
+
+    from app.api.models.grow_guide.variety_model import Variety
+
+    variety = Variety()
+    variety.variety_name = "Test Tomato"
+    variety.owner_user_id = owner_user_id
+    variety.family_id = uuid4()
+    variety.lifecycle_id = uuid4()
+    variety.sow_week_start_id = uuid4()
+    variety.sow_week_end_id = uuid4()
+    variety.planting_conditions_id = uuid4()
+    variety.soil_ph = 6.5
+    variety.plant_depth_cm = 2
+    variety.plant_space_cm = 30
+    variety.water_frequency_id = uuid4()
+    variety.high_temp_water_frequency_id = uuid4()
+    variety.harvest_week_start_id = uuid4()
+    variety.harvest_week_end_id = uuid4()
+    variety.is_public = False
+
+    # Apply any overrides
+    for key, value in overrides.items():
+        setattr(variety, key, value)
+
+    return variety

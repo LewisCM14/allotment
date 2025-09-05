@@ -49,9 +49,4 @@ async def get_days(
                 count=len(days),
                 **log_context,
             )
-            return [
-                DayRead(
-                    day_id=day.day_id, day_number=day.day_number, day_name=day.day_name
-                )
-                for day in days
-            ]
+            return [DayRead.model_validate(day) for day in days]

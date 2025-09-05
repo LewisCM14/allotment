@@ -77,20 +77,14 @@ class Week(Base):
         UniqueConstraint("week_number", name="uq_week_number"),
         # Cross-compatible format constraints
         CheckConstraint(
-            "LENGTH(week_start_date) = 5",
-            name="check_week_start_date_length"
+            "LENGTH(week_start_date) = 5", name="check_week_start_date_length"
+        ),
+        CheckConstraint("LENGTH(week_end_date) = 5", name="check_week_end_date_length"),
+        CheckConstraint(
+            "SUBSTR(week_start_date, 3, 1) = '/'", name="check_week_start_date_slash"
         ),
         CheckConstraint(
-            "LENGTH(week_end_date) = 5",
-            name="check_week_end_date_length"
-        ),
-        CheckConstraint(
-            "SUBSTR(week_start_date, 3, 1) = '/'",
-            name="check_week_start_date_slash"
-        ),
-        CheckConstraint(
-            "SUBSTR(week_end_date, 3, 1) = '/'",
-            name="check_week_end_date_slash"
+            "SUBSTR(week_end_date, 3, 1) = '/'", name="check_week_end_date_slash"
         ),
     )
 

@@ -43,5 +43,9 @@ router.include_router(week.router, prefix="/weeks", tags=["Weeks"])
 router.include_router(month.router, prefix="/months", tags=["Months"])
 router.include_router(frequency.router, prefix="/frequencies", tags=["Frequencies"])
 router.include_router(lifecycle.router, prefix="/lifecycles", tags=["Lifecycles"])
-router.include_router(planting_conditions.router, prefix="/planting-conditions", tags=["Planting Conditions"])
+router.include_router(
+    planting_conditions.router,
+    prefix="/planting-conditions",
+    tags=["Planting Conditions"],
+)
 router.include_router(grow_guide.router, prefix="/grow-guide", tags=["Grow Guide"])

@@ -17,7 +17,6 @@ from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import safe_operation
 from app.api.middleware.logging_middleware import request_id_ctx_var
-from app.api.models.grow_guide.variety_model import Variety
 from app.api.models.user.user_model import User
 from app.api.schemas.grow_guide.variety_schema import (
     VarietyCreate,
@@ -97,7 +96,7 @@ async def create_variety(
                 )
 
             logger.info("Variety created successfully", **log_context)
-            return _convert_variety_to_read_schema(complete_variety)
+            return VarietyRead.model_validate(complete_variety)
 
 
 @router.get(
@@ -132,16 +131,7 @@ async def get_user_varieties(
                 count=len(varieties),
                 **log_context,
             )
-            return [
-                VarietyListRead(
-                    variety_id=v.variety_id,
-                    variety_name=v.variety_name,
-                    lifecycle_name=v.lifecycle.lifecycle_name,
-                    is_public=v.is_public,
-                    last_updated=v.last_updated.isoformat(),
-                )
-                for v in varieties
-            ]
+            return [VarietyListRead.model_validate(v) for v in varieties]
 
 
 @router.get(
@@ -176,16 +166,7 @@ async def get_public_varieties(
                 count=len(varieties),
                 **log_context,
             )
-            return [
-                VarietyListRead(
-                    variety_id=v.variety_id,
-                    variety_name=v.variety_name,
-                    lifecycle_name=v.lifecycle.lifecycle_name,
-                    is_public=v.is_public,
-                    last_updated=v.last_updated.isoformat(),
-                )
-                for v in varieties
-            ]
+            return [VarietyListRead.model_validate(v) for v in varieties]
 
 
 @router.get(
@@ -216,7 +197,7 @@ async def get_variety(
                 variety = await uow.get_variety(variety_id, current_user.user_id)
 
             logger.info("Variety fetched successfully", **log_context)
-            return _convert_variety_to_read_schema(variety)
+            return VarietyRead.model_validate(variety)
 
 
 @router.put(
@@ -256,7 +237,7 @@ async def update_variety(
                 )
 
             logger.info("Variety updated successfully", **log_context)
-            return _convert_variety_to_read_schema(complete_variety)
+            return VarietyRead.model_validate(complete_variety)
 
 
 @router.delete(
@@ -288,87 +269,3 @@ async def delete_variety(
                 await uow.delete_variety(variety_id, current_user.user_id)
 
             logger.info("Variety deleted successfully", **log_context)
-
-
-def _convert_variety_to_read_schema(variety: Variety) -> VarietyRead:
-    """Convert a Variety model to VarietyRead schema."""
-    from app.api.schemas.grow_guide.variety_schema import (
-        FamilyRead,
-        FeedRead,
-        FrequencyRead,
-        LifecycleRead,
-        PlantingConditionsRead,
-        VarietyWaterDayRead,
-    )
-
-    return VarietyRead(
-        variety_id=variety.variety_id,
-        variety_name=variety.variety_name,
-        owner_user_id=variety.owner_user_id,
-        family=FamilyRead(
-            family_id=variety.family.family_id,
-            family_name=variety.family.family_name,
-        )
-        if variety.family
-        else None,
-        lifecycle=LifecycleRead(
-            lifecycle_id=variety.lifecycle.lifecycle_id,
-            lifecycle_name=variety.lifecycle.lifecycle_name,
-            productivity_years=variety.lifecycle.productivity_years,
-        ),
-        planting_conditions=PlantingConditionsRead(
-            planting_condition_id=variety.planting_conditions.planting_condition_id,
-            planting_condition=variety.planting_conditions.planting_condition,
-        ),
-        sow_week_start_id=variety.sow_week_start_id,
-        sow_week_end_id=variety.sow_week_end_id,
-        transplant_week_start_id=variety.transplant_week_start_id,
-        transplant_week_end_id=variety.transplant_week_end_id,
-        soil_ph=variety.soil_ph,
-        row_width_cm=variety.row_width_cm,
-        plant_depth_cm=variety.plant_depth_cm,
-        plant_space_cm=variety.plant_space_cm,
-        feed=FeedRead(
-            feed_id=variety.feed.feed_id,
-            feed_name=variety.feed.feed_name,
-        )
-        if variety.feed
-        else None,
-        feed_week_start_id=variety.feed_week_start_id,
-        feed_frequency=FrequencyRead(
-            frequency_id=variety.feed_frequency.frequency_id,
-            frequency_name=variety.feed_frequency.frequency_name,
-            frequency_days_per_year=variety.feed_frequency.frequency_days_per_year,
-        )
-        if variety.feed_frequency
-        else None,
-        water_frequency=FrequencyRead(
-            frequency_id=variety.water_frequency.frequency_id,
-            frequency_name=variety.water_frequency.frequency_name,
-            frequency_days_per_year=variety.water_frequency.frequency_days_per_year,
-        )
-        if variety.water_frequency
-        else None,
-        high_temp_degrees=variety.high_temp_degrees,
-        high_temp_water_frequency=FrequencyRead(
-            frequency_id=variety.high_temp_water_frequency.frequency_id,
-            frequency_name=variety.high_temp_water_frequency.frequency_name,
-            frequency_days_per_year=variety.high_temp_water_frequency.frequency_days_per_year,
-        )
-        if variety.high_temp_water_frequency
-        else None,
-        harvest_week_start_id=variety.harvest_week_start_id,
-        harvest_week_end_id=variety.harvest_week_end_id,
-        prune_week_start_id=variety.prune_week_start_id,
-        prune_week_end_id=variety.prune_week_end_id,
-        notes=variety.notes,
-        is_public=variety.is_public,
-        last_updated=variety.last_updated.isoformat(),
-        water_days=[
-            VarietyWaterDayRead(
-                day_id=wd.day_id,
-                day_name=wd.day.day_name,
-            )
-            for wd in variety.water_days
-        ],
-    )

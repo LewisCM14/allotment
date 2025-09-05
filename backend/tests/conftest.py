@@ -947,7 +947,12 @@ async def authenticated_user():
 
 @pytest.fixture
 async def seed_variety_data(
-    user_in_database, seed_lifecycle_data, seed_planting_conditions_data
+    user_in_database,
+    seed_lifecycle_data,
+    seed_planting_conditions_data,
+    complete_family_seed_data,
+    seed_frequency_data,
+    seed_week_data,
 ):
     """Seed the test database with variety data."""
     import uuid
@@ -960,8 +965,18 @@ async def seed_variety_data(
             variety_id=variety_id,
             owner_user_id=uuid.UUID(user_in_database["user_id"]),
             variety_name="Test Tomato",
+            family_id=complete_family_seed_data["families"][0]["id"],  # Tomato family
             lifecycle_id=seed_lifecycle_data[0]["id"],  # Annual
+            sow_week_start_id=seed_week_data[0]["id"],  # Week 1
+            sow_week_end_id=seed_week_data[1]["id"],  # Week 2
             planting_conditions_id=seed_planting_conditions_data[0]["id"],  # Full Sun
+            soil_ph=6.5,
+            plant_depth_cm=2,
+            plant_space_cm=30,
+            water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
+            harvest_week_end_id=seed_week_data[2]["id"],  # Week 3
             is_public=False,
         )
         session.add(variety)
@@ -975,7 +990,13 @@ async def seed_variety_data(
 
 
 @pytest.fixture
-async def seed_public_variety_data(seed_lifecycle_data, seed_planting_conditions_data):
+async def seed_public_variety_data(
+    seed_lifecycle_data,
+    seed_planting_conditions_data,
+    complete_family_seed_data,
+    seed_frequency_data,
+    seed_week_data,
+):
     """Seed the test database with public variety data."""
     from datetime import datetime, timezone
 
@@ -1006,8 +1027,18 @@ async def seed_public_variety_data(seed_lifecycle_data, seed_planting_conditions
             variety_id=variety_id,
             owner_user_id=user_id,
             variety_name="Public Tomato",
+            family_id=complete_family_seed_data["families"][0]["id"],  # Tomato family
             lifecycle_id=seed_lifecycle_data[0]["id"],  # Annual
+            sow_week_start_id=seed_week_data[0]["id"],  # Week 1
+            sow_week_end_id=seed_week_data[1]["id"],  # Week 2
             planting_conditions_id=seed_planting_conditions_data[0]["id"],  # Full Sun
+            soil_ph=6.5,
+            plant_depth_cm=2,
+            plant_space_cm=30,
+            water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
+            harvest_week_end_id=seed_week_data[2]["id"],  # Week 3
             is_public=True,
         )
         session.add(variety)

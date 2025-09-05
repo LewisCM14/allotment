@@ -49,11 +49,4 @@ async def get_months(
                 count=len(months),
                 **log_context,
             )
-            return [
-                MonthRead(
-                    month_id=month.month_id,
-                    month_number=month.month_number,
-                    month_name=month.month_name,
-                )
-                for month in months
-            ]
+            return [MonthRead.model_validate(month) for month in months]

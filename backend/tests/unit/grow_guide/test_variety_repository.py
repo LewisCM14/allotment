@@ -2,13 +2,11 @@
 Test Variety Repository
 """
 
-from uuid import uuid4
-
 import pytest
 
-from app.api.models.grow_guide.variety_model import Variety
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
 from tests.conftest import TestingSessionLocal
+from tests.test_helpers import make_variety
 
 
 class TestVarietyRepository:
@@ -66,17 +64,15 @@ class TestVarietyRepository:
         async with TestingSessionLocal() as db:
             repo = VarietyRepository(db)
 
-            variety = Variety()
-            variety.variety_name = "Test Tomato"
-            variety.owner_user_id = authenticated_user.user_id
-            variety.lifecycle_id = uuid4()
-            variety.planting_conditions_id = uuid4()
-            variety.is_public = False
+            variety = make_variety(
+                owner_user_id=authenticated_user.user_id,
+                variety_name="Test Repository Tomato",
+            )
 
             created_variety = await repo.create_variety(variety)
 
             assert created_variety.variety_id is not None
-            assert created_variety.variety_name == "Test Tomato"
+            assert created_variety.variety_name == "Test Repository Tomato"
             assert created_variety.owner_user_id == authenticated_user.user_id
 
     @pytest.mark.asyncio
@@ -131,13 +127,11 @@ class TestVarietyRepository:
         async with TestingSessionLocal() as db:
             repo = VarietyRepository(db)
 
-            # Create a test variety
-            variety = Variety()
-            variety.variety_name = "Test Delete Variety"
-            variety.owner_user_id = authenticated_user.user_id
-            variety.lifecycle_id = uuid4()
-            variety.planting_conditions_id = uuid4()
-            variety.is_public = False
+            # Create a test variety using the helper function
+            variety = make_variety(
+                owner_user_id=authenticated_user.user_id,
+                variety_name="Test Delete Variety",
+            )
 
             created_variety = await repo.create_variety(variety)
             variety_id = created_variety.variety_id

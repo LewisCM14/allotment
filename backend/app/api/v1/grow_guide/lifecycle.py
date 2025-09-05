@@ -40,7 +40,9 @@ async def get_lifecycles(
     logger.info("Fetching available lifecycles", **log_context)
 
     async with safe_operation("fetching lifecycles", log_context):
-        with log_timing("get_lifecycles_endpoint", request_id=log_context["request_id"]):
+        with log_timing(
+            "get_lifecycles_endpoint", request_id=log_context["request_id"]
+        ):
             async with GrowGuideUnitOfWork(db) as uow:
                 lifecycles = await uow.get_all_lifecycles()
 
@@ -49,11 +51,4 @@ async def get_lifecycles(
                 count=len(lifecycles),
                 **log_context,
             )
-            return [
-                LifecycleRead(
-                    lifecycle_id=lifecycle.lifecycle_id,
-                    lifecycle_name=lifecycle.lifecycle_name,
-                    productivity_years=lifecycle.productivity_years,
-                )
-                for lifecycle in lifecycles
-            ]
+            return [LifecycleRead.model_validate(lifecycle) for lifecycle in lifecycles]

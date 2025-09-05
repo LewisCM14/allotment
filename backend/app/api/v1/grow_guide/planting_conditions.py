@@ -40,7 +40,9 @@ async def get_planting_conditions(
     logger.info("Fetching available planting conditions", **log_context)
 
     async with safe_operation("fetching planting conditions", log_context):
-        with log_timing("get_planting_conditions_endpoint", request_id=log_context["request_id"]):
+        with log_timing(
+            "get_planting_conditions_endpoint", request_id=log_context["request_id"]
+        ):
             async with GrowGuideUnitOfWork(db) as uow:
                 planting_conditions = await uow.get_all_planting_conditions()
 
@@ -50,9 +52,6 @@ async def get_planting_conditions(
                 **log_context,
             )
             return [
-                PlantingConditionsRead(
-                    planting_condition_id=condition.planting_condition_id,
-                    planting_condition=condition.planting_condition,
-                )
+                PlantingConditionsRead.model_validate(condition)
                 for condition in planting_conditions
             ]

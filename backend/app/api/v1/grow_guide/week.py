@@ -49,12 +49,4 @@ async def get_weeks(
                 count=len(weeks),
                 **log_context,
             )
-            return [
-                WeekRead(
-                    week_id=week.week_id,
-                    week_number=week.week_number,
-                    week_start_date=week.week_start_date,
-                    week_end_date=week.week_end_date,
-                )
-                for week in weeks
-            ]
+            return [WeekRead.model_validate(week) for week in weeks]

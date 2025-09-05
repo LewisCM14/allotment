@@ -58,13 +58,13 @@ class Variety(Base):
     variety_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
     # Family relationship
-    family_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    family_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("family.family_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    family: Mapped[Optional["Family"]] = relationship("Family")
+    family: Mapped["Family"] = relationship("Family")
 
     # Lifecycle relationship
     lifecycle_id: Mapped[uuid.UUID] = mapped_column(
@@ -78,16 +78,16 @@ class Variety(Base):
     )
 
     # Sowing details
-    sow_week_start_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    sow_week_start_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("week.week_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    sow_week_end_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    sow_week_end_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("week.week_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 
@@ -117,10 +117,10 @@ class Variety(Base):
     )
 
     # Soil and spacing details
-    soil_ph: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    soil_ph: Mapped[float] = mapped_column(Float, nullable=False)
     row_width_cm: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    plant_depth_cm: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    plant_space_cm: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    plant_depth_cm: Mapped[int] = mapped_column(Integer, nullable=False)
+    plant_space_cm: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Feed details
     feed_id: Mapped[Optional[uuid.UUID]] = mapped_column(
@@ -147,13 +147,13 @@ class Variety(Base):
     )
 
     # Watering details
-    water_frequency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    water_frequency_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("frequency.frequency_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    water_frequency: Mapped[Optional["Frequency"]] = relationship(
+    water_frequency: Mapped["Frequency"] = relationship(
         "Frequency", back_populates="water_varieties", foreign_keys=[water_frequency_id]
     )
 
@@ -162,24 +162,24 @@ class Variety(Base):
     high_temp_water_frequency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("frequency.frequency_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    high_temp_water_frequency: Mapped[Optional["Frequency"]] = relationship(
+    high_temp_water_frequency: Mapped["Frequency"] = relationship(
         "Frequency", foreign_keys=[high_temp_water_frequency_id]
     )
 
     # Harvest details
-    harvest_week_start_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    harvest_week_start_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("week.week_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    harvest_week_end_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    harvest_week_end_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("week.week_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
 

@@ -4,6 +4,7 @@ Variety Schema
 - Implements data integrity rules for grow guide creation and updates.
 """
 
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
@@ -100,8 +101,7 @@ class VarietyWaterDayCreate(SecureBaseModel):
 class VarietyWaterDayRead(SecureBaseModel):
     """Schema for reading variety water day associations."""
 
-    day_id: UUID
-    day_name: str
+    day: DayRead
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -112,12 +112,12 @@ class VarietyCreate(SecureBaseModel):
     variety_name: str = Field(
         ..., min_length=1, max_length=100, description="Name of the variety"
     )
-    family_id: Optional[UUID] = Field(None, description="Optional family ID")
+    family_id: UUID = Field(..., description="Required family ID")
     lifecycle_id: UUID = Field(..., description="Required lifecycle ID")
 
-    # Sowing details
-    sow_week_start_id: Optional[UUID] = Field(None, description="Sowing start week")
-    sow_week_end_id: Optional[UUID] = Field(None, description="Sowing end week")
+    # Sowing details (both required)
+    sow_week_start_id: UUID = Field(..., description="Required sowing start week")
+    sow_week_end_id: UUID = Field(..., description="Required sowing end week")
 
     # Transplant details (both must be provided together)
     transplant_week_start_id: Optional[UUID] = Field(
@@ -132,17 +132,15 @@ class VarietyCreate(SecureBaseModel):
     )
 
     # Soil and spacing details
-    soil_ph: Optional[float] = Field(
-        None, ge=0.0, le=14.0, description="Soil pH (0-14)"
-    )
+    soil_ph: float = Field(..., ge=0.0, le=14.0, description="Required soil pH (0-14)")
     row_width_cm: Optional[int] = Field(
         None, ge=1, le=1000, description="Row width in cm"
     )
-    plant_depth_cm: Optional[int] = Field(
-        None, ge=1, le=100, description="Plant depth in cm"
+    plant_depth_cm: int = Field(
+        ..., ge=1, le=100, description="Required plant depth in cm"
     )
-    plant_space_cm: Optional[int] = Field(
-        None, ge=1, le=1000, description="Plant spacing in cm"
+    plant_space_cm: int = Field(
+        ..., ge=1, le=1000, description="Required plant spacing in cm"
     )
 
     # Feed details (all three must be provided together)
@@ -150,8 +148,8 @@ class VarietyCreate(SecureBaseModel):
     feed_week_start_id: Optional[UUID] = Field(None, description="Feed start week")
     feed_frequency_id: Optional[UUID] = Field(None, description="Feed frequency ID")
 
-    # Watering details
-    water_frequency_id: Optional[UUID] = Field(None, description="Water frequency ID")
+    # Watering details (required)
+    water_frequency_id: UUID = Field(..., description="Required water frequency ID")
 
     # High temperature details
     high_temp_degrees: Optional[int] = Field(
@@ -161,11 +159,9 @@ class VarietyCreate(SecureBaseModel):
         None, description="High temp water frequency ID"
     )
 
-    # Harvest details
-    harvest_week_start_id: Optional[UUID] = Field(
-        None, description="Harvest start week"
-    )
-    harvest_week_end_id: Optional[UUID] = Field(None, description="Harvest end week")
+    # Harvest details (both required)
+    harvest_week_start_id: UUID = Field(..., description="Required harvest start week")
+    harvest_week_end_id: UUID = Field(..., description="Required harvest end week")
 
     # Prune details (both must be provided together)
     prune_week_start_id: Optional[UUID] = Field(None, description="Prune start week")
@@ -184,9 +180,7 @@ class VarietyCreate(SecureBaseModel):
     @field_validator("variety_name")
     @classmethod
     def validate_variety_name(cls, v: str) -> str:
-        """Validate variety name."""
-        if not v.strip():
-            raise ValueError("Variety name cannot be empty")
+        """Strip whitespace from variety name."""
         return v.strip()
 
 
@@ -196,7 +190,7 @@ class VarietyUpdate(SecureBaseModel):
     variety_name: Optional[str] = Field(
         None, min_length=1, max_length=100, description="Name of the variety"
     )
-    family_id: Optional[UUID] = Field(None, description="Optional family ID")
+    family_id: Optional[UUID] = Field(None, description="Family ID")
     lifecycle_id: Optional[UUID] = Field(None, description="Lifecycle ID")
 
     # Sowing details
@@ -268,10 +262,8 @@ class VarietyUpdate(SecureBaseModel):
     @field_validator("variety_name")
     @classmethod
     def validate_variety_name(cls, v: Optional[str]) -> Optional[str]:
-        """Validate variety name."""
+        """Strip whitespace from variety name."""
         if v is not None:
-            if not v.strip():
-                raise ValueError("Variety name cannot be empty")
             return v.strip()
         return v
 
@@ -284,39 +276,39 @@ class VarietyRead(SecureBaseModel):
     owner_user_id: UUID
 
     # Related objects
-    family: Optional[FamilyRead] = None
+    family: FamilyRead
     lifecycle: LifecycleRead
     planting_conditions: PlantingConditionsRead
 
-    # Sowing details
-    sow_week_start_id: Optional[UUID] = None
-    sow_week_end_id: Optional[UUID] = None
+    # Sowing details (required)
+    sow_week_start_id: UUID
+    sow_week_end_id: UUID
 
     # Transplant details
     transplant_week_start_id: Optional[UUID] = None
     transplant_week_end_id: Optional[UUID] = None
 
     # Soil and spacing details
-    soil_ph: Optional[float] = None
+    soil_ph: float
     row_width_cm: Optional[int] = None
-    plant_depth_cm: Optional[int] = None
-    plant_space_cm: Optional[int] = None
+    plant_depth_cm: int
+    plant_space_cm: int
 
     # Feed details
     feed: Optional[FeedRead] = None
     feed_week_start_id: Optional[UUID] = None
     feed_frequency: Optional[FrequencyRead] = None
 
-    # Watering details
-    water_frequency: Optional[FrequencyRead] = None
+    # Watering details (required)
+    water_frequency: FrequencyRead
 
     # High temperature details
     high_temp_degrees: Optional[int] = None
-    high_temp_water_frequency: Optional[FrequencyRead] = None
+    high_temp_water_frequency: FrequencyRead
 
-    # Harvest details
-    harvest_week_start_id: Optional[UUID] = None
-    harvest_week_end_id: Optional[UUID] = None
+    # Harvest details (required)
+    harvest_week_start_id: UUID
+    harvest_week_end_id: UUID
 
     # Prune details
     prune_week_start_id: Optional[UUID] = None
@@ -324,7 +316,7 @@ class VarietyRead(SecureBaseModel):
 
     notes: Optional[str] = None
     is_public: bool
-    last_updated: str
+    last_updated: datetime
 
     # Water days
     water_days: List[VarietyWaterDayRead] = Field(default_factory=list)
@@ -337,9 +329,9 @@ class VarietyListRead(SecureBaseModel):
 
     variety_id: UUID
     variety_name: str
-    lifecycle_name: str
+    lifecycle: LifecycleRead
     is_public: bool
-    last_updated: str
+    last_updated: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
