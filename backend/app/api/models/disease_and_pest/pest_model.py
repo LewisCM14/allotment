@@ -17,6 +17,9 @@ if TYPE_CHECKING:
     from app.api.models.disease_and_pest.intervention_model import Intervention
     from app.api.models.family.family_model import Family
 
+# Constants
+PEST_TABLE_REFERENCE = "pest.pest_id"
+
 # Association tables
 pest_treatment = Table(
     "pest_treatment",
@@ -24,7 +27,7 @@ pest_treatment = Table(
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.pest_id", ondelete="CASCADE"),
+        ForeignKey(PEST_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
@@ -41,7 +44,7 @@ pest_prevention = Table(
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.pest_id", ondelete="CASCADE"),
+        ForeignKey(PEST_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
@@ -64,7 +67,7 @@ family_pest = Table(
     Column(
         "pest_id",
         UUID(as_uuid=True),
-        ForeignKey("pest.pest_id", ondelete="CASCADE"),
+        ForeignKey(PEST_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
 )

@@ -6,7 +6,7 @@ Variety Factory
 """
 
 import uuid
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, TypeVar
 from uuid import UUID
 
 import structlog
@@ -23,6 +23,8 @@ from app.api.middleware.logging_middleware import (
 )
 from app.api.models.grow_guide.variety_model import Variety, VarietyWaterDay
 from app.api.schemas.grow_guide.variety_schema import VarietyCreate, VarietyUpdate
+
+T = TypeVar("T")
 
 logger = structlog.get_logger()
 
@@ -159,76 +161,9 @@ class VarietyFactory:
             with log_timing("variety_update", request_id=safe_context["request_id"]):
                 logger.info("Starting variety update", **safe_context)
 
-                # Create a temporary object for validation
-                temp_data = VarietyCreate(
-                    variety_name=variety_data.variety_name or variety.variety_name,
-                    family_id=variety_data.family_id
-                    if variety_data.family_id is not None
-                    else variety.family_id,
-                    lifecycle_id=variety_data.lifecycle_id or variety.lifecycle_id,
-                    sow_week_start_id=variety_data.sow_week_start_id
-                    if variety_data.sow_week_start_id is not None
-                    else variety.sow_week_start_id,
-                    sow_week_end_id=variety_data.sow_week_end_id
-                    if variety_data.sow_week_end_id is not None
-                    else variety.sow_week_end_id,
-                    transplant_week_start_id=variety_data.transplant_week_start_id
-                    if variety_data.transplant_week_start_id is not None
-                    else variety.transplant_week_start_id,
-                    transplant_week_end_id=variety_data.transplant_week_end_id
-                    if variety_data.transplant_week_end_id is not None
-                    else variety.transplant_week_end_id,
-                    planting_conditions_id=variety_data.planting_conditions_id
-                    or variety.planting_conditions_id,
-                    soil_ph=variety_data.soil_ph
-                    if variety_data.soil_ph is not None
-                    else variety.soil_ph,
-                    row_width_cm=variety_data.row_width_cm
-                    if variety_data.row_width_cm is not None
-                    else variety.row_width_cm,
-                    plant_depth_cm=variety_data.plant_depth_cm
-                    if variety_data.plant_depth_cm is not None
-                    else variety.plant_depth_cm,
-                    plant_space_cm=variety_data.plant_space_cm
-                    if variety_data.plant_space_cm is not None
-                    else variety.plant_space_cm,
-                    feed_id=variety_data.feed_id
-                    if variety_data.feed_id is not None
-                    else variety.feed_id,
-                    feed_week_start_id=variety_data.feed_week_start_id
-                    if variety_data.feed_week_start_id is not None
-                    else variety.feed_week_start_id,
-                    feed_frequency_id=variety_data.feed_frequency_id
-                    if variety_data.feed_frequency_id is not None
-                    else variety.feed_frequency_id,
-                    water_frequency_id=variety_data.water_frequency_id
-                    if variety_data.water_frequency_id is not None
-                    else variety.water_frequency_id,
-                    high_temp_degrees=variety_data.high_temp_degrees
-                    if variety_data.high_temp_degrees is not None
-                    else variety.high_temp_degrees,
-                    high_temp_water_frequency_id=variety_data.high_temp_water_frequency_id
-                    if variety_data.high_temp_water_frequency_id is not None
-                    else variety.high_temp_water_frequency_id,
-                    harvest_week_start_id=variety_data.harvest_week_start_id
-                    if variety_data.harvest_week_start_id is not None
-                    else variety.harvest_week_start_id,
-                    harvest_week_end_id=variety_data.harvest_week_end_id
-                    if variety_data.harvest_week_end_id is not None
-                    else variety.harvest_week_end_id,
-                    prune_week_start_id=variety_data.prune_week_start_id
-                    if variety_data.prune_week_start_id is not None
-                    else variety.prune_week_start_id,
-                    prune_week_end_id=variety_data.prune_week_end_id
-                    if variety_data.prune_week_end_id is not None
-                    else variety.prune_week_end_id,
-                    notes=variety_data.notes
-                    if variety_data.notes is not None
-                    else variety.notes,
-                    is_public=variety_data.is_public
-                    if variety_data.is_public is not None
-                    else variety.is_public,
-                    water_days=variety_data.water_days or [],
+                # Create temporary object for validation
+                temp_data = VarietyFactory._create_temp_variety_data(
+                    variety, variety_data
                 )
 
                 # Validate business rules
@@ -236,61 +171,8 @@ class VarietyFactory:
                 VarietyFactory._validate_prune_weeks(temp_data)
                 VarietyFactory._validate_feed_details(temp_data)
 
-                # Update variety object
-                if variety_data.variety_name is not None:
-                    variety.variety_name = variety_data.variety_name
-                if variety_data.family_id is not None:
-                    variety.family_id = variety_data.family_id
-                if variety_data.lifecycle_id is not None:
-                    variety.lifecycle_id = variety_data.lifecycle_id
-
-                # Update other fields if provided
-                if variety_data.sow_week_start_id is not None:
-                    variety.sow_week_start_id = variety_data.sow_week_start_id
-                if variety_data.sow_week_end_id is not None:
-                    variety.sow_week_end_id = variety_data.sow_week_end_id
-                if variety_data.transplant_week_start_id is not None:
-                    variety.transplant_week_start_id = (
-                        variety_data.transplant_week_start_id
-                    )
-                if variety_data.transplant_week_end_id is not None:
-                    variety.transplant_week_end_id = variety_data.transplant_week_end_id
-                if variety_data.planting_conditions_id is not None:
-                    variety.planting_conditions_id = variety_data.planting_conditions_id
-                if variety_data.soil_ph is not None:
-                    variety.soil_ph = variety_data.soil_ph
-                if variety_data.row_width_cm is not None:
-                    variety.row_width_cm = variety_data.row_width_cm
-                if variety_data.plant_depth_cm is not None:
-                    variety.plant_depth_cm = variety_data.plant_depth_cm
-                if variety_data.plant_space_cm is not None:
-                    variety.plant_space_cm = variety_data.plant_space_cm
-                if variety_data.feed_id is not None:
-                    variety.feed_id = variety_data.feed_id
-                if variety_data.feed_week_start_id is not None:
-                    variety.feed_week_start_id = variety_data.feed_week_start_id
-                if variety_data.feed_frequency_id is not None:
-                    variety.feed_frequency_id = variety_data.feed_frequency_id
-                if variety_data.water_frequency_id is not None:
-                    variety.water_frequency_id = variety_data.water_frequency_id
-                if variety_data.high_temp_degrees is not None:
-                    variety.high_temp_degrees = variety_data.high_temp_degrees
-                if variety_data.high_temp_water_frequency_id is not None:
-                    variety.high_temp_water_frequency_id = (
-                        variety_data.high_temp_water_frequency_id
-                    )
-                if variety_data.harvest_week_start_id is not None:
-                    variety.harvest_week_start_id = variety_data.harvest_week_start_id
-                if variety_data.harvest_week_end_id is not None:
-                    variety.harvest_week_end_id = variety_data.harvest_week_end_id
-                if variety_data.prune_week_start_id is not None:
-                    variety.prune_week_start_id = variety_data.prune_week_start_id
-                if variety_data.prune_week_end_id is not None:
-                    variety.prune_week_end_id = variety_data.prune_week_end_id
-                if variety_data.notes is not None:
-                    variety.notes = variety_data.notes
-                if variety_data.is_public is not None:
-                    variety.is_public = variety_data.is_public
+                # Update variety object with new data
+                VarietyFactory._apply_variety_updates(variety, variety_data)
 
                 logger.info("Variety updated successfully", **safe_context)
                 return variety
@@ -358,6 +240,115 @@ class VarietyFactory:
                 message="An unexpected error occurred during water days creation",
                 status_code=500,
             )
+
+    @staticmethod
+    def _create_temp_variety_data(
+        variety: Variety, variety_data: VarietyUpdate
+    ) -> VarietyCreate:
+        """Create a temporary VarietyCreate object for validation purposes."""
+
+        def get_value_or_fallback(new_value: Optional[T], fallback_value: T) -> T:
+            """Return new_value if not None, otherwise return fallback_value."""
+            return new_value if new_value is not None else fallback_value
+
+        return VarietyCreate(
+            variety_name=variety_data.variety_name or variety.variety_name,
+            family_id=get_value_or_fallback(variety_data.family_id, variety.family_id),
+            lifecycle_id=variety_data.lifecycle_id or variety.lifecycle_id,
+            sow_week_start_id=get_value_or_fallback(
+                variety_data.sow_week_start_id, variety.sow_week_start_id
+            ),
+            sow_week_end_id=get_value_or_fallback(
+                variety_data.sow_week_end_id, variety.sow_week_end_id
+            ),
+            transplant_week_start_id=get_value_or_fallback(
+                variety_data.transplant_week_start_id, variety.transplant_week_start_id
+            ),
+            transplant_week_end_id=get_value_or_fallback(
+                variety_data.transplant_week_end_id, variety.transplant_week_end_id
+            ),
+            planting_conditions_id=variety_data.planting_conditions_id
+            or variety.planting_conditions_id,
+            soil_ph=get_value_or_fallback(variety_data.soil_ph, variety.soil_ph),
+            row_width_cm=get_value_or_fallback(
+                variety_data.row_width_cm, variety.row_width_cm
+            ),
+            plant_depth_cm=get_value_or_fallback(
+                variety_data.plant_depth_cm, variety.plant_depth_cm
+            ),
+            plant_space_cm=get_value_or_fallback(
+                variety_data.plant_space_cm, variety.plant_space_cm
+            ),
+            feed_id=get_value_or_fallback(variety_data.feed_id, variety.feed_id),
+            feed_week_start_id=get_value_or_fallback(
+                variety_data.feed_week_start_id, variety.feed_week_start_id
+            ),
+            feed_frequency_id=get_value_or_fallback(
+                variety_data.feed_frequency_id, variety.feed_frequency_id
+            ),
+            water_frequency_id=get_value_or_fallback(
+                variety_data.water_frequency_id, variety.water_frequency_id
+            ),
+            high_temp_degrees=get_value_or_fallback(
+                variety_data.high_temp_degrees, variety.high_temp_degrees
+            ),
+            high_temp_water_frequency_id=get_value_or_fallback(
+                variety_data.high_temp_water_frequency_id,
+                variety.high_temp_water_frequency_id,
+            ),
+            harvest_week_start_id=get_value_or_fallback(
+                variety_data.harvest_week_start_id, variety.harvest_week_start_id
+            ),
+            harvest_week_end_id=get_value_or_fallback(
+                variety_data.harvest_week_end_id, variety.harvest_week_end_id
+            ),
+            prune_week_start_id=get_value_or_fallback(
+                variety_data.prune_week_start_id, variety.prune_week_start_id
+            ),
+            prune_week_end_id=get_value_or_fallback(
+                variety_data.prune_week_end_id, variety.prune_week_end_id
+            ),
+            notes=get_value_or_fallback(variety_data.notes, variety.notes),
+            is_public=get_value_or_fallback(variety_data.is_public, variety.is_public),
+            water_days=variety_data.water_days or [],
+        )
+
+    @staticmethod
+    def _apply_variety_updates(variety: Variety, variety_data: VarietyUpdate) -> None:
+        """Apply update data to the variety object."""
+        # Define mapping of update fields to variety attributes
+        field_mappings = [
+            ("variety_name", "variety_name"),
+            ("family_id", "family_id"),
+            ("lifecycle_id", "lifecycle_id"),
+            ("sow_week_start_id", "sow_week_start_id"),
+            ("sow_week_end_id", "sow_week_end_id"),
+            ("transplant_week_start_id", "transplant_week_start_id"),
+            ("transplant_week_end_id", "transplant_week_end_id"),
+            ("planting_conditions_id", "planting_conditions_id"),
+            ("soil_ph", "soil_ph"),
+            ("row_width_cm", "row_width_cm"),
+            ("plant_depth_cm", "plant_depth_cm"),
+            ("plant_space_cm", "plant_space_cm"),
+            ("feed_id", "feed_id"),
+            ("feed_week_start_id", "feed_week_start_id"),
+            ("feed_frequency_id", "feed_frequency_id"),
+            ("water_frequency_id", "water_frequency_id"),
+            ("high_temp_degrees", "high_temp_degrees"),
+            ("high_temp_water_frequency_id", "high_temp_water_frequency_id"),
+            ("harvest_week_start_id", "harvest_week_start_id"),
+            ("harvest_week_end_id", "harvest_week_end_id"),
+            ("prune_week_start_id", "prune_week_start_id"),
+            ("prune_week_end_id", "prune_week_end_id"),
+            ("notes", "notes"),
+            ("is_public", "is_public"),
+        ]
+
+        # Apply updates for all mapped fields
+        for update_field, variety_field in field_mappings:
+            new_value = getattr(variety_data, update_field)
+            if new_value is not None:
+                setattr(variety, variety_field, new_value)
 
     @staticmethod
     def _validate_transplant_weeks(variety_data: VarietyCreate) -> None:

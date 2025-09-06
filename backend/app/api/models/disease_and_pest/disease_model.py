@@ -18,6 +18,9 @@ if TYPE_CHECKING:
     from app.api.models.disease_and_pest.symptom_model import Symptom
     from app.api.models.family.family_model import Family
 
+# Constants
+DISEASE_TABLE_REFERENCE = "disease.disease_id"
+
 # Association tables
 disease_treatment = Table(
     "disease_treatment",
@@ -25,7 +28,7 @@ disease_treatment = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.disease_id", ondelete="CASCADE"),
+        ForeignKey(DISEASE_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
@@ -42,7 +45,7 @@ disease_prevention = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.disease_id", ondelete="CASCADE"),
+        ForeignKey(DISEASE_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
@@ -59,7 +62,7 @@ disease_symptom = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.disease_id", ondelete="CASCADE"),
+        ForeignKey(DISEASE_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
@@ -82,7 +85,7 @@ family_disease = Table(
     Column(
         "disease_id",
         UUID(as_uuid=True),
-        ForeignKey("disease.disease_id", ondelete="CASCADE"),
+        ForeignKey(DISEASE_TABLE_REFERENCE, ondelete="CASCADE"),
         primary_key=True,
     ),
 )
