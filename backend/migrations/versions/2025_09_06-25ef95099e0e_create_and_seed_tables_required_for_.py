@@ -1,8 +1,8 @@
-"""create and seed the tables required to populate grow guides
+"""create and seed tables required for grow guide
 
-Revision ID: 8c931f918307
+Revision ID: 25ef95099e0e
 Revises:
-Create Date: 2025-09-01 20:34:40.432472
+Create Date: 2025-09-06 19:56:28.553173
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "8c931f918307"
+revision: str = "25ef95099e0e"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -188,6 +188,18 @@ def upgrade() -> None:
         sa.Column("start_month_id", sa.UUID(), nullable=False),
         sa.Column("week_start_date", sa.String(length=5), nullable=False),
         sa.Column("week_end_date", sa.String(length=5), nullable=False),
+        sa.CheckConstraint(
+            "SUBSTR(week_end_date, 3, 1) = '/'", name="check_week_end_date_slash"
+        ),
+        sa.CheckConstraint(
+            "SUBSTR(week_start_date, 3, 1) = '/'", name="check_week_start_date_slash"
+        ),
+        sa.CheckConstraint(
+            "LENGTH(week_end_date) = 5", name="check_week_end_date_length"
+        ),
+        sa.CheckConstraint(
+            "LENGTH(week_start_date) = 5", name="check_week_start_date_length"
+        ),
         sa.PrimaryKeyConstraint("week_id"),
         sa.UniqueConstraint("week_number"),
         sa.UniqueConstraint("week_number", name="uq_week_number"),
@@ -366,25 +378,25 @@ def upgrade() -> None:
         sa.Column("owner_user_id", sa.UUID(), nullable=False),
         sa.Column("variety_id", sa.UUID(), nullable=False),
         sa.Column("variety_name", sa.String(length=100), nullable=False),
-        sa.Column("family_id", sa.UUID(), nullable=True),
+        sa.Column("family_id", sa.UUID(), nullable=False),
         sa.Column("lifecycle_id", sa.UUID(), nullable=False),
-        sa.Column("sow_week_start_id", sa.UUID(), nullable=True),
-        sa.Column("sow_week_end_id", sa.UUID(), nullable=True),
+        sa.Column("sow_week_start_id", sa.UUID(), nullable=False),
+        sa.Column("sow_week_end_id", sa.UUID(), nullable=False),
         sa.Column("transplant_week_start_id", sa.UUID(), nullable=True),
         sa.Column("transplant_week_end_id", sa.UUID(), nullable=True),
         sa.Column("planting_conditions_id", sa.UUID(), nullable=False),
-        sa.Column("soil_ph", sa.Float(), nullable=True),
+        sa.Column("soil_ph", sa.Float(), nullable=False),
         sa.Column("row_width_cm", sa.Integer(), nullable=True),
-        sa.Column("plant_depth_cm", sa.Integer(), nullable=True),
-        sa.Column("plant_space_cm", sa.Integer(), nullable=True),
+        sa.Column("plant_depth_cm", sa.Integer(), nullable=False),
+        sa.Column("plant_space_cm", sa.Integer(), nullable=False),
         sa.Column("feed_id", sa.UUID(), nullable=True),
         sa.Column("feed_week_start_id", sa.UUID(), nullable=True),
         sa.Column("feed_frequency_id", sa.UUID(), nullable=True),
-        sa.Column("water_frequency_id", sa.UUID(), nullable=True),
+        sa.Column("water_frequency_id", sa.UUID(), nullable=False),
         sa.Column("high_temp_degrees", sa.Integer(), nullable=True),
-        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=True),
-        sa.Column("harvest_week_start_id", sa.UUID(), nullable=True),
-        sa.Column("harvest_week_end_id", sa.UUID(), nullable=True),
+        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=False),
+        sa.Column("harvest_week_start_id", sa.UUID(), nullable=False),
+        sa.Column("harvest_week_end_id", sa.UUID(), nullable=False),
         sa.Column("prune_week_start_id", sa.UUID(), nullable=True),
         sa.Column("prune_week_end_id", sa.UUID(), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
