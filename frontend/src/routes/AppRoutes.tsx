@@ -33,6 +33,9 @@ const AllotmentPage = React.lazy(
 const UserPreference = React.lazy(
 	() => import("../features/preference/pages/UserPreference"),
 );
+const GrowGuide = React.lazy(
+	() => import("../features/grow_guide/pages/GrowGuide"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -119,6 +122,14 @@ const AppRoutes = () => {
 					element={
 						<ProtectedRoute>
 							<UserPreference />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/grow-guides"
+					element={
+						<ProtectedRoute>
+							<GrowGuide />
 						</ProtectedRoute>
 					}
 				/>
