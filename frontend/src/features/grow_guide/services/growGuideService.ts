@@ -1,125 +1,174 @@
 import api, { handleApiError } from "../../../services/api";
-import type {
-	VarietyCreate,
-	VarietyListRead,
-	VarietyOptionsRead,
-	VarietyRead,
-	VarietyUpdate,
-} from "../types/growGuideTypes";
+import { errorMonitor } from "../../../services/errorMonitoring";
+import type { GrowGuideFormData } from "../forms/GrowGuideFormSchema";
 
-// Get all available options for variety creation/editing
-export const getVarietyOptions = async (): Promise<VarietyOptionsRead> => {
+export interface Lifecycle {
+	lifecycle_id: string;
+	lifecycle_name: string;
+	productivity_years: number;
+}
+
+export interface VarietyList {
+	variety_id: string;
+	variety_name: string;
+	lifecycle: Lifecycle;
+	is_public: boolean;
+	last_updated: string;
+}
+
+export interface GrowGuideOptions {
+	lifecycles: {
+		lifecycle_id: string;
+		lifecycle_name: string;
+		productivity_years: number;
+	}[];
+	planting_conditions: {
+		planting_condition_id: string;
+		planting_condition: string;
+	}[];
+	frequencies: {
+		frequency_id: string;
+		frequency_name: string;
+		frequency_days_per_year: number;
+	}[];
+	feeds: { feed_id: string; feed_name: string }[];
+	weeks: {
+		week_id: string;
+		week_number: number;
+		week_start_date: string;
+		week_end_date: string;
+	}[];
+	families: { family_id: string; family_name: string }[];
+	days?: { day_id: string; day_number: number; day_name: string }[];
+}
+
+export interface GrowGuideDetail extends VarietyList {
+	variety_id: string;
+	variety_name: string;
+	owner_user_id: string;
+	family: { family_id: string; family_name: string };
+	lifecycle: {
+		lifecycle_id: string;
+		lifecycle_name: string;
+		productivity_years: number;
+	};
+	planting_conditions: {
+		planting_condition_id: string;
+		planting_condition: string;
+	};
+
+	// Sowing details
+	sow_week_start_id: string;
+	sow_week_end_id: string;
+
+	// Transplant details
+	transplant_week_start_id?: string;
+	transplant_week_end_id?: string;
+
+	// Soil and spacing details
+	soil_ph: number;
+	row_width_cm?: number;
+	plant_depth_cm: number;
+	plant_space_cm: number;
+
+	// Feed details
+	feed?: { feed_id: string; feed_name: string };
+	feed_week_start_id?: string;
+	feed_frequency?: {
+		frequency_id: string;
+		frequency_name: string;
+		frequency_days_per_year: number;
+	};
+
+	// Watering details
+	water_frequency: {
+		frequency_id: string;
+		frequency_name: string;
+		frequency_days_per_year: number;
+	};
+
+	// High temperature details
+	high_temp_degrees?: number;
+	high_temp_water_frequency?: {
+		frequency_id: string;
+		frequency_name: string;
+		frequency_days_per_year: number;
+	};
+
+	// Harvest details
+	harvest_week_start_id: string;
+	harvest_week_end_id: string;
+
+	// Prune details
+	prune_week_start_id?: string;
+	prune_week_end_id?: string;
+
+	notes?: string;
+	is_public: boolean;
+	last_updated: string;
+
+	// Water days
+	water_days: {
+		day: { day_id: string; day_number: number; day_name: string };
+	}[];
+}
+
+const getUserGrowGuides = async (): Promise<VarietyList[]> => {
 	try {
-		const response = await api.get<VarietyOptionsRead>("/grow_guide/options");
+		const response = await api.get<VarietyList[]>("/grow-guides");
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(error, "Failed to load variety options. Please try again.");
-	}
-};
-
-// Get user's varieties
-export const getUserVarieties = async (): Promise<VarietyListRead[]> => {
-	try {
-		const response = await api.get<VarietyListRead[]>("/grow_guide");
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to load your varieties. Please try again.");
-	}
-};
-
-// Get a specific variety by ID
-export const getVariety = async (varietyId: string): Promise<VarietyRead> => {
-	try {
-		const response = await api.get<VarietyRead>(`/grow_guide/${varietyId}`);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to load variety details. Please try again.");
-	}
-};
-
-// Get user's specific variety
-export const getUserVariety = async (varietyId: string): Promise<VarietyRead> => {
-	try {
-		const response = await api.get<VarietyRead>(`/grow_guide/user/${varietyId}`);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to load variety details. Please try again.");
-	}
-};
-
-// Create new variety
-export const createVariety = async (varietyData: VarietyCreate): Promise<VarietyRead> => {
-	try {
-		const response = await api.post<VarietyRead>("/grow_guide", varietyData);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to create variety. Please try again.");
-	}
-};
-
-// Update existing variety
-export const updateVariety = async (
-	varietyId: string,
-	varietyData: VarietyUpdate,
-): Promise<VarietyRead> => {
-	try {
-		const response = await api.put<VarietyRead>(`/grow_guide/${varietyId}`, varietyData);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to update variety. Please try again.");
-	}
-};
-
-// Delete variety
-export const deleteVariety = async (varietyId: string): Promise<void> => {
-	try {
-		await api.delete(`/grow_guide/${varietyId}`);
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to delete variety. Please try again.");
-	}
-};
-
-// Set watering days for variety
-export const setVarietyWaterDays = async (
-	varietyId: string,
-	waterDays: string[],
-): Promise<VarietyRead> => {
-	try {
-		const response = await api.put<VarietyRead>(`/grow_guide/${varietyId}/water-days`, {
-			water_days: waterDays,
+		errorMonitor.captureException(error, {
+			context: "getUserGrowGuides",
+			url: "/grow-guides",
+			method: "GET",
 		});
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to update watering schedule. Please try again.");
+		return handleApiError(
+			error,
+			"Failed to fetch user grow guides. Please try again.",
+		);
 	}
 };
 
-// Get public varieties (for copying)
-export const getPublicVarieties = async (): Promise<VarietyListRead[]> => {
+const createGrowGuide = async (
+	data: GrowGuideFormData,
+): Promise<GrowGuideDetail> => {
 	try {
-		const response = await api.get<VarietyListRead[]>("/grow_guide/public");
+		const response = await api.post<GrowGuideDetail>("/grow-guides", data);
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(error, "Failed to load public varieties. Please try again.");
+		errorMonitor.captureException(error, {
+			context: "createGrowGuide",
+			url: "/grow-guides",
+			method: "POST",
+			data,
+		});
+		return handleApiError(
+			error,
+			"Failed to create grow guide. Please try again.",
+		);
 	}
 };
 
-// Copy public variety to user's collection
-export const copyPublicVariety = async (varietyId: string): Promise<VarietyRead> => {
+const getGrowGuideOptions = async (): Promise<GrowGuideOptions> => {
 	try {
-		const response = await api.post<VarietyRead>(`/grow_guide/copy/${varietyId}`);
+		const response = await api.get<GrowGuideOptions>("/grow-guides/options");
 		return response.data;
 	} catch (error: unknown) {
-		return handleApiError(error, "Failed to copy variety. Please try again.");
+		errorMonitor.captureException(error, {
+			context: "getGrowGuideOptions",
+			url: "/grow-guides/options",
+			method: "GET",
+		});
+		return handleApiError(
+			error,
+			"Failed to fetch grow guide options. Please try again.",
+		);
 	}
 };
 
-// Toggle variety public status
-export const toggleVarietyPublic = async (varietyId: string): Promise<VarietyRead> => {
-	try {
-		const response = await api.patch<VarietyRead>(`/grow_guide/${varietyId}/toggle-public`);
-		return response.data;
-	} catch (error: unknown) {
-		return handleApiError(error, "Failed to update variety visibility. Please try again.");
-	}
+export const growGuideService = {
+	getUserGrowGuides,
+	createGrowGuide,
+	getGrowGuideOptions,
 };
