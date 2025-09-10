@@ -16,7 +16,7 @@ class TestVarietyEndpointsIntegration:
     @pytest.mark.asyncio
     async def test_get_variety_options_requires_auth(self, client):
         """Test that variety options endpoint requires authentication."""
-        response = await client.get(f"{settings.API_PREFIX}/grow-guide/options")
+        response = await client.get(f"{settings.API_PREFIX}/grow-guides/metadata")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.asyncio
@@ -33,7 +33,7 @@ class TestVarietyEndpointsIntegration:
     ):
         """Test successful retrieval of variety options."""
         response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide/options",
+            f"{settings.API_PREFIX}/grow-guides/metadata",
             headers=integration_auth_headers,
         )
 
@@ -87,7 +87,7 @@ class TestVarietyEndpointsIntegration:
         }
 
         response = await client.post(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
             json=variety_data,
         )
@@ -136,7 +136,7 @@ class TestVarietyEndpointsIntegration:
         }
 
         response = await client.post(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
             json=variety_data,
         )
@@ -183,7 +183,7 @@ class TestVarietyEndpointsIntegration:
         }
 
         response = await client.post(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
             json=variety_data,
         )
@@ -203,7 +203,7 @@ class TestVarietyEndpointsIntegration:
     ):
         """Test getting user varieties."""
         response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
         )
 
@@ -231,7 +231,7 @@ class TestVarietyEndpointsIntegration:
     ):
         """Test getting public varieties."""
         response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide/public",
+            f"{settings.API_PREFIX}/grow-guides?visibility=public",
             headers=integration_auth_headers,
         )
 
@@ -253,7 +253,7 @@ class TestVarietyEndpointsIntegration:
         variety_id = seed_variety_data["variety_id"]
 
         response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide/{variety_id}",
+            f"{settings.API_PREFIX}/grow-guides/{variety_id}",
             headers=integration_auth_headers,
         )
 
@@ -275,7 +275,7 @@ class TestVarietyEndpointsIntegration:
         fake_id = uuid4()
 
         response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide/{fake_id}",
+            f"{settings.API_PREFIX}/grow-guides/{fake_id}",
             headers=integration_auth_headers,
         )
 
@@ -297,7 +297,7 @@ class TestVarietyEndpointsIntegration:
         }
 
         response = await client.put(
-            f"{settings.API_PREFIX}/grow-guide/{variety_id}",
+            f"{settings.API_PREFIX}/grow-guides/{variety_id}",
             headers=integration_auth_headers,
             json=update_data,
         )
@@ -322,7 +322,7 @@ class TestVarietyEndpointsIntegration:
         }
 
         response = await client.put(
-            f"{settings.API_PREFIX}/grow-guide/{fake_id}",
+            f"{settings.API_PREFIX}/grow-guides/{fake_id}",
             headers=integration_auth_headers,
             json=update_data,
         )
@@ -340,7 +340,7 @@ class TestVarietyEndpointsIntegration:
         variety_id = seed_variety_data["variety_id"]
 
         response = await client.delete(
-            f"{settings.API_PREFIX}/grow-guide/{variety_id}",
+            f"{settings.API_PREFIX}/grow-guides/{variety_id}",
             headers=integration_auth_headers,
         )
 
@@ -348,7 +348,7 @@ class TestVarietyEndpointsIntegration:
 
         # Verify variety is deleted
         get_response = await client.get(
-            f"{settings.API_PREFIX}/grow-guide/{variety_id}",
+            f"{settings.API_PREFIX}/grow-guides/{variety_id}",
             headers=integration_auth_headers,
         )
         assert get_response.status_code == status.HTTP_404_NOT_FOUND
@@ -363,7 +363,7 @@ class TestVarietyEndpointsIntegration:
         fake_id = uuid4()
 
         response = await client.delete(
-            f"{settings.API_PREFIX}/grow-guide/{fake_id}",
+            f"{settings.API_PREFIX}/grow-guides/{fake_id}",
             headers=integration_auth_headers,
         )
 
@@ -400,7 +400,7 @@ class TestVarietyEndpointsIntegration:
 
         # Create first variety
         response1 = await client.post(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
             json=variety_data,
         )
@@ -408,7 +408,7 @@ class TestVarietyEndpointsIntegration:
 
         # Try to create second variety with same name
         response2 = await client.post(
-            f"{settings.API_PREFIX}/grow-guide",
+            f"{settings.API_PREFIX}/grow-guides",
             headers=integration_auth_headers,
             json=variety_data,
         )

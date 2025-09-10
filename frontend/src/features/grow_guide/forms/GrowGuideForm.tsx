@@ -47,7 +47,8 @@ export const GrowGuideForm = ({
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
 	// Get options from API
-	const { data: options, isLoading: isLoadingOptions } = useGrowGuideOptions();
+	const { data: options, isLoading: isLoadingOptions, isError: isOptionsError } =
+		useGrowGuideOptions();
 
 	const {
 		register,
@@ -115,76 +116,54 @@ export const GrowGuideForm = ({
 		}
 	};
 
-	// Default mocked options in case API is not ready
-	const families = options?.families?.map((f) => ({
+	// Option data (no hardcoded fallbacks; rely entirely on API)
+	const families: Option[] = (options?.families ?? []).map((f) => ({
 		value: f.family_id,
 		label: f.family_name,
-	})) || [
-		{ value: "1", label: "Solanaceae (Nightshade)" },
-		{ value: "2", label: "Brassicaceae (Cabbage)" },
-		{ value: "3", label: "Fabaceae (Legume)" },
-	];
+	}));
 
-	const lifecycles = options?.lifecycles?.map((l) => ({
+	const lifecycles: Option[] = (options?.lifecycles ?? []).map((l) => ({
 		value: l.lifecycle_id,
 		label: l.lifecycle_name,
-	})) || [
-		{ value: "1", label: "Annual" },
-		{ value: "2", label: "Biennial" },
-		{ value: "3", label: "Perennial" },
-	];
+	}));
 
-	const feedTypes = options?.feeds?.map((f) => ({
+	const feedTypes: Option[] = (options?.feeds ?? []).map((f) => ({
 		value: f.feed_id,
 		label: f.feed_name,
-	})) || [
-		{ value: "1", label: "Nitrogen-Rich" },
-		{ value: "2", label: "Phosphorus-Rich" },
-		{ value: "3", label: "Potassium-Rich" },
-		{ value: "4", label: "Balanced" },
-	];
+	}));
 
-	const frequencies = options?.frequencies?.map((f) => ({
+	const frequencies: Option[] = (options?.frequencies ?? []).map((f) => ({
 		value: f.frequency_id,
 		label: f.frequency_name,
-	})) || [
-		{ value: "1", label: "Daily" },
-		{ value: "2", label: "Weekly" },
-		{ value: "3", label: "Bi-Weekly" },
-		{ value: "4", label: "Monthly" },
-	];
+	}));
 
-	const weeks =
-		options?.weeks?.map((w) => ({
-			value: w.week_id,
-			label: `Week ${w.week_number}`,
-		})) ||
-		Array.from({ length: 52 }, (_, i) => ({
-			value: (i + 1).toString(),
-			label: `Week ${i + 1}`,
-		}));
+	const weeks: Option[] = (options?.weeks ?? []).map((w) => ({
+		value: w.week_id,
+		label: `Week ${w.week_number}`,
+	}));
 
-	const plantingConditions = options?.planting_conditions?.map((p) => ({
-		value: p.planting_condition_id,
-		label: p.planting_condition,
-	})) || [
-		{ value: "1", label: "Full Sun" },
-		{ value: "2", label: "Partial Shade" },
-		{ value: "3", label: "Full Shade" },
-	];
+	const plantingConditions: Option[] = (options?.planting_conditions ?? []).map(
+		(p) => ({
+			value: p.planting_condition_id,
+			label: p.planting_condition,
+		}),
+	);
 
-	const days = options?.days?.map((d) => ({
+	const days: Option[] = (options?.days ?? []).map((d) => ({
 		value: d.day_id,
 		label: d.day_name,
-	})) || [
-		{ value: "1", label: "Monday" },
-		{ value: "2", label: "Tuesday" },
-		{ value: "3", label: "Wednesday" },
-		{ value: "4", label: "Thursday" },
-		{ value: "5", label: "Friday" },
-		{ value: "6", label: "Saturday" },
-		{ value: "7", label: "Sunday" },
-	];
+	}));
+
+	// Detect missing critical option sets after load
+	const coreSetsMissing =
+		families.length === 0 ||
+		lifecycles.length === 0 ||
+		plantingConditions.length === 0 ||
+		weeks.length === 0 ||
+		frequencies.length === 0;
+
+	// Only flag missing after load completes (no spinner) and no transport error
+	const missingCoreOptions = !isLoadingOptions && !isOptionsError && coreSetsMissing;
 
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -194,6 +173,40 @@ export const GrowGuideForm = ({
 						Add New Grow Guide
 					</DialogTitle>
 				</DialogHeader>
+
+				{isLoadingOptions ? (
+					<div className="py-6 text-sm text-muted-foreground">Loading options...</div>
+				) : isOptionsError ? (
+					<div className="py-6 space-y-4">
+						<p className="text-sm text-destructive">
+							Failed to load grow guide options. Please try again later.
+						</p>
+						<DialogFooter className="pt-2">
+							<Button type="button" variant="outline" onClick={onClose}>
+								Close
+							</Button>
+						</DialogFooter>
+					</div>
+				) : missingCoreOptions ? (
+					<div className="py-6 space-y-4">
+						<p className="text-sm text-muted-foreground">
+							Required option data couldn't be loaded. Please close and reopen the
+								form or try again later.
+						</p>
+						<ul className="text-xs list-disc pl-5 space-y-1 text-muted-foreground">
+							{families.length === 0 && <li>Plant families unavailable</li>}
+							{lifecycles.length === 0 && <li>Lifecycles unavailable</li>}
+							{plantingConditions.length === 0 && <li>Planting conditions unavailable</li>}
+							{weeks.length === 0 && <li>Weeks unavailable</li>}
+							{frequencies.length === 0 && <li>Frequencies unavailable</li>}
+						</ul>
+						<DialogFooter className="pt-2">
+							<Button type="button" variant="outline" onClick={onClose}>
+								Close
+							</Button>
+						</DialogFooter>
+					</div>
+				) : (
 				<form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
 					<div className="space-y-2">
 						<Label htmlFor="variety_name">Variety Name</Label>
@@ -753,6 +766,7 @@ export const GrowGuideForm = ({
 						</Button>
 					</DialogFooter>
 				</form>
+				)}
 			</DialogContent>
 		</Dialog>
 	);

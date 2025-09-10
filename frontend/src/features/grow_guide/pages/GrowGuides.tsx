@@ -2,11 +2,30 @@ import { PageLayout } from "../../../components/layouts/PageLayout";
 import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { Button } from "../../../components/ui/Button";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GrowGuideForm } from "../forms/GrowGuideForm";
+import { useQueryClient } from "@tanstack/react-query";
+import { growGuideService } from "../services/growGuideService";
+
+// Keys reused across list + options
+const USER_GUIDES_KEY = ["userGrowGuides"]; // must match useUserGrowGuides hook key
+const OPTIONS_KEY = ["growGuideOptions"]; // must match useGrowGuideOptions hook key
 
 const GrowGuides = () => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
+	const queryClient = useQueryClient();
+
+	// Prefetch options & user guides on mount so form opens instantly
+	useEffect(() => {
+		queryClient.prefetchQuery({
+			queryKey: OPTIONS_KEY,
+			queryFn: growGuideService.getGrowGuideOptions,
+		});
+		queryClient.prefetchQuery({
+			queryKey: USER_GUIDES_KEY,
+			queryFn: growGuideService.getUserGrowGuides,
+		});
+	}, [queryClient]);
 
 	return (
 		<PageLayout>

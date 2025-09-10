@@ -274,6 +274,7 @@ class TestGrowGuideUnitOfWorkRepositoryMethods:
         feeds = build_sample_feeds()
         weeks = [AsyncMock()]
         families = [AsyncMock()]
+        days = [AsyncMock()]
 
         uow.variety_repo.get_all_lifecycles.return_value = lifecycles
         uow.variety_repo.get_all_planting_conditions.return_value = planting_conditions
@@ -281,6 +282,7 @@ class TestGrowGuideUnitOfWorkRepositoryMethods:
         uow.variety_repo.get_all_feeds.return_value = feeds
         uow.week_repo.get_all_weeks.return_value = weeks
         uow.family_repo.get_all_families.return_value = families
+        uow.day_repo.get_all_days.return_value = days
 
         result = await uow.get_variety_options()
 
@@ -291,6 +293,7 @@ class TestGrowGuideUnitOfWorkRepositoryMethods:
             "feeds": feeds,
             "weeks": weeks,
             "families": families,
+            "days": days,
         }
 
         # Verify all repositories were called
@@ -300,6 +303,7 @@ class TestGrowGuideUnitOfWorkRepositoryMethods:
         uow.variety_repo.get_all_feeds.assert_called_once()
         uow.week_repo.get_all_weeks.assert_called_once()
         uow.family_repo.get_all_families.assert_called_once()
+        uow.day_repo.get_all_days.assert_called_once()
 
         mock_logger.info.assert_called_once()
         mock_log_timing.assert_called_once_with(

@@ -37,7 +37,7 @@ router.include_router(
     user_preference.router, prefix="/users/preferences", tags=["User Preferences"]
 )
 router.include_router(family.router, prefix="/families", tags=["Families"])
-router.include_router(feed.router, prefix="/feed", tags=["Feed"])
+router.include_router(feed.router, prefix="/feeds", tags=["Feeds"])
 router.include_router(day.router, prefix="/days", tags=["Days"])
 router.include_router(week.router, prefix="/weeks", tags=["Weeks"])
 router.include_router(month.router, prefix="/months", tags=["Months"])
@@ -48,4 +48,4 @@ router.include_router(
     prefix="/planting-conditions",
     tags=["Planting Conditions"],
 )
-router.include_router(grow_guide.router, prefix="/grow-guide", tags=["Grow Guide"])
+router.include_router(grow_guide.router, prefix="/grow-guides", tags=["Grow Guides"])

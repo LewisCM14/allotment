@@ -115,17 +115,38 @@ export interface GrowGuideDetail extends VarietyList {
 
 const getUserGrowGuides = async (): Promise<VarietyList[]> => {
 	try {
-		const response = await api.get<VarietyList[]>("/grow-guides");
+		const response = await api.get<VarietyList[]>("/grow-guides", {
+			params: { visibility: "user" },
+		});
 		return response.data;
 	} catch (error: unknown) {
 		errorMonitor.captureException(error, {
 			context: "getUserGrowGuides",
-			url: "/grow-guides",
+			url: "/grow-guides?visibility=user",
 			method: "GET",
 		});
 		return handleApiError(
 			error,
 			"Failed to fetch user grow guides. Please try again.",
+		);
+	}
+};
+
+const getPublicGrowGuides = async (): Promise<VarietyList[]> => {
+	try {
+		const response = await api.get<VarietyList[]>("/grow-guides", {
+			params: { visibility: "public" },
+		});
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "getPublicGrowGuides",
+			url: "/grow-guides?visibility=public",
+			method: "GET",
+		});
+		return handleApiError(
+			error,
+			"Failed to fetch public grow guides. Please try again.",
 		);
 	}
 };
@@ -152,12 +173,12 @@ const createGrowGuide = async (
 
 const getGrowGuideOptions = async (): Promise<GrowGuideOptions> => {
 	try {
-		const response = await api.get<GrowGuideOptions>("/grow-guides/options");
+		const response = await api.get<GrowGuideOptions>("/grow-guides/metadata");
 		return response.data;
 	} catch (error: unknown) {
 		errorMonitor.captureException(error, {
 			context: "getGrowGuideOptions",
-			url: "/grow-guides/options",
+			url: "/grow-guides/metadata",
 			method: "GET",
 		});
 		return handleApiError(
@@ -169,6 +190,7 @@ const getGrowGuideOptions = async (): Promise<GrowGuideOptions> => {
 
 export const growGuideService = {
 	getUserGrowGuides,
+	getPublicGrowGuides,
 	createGrowGuide,
 	getGrowGuideOptions,
 };

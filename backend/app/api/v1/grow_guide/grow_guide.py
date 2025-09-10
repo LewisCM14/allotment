@@ -8,7 +8,7 @@ from typing import List
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth_utils import get_current_user
@@ -32,11 +32,14 @@ logger = structlog.get_logger()
 
 
 @router.get(
-    "/options",
+    "/metadata",
     response_model=VarietyOptionsRead,
     status_code=status.HTTP_200_OK,
-    summary="Get variety creation options",
-    description="Get all available options for variety creation and editing.",
+    summary="Get variety metadata",
+    description=(
+        "Get all reference metadata required for creating or editing a variety, "
+        "including lifecycles, planting conditions, frequencies, feeds, weeks, families, and days."
+    ),
 )
 @limiter.limit("30/minute")
 async def get_variety_options(
@@ -103,66 +106,46 @@ async def create_variety(
     "",
     response_model=List[VarietyListRead],
     status_code=status.HTTP_200_OK,
-    summary="Get user varieties",
-    description="Get all varieties belonging to the authenticated user.",
+    summary="List varieties",
+    description=(
+        "List varieties. Use the 'visibility' query parameter to choose between"
+        " a user's own varieties (visibility=user, default) or public varieties"
+        " (visibility=public)."
+    ),
 )
 @limiter.limit("30/minute")
-async def get_user_varieties(
+async def list_varieties(
     request: Request,
+    visibility: str = Query("user", pattern="^(user|public)$"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> List[VarietyListRead]:
+    operation = (
+        "get_public_varieties" if visibility == "public" else "get_user_varieties"
+    )
+    timing_key = (
+        "get_public_varieties_endpoint"
+        if visibility == "public"
+        else "get_user_varieties_endpoint"
+    )
     log_context = {
         "request_id": request_id_ctx_var.get(),
-        "operation": "get_user_varieties",
+        "operation": operation,
         "user_id": str(current_user.user_id),
+        "visibility": visibility,
     }
-    logger.info("Fetching user varieties", **log_context)
+    logger.info("Fetching varieties", **log_context)
 
-    async with safe_operation("fetching user varieties", log_context):
-        with log_timing(
-            "get_user_varieties_endpoint", request_id=log_context["request_id"]
-        ):
+    async with safe_operation("fetching varieties", log_context):
+        with log_timing(timing_key, request_id=log_context["request_id"]):
             async with GrowGuideUnitOfWork(db) as uow:
-                varieties = await uow.get_user_varieties(current_user.user_id)
+                if visibility == "public":
+                    varieties = await uow.get_public_varieties()
+                else:
+                    varieties = await uow.get_user_varieties(current_user.user_id)
 
             logger.info(
-                "User varieties fetched successfully",
-                count=len(varieties),
-                **log_context,
-            )
-            return [VarietyListRead.model_validate(v) for v in varieties]
-
-
-@router.get(
-    "/public",
-    response_model=List[VarietyListRead],
-    status_code=status.HTTP_200_OK,
-    summary="Get public varieties",
-    description="Get all public varieties available to all users.",
-)
-@limiter.limit("30/minute")
-async def get_public_varieties(
-    request: Request,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-) -> List[VarietyListRead]:
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "get_public_varieties",
-        "user_id": str(current_user.user_id),
-    }
-    logger.info("Fetching public varieties", **log_context)
-
-    async with safe_operation("fetching public varieties", log_context):
-        with log_timing(
-            "get_public_varieties_endpoint", request_id=log_context["request_id"]
-        ):
-            async with GrowGuideUnitOfWork(db) as uow:
-                varieties = await uow.get_public_varieties()
-
-            logger.info(
-                "Public varieties fetched successfully",
+                "Varieties fetched successfully",
                 count=len(varieties),
                 **log_context,
             )

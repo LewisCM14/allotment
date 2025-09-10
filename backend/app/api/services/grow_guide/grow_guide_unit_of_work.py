@@ -229,6 +229,7 @@ class GrowGuideUnitOfWork:
             feeds = await self.variety_repo.get_all_feeds()
             weeks = await self.week_repo.get_all_weeks()
             families = await self.family_repo.get_all_families()
+            days = await self.day_repo.get_all_days()
 
             return {
                 "lifecycles": lifecycles,
@@ -237,6 +238,7 @@ class GrowGuideUnitOfWork:
                 "feeds": feeds,
                 "weeks": weeks,
                 "families": families,
+                "days": days,
             }
 
     # Variety CRUD operations

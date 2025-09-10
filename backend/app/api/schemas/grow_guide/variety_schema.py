@@ -345,5 +345,6 @@ class VarietyOptionsRead(SecureBaseModel):
     feeds: List[FeedRead]
     weeks: List[WeekRead]
     families: List[FamilyRead]
+    days: List[DayRead]
 
     model_config = ConfigDict(from_attributes=True)
