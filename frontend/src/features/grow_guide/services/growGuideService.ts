@@ -1,6 +1,7 @@
 import api, { handleApiError } from "../../../services/api";
 import { errorMonitor } from "../../../services/errorMonitoring";
 import type { GrowGuideFormData } from "../forms/GrowGuideFormSchema";
+import type { VarietyCreate } from "../types/growGuideTypes";
 
 export interface Lifecycle {
 	lifecycle_id: string;
@@ -152,17 +153,24 @@ const getPublicGrowGuides = async (): Promise<VarietyList[]> => {
 };
 
 const createGrowGuide = async (
-	data: GrowGuideFormData,
+	data: VarietyCreate | GrowGuideFormData,
 ): Promise<GrowGuideDetail> => {
+	// Normalize defaults so we don't send undefined booleans / arrays
+	const { is_public, water_days, ...rest } = data as VarietyCreate;
+	const payload: VarietyCreate = {
+		...rest,
+		is_public: is_public ?? false,
+		water_days: water_days ?? [],
+	};
 	try {
-		const response = await api.post<GrowGuideDetail>("/grow-guides", data);
+		const response = await api.post<GrowGuideDetail>("/grow-guides", payload);
 		return response.data;
 	} catch (error: unknown) {
 		errorMonitor.captureException(error, {
 			context: "createGrowGuide",
 			url: "/grow-guides",
 			method: "POST",
-			data,
+			data: payload,
 		});
 		return handleApiError(
 			error,
@@ -188,9 +196,87 @@ const getGrowGuideOptions = async (): Promise<GrowGuideOptions> => {
 	}
 };
 
+// Extra CRUD helpers expected by existing tests (legacy naming retained for now)
+const updateVariety = async (
+	varietyId: string,
+	data: Partial<GrowGuideFormData>,
+): Promise<GrowGuideDetail> => {
+	try {
+		const response = await api.put<GrowGuideDetail>(
+			`/grow-guides/${varietyId}`,
+			data,
+		);
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "updateVariety",
+			url: `/grow-guides/${varietyId}`,
+			method: "PUT",
+			data,
+		});
+		return handleApiError(error, "Failed to update grow guide.");
+	}
+};
+
+const deleteVariety = async (varietyId: string): Promise<void> => {
+	try {
+		await api.delete(`/grow-guides/${varietyId}`);
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "deleteVariety",
+			url: `/grow-guides/${varietyId}`,
+			method: "DELETE",
+		});
+		return handleApiError(error, "Failed to delete grow guide.");
+	}
+};
+
+const toggleVarietyPublic = async (
+	varietyId: string,
+): Promise<GrowGuideDetail> => {
+	try {
+		const response = await api.patch<GrowGuideDetail>(
+			`/grow-guides/${varietyId}/toggle-public`,
+			{},
+		);
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "toggleVarietyPublic",
+			url: `/grow-guides/${varietyId}/toggle-public`,
+			method: "PATCH",
+		});
+		return handleApiError(error, "Failed to toggle public status.");
+	}
+};
+
+const copyPublicVariety = async (
+	publicVarietyId: string,
+): Promise<GrowGuideDetail> => {
+	try {
+		// Assuming backend supports copy endpoint; adjust when implemented
+		const response = await api.post<GrowGuideDetail>(
+			`/grow-guides/${publicVarietyId}/copy`,
+			{},
+		);
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "copyPublicVariety",
+			url: `/grow-guides/${publicVarietyId}/copy`,
+			method: "POST",
+		});
+		return handleApiError(error, "Failed to copy public grow guide.");
+	}
+};
+
 export const growGuideService = {
 	getUserGrowGuides,
 	getPublicGrowGuides,
 	createGrowGuide,
 	getGrowGuideOptions,
+	updateVariety,
+	deleteVariety,
+	toggleVarietyPublic,
+	copyPublicVariety,
 };
