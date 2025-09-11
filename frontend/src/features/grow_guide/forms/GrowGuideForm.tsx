@@ -24,6 +24,39 @@ import { useCreateGrowGuide } from "../hooks/useCreateGrowGuide";
 import { useGrowGuideOptions } from "../hooks/useGrowGuideOptions";
 import { toast } from "sonner";
 
+// Centralised field metadata to control labels & required marker
+const FIELD_META: Record<string, { label: string; required?: boolean }> = {
+	variety_name: { label: "Variety Name", required: true },
+	family_id: { label: "Plant Family", required: true },
+	lifecycle_id: { label: "Lifecycle", required: true },
+	sow_week_start_id: { label: "Sowing Start Week", required: true },
+	sow_week_end_id: { label: "Sowing End Week", required: true },
+	transplant_week_start_id: { label: "Transplant Start Week" },
+	transplant_week_end_id: { label: "Transplant End Week" },
+	planting_conditions_id: { label: "Planting Conditions", required: true },
+	soil_ph: { label: "Soil pH", required: true },
+	plant_depth_cm: { label: "Plant Depth (cm)", required: true },
+	plant_space_cm: { label: "Plant Spacing (cm)", required: true },
+	row_width_cm: { label: "Row Width (cm)" },
+	feed_id: { label: "Feed Type" },
+	feed_week_start_id: { label: "Feed Start Week" },
+	feed_frequency_id: { label: "Feed Frequency" },
+	water_frequency_id: { label: "Water Frequency", required: true },
+	high_temp_degrees: { label: "High Temperature Threshold" },
+	high_temp_water_frequency_id: { label: "High Temp Water Frequency" },
+	harvest_week_start_id: { label: "Harvest Start Week", required: true },
+	harvest_week_end_id: { label: "Harvest End Week", required: true },
+	prune_week_start_id: { label: "Prune Start Week" },
+	prune_week_end_id: { label: "Prune End Week" },
+	notes: { label: "Notes" },
+	is_public: { label: "Make this grow guide public" },
+};
+
+const labelFor = (name: keyof typeof FIELD_META) => {
+	const meta = FIELD_META[name];
+	return meta.required ? `${meta.label}*` : meta.label;
+};
+
 // Define interface for option objects
 interface Option {
 	value: string;
@@ -140,10 +173,14 @@ export const GrowGuideForm = ({
 		label: f.frequency_name,
 	}));
 
-	const weeks: Option[] = (options?.weeks ?? []).map((w) => ({
-		value: w.week_id,
-		label: `Week ${w.week_number}`,
-	}));
+	const weeks: Option[] = (options?.weeks ?? []).map((w) => {
+		const num = w.week_number?.toString().padStart(2, "0");
+		const start = w.week_start_date || ""; // expected format MM/DD
+		return {
+			value: w.week_id,
+			label: `${start} - Week ${num}`.trim(),
+		};
+	});
 
 	const plantingConditions: Option[] = (options?.planting_conditions ?? []).map(
 		(p) => ({
@@ -217,7 +254,7 @@ export const GrowGuideForm = ({
 				) : (
 					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
 						<div className="space-y-2">
-							<Label htmlFor="variety_name">Variety Name</Label>
+							<Label htmlFor="variety_name">{labelFor("variety_name")}</Label>
 							<Input
 								id="variety_name"
 								{...register("variety_name")}
@@ -231,7 +268,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="family_id">Plant Family</Label>
+								<Label htmlFor="family_id">{labelFor("family_id")}</Label>
 								<Controller
 									name="family_id"
 									control={control}
@@ -253,7 +290,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="lifecycle_id">Lifecycle</Label>
+								<Label htmlFor="lifecycle_id">{labelFor("lifecycle_id")}</Label>
 								<Controller
 									name="lifecycle_id"
 									control={control}
@@ -277,7 +314,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="sow_week_start_id">Sowing Start Week</Label>
+								<Label htmlFor="sow_week_start_id">{labelFor("sow_week_start_id")}</Label>
 								<Controller
 									name="sow_week_start_id"
 									control={control}
@@ -299,7 +336,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="sow_week_end_id">Sowing End Week</Label>
+								<Label htmlFor="sow_week_end_id">{labelFor("sow_week_end_id")}</Label>
 								<Controller
 									name="sow_week_end_id"
 									control={control}
@@ -323,9 +360,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="transplant_week_start_id">
-									Transplant Start Week (optional)
-								</Label>
+								<Label htmlFor="transplant_week_start_id">{labelFor("transplant_week_start_id")}</Label>
 								<Controller
 									name="transplant_week_start_id"
 									control={control}
@@ -349,9 +384,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transplant_week_end_id">
-									Transplant End Week (optional)
-								</Label>
+								<Label htmlFor="transplant_week_end_id">{labelFor("transplant_week_end_id")}</Label>
 								<Controller
 									name="transplant_week_end_id"
 									control={control}
@@ -374,9 +407,7 @@ export const GrowGuideForm = ({
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="planting_conditions_id">
-								Planting Conditions
-							</Label>
+							<Label htmlFor="planting_conditions_id">{labelFor("planting_conditions_id")}</Label>
 							<Controller
 								name="planting_conditions_id"
 								control={control}
@@ -399,7 +430,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="soil_ph">Soil pH</Label>
+								<Label htmlFor="soil_ph">{labelFor("soil_ph")}</Label>
 								<Input
 									id="soil_ph"
 									type="number"
@@ -416,7 +447,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="plant_depth_cm">Plant Depth (cm)</Label>
+								<Label htmlFor="plant_depth_cm">{labelFor("plant_depth_cm")}</Label>
 								<Input
 									id="plant_depth_cm"
 									type="number"
@@ -432,7 +463,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="plant_space_cm">Plant Spacing (cm)</Label>
+								<Label htmlFor="plant_space_cm">{labelFor("plant_space_cm")}</Label>
 								<Input
 									id="plant_space_cm"
 									type="number"
@@ -449,7 +480,7 @@ export const GrowGuideForm = ({
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="row_width_cm">Row Width (cm) (optional)</Label>
+							<Label htmlFor="row_width_cm">{labelFor("row_width_cm")}</Label>
 							<Input
 								id="row_width_cm"
 								type="number"
@@ -466,7 +497,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="feed_id">Feed Type (optional)</Label>
+								<Label htmlFor="feed_id">{labelFor("feed_id")}</Label>
 								<Controller
 									name="feed_id"
 									control={control}
@@ -488,9 +519,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="feed_week_start_id">
-									Feed Start Week (optional)
-								</Label>
+								<Label htmlFor="feed_week_start_id">{labelFor("feed_week_start_id")}</Label>
 								<Controller
 									name="feed_week_start_id"
 									control={control}
@@ -512,9 +541,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="feed_frequency_id">
-									Feed Frequency (optional)
-								</Label>
+								<Label htmlFor="feed_frequency_id">{labelFor("feed_frequency_id")}</Label>
 								<Controller
 									name="feed_frequency_id"
 									control={control}
@@ -536,7 +563,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="water_frequency_id">Water Frequency</Label>
+								<Label htmlFor="water_frequency_id">{labelFor("water_frequency_id")}</Label>
 								<Controller
 									name="water_frequency_id"
 									control={control}
@@ -560,9 +587,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="high_temp_degrees">
-									High Temperature Threshold (optional)
-								</Label>
+								<Label htmlFor="high_temp_degrees">{labelFor("high_temp_degrees")}</Label>
 								<Input
 									id="high_temp_degrees"
 									type="number"
@@ -578,9 +603,7 @@ export const GrowGuideForm = ({
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="high_temp_water_frequency_id">
-									High Temp Water Frequency
-								</Label>
+								<Label htmlFor="high_temp_water_frequency_id">{labelFor("high_temp_water_frequency_id")}</Label>
 								<Controller
 									name="high_temp_water_frequency_id"
 									control={control}
@@ -652,9 +675,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="harvest_week_start_id">
-									Harvest Start Week
-								</Label>
+								<Label htmlFor="harvest_week_start_id">{labelFor("harvest_week_start_id")}</Label>
 								<Controller
 									name="harvest_week_start_id"
 									control={control}
@@ -675,7 +696,7 @@ export const GrowGuideForm = ({
 								)}
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="harvest_week_end_id">Harvest End Week</Label>
+								<Label htmlFor="harvest_week_end_id">{labelFor("harvest_week_end_id")}</Label>
 								<Controller
 									name="harvest_week_end_id"
 									control={control}
@@ -699,9 +720,7 @@ export const GrowGuideForm = ({
 
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="prune_week_start_id">
-									Prune Start Week (optional)
-								</Label>
+								<Label htmlFor="prune_week_start_id">{labelFor("prune_week_start_id")}</Label>
 								<Controller
 									name="prune_week_start_id"
 									control={control}
@@ -722,9 +741,7 @@ export const GrowGuideForm = ({
 								)}
 							</div>
 							<div className="space-y-2">
-								<Label htmlFor="prune_week_end_id">
-									Prune End Week (optional)
-								</Label>
+								<Label htmlFor="prune_week_end_id">{labelFor("prune_week_end_id")}</Label>
 								<Controller
 									name="prune_week_end_id"
 									control={control}
@@ -747,7 +764,7 @@ export const GrowGuideForm = ({
 						</div>
 
 						<div className="space-y-2">
-							<Label htmlFor="notes">Notes</Label>
+							<Label htmlFor="notes">{labelFor("notes")}</Label>
 							<Textarea
 								id="notes"
 								{...register("notes")}
@@ -769,7 +786,7 @@ export const GrowGuideForm = ({
 									/>
 								)}
 							/>
-							<Label htmlFor="is_public">Make this grow guide public</Label>
+							<Label htmlFor="is_public">{labelFor("is_public")}</Label>
 						</div>
 
 						<DialogFooter className="pt-4">
