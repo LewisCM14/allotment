@@ -811,9 +811,18 @@ async def seed_planting_conditions_data():
 
 
 @pytest.fixture
-async def seed_frequency_data():
-    """Seed the test database with frequency data."""
-    from app.api.models.grow_guide.guide_options_model import Frequency
+async def seed_frequency_data(seed_day_data):
+    """Seed the test database with frequency data and default watering day mappings.
+
+    Depends on day data so we can create FrequencyDefaultDay rows for deterministic tests.
+    Daily -> all days
+    Weekly -> Sunday only
+    Monthly -> Sunday only (placeholder until monthly logic is defined)
+    """
+    from app.api.models.grow_guide.guide_options_model import (
+        Frequency,
+        FrequencyDefaultDay,
+    )
 
     async with TestingSessionLocal() as session:
         frequencies_data = [
@@ -823,6 +832,7 @@ async def seed_frequency_data():
         ]
 
         created_frequencies = []
+        frequency_id_map = {}
         for freq_data in frequencies_data:
             freq_id = uuid.uuid4()
             frequency = Frequency(
@@ -838,7 +848,31 @@ async def seed_frequency_data():
                     "days_per_year": freq_data["days_per_year"],
                 }
             )
+            frequency_id_map[freq_data["name"]] = freq_id
 
+        await session.flush()
+
+        # Build default day mappings
+        # seed_day_data list ordered Mon..Sun
+        day_ids_ordered = [d["id"] for d in seed_day_data]
+        daily_id = frequency_id_map["Daily"]
+        weekly_id = frequency_id_map["Weekly"]
+        monthly_id = frequency_id_map["Monthly"]
+
+        default_rows = []
+        # Daily: all 7
+        for d_id in day_ids_ordered:
+            default_rows.append(FrequencyDefaultDay(frequency_id=daily_id, day_id=d_id))
+        # Weekly: Sunday (day_number 7)
+        default_rows.append(
+            FrequencyDefaultDay(frequency_id=weekly_id, day_id=day_ids_ordered[-1])
+        )
+        # Monthly: Sunday (placeholder)
+        default_rows.append(
+            FrequencyDefaultDay(frequency_id=monthly_id, day_id=day_ids_ordered[-1])
+        )
+
+        session.add_all(default_rows)
         await session.commit()
         yield created_frequencies
 

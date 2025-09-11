@@ -14,9 +14,11 @@ from sqlalchemy.orm import selectinload
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import translate_db_exceptions
 from app.api.middleware.logging_middleware import request_id_ctx_var
+from app.api.models.grow_guide.calendar_model import Day
 from app.api.models.grow_guide.guide_options_model import (
     Feed,
     Frequency,
+    FrequencyDefaultDay,
     Lifecycle,
     PlantingConditions,
 )
@@ -166,6 +168,21 @@ class VarietyRepository:
                 self.db.add(water_day)
             await self.db.flush()
             return water_days
+
+    @translate_db_exceptions
+    async def get_default_day_ids_for_frequency(self, frequency_id: UUID) -> List[UUID]:
+        """Return the default day IDs configured for a frequency."""
+        with log_timing(
+            "db_get_default_day_ids_for_frequency", request_id=self.request_id
+        ):
+            stmt = (
+                select(FrequencyDefaultDay.day_id)
+                .join(Day, Day.day_id == FrequencyDefaultDay.day_id)
+                .where(FrequencyDefaultDay.frequency_id == frequency_id)
+                .order_by(Day.day_number)
+            )
+            result = await self.db.execute(stmt)
+            return [row[0] for row in result.fetchall()]
 
     @translate_db_exceptions
     async def delete_water_days(self, variety_id: UUID) -> None:

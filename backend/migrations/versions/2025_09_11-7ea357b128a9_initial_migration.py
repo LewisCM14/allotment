@@ -1,8 +1,8 @@
-"""create and seed tables required for grow guide
+"""initial migration
 
-Revision ID: 25ef95099e0e
+Revision ID: 7ea357b128a9
 Revises:
-Create Date: 2025-09-06 19:56:28.553173
+Create Date: 2025-09-11 19:05:28.675888
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "25ef95099e0e"
+revision: str = "7ea357b128a9"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -259,6 +259,29 @@ def upgrade() -> None:
         sa.UniqueConstraint("family_name", name="uq_family_name"),
     )
     op.create_index(op.f("ix_family_family_id"), "family", ["family_id"], unique=False)
+    op.create_table(
+        "frequency_default_day",
+        sa.Column("frequency_id", sa.UUID(), nullable=False),
+        sa.Column("day_id", sa.UUID(), nullable=False),
+        sa.ForeignKeyConstraint(["day_id"], ["day.day_id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["frequency_id"], ["frequency.frequency_id"], ondelete="CASCADE"
+        ),
+        sa.PrimaryKeyConstraint("frequency_id", "day_id"),
+        sa.UniqueConstraint("frequency_id", "day_id", name="uq_frequency_day_pair"),
+    )
+    op.create_index(
+        op.f("ix_frequency_default_day_day_id"),
+        "frequency_default_day",
+        ["day_id"],
+        unique=False,
+    )
+    op.create_index(
+        op.f("ix_frequency_default_day_frequency_id"),
+        "frequency_default_day",
+        ["frequency_id"],
+        unique=False,
+    )
     op.create_table(
         "pest_prevention",
         sa.Column("pest_id", sa.UUID(), nullable=False),
@@ -2355,10 +2378,11 @@ def upgrade() -> None:
     # Frequencies
     frequencies = [
         {"name": "daily", "days_per_year": 365},
-        {"name": "odd days", "days_per_year": 208},
-        {"name": "even days", "days_per_year": 156},
+        {"name": "alternate days", "days_per_year": 208},
+        {"name": "thrice weekly", "days_per_year": 156},
         {"name": "weekly", "days_per_year": 52},
         {"name": "fortnightly", "days_per_year": 26},
+        {"name": "yearly", "days_per_year": 1},
     ]
     frequency_ids = {freq["name"]: uuid.uuid4() for freq in frequencies}
     op.bulk_insert(
@@ -2378,6 +2402,38 @@ def upgrade() -> None:
             for freq in frequencies
         ],
     )
+
+    # Frequency default days
+    frequency_default_days = [
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["mon"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["tue"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["wen"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["thu"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["fri"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["sat"]},
+        {"frequency_id": frequency_ids["daily"], "day_id": day_ids["sun"]},
+        {"frequency_id": frequency_ids["alternate days"], "day_id": day_ids["mon"]},
+        {"frequency_id": frequency_ids["alternate days"], "day_id": day_ids["wen"]},
+        {"frequency_id": frequency_ids["alternate days"], "day_id": day_ids["fri"]},
+        {"frequency_id": frequency_ids["alternate days"], "day_id": day_ids["sun"]},
+        {"frequency_id": frequency_ids["thrice weekly"], "day_id": day_ids["tue"]},
+        {"frequency_id": frequency_ids["thrice weekly"], "day_id": day_ids["thu"]},
+        {"frequency_id": frequency_ids["thrice weekly"], "day_id": day_ids["sat"]},
+        {"frequency_id": frequency_ids["weekly"], "day_id": day_ids["sun"]},
+        {"frequency_id": frequency_ids["fortnightly"], "day_id": day_ids["sun"]},
+        {"frequency_id": frequency_ids["yearly"], "day_id": day_ids["sun"]},
+    ]
+
+    if frequency_default_days:
+        op.bulk_insert(
+            sa.Table(
+                "frequency_default_day",
+                sa.MetaData(),
+                sa.Column("frequency_id", sa.UUID()),
+                sa.Column("day_id", sa.UUID()),
+            ),
+            frequency_default_days,
+        )
 
     # Create function and trigger to set default user_feed_day rows for each feed when a new user is created
     op.execute("""
@@ -2446,6 +2502,14 @@ def downgrade() -> None:
     op.drop_table("user_allotment")
     op.drop_table("pest_treatment")
     op.drop_table("pest_prevention")
+    op.drop_index(
+        op.f("ix_frequency_default_day_frequency_id"),
+        table_name="frequency_default_day",
+    )
+    op.drop_index(
+        op.f("ix_frequency_default_day_day_id"), table_name="frequency_default_day"
+    )
+    op.drop_table("frequency_default_day")
     op.drop_index(op.f("ix_family_family_id"), table_name="family")
     op.drop_table("family")
     op.drop_table("disease_treatment")

@@ -32,7 +32,6 @@ def create_valid_variety_data(**overrides):
         "harvest_week_start_id": uuid4(),
         "harvest_week_end_id": uuid4(),
         "is_public": False,
-        "water_days": [],
     }
     base_data.update(overrides)
     return VarietyCreate(**base_data)
@@ -46,7 +45,6 @@ def create_valid_variety_update_data(**overrides):
         "lifecycle_id": uuid4(),
         "soil_ph": 7.0,
         "plant_depth_cm": 3,
-        "water_days": [],
     }
     base_data.update(overrides)
     return VarietyUpdate(**base_data)

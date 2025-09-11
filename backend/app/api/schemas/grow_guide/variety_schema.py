@@ -172,11 +172,6 @@ class VarietyCreate(SecureBaseModel):
     )
     is_public: bool = Field(default=False, description="Whether the variety is public")
 
-    # Water days
-    water_days: List[VarietyWaterDayCreate] = Field(
-        default_factory=list, description="Watering days"
-    )
-
     @field_validator("variety_name")
     @classmethod
     def validate_variety_name(cls, v: str) -> str:
@@ -253,11 +248,6 @@ class VarietyUpdate(SecureBaseModel):
         None, min_length=5, max_length=500, description="Optional notes"
     )
     is_public: Optional[bool] = Field(None, description="Whether the variety is public")
-
-    # Water days
-    water_days: Optional[List[VarietyWaterDayCreate]] = Field(
-        None, description="Watering days"
-    )
 
     @field_validator("variety_name")
     @classmethod
@@ -342,6 +332,8 @@ class VarietyOptionsRead(SecureBaseModel):
     lifecycles: List[LifecycleRead]
     planting_conditions: List[PlantingConditionsRead]
     frequencies: List[FrequencyRead]
+    # Subset of frequencies allowed for feed scheduling (restricted vs watering)
+    feed_frequencies: List[FrequencyRead]
     feeds: List[FeedRead]
     weeks: List[WeekRead]
     families: List[FamilyRead]

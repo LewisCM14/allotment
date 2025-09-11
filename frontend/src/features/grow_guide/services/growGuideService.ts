@@ -32,6 +32,11 @@ export interface GrowGuideOptions {
 		frequency_name: string;
 		frequency_days_per_year: number;
 	}[];
+	feed_frequencies: {
+		frequency_id: string;
+		frequency_name: string;
+		frequency_days_per_year: number;
+	}[];
 	feeds: { feed_id: string; feed_name: string }[];
 	weeks: {
 		week_id: string;
@@ -155,12 +160,10 @@ const getPublicGrowGuides = async (): Promise<VarietyList[]> => {
 const createGrowGuide = async (
 	data: VarietyCreate | GrowGuideFormData,
 ): Promise<GrowGuideDetail> => {
-	// Normalize defaults so we don't send undefined booleans / arrays
-	const { is_public, water_days, ...rest } = data as VarietyCreate;
+	const { is_public, ...rest } = data as VarietyCreate;
 	const payload: VarietyCreate = {
 		...rest,
 		is_public: is_public ?? false,
-		water_days: water_days ?? [],
 	};
 	try {
 		const response = await api.post<GrowGuideDetail>("/grow-guides", payload);

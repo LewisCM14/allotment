@@ -84,15 +84,6 @@ const baseGrowGuideFormSchema = z.object({
 
 	// Public/private setting
 	is_public: z.boolean().default(false),
-
-	// Water days - array of day IDs for watering
-	water_days: z
-		.array(
-			z.object({
-				day_id: z.string({ required_error: "Day ID is required" }),
-			}),
-		)
-		.default([]),
 });
 
 // Add validations for fields that must be provided together

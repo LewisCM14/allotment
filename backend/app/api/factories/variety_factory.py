@@ -310,7 +310,6 @@ class VarietyFactory:
             ),
             notes=get_value_or_fallback(variety_data.notes, variety.notes),
             is_public=get_value_or_fallback(variety_data.is_public, variety.is_public),
-            water_days=variety_data.water_days or [],
         )
 
     @staticmethod

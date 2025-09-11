@@ -231,10 +231,17 @@ class GrowGuideUnitOfWork:
             families = await self.family_repo.get_all_families()
             days = await self.day_repo.get_all_days()
 
+            # Feed frequencies are restricted to weekly, fortnightly and yearly
+            feed_frequency_names = {"weekly", "fortnightly", "yearly"}
+            feed_frequencies = [
+                f for f in frequencies if f.frequency_name in feed_frequency_names
+            ]
+
             return {
                 "lifecycles": lifecycles,
                 "planting_conditions": planting_conditions,
                 "frequencies": frequencies,
+                "feed_frequencies": feed_frequencies,
                 "feeds": feeds,
                 "weeks": weeks,
                 "families": families,
@@ -271,15 +278,20 @@ class GrowGuideUnitOfWork:
             variety = VarietyFactory.create_variety(variety_data, user_id)
             created_variety = await self.variety_repo.create_variety(variety)
 
-            # Create water days if provided
-            if variety_data.water_days:
-                water_days_data = [
-                    {"day_id": wd.day_id} for wd in variety_data.water_days
-                ]
-                water_days = VarietyFactory.create_water_days(
-                    created_variety.variety_id, water_days_data
+            # Auto-generate water days from frequency defaults
+            default_day_ids = await self.variety_repo.get_default_day_ids_for_frequency(
+                created_variety.water_frequency_id
+            )
+            if not default_day_ids:
+                raise BusinessLogicError(
+                    message="No default watering days configured for selected water frequency",
+                    status_code=422,
                 )
-                await self.variety_repo.create_water_days(water_days)
+            water_days_data = [{"day_id": d} for d in default_day_ids]
+            water_days = VarietyFactory.create_water_days(
+                created_variety.variety_id, water_days_data
+            )
+            await self.variety_repo.create_water_days(water_days)
 
             logger.info("Variety created successfully", **log_context)
             return created_variety
@@ -384,27 +396,49 @@ class GrowGuideUnitOfWork:
                         status_code=409,
                     )
 
-            # Update variety using factory
+            # Capture pre-update water frequency to detect changes after mutation
+            old_water_frequency_id = variety.water_frequency_id
+
+            # Update variety using factory (mutates instance) then persist
             updated_variety = VarietyFactory.update_variety(variety, variety_data)
-            result = await self.variety_repo.update_variety(updated_variety)
+            await self.variety_repo.update_variety(updated_variety)
 
-            # Update water days if provided
-            if variety_data.water_days is not None:
-                # Delete existing water days
+            # Regenerate water days only if water frequency provided AND actually changed
+            if (
+                variety_data.water_frequency_id is not None
+                and variety_data.water_frequency_id != old_water_frequency_id
+            ):
                 await self.variety_repo.delete_water_days(variety_id)
-
-                # Create new water days
-                if variety_data.water_days:
-                    water_days_data = [
-                        {"day_id": wd.day_id} for wd in variety_data.water_days
-                    ]
-                    water_days = VarietyFactory.create_water_days(
-                        variety_id, water_days_data
+                # At this point variety_data.water_frequency_id is not None and the factory
+                # will have applied it to updated_variety; assert for type narrowing.
+                assert updated_variety.water_frequency_id is not None, (
+                    "water_frequency_id unexpectedly None after update"
+                )
+                default_day_ids = (
+                    await self.variety_repo.get_default_day_ids_for_frequency(
+                        updated_variety.water_frequency_id
                     )
-                    await self.variety_repo.create_water_days(water_days)
+                )
+                if not default_day_ids:
+                    raise BusinessLogicError(
+                        message="No default watering days configured for selected water frequency",
+                        status_code=422,
+                    )
+                water_days_data = [{"day_id": d} for d in default_day_ids]
+                water_days = VarietyFactory.create_water_days(
+                    variety_id, water_days_data
+                )
+                await self.variety_repo.create_water_days(water_days)
+                # IMPORTANT: After the bulk delete + insert, SQLAlchemy's in-memory relationship
+                # collection still contains the previously loaded (now deleted) VarietyWaterDay
+                # objects because the bulk DELETE does not synchronize the session state.
+                # Assign the freshly created list so that subsequent serialization (before commit)
+                # reflects the regenerated set rather than the stale one.
+                updated_variety.water_days = water_days
 
+            # Return the mutated instance; API layer does an explicit get_variety for full serialization.
             logger.info("Variety updated successfully", **log_context)
-            return result
+            return updated_variety
 
     @translate_db_exceptions
     async def delete_variety(self, variety_id: UUID, user_id: UUID) -> bool:

@@ -143,7 +143,7 @@ class Variety(Base):
         index=True,
     )
     feed_frequency: Mapped[Optional["Frequency"]] = relationship(
-        "Frequency", back_populates="feed_varieties", foreign_keys=[feed_frequency_id]
+        "Frequency", foreign_keys=[feed_frequency_id]
     )
 
     # Watering details
@@ -154,7 +154,7 @@ class Variety(Base):
         index=True,
     )
     water_frequency: Mapped["Frequency"] = relationship(
-        "Frequency", back_populates="water_varieties", foreign_keys=[water_frequency_id]
+        "Frequency", foreign_keys=[water_frequency_id]
     )
 
     # High temperature details

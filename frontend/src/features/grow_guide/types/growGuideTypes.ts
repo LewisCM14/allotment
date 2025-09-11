@@ -25,7 +25,6 @@ export interface VarietyCreate {
 	prune_week_end_id?: string;
 	notes?: string;
 	is_public?: boolean;
-	water_days?: { day_id: string }[];
 }
 
 export interface VarietyUpdate {
@@ -42,7 +41,6 @@ export interface VarietyUpdate {
 	prune_week_end_id?: string | null;
 	notes?: string | null;
 	is_public?: boolean;
-	water_days?: { day_id: string }[];
 }
 
 export interface LifecycleRead {

@@ -290,6 +290,7 @@ class TestGrowGuideUnitOfWorkRepositoryMethods:
             "lifecycles": lifecycles,
             "planting_conditions": planting_conditions,
             "frequencies": frequencies,
+            "feed_frequencies": [],  # filtered subset
             "feeds": feeds,
             "weeks": weeks,
             "families": families,
@@ -339,7 +340,6 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
             harvest_week_start_id=uuid.uuid4(),
             harvest_week_end_id=uuid.uuid4(),
             is_public=False,
-            water_days=[],
         )
 
     @pytest.fixture
@@ -398,10 +398,10 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
         assert "already exists" in str(exc_info.value.message)
         mock_logger.info.assert_called()
 
-    async def test_create_variety_with_water_days(
+    async def test_create_variety_auto_generates_water_days(
         self, uow, variety_create_data, user_id, mocker
     ):
-        """Test variety creation with water days."""
+        """Test variety creation auto-generates water days from frequency defaults."""
         mock_logger = mocker.patch(
             "app.api.services.grow_guide.grow_guide_unit_of_work.logger"
         )
@@ -409,26 +409,26 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
             "app.api.services.grow_guide.grow_guide_unit_of_work.VarietyFactory"
         )
 
-        # Add water days to test data
-        from app.api.schemas.grow_guide.variety_schema import VarietyWaterDayCreate
-
-        variety_create_data.water_days = [
-            VarietyWaterDayCreate(day_id=uuid.uuid4()),
-            VarietyWaterDayCreate(day_id=uuid.uuid4()),
-        ]
-
         # Setup mocks
         uow.variety_repo.variety_name_exists_for_user.return_value = False
         created_variety = make_variety(user_id)
+        created_variety.water_frequency_id = variety_create_data.water_frequency_id
         mock_factory.create_variety.return_value = created_variety
         uow.variety_repo.create_variety.return_value = created_variety
 
+        default_day_ids = [uuid.uuid4(), uuid.uuid4()]
+        uow.variety_repo.get_default_day_ids_for_frequency.return_value = (
+            default_day_ids
+        )
         water_days = [AsyncMock(), AsyncMock()]
         mock_factory.create_water_days.return_value = water_days
 
         result = await uow.create_variety(variety_create_data, user_id)
 
         assert result == created_variety
+        uow.variety_repo.get_default_day_ids_for_frequency.assert_called_once_with(
+            variety_create_data.water_frequency_id
+        )
         mock_factory.create_water_days.assert_called_once()
         uow.variety_repo.create_water_days.assert_called_once_with(water_days)
         mock_logger.info.assert_called()
@@ -603,40 +603,41 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
         assert "already exists" in str(exc_info.value.message)
         mock_logger.info.assert_called_once()
 
-    async def test_update_variety_with_water_days(self, uow, user_id, mocker):
-        """Test variety update with water days modification."""
-        mock_logger = mocker.patch(
-            "app.api.services.grow_guide.grow_guide_unit_of_work.logger"
-        )
+    async def test_update_variety_frequency_change_regenerates_water_days(
+        self, uow, user_id, mocker
+    ):
+        """Changing water frequency should regenerate water days from defaults."""
         mock_factory = mocker.patch(
             "app.api.services.grow_guide.grow_guide_unit_of_work.VarietyFactory"
         )
-
         variety_id = uuid.uuid4()
         variety = make_variety(user_id)
         variety.owner_user_id = user_id
-
-        from app.api.schemas.grow_guide.variety_schema import VarietyWaterDayCreate
-
-        variety_data = VarietyUpdate(
-            water_days=[VarietyWaterDayCreate(day_id=uuid.uuid4())]
-        )
+        old_freq = uuid.uuid4()
+        new_freq = uuid.uuid4()
+        variety.water_frequency_id = old_freq
+        variety_data = VarietyUpdate(water_frequency_id=new_freq)
 
         uow.variety_repo.get_variety_by_id.return_value = variety
         updated_variety = make_variety(user_id)
+        updated_variety.water_frequency_id = new_freq
         mock_factory.update_variety.return_value = updated_variety
         uow.variety_repo.update_variety.return_value = updated_variety
-
+        default_day_ids = [uuid.uuid4()]
+        uow.variety_repo.get_default_day_ids_for_frequency.return_value = (
+            default_day_ids
+        )
         water_days = [AsyncMock()]
         mock_factory.create_water_days.return_value = water_days
 
         result = await uow.update_variety(variety_id, variety_data, user_id)
-
         assert result == updated_variety
         uow.variety_repo.delete_water_days.assert_called_once_with(variety_id)
+        uow.variety_repo.get_default_day_ids_for_frequency.assert_called_once_with(
+            new_freq
+        )
         mock_factory.create_water_days.assert_called_once()
         uow.variety_repo.create_water_days.assert_called_once_with(water_days)
-        mock_logger.info.assert_called()
 
     async def test_delete_variety_success(self, uow, user_id, mocker):
         """Test successful variety deletion."""
@@ -728,29 +729,29 @@ class TestGrowGuideUnitOfWorkErrorHandling:
         """Sample user ID."""
         return uuid.uuid4()
 
-    async def test_update_variety_with_empty_water_days_list(
+    async def test_update_variety_frequency_unchanged_does_not_regenerate(
         self, uow, user_id, mocker
     ):
-        """Test variety update with empty water days list."""
+        """If water frequency not changed, water days remain untouched."""
         mock_factory = mocker.patch(
             "app.api.services.grow_guide.grow_guide_unit_of_work.VarietyFactory"
         )
-
         variety_id = uuid.uuid4()
         variety = make_variety(user_id)
         variety.owner_user_id = user_id
-        variety_data = VarietyUpdate(water_days=[])  # Empty list
-
+        freq_id = uuid.uuid4()
+        variety.water_frequency_id = freq_id
+        variety.variety_name = "Same Name"
+        variety_data = VarietyUpdate(variety_name="Same Name")
         uow.variety_repo.get_variety_by_id.return_value = variety
         updated_variety = make_variety(user_id)
+        updated_variety.variety_name = "Same Name"
         mock_factory.update_variety.return_value = updated_variety
         uow.variety_repo.update_variety.return_value = updated_variety
-
         result = await uow.update_variety(variety_id, variety_data, user_id)
-
         assert result == updated_variety
-        uow.variety_repo.delete_water_days.assert_called_once_with(variety_id)
-        # Should not create new water days when list is empty
+        uow.variety_repo.delete_water_days.assert_not_called()
+        uow.variety_repo.get_default_day_ids_for_frequency.assert_not_called()
         mock_factory.create_water_days.assert_not_called()
         uow.variety_repo.create_water_days.assert_not_called()
 
