@@ -5,10 +5,10 @@ Variety Schema
 """
 
 from datetime import datetime
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic.config import ConfigDict
 
 from app.api.schemas.base_schema import SecureBaseModel
@@ -178,6 +178,29 @@ class VarietyCreate(SecureBaseModel):
         """Strip whitespace from variety name."""
         return v.strip()
 
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_empty_strings_to_none(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        """Coerce blank string ("") entries for optional UUID fields to None.
+
+        Frontend form libraries often submit "" for unselected optional selects.
+        Pydantic's UUID parsing treats this as invalid UUID; we normalize here.
+        """
+        optional_uuid_fields = [
+            "transplant_week_start_id",
+            "transplant_week_end_id",
+            "feed_id",
+            "feed_week_start_id",
+            "feed_frequency_id",
+            "high_temp_water_frequency_id",
+            "prune_week_start_id",
+            "prune_week_end_id",
+        ]
+        for field in optional_uuid_fields:
+            if values.get(field) == "":
+                values[field] = None
+        return values
+
 
 class VarietyUpdate(SecureBaseModel):
     """Schema for updating a variety."""
@@ -257,6 +280,32 @@ class VarietyUpdate(SecureBaseModel):
             return v.strip()
         return v
 
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_empty_strings_to_none(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+        optional_uuid_fields = [
+            "family_id",
+            "lifecycle_id",
+            "sow_week_start_id",
+            "sow_week_end_id",
+            "transplant_week_start_id",
+            "transplant_week_end_id",
+            "planting_conditions_id",
+            "feed_id",
+            "feed_week_start_id",
+            "feed_frequency_id",
+            "water_frequency_id",
+            "high_temp_water_frequency_id",
+            "harvest_week_start_id",
+            "harvest_week_end_id",
+            "prune_week_start_id",
+            "prune_week_end_id",
+        ]
+        for field in optional_uuid_fields:
+            if values.get(field) == "":
+                values[field] = None
+        return values
+
 
 class VarietyRead(SecureBaseModel):
     """Schema for reading a variety with all related information."""
@@ -294,7 +343,7 @@ class VarietyRead(SecureBaseModel):
 
     # High temperature details
     high_temp_degrees: Optional[int] = None
-    high_temp_water_frequency: FrequencyRead
+    high_temp_water_frequency: Optional[FrequencyRead] = None
 
     # Harvest details (required)
     harvest_week_start_id: UUID

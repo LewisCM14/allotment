@@ -24,7 +24,7 @@ import { useCreateGrowGuide } from "../hooks/useCreateGrowGuide";
 import { useGrowGuideOptions } from "../hooks/useGrowGuideOptions";
 import { toast } from "sonner";
 
-// Centralised field metadata to control labels & required marker
+// Centralized field metadata to control labels & required marker
 const FIELD_META: Record<string, { label: string; required?: boolean }> = {
 	variety_name: { label: "Variety Name", required: true },
 	family_id: { label: "Plant Family", required: true },
@@ -102,9 +102,9 @@ export const GrowGuideForm = ({
 			sow_week_start_id: "",
 			sow_week_end_id: "",
 			planting_conditions_id: "",
-			soil_ph: 7.0,
-			plant_depth_cm: 5,
-			plant_space_cm: 30,
+			soil_ph: undefined as unknown as number,
+			plant_depth_cm: undefined as unknown as number,
+			plant_space_cm: undefined as unknown as number,
 			water_frequency_id: "",
 			harvest_week_start_id: "",
 			harvest_week_end_id: "",
@@ -115,7 +115,7 @@ export const GrowGuideForm = ({
 			high_temp_water_frequency_id: "",
 			prune_week_start_id: "",
 			prune_week_end_id: "",
-			notes: "",
+			notes: undefined,
 			is_public: false,
 		},
 	});
@@ -125,16 +125,14 @@ export const GrowGuideForm = ({
 	const onSubmit = async (data: GrowGuideFormData) => {
 		setIsSubmitting(true);
 		try {
-			// Convert numeric string fields to numbers
 			const formData = {
 				...data,
-				soil_ph: Number(data.soil_ph),
-				plant_depth_cm: Number(data.plant_depth_cm),
-				plant_space_cm: Number(data.plant_space_cm),
-				row_width_cm: data.row_width_cm ? Number(data.row_width_cm) : undefined,
-				high_temp_degrees: data.high_temp_degrees
-					? Number(data.high_temp_degrees)
-					: undefined,
+				// Required numbers are guaranteed; optional numbers already undefined or number
+				soil_ph: data.soil_ph as number,
+				plant_depth_cm: data.plant_depth_cm as number,
+				plant_space_cm: data.plant_space_cm as number,
+				// row_width_cm & high_temp_degrees already number | undefined via schema
+				// Notes already trimmed & undefined if blank by schema; no extra processing
 			};
 
 			await createGrowGuideMutation.mutateAsync(formData);
@@ -507,7 +505,7 @@ export const GrowGuideForm = ({
 								type="number"
 								min="1"
 								max="1000"
-								{...register("row_width_cm", { valueAsNumber: true })}
+								{...register("row_width_cm")}
 								placeholder="e.g. 60"
 								className={errors.row_width_cm ? "border-destructive" : ""}
 							/>
@@ -620,7 +618,7 @@ export const GrowGuideForm = ({
 								<Input
 									id="high_temp_degrees"
 									type="number"
-									{...register("high_temp_degrees", { valueAsNumber: true })}
+									{...register("high_temp_degrees")}
 									placeholder="e.g. 30"
 									className={
 										errors.high_temp_degrees ? "border-destructive" : ""
@@ -760,9 +758,9 @@ export const GrowGuideForm = ({
 							<Label htmlFor="notes">{labelFor("notes")}</Label>
 							<Textarea
 								id="notes"
-								{...register("notes")}
 								placeholder="Optional notes about this grow guide (minimum 5 characters)"
 								className={errors.notes ? "border-destructive" : ""}
+								{...register("notes")}
 							/>
 							{errors.notes && <FormError message={errors.notes.message} />}
 						</div>

@@ -162,10 +162,10 @@ class Variety(Base):
     high_temp_water_frequency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("frequency.frequency_id"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
-    high_temp_water_frequency: Mapped["Frequency"] = relationship(
+    high_temp_water_frequency: Mapped[Optional["Frequency"]] = relationship(
         "Frequency", foreign_keys=[high_temp_water_frequency_id]
     )
 
@@ -236,6 +236,12 @@ class Variety(Base):
             "(feed_id IS NULL AND feed_week_start_id IS NULL AND feed_frequency_id IS NULL) OR "
             "(feed_id IS NOT NULL AND feed_week_start_id IS NOT NULL AND feed_frequency_id IS NOT NULL)",
             name="check_feed_details_together",
+        ),
+        # High temp symmetric pairing
+        CheckConstraint(
+            "(high_temp_degrees IS NULL AND high_temp_water_frequency_id IS NULL) OR "
+            "(high_temp_degrees IS NOT NULL AND high_temp_water_frequency_id IS NOT NULL)",
+            name="check_high_temp_pairing",
         ),
         # Ensure combination of user_id and name is unique
         UniqueConstraint("owner_user_id", "variety_name", name="uq_user_variety_name"),

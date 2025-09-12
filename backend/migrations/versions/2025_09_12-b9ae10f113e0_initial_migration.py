@@ -1,8 +1,8 @@
 """initial migration
 
-Revision ID: 7ea357b128a9
+Revision ID: b9ae10f113e0
 Revises:
-Create Date: 2025-09-11 19:05:28.675888
+Create Date: 2025-09-12 20:51:59.101954
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "7ea357b128a9"
+revision: str = "b9ae10f113e0"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -417,7 +417,7 @@ def upgrade() -> None:
         sa.Column("feed_frequency_id", sa.UUID(), nullable=True),
         sa.Column("water_frequency_id", sa.UUID(), nullable=False),
         sa.Column("high_temp_degrees", sa.Integer(), nullable=True),
-        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=False),
+        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=True),
         sa.Column("harvest_week_start_id", sa.UUID(), nullable=False),
         sa.Column("harvest_week_end_id", sa.UUID(), nullable=False),
         sa.Column("prune_week_start_id", sa.UUID(), nullable=True),
@@ -433,6 +433,10 @@ def upgrade() -> None:
         sa.CheckConstraint(
             "(feed_id IS NULL AND feed_week_start_id IS NULL AND feed_frequency_id IS NULL) OR (feed_id IS NOT NULL AND feed_week_start_id IS NOT NULL AND feed_frequency_id IS NOT NULL)",
             name="check_feed_details_together",
+        ),
+        sa.CheckConstraint(
+            "(high_temp_degrees IS NULL AND high_temp_water_frequency_id IS NULL) OR (high_temp_degrees IS NOT NULL AND high_temp_water_frequency_id IS NOT NULL)",
+            name="check_high_temp_pairing",
         ),
         sa.CheckConstraint(
             "(prune_week_start_id IS NULL AND prune_week_end_id IS NULL) OR (prune_week_start_id IS NOT NULL AND prune_week_end_id IS NOT NULL)",
