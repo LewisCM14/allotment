@@ -369,6 +369,7 @@ class VarietyListRead(SecureBaseModel):
 
     variety_id: UUID
     variety_name: str
+    family: FamilyRead
     lifecycle: LifecycleRead
     is_public: bool
     last_updated: datetime

@@ -1,11 +1,23 @@
 import type { VarietyList } from "../services/growGuideService";
-import { Skeleton } from "../../../components/ui/Skeleton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { Leaf, Eye, EyeOff, Trash2, Search } from "lucide-react";
-import { Input } from "../../../components/ui/Input";
-import { Switch } from "../../../components/ui/Switch";
-import { Button } from "../../../components/ui/Button";
-import { Badge } from "../../../components/ui/Badge";
-import { useEffect, useState } from "react";
+import { Input } from "@/components/ui/Input";
+import { Switch } from "@/components/ui/Switch";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { useEffect, useState, useMemo } from "react";
+import { useDeleteVariety } from "../hooks/useDeleteVariety";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/components/ui/AlertDialog";
 
 interface GrowGuideListPresenterProps {
 	growGuides: VarietyList[];
@@ -22,35 +34,62 @@ export const GrowGuideListPresenter = ({
 
 	// Local copy so we can simulate delete before API endpoints exist
 	const [localGuides, setLocalGuides] = useState<VarietyList[]>(growGuides);
-	// Track public status locally keyed by id (initialised from props)
+	// Track public status locally keyed by id (initialized from props)
 	const [publicMap, setPublicMap] = useState<Record<string, boolean>>({});
 	// Single active guide id (wire to backend later)
 	const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
+	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
+	const { mutate: deleteVariety, isPending: isDeleting } = useDeleteVariety();
 
 	// Sync local state when incoming list changes (e.g. refetch)
 	useEffect(() => {
 		setLocalGuides(growGuides);
-		// build public map
+		// build public map using for..of for lint compliance
 		const map: Record<string, boolean> = {};
-		growGuides.forEach(g => { map[g.variety_id] = g.is_public; });
+		for (const g of growGuides) {
+			map[g.variety_id] = g.is_public;
+		}
 		setPublicMap(map);
 	}, [growGuides]);
 
 	// Filter guides based on search term
-	const filteredGuides = localGuides.filter((guide) =>
-		guide.variety_name.toLowerCase().includes(searchTerm.toLowerCase()),
+	const filteredGuides = useMemo(
+		() =>
+			localGuides.filter((guide) =>
+				guide.variety_name.toLowerCase().includes(searchTerm.toLowerCase()),
+			),
+		[localGuides, searchTerm],
 	);
+
+	const groupedGuides = useMemo(() => {
+		const groups: Record<string, VarietyList[]> = {};
+		for (const g of filteredGuides) {
+			const key = g.family.family_name;
+			if (!groups[key]) {
+				groups[key] = [];
+			}
+			groups[key].push(g);
+		}
+		return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+	}, [filteredGuides]);
 
 	// Placeholder handlers (to be replaced with real mutations)
 	const handleDelete = (id: string) => {
-		if (window.confirm("Delete this grow guide? This cannot be undone.")) {
-			setLocalGuides(prev => prev.filter(g => g.variety_id !== id));
-			// TODO: Integrate deleteVariety mutation when API endpoint is ready
-		}
+		// Optimistic UI removal after mutation success handled by refetch; keep local removal immediate for snappy feel
+		deleteVariety(id, {
+			onSuccess: () => {
+				setLocalGuides((prev) => prev.filter((g) => g.variety_id !== id));
+				setPendingDeleteId(null);
+			},
+			onError: () => {
+				setPendingDeleteId(null); // close dialog; toast could be added later
+			},
+		});
 	};
 
 	const handleTogglePublic = (id: string) => {
-		setPublicMap(prev => ({ ...prev, [id]: !prev[id] }));
+		setPublicMap((prev) => ({ ...prev, [id]: !prev[id] }));
 		// TODO: Integrate toggleVarietyPublic mutation when API endpoint is ready
 	};
 
@@ -59,15 +98,14 @@ export const GrowGuideListPresenter = ({
 		// TODO: Integrate setActiveVariety endpoint (not yet implemented)
 	};
 
-
 	if (isLoading) {
 		return (
 			<div className="space-y-4">
 				<Skeleton className="h-8 w-1/4" />
 				<div className="space-y-2">
-					{Array.from({ length: 6 }).map((_, i) => (
+					{["a", "b", "c", "d", "e", "f"].map((id) => (
 						<div
-							key={`skeleton-row-${i}`}
+							key={`skeleton-row-${id}`}
 							className="flex items-center gap-4 p-3 border rounded-md bg-card"
 						>
 							<Skeleton className="h-8 w-8 rounded" />
@@ -123,7 +161,6 @@ export const GrowGuideListPresenter = ({
 						/>
 					</div>
 
-
 					{filteredGuides.length === 0 ? (
 						<div className="text-center py-10">
 							<p className="text-muted-foreground">
@@ -131,73 +168,137 @@ export const GrowGuideListPresenter = ({
 							</p>
 						</div>
 					) : (
-						<div className="space-y-2" role="list" aria-label="Grow guide list">
-							{filteredGuides.map((guide) => {
-								const isPublic = publicMap[guide.variety_id];
-								const isActive = activeGuideId === guide.variety_id;
-								return (
-									<div
-										key={guide.variety_id}
-										role="listitem"
-										className="flex items-center gap-4 p-3 border rounded-md bg-card hover:bg-accent/30 transition-colors"
-									>
-										{/* Delete Button */}
-										<Button
-											type="button"
-											variant="destructive"
-											size="icon"
-											aria-label={`Delete ${guide.variety_name}`}
-											onClick={() => handleDelete(guide.variety_id)}
-											className="shrink-0 w-10 h-10"
-										>
-											<Trash2 className="h-4 w-4" />
-										</Button>
+						<ul
+							className="space-y-8"
+							aria-label="Grow guide list grouped by family"
+						>
+							{groupedGuides.map(([familyName, guides]) => (
+								<li key={familyName} className="space-y-2">
+									<h3 className="text-sm font-semibold text-muted-foreground select-none capitalize">
+										{familyName}
+									</h3>
+									<ul className="space-y-2">
+										{guides.map((guide) => {
+											const isPublic = publicMap[guide.variety_id];
+											const isActive = activeGuideId === guide.variety_id;
+											return (
+												<li
+													key={guide.variety_id}
+													className="flex items-center gap-4 p-3 border rounded-md bg-card hover:bg-accent/30 transition-colors"
+												>
+													{/* Delete Button */}
+													<AlertDialog
+														open={pendingDeleteId === guide.variety_id}
+														onOpenChange={(open: boolean) => {
+															if (open) setPendingDeleteId(guide.variety_id);
+															else if (pendingDeleteId === guide.variety_id)
+																setPendingDeleteId(null);
+														}}
+													>
+														<AlertDialogTrigger asChild>
+															<Button
+																type="button"
+																variant="destructive"
+																size="icon"
+																aria-label={`Delete ${guide.variety_name}`}
+																onClick={() =>
+																	setPendingDeleteId(guide.variety_id)
+																}
+																className="shrink-0 w-10 h-10"
+																disabled={
+																	isDeleting &&
+																	pendingDeleteId === guide.variety_id
+																}
+															>
+																<Trash2 className="h-4 w-4" />
+															</Button>
+														</AlertDialogTrigger>
+														<AlertDialogContent>
+															<AlertDialogHeader>
+																<AlertDialogTitle>
+																	Delete Grow Guide
+																</AlertDialogTitle>
+																<AlertDialogDescription>
+																	Are you sure you want to delete "
+																	{guide.variety_name}"? This action is
+																	permanent and cannot be undone.
+																</AlertDialogDescription>
+															</AlertDialogHeader>
+															<AlertDialogFooter>
+																<AlertDialogCancel disabled={isDeleting}>
+																	Cancel
+																</AlertDialogCancel>
+																<AlertDialogAction
+																	onClick={() => handleDelete(guide.variety_id)}
+																	disabled={isDeleting}
+																>
+																	{isDeleting &&
+																	pendingDeleteId === guide.variety_id
+																		? "Deleting..."
+																		: "Delete"}
+																</AlertDialogAction>
+															</AlertDialogFooter>
+														</AlertDialogContent>
+													</AlertDialog>
 
-										{/* Public / Private Toggle */}
-										<Button
-											type="button"
-											variant={isPublic ? "secondary" : "outline"}
-											size="icon"
-											aria-pressed={isPublic}
-											aria-label={`${isPublic ? "Make" : "Set"} ${guide.variety_name} ${isPublic ? "Private" : "Public"}`}
-											onClick={() => handleTogglePublic(guide.variety_id)}
-											className="shrink-0 w-10 h-10"
-										>
-											{isPublic ? (
-												<Eye className="h-4 w-4" />
-											) : (
-												<EyeOff className="h-4 w-4" />
-											)}
-										</Button>
+													{/* Public / Private Toggle */}
+													<Button
+														type="button"
+														variant={isPublic ? "secondary" : "outline"}
+														size="icon"
+														aria-pressed={isPublic}
+														aria-label={`${isPublic ? "Make" : "Set"} ${guide.variety_name} ${isPublic ? "Private" : "Public"}`}
+														onClick={() => handleTogglePublic(guide.variety_id)}
+														className="shrink-0 w-10 h-10"
+													>
+														{isPublic ? (
+															<Eye className="h-4 w-4" />
+														) : (
+															<EyeOff className="h-4 w-4" />
+														)}
+													</Button>
 
-										{/* Guide Name & Meta */}
-										<div className="flex-1 min-w-0 pl-1">
-											<div className="flex items-center gap-2">
-												<span className="font-medium truncate">
-													{guide.variety_name}
-												</span>
-												<Badge variant="outline" className="hidden sm:inline">
-													{guide.lifecycle.lifecycle_name}
-												</Badge>
-											</div>
-											<p className="text-xs text-muted-foreground mt-0.5">
-												Updated {new Date(guide.last_updated).toLocaleDateString()}
-											</p>
-										</div>
+													{/* Guide Name & Meta */}
+													<div className="flex-1 min-w-0 pl-1">
+														<div className="flex items-center gap-2 flex-wrap">
+															<span className="font-medium truncate">
+																{guide.variety_name}
+															</span>
+															<Badge
+																variant="outline"
+																className="hidden sm:inline"
+															>
+																{guide.lifecycle.lifecycle_name}
+															</Badge>
+														</div>
+														<p className="text-xs text-muted-foreground mt-0.5">
+															Updated{" "}
+															{new Date(
+																guide.last_updated,
+															).toLocaleDateString()}
+														</p>
+													</div>
 
-										{/* Active Toggle */}
-										<div className="flex items-center gap-2 ml-auto">
-											<span className="text-xs text-muted-foreground hidden sm:inline">Active</span>
-											<Switch
-												checked={isActive}
-												onCheckedChange={(checked) => handleToggleActive(guide.variety_id, checked)}
-												aria-label={`Set ${guide.variety_name} ${isActive ? "inactive" : "active"}`}
-											/>
-										</div>
-									</div>
-								);
-							})}
-						</div>
+													{/* Active Toggle */}
+													<div className="flex items-center gap-2 ml-auto">
+														<span className="text-xs text-muted-foreground hidden sm:inline">
+															Active
+														</span>
+														<Switch
+															checked={isActive}
+															onCheckedChange={(checked) =>
+																handleToggleActive(guide.variety_id, checked)
+															}
+															aria-label={`Set ${guide.variety_name} ${isActive ? "inactive" : "active"}`}
+														/>
+													</div>
+												</li>
+											);
+										})}
+									</ul>
+								</li>
+							))}
+						</ul>
 					)}
 				</>
 			)}

@@ -111,7 +111,10 @@ class VarietyRepository:
         with log_timing("db_get_user_varieties", request_id=self.request_id):
             stmt = (
                 select(Variety)
-                .options(selectinload(Variety.lifecycle))
+                .options(
+                    selectinload(Variety.lifecycle),
+                    selectinload(Variety.family),  # eager load family for list view
+                )
                 .where(Variety.owner_user_id == user_id)
                 .order_by(Variety.variety_name)
             )
@@ -124,7 +127,10 @@ class VarietyRepository:
         with log_timing("db_get_public_varieties", request_id=self.request_id):
             stmt = (
                 select(Variety)
-                .options(selectinload(Variety.lifecycle))
+                .options(
+                    selectinload(Variety.lifecycle),
+                    selectinload(Variety.family),  # eager load family for list view
+                )
                 .where(Variety.is_public)
                 .order_by(Variety.variety_name)
             )

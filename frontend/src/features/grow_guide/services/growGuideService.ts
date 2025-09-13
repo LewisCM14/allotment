@@ -12,6 +12,7 @@ export interface Lifecycle {
 export interface VarietyList {
 	variety_id: string;
 	variety_name: string;
+	family: { family_id: string; family_name: string };
 	lifecycle: Lifecycle;
 	is_public: boolean;
 	last_updated: string;
