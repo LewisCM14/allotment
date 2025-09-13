@@ -54,7 +54,7 @@ export function BotanicalGroupPresenter({
 			<Accordion type="multiple" className="w-full space-y-2">
 				{botanicalGroups.map((group) => (
 					<BotanicalGroupItemContainer
-						key={group.id}
+						key={group.botanical_group_id}
 						group={group}
 						onFamilyClick={onFamilyClick}
 					/>

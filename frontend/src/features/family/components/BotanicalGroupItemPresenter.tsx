@@ -18,15 +18,16 @@ export function BotanicalGroupItemPresenter({
 }: BotanicalGroupItemPresenterProps) {
 	const families = Array.isArray(group.families) ? group.families : [];
 	return (
-		<AccordionItem value={group.id}>
+		<AccordionItem value={group.botanical_group_id}>
 			<AccordionTrigger className="cursor-pointer">
 				<div className="flex flex-col items-start text-left">
-					<span className="text-lg font-semibold capitalize">{group.name}</span>
+					<span className="text-lg font-semibold capitalize">
+						{group.botanical_group_name}
+					</span>
 					<span className="text-sm text-muted-foreground">
 						Recommended Rotation:{" "}
-						{group.recommended_rotation_years !== null &&
-						group.recommended_rotation_years !== undefined
-							? `${group.recommended_rotation_years} year(s)`
+						{group.rotate_years !== null && group.rotate_years !== undefined
+							? `${group.rotate_years} year(s)`
 							: "Perennial"}
 					</span>
 				</div>
@@ -36,9 +37,9 @@ export function BotanicalGroupItemPresenter({
 					<div className="space-y-1">
 						{families.map((family, idx) => (
 							<button
-								key={family.id}
+								key={family.family_id}
 								type="button"
-								onClick={() => onFamilyClick(family.id)}
+								onClick={() => onFamilyClick(family.family_id)}
 								className={[
 									"group flex items-center justify-between w-full text-base text-foreground capitalize px-4 py-3 cursor-pointer transition-all rounded-md",
 									"hover:bg-accent hover:shadow-sm hover:text-interactive-foreground",
@@ -47,9 +48,9 @@ export function BotanicalGroupItemPresenter({
 										? "border-b border-border/20"
 										: "",
 								].join(" ")}
-								aria-label={`View details for ${family.name}`}
+								aria-label={`View details for ${family.family_name}`}
 							>
-								<span className="truncate">{family.name}</span>
+								<span className="truncate">{family.family_name}</span>
 								<ArrowRight className="size-5 text-muted-foreground group-hover:text-interactive-foreground group-focus:text-interactive-foreground transition-colors ml-2 flex-shrink-0" />
 							</button>
 						))}

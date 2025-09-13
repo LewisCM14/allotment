@@ -110,7 +110,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 								multiple && isSelected(option.value)
 									? "bg-accent text-accent-foreground"
 									: ""
-						}
+							}
 						>
 							{option.label}
 						</SelectItem>
@@ -132,7 +132,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 					className={cn(
 						"absolute inset-y-0 right-1 flex items-center rounded px-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
 						(!value || (Array.isArray(value) && value.length === 0)) &&
-							"hidden"
+							"hidden",
 					)}
 				>
 					&times;
