@@ -1,3 +1,4 @@
+// Clean implementation (fully replaced corrupted content)
 import type { VarietyList } from "../services/growGuideService";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Leaf, Eye, EyeOff, Trash2, Search } from "lucide-react";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDeleteVariety } from "../hooks/useDeleteVariety";
 import {
 	AlertDialog,
@@ -19,11 +20,11 @@ import {
 	AlertDialogTrigger,
 } from "@/components/ui/AlertDialog";
 
-interface GrowGuideListPresenterProps {
+interface Props {
 	growGuides: VarietyList[];
 	isLoading: boolean;
 	isError: boolean;
-	onSelect?: (varietyId: string) => void;
+	onSelect?: (id: string) => void;
 	selectedVarietyId?: string | null;
 }
 
@@ -33,73 +34,57 @@ export const GrowGuideListPresenter = ({
 	isError,
 	onSelect,
 	selectedVarietyId,
-}: GrowGuideListPresenterProps) => {
-	const [searchTerm, setSearchTerm] = useState("");
-
-	// Local copy so we can simulate delete before API endpoints exist
+}: Props) => {
+	const [search, setSearch] = useState("");
 	const [localGuides, setLocalGuides] = useState<VarietyList[]>(growGuides);
-	// Track public status locally keyed by id (initialized from props)
 	const [publicMap, setPublicMap] = useState<Record<string, boolean>>({});
-	// Single active guide id (wire to backend later)
 	const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+	const [suppressNextSelect, setSuppressNextSelect] = useState(false);
 
 	const { mutate: deleteVariety, isPending: isDeleting } = useDeleteVariety();
 
-	// Sync local state when incoming list changes (e.g. refetch)
 	useEffect(() => {
 		setLocalGuides(growGuides);
-		// build public map using for..of for lint compliance
 		const map: Record<string, boolean> = {};
-		for (const g of growGuides) {
-			map[g.variety_id] = g.is_public;
-		}
+		for (const g of growGuides) map[g.variety_id] = g.is_public;
 		setPublicMap(map);
 	}, [growGuides]);
 
-	// Filter guides based on search term
-	const filteredGuides = useMemo(
+	const filtered = useMemo(
 		() =>
-			localGuides.filter((guide) =>
-				guide.variety_name.toLowerCase().includes(searchTerm.toLowerCase()),
+			localGuides.filter((g) =>
+				g.variety_name.toLowerCase().includes(search.toLowerCase()),
 			),
-		[localGuides, searchTerm],
+		[localGuides, search],
 	);
 
-	const groupedGuides = useMemo(() => {
+	const grouped = useMemo(() => {
 		const groups: Record<string, VarietyList[]> = {};
-		for (const g of filteredGuides) {
+		for (const g of filtered) {
 			const key = g.family.family_name;
-			if (!groups[key]) {
-				groups[key] = [];
-			}
+			if (!groups[key]) groups[key] = [];
 			groups[key].push(g);
 		}
 		return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-	}, [filteredGuides]);
+	}, [filtered]);
 
-	// Placeholder handlers (to be replaced with real mutations)
 	const handleDelete = (id: string) => {
-		// Optimistic UI removal after mutation success handled by refetch; keep local removal immediate for snappy feel
 		deleteVariety(id, {
 			onSuccess: () => {
 				setLocalGuides((prev) => prev.filter((g) => g.variety_id !== id));
 				setPendingDeleteId(null);
 			},
-			onError: () => {
-				setPendingDeleteId(null); // close dialog; toast could be added later
-			},
+			onError: () => setPendingDeleteId(null),
 		});
 	};
 
-	const handleTogglePublic = (id: string) => {
+	const togglePublic = (id: string) => {
 		setPublicMap((prev) => ({ ...prev, [id]: !prev[id] }));
-		// TODO: Integrate toggleVarietyPublic mutation when API endpoint is ready
 	};
 
-	const handleToggleActive = (id: string, checked: boolean) => {
+	const toggleActive = (id: string, checked: boolean) => {
 		setActiveGuideId(checked ? id : null);
-		// TODO: Integrate setActiveVariety endpoint (not yet implemented)
 	};
 
 	if (isLoading) {
@@ -109,7 +94,7 @@ export const GrowGuideListPresenter = ({
 				<div className="space-y-2">
 					{["a", "b", "c", "d", "e", "f"].map((id) => (
 						<div
-							key={`skeleton-row-${id}`}
+							key={id}
 							className="flex items-center gap-4 p-3 border rounded-md bg-card"
 						>
 							<Skeleton className="h-8 w-8 rounded" />
@@ -127,7 +112,6 @@ export const GrowGuideListPresenter = ({
 	}
 
 	if (isError) {
-		// Show same empty state style as when no guides (treat error generically for now)
 		return (
 			<div className="text-center py-10 space-y-4">
 				<div className="mx-auto bg-primary w-16 h-16 rounded-full flex items-center justify-center">
@@ -160,12 +144,11 @@ export const GrowGuideListPresenter = ({
 						<Input
 							placeholder="Search guides..."
 							className="pl-10"
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
+							value={search}
+							onChange={(e) => setSearch(e.target.value)}
 						/>
 					</div>
-
-					{filteredGuides.length === 0 ? (
+					{filtered.length === 0 ? (
 						<div className="text-center py-10">
 							<p className="text-muted-foreground">
 								No grow guides found. Try a different search term.
@@ -176,42 +159,43 @@ export const GrowGuideListPresenter = ({
 							className="space-y-8"
 							aria-label="Grow guide list grouped by family"
 						>
-							{groupedGuides.map(([familyName, guides]) => (
-								<li key={familyName} className="space-y-2">
+							{grouped.map(([family, guides]) => (
+								<li key={family} className="space-y-2">
 									<h3 className="text-sm font-semibold text-muted-foreground select-none capitalize">
-										{familyName}
+										{family}
 									</h3>
 									<ul className="space-y-2">
-										{guides.map((guide) => {
-											const isPublic = publicMap[guide.variety_id];
-											const isActive = activeGuideId === guide.variety_id;
-											const isSelected = selectedVarietyId === guide.variety_id;
+										{guides.map((g) => {
+											const isPublic = publicMap[g.variety_id] ?? g.is_public;
+											const isActive = activeGuideId === g.variety_id;
+											const isSelected = selectedVarietyId === g.variety_id;
 											return (
-												<li key={guide.variety_id} className="list-none">
+												<li key={g.variety_id} className="list-none">
 													<button
 														type="button"
-														className={`w-full text-left group flex items-center gap-4 p-3 border rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"}`}
 														aria-pressed={isSelected}
+														className={`w-full flex items-center gap-4 p-3 border rounded-md transition-colors cursor-pointer text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"}`}
 														onClick={(e) => {
-															// Prevent clicks on internal action buttons/switch from triggering selection
-															const target = e.target as HTMLElement;
-															if (target.closest("button, [role='switch']"))
+															if (pendingDeleteId) return;
+															if (
+																(e.target as HTMLElement).closest(
+																	"[data-row-action]",
+																)
+															)
 																return;
-															onSelect?.(guide.variety_id);
-														}}
-														onKeyDown={(e) => {
-															if (e.key === "Enter" || e.key === " ") {
-																e.preventDefault();
-																onSelect?.(guide.variety_id);
+															if (suppressNextSelect) {
+																setSuppressNextSelect(false);
+																return;
 															}
+															onSelect?.(g.variety_id);
 														}}
 													>
-														{/* Delete Button */}
+														{/* Delete */}
 														<AlertDialog
-															open={pendingDeleteId === guide.variety_id}
-															onOpenChange={(open: boolean) => {
-																if (open) setPendingDeleteId(guide.variety_id);
-																else if (pendingDeleteId === guide.variety_id)
+															open={pendingDeleteId === g.variety_id}
+															onOpenChange={(open) => {
+																if (open) setPendingDeleteId(g.variety_id);
+																else if (pendingDeleteId === g.variety_id)
 																	setPendingDeleteId(null);
 															}}
 														>
@@ -220,14 +204,15 @@ export const GrowGuideListPresenter = ({
 																	type="button"
 																	variant="destructive"
 																	size="icon"
-																	aria-label={`Delete ${guide.variety_name}`}
-																	onClick={() =>
-																		setPendingDeleteId(guide.variety_id)
-																	}
-																	className="shrink-0 w-10 h-10"
+																	aria-label={`Delete ${g.variety_name}`}
+																	data-row-action
+																	onClick={(e) => {
+																		e.stopPropagation();
+																		setPendingDeleteId(g.variety_id);
+																	}}
 																	disabled={
 																		isDeleting &&
-																		pendingDeleteId === guide.variety_id
+																		pendingDeleteId === g.variety_id
 																	}
 																>
 																	<Trash2 className="h-4 w-4" />
@@ -240,22 +225,28 @@ export const GrowGuideListPresenter = ({
 																	</AlertDialogTitle>
 																	<AlertDialogDescription>
 																		Are you sure you want to delete "
-																		{guide.variety_name}"? This action is
-																		permanent and cannot be undone.
+																		{g.variety_name}"? This action is permanent
+																		and cannot be undone.
 																	</AlertDialogDescription>
 																</AlertDialogHeader>
 																<AlertDialogFooter>
-																	<AlertDialogCancel disabled={isDeleting}>
+																	<AlertDialogCancel
+																		data-row-action
+																		disabled={isDeleting}
+																		onClick={(e) => {
+																			e.stopPropagation();
+																			setSuppressNextSelect(true);
+																		}}
+																	>
 																		Cancel
 																	</AlertDialogCancel>
 																	<AlertDialogAction
-																		onClick={() =>
-																			handleDelete(guide.variety_id)
-																		}
+																		data-row-action
 																		disabled={isDeleting}
+																		onClick={() => handleDelete(g.variety_id)}
 																	>
 																		{isDeleting &&
-																		pendingDeleteId === guide.variety_id
+																		pendingDeleteId === g.variety_id
 																			? "Deleting..."
 																			: "Delete"}
 																	</AlertDialogAction>
@@ -263,17 +254,18 @@ export const GrowGuideListPresenter = ({
 															</AlertDialogContent>
 														</AlertDialog>
 
-														{/* Public / Private Toggle */}
+														{/* Visibility/public toggle */}
 														<Button
 															type="button"
 															variant={isPublic ? "secondary" : "outline"}
 															size="icon"
 															aria-pressed={isPublic}
-															aria-label={`${isPublic ? "Make" : "Set"} ${guide.variety_name} ${isPublic ? "Private" : "Public"}`}
-															onClick={() =>
-																handleTogglePublic(guide.variety_id)
-															}
-															className="shrink-0 w-10 h-10"
+															aria-label={`${isPublic ? "Make" : "Set"} ${g.variety_name} ${isPublic ? "Private" : "Public"}`}
+															data-row-action
+															onClick={(e) => {
+																e.stopPropagation();
+																togglePublic(g.variety_id);
+															}}
 														>
 															{isPublic ? (
 																<Eye className="h-4 w-4" />
@@ -282,38 +274,41 @@ export const GrowGuideListPresenter = ({
 															)}
 														</Button>
 
-														{/* Guide Name & Meta */}
-														<div className="flex-1 min-w-0 pl-1">
+														{/* Main content */}
+														<div className="flex-1 text-left pl-1">
 															<div className="flex items-center gap-2 flex-wrap">
 																<span className="font-medium truncate">
-																	{guide.variety_name}
+																	{g.variety_name}
 																</span>
 																<Badge
 																	variant="outline"
 																	className="hidden sm:inline"
 																>
-																	{guide.lifecycle.lifecycle_name}
+																	{g.lifecycle.lifecycle_name}
 																</Badge>
 															</div>
 															<p className="text-xs text-muted-foreground mt-0.5">
 																Updated{" "}
-																{new Date(
-																	guide.last_updated,
-																).toLocaleDateString()}
+																{new Date(g.last_updated).toLocaleDateString()}
 															</p>
 														</div>
 
-														{/* Active Toggle */}
-														<div className="flex items-center gap-2 ml-auto">
+														{/* Active toggle */}
+														<div
+															className="flex items-center gap-2 ml-auto"
+															data-row-action
+														>
 															<span className="text-xs text-muted-foreground hidden sm:inline">
 																Active
 															</span>
 															<Switch
 																checked={isActive}
+																onClick={(e) => e.stopPropagation()}
 																onCheckedChange={(checked) =>
-																	handleToggleActive(guide.variety_id, checked)
+																	toggleActive(g.variety_id, checked)
 																}
-																aria-label={`Set ${guide.variety_name} ${isActive ? "inactive" : "active"}`}
+																aria-label={`Set ${g.variety_name} ${isActive ? "inactive" : "active"}`}
+																className="cursor-pointer"
 															/>
 														</div>
 													</button>
