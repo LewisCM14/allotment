@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../../../components/ui/Button";
@@ -21,6 +21,9 @@ import {
 	type GrowGuideFormData,
 } from "./GrowGuideFormSchema";
 import { useCreateGrowGuide } from "../hooks/useCreateGrowGuide";
+import { useGrowGuide } from "../hooks/useGrowGuide";
+import { growGuideService } from "../services/growGuideService";
+import { useQueryClient } from "@tanstack/react-query";
 import { useGrowGuideOptions } from "../hooks/useGrowGuideOptions";
 import { toast } from "sonner";
 
@@ -70,6 +73,8 @@ interface GrowGuideFormProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSuccess?: () => void;
+	varietyId?: string | null; // when provided, enables edit mode
+	mode?: "create" | "edit"; // external desired mode (create default)
 }
 
 /**
@@ -79,8 +84,16 @@ export const GrowGuideForm = ({
 	isOpen,
 	onClose,
 	onSuccess,
+	varietyId,
+	mode = "create",
 }: GrowGuideFormProps) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const queryClient = useQueryClient();
+
+	// Load existing guide when editing
+	const { data: existingGuide, isLoading: isLoadingGuide } = useGrowGuide(
+		varietyId && mode === "edit" ? varietyId : undefined,
+	);
 
 	// Get options from API
 	const {
@@ -131,67 +144,114 @@ export const GrowGuideForm = ({
 
 	const createGrowGuideMutation = useCreateGrowGuide();
 
+	const isEditFlow = mode === "edit" && !!varietyId;
+
+	const resetToBlank = () => {
+		reset({
+			variety_name: "",
+			family_id: "",
+			lifecycle_id: "",
+			sow_week_start_id: "",
+			sow_week_end_id: "",
+			transplant_week_start_id: "",
+			transplant_week_end_id: "",
+			planting_conditions_id: "",
+			soil_ph: undefined as unknown as number,
+			plant_depth_cm: undefined as unknown as number,
+			plant_space_cm: undefined as unknown as number,
+			row_width_cm: undefined,
+			water_frequency_id: "",
+			harvest_week_start_id: "",
+			harvest_week_end_id: "",
+			feed_id: "",
+			feed_frequency_id: "",
+			feed_week_start_id: "",
+			high_temp_degrees: undefined as unknown as number,
+			high_temp_water_frequency_id: "",
+			prune_week_start_id: "",
+			prune_week_end_id: "",
+			notes: undefined,
+			is_public: false,
+		});
+		setTimeout(() => {
+			setValue("soil_ph", undefined as unknown as number);
+			setValue("plant_depth_cm", undefined as unknown as number);
+			setValue("plant_space_cm", undefined as unknown as number);
+			setValue("row_width_cm", undefined);
+			setValue("high_temp_degrees", undefined as unknown as number);
+		}, 0);
+	};
+
 	const onSubmit = async (data: GrowGuideFormData) => {
 		setIsSubmitting(true);
 		try {
 			const formData = {
 				...data,
-				// Required numbers are guaranteed; optional numbers already undefined or number
 				soil_ph: data.soil_ph as number,
 				plant_depth_cm: data.plant_depth_cm as number,
 				plant_space_cm: data.plant_space_cm as number,
-				// row_width_cm & high_temp_degrees already number | undefined via schema
-				// Notes already trimmed & undefined if blank by schema; no extra processing
 			};
 
-			await createGrowGuideMutation.mutateAsync(formData);
-			toast.success("Grow guide created successfully");
-			// Always reset to a fresh object to avoid stale retained values
-			reset({
-				variety_name: "",
-				family_id: "",
-				lifecycle_id: "",
-				sow_week_start_id: "",
-				sow_week_end_id: "",
-				transplant_week_start_id: "",
-				transplant_week_end_id: "",
-				planting_conditions_id: "",
-				soil_ph: undefined as unknown as number,
-				plant_depth_cm: undefined as unknown as number,
-				plant_space_cm: undefined as unknown as number,
-				row_width_cm: undefined,
-				water_frequency_id: "",
-				harvest_week_start_id: "",
-				harvest_week_end_id: "",
-				feed_id: "",
-				feed_frequency_id: "",
-				feed_week_start_id: "",
-				high_temp_degrees: undefined as unknown as number,
-				high_temp_water_frequency_id: "",
-				prune_week_start_id: "",
-				prune_week_end_id: "",
-				notes: undefined,
-				is_public: false,
-			});
+			if (mode === "create") {
+				await createGrowGuideMutation.mutateAsync(formData);
+				toast.success("Grow guide created successfully");
+				resetToBlank();
+			} else if (mode === "edit" && varietyId) {
+				await growGuideService.updateVariety(varietyId, formData);
+				// Invalidate list + individual detail cache
+				queryClient.invalidateQueries({ queryKey: ["userGrowGuides"] });
+				queryClient.invalidateQueries({ queryKey: ["growGuide", varietyId] });
+				toast.success("Grow guide updated");
+			}
 
-			// Force numeric input DOM elements to clear (React Hook Form may retain last displayed string for undefined numeric)
-			setTimeout(() => {
-				setValue("soil_ph", undefined as unknown as number);
-				setValue("plant_depth_cm", undefined as unknown as number);
-				setValue("plant_space_cm", undefined as unknown as number);
-				setValue("row_width_cm", undefined);
-				setValue("high_temp_degrees", undefined as unknown as number);
-			}, 0);
 			onSuccess?.();
 			onClose();
 		} catch (error) {
 			const message =
-				error instanceof Error ? error.message : "Failed to create grow guide";
+				error instanceof Error
+					? error.message
+					: mode === "create"
+						? "Failed to create grow guide"
+						: "Failed to update grow guide";
 			toast.error(message);
 		} finally {
 			setIsSubmitting(false);
 		}
 	};
+
+	// Populate form when existing guide loads (switch to edit only on user action)
+	useEffect(() => {
+		if (existingGuide && mode === "edit") {
+			reset({
+				variety_name: existingGuide.variety_name,
+				family_id: existingGuide.family.family_id,
+				lifecycle_id: existingGuide.lifecycle.lifecycle_id,
+				sow_week_start_id: existingGuide.sow_week_start_id,
+				sow_week_end_id: existingGuide.sow_week_end_id,
+				transplant_week_start_id: existingGuide.transplant_week_start_id || "",
+				transplant_week_end_id: existingGuide.transplant_week_end_id || "",
+				planting_conditions_id:
+					existingGuide.planting_conditions.planting_condition_id,
+				soil_ph: existingGuide.soil_ph as unknown as number,
+				plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
+				plant_space_cm: existingGuide.plant_space_cm as unknown as number,
+				row_width_cm: existingGuide.row_width_cm,
+				water_frequency_id: existingGuide.water_frequency.frequency_id,
+				harvest_week_start_id: existingGuide.harvest_week_start_id,
+				harvest_week_end_id: existingGuide.harvest_week_end_id,
+				feed_id: existingGuide.feed?.feed_id || "",
+				feed_frequency_id: existingGuide.feed_frequency?.frequency_id || "",
+				feed_week_start_id: existingGuide.feed_week_start_id || "",
+				high_temp_degrees: existingGuide.high_temp_degrees as unknown as number,
+				high_temp_water_frequency_id:
+					existingGuide.high_temp_water_frequency?.frequency_id || "",
+				prune_week_start_id: existingGuide.prune_week_start_id || "",
+				prune_week_end_id: existingGuide.prune_week_end_id || "",
+				notes: existingGuide.notes,
+				is_public: existingGuide.is_public,
+			});
+		}
+	}, [existingGuide, mode, reset]);
 
 	// Option data (no hardcoded fallbacks; rely entirely on API)
 	const families: Option[] = (options?.families ?? []).map((f) => ({
@@ -262,16 +322,21 @@ export const GrowGuideForm = ({
 	const missingCoreOptions =
 		!isLoadingOptions && !isOptionsError && coreSetsMissing;
 
+	const title = useMemo(() => {
+		if (mode === "create") return "Add New Grow Guide";
+		return existingGuide?.variety_name
+			? `Edit ${existingGuide.variety_name}`
+			: "Edit Grow Guide";
+	}, [mode, existingGuide]);
+
 	return (
 		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
 			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
-					<DialogTitle className="text-2xl font-bold">
-						Add New Grow Guide
-					</DialogTitle>
+					<DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
 				</DialogHeader>
 
-				{isLoadingOptions ? (
+				{isLoadingOptions || (isLoadingGuide && mode !== "create") ? (
 					<div className="py-6 text-sm text-muted-foreground">
 						Loading options...
 					</div>
@@ -309,6 +374,12 @@ export const GrowGuideForm = ({
 					</div>
 				) : (
 					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
+						{mode !== "create" && existingGuide && (
+							<p className="text-xs text-muted-foreground -mt-2">
+								Editing guide last updated{" "}
+								{new Date(existingGuide.last_updated).toLocaleDateString()}
+							</p>
+						)}
 						<div className="space-y-2">
 							<Label htmlFor="variety_name">{labelFor("variety_name")}</Label>
 							<Input
@@ -863,7 +934,13 @@ export const GrowGuideForm = ({
 								Cancel
 							</Button>
 							<Button type="submit" disabled={isSubmitting}>
-								{isSubmitting ? "Creating..." : "Create Guide"}
+								{isSubmitting
+									? mode === "create"
+										? "Creating..."
+										: "Saving..."
+									: mode === "create"
+										? "Create Guide"
+										: "Save Changes"}
 							</Button>
 						</DialogFooter>
 					</form>

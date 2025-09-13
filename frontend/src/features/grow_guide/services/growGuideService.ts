@@ -200,6 +200,22 @@ const getGrowGuideOptions = async (): Promise<GrowGuideOptions> => {
 	}
 };
 
+const getGrowGuide = async (varietyId: string): Promise<GrowGuideDetail> => {
+	try {
+		const response = await api.get<GrowGuideDetail>(
+			`/grow-guides/${varietyId}`,
+		);
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "getGrowGuide",
+			url: `/grow-guides/${varietyId}`,
+			method: "GET",
+		});
+		return handleApiError(error, "Failed to fetch grow guide details.");
+	}
+};
+
 // Extra CRUD helpers expected by existing tests (legacy naming retained for now)
 const updateVariety = async (
 	varietyId: string,
@@ -279,6 +295,7 @@ export const growGuideService = {
 	getPublicGrowGuides,
 	createGrowGuide,
 	getGrowGuideOptions,
+	getGrowGuide,
 	updateVariety,
 	deleteVariety,
 	toggleVarietyPublic,

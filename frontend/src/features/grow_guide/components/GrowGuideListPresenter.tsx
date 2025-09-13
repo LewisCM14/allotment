@@ -23,12 +23,16 @@ interface GrowGuideListPresenterProps {
 	growGuides: VarietyList[];
 	isLoading: boolean;
 	isError: boolean;
+	onSelect?: (varietyId: string) => void;
+	selectedVarietyId?: string | null;
 }
 
 export const GrowGuideListPresenter = ({
 	growGuides,
 	isLoading,
 	isError,
+	onSelect,
+	selectedVarietyId,
 }: GrowGuideListPresenterProps) => {
 	const [searchTerm, setSearchTerm] = useState("");
 
@@ -181,117 +185,138 @@ export const GrowGuideListPresenter = ({
 										{guides.map((guide) => {
 											const isPublic = publicMap[guide.variety_id];
 											const isActive = activeGuideId === guide.variety_id;
+											const isSelected = selectedVarietyId === guide.variety_id;
 											return (
-												<li
-													key={guide.variety_id}
-													className="flex items-center gap-4 p-3 border rounded-md bg-card hover:bg-accent/30 transition-colors"
-												>
-													{/* Delete Button */}
-													<AlertDialog
-														open={pendingDeleteId === guide.variety_id}
-														onOpenChange={(open: boolean) => {
-															if (open) setPendingDeleteId(guide.variety_id);
-															else if (pendingDeleteId === guide.variety_id)
-																setPendingDeleteId(null);
+												<li key={guide.variety_id} className="list-none">
+													<button
+														type="button"
+														className={`w-full text-left group flex items-center gap-4 p-3 border rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"}`}
+														aria-pressed={isSelected}
+														onClick={(e) => {
+															// Prevent clicks on internal action buttons/switch from triggering selection
+															const target = e.target as HTMLElement;
+															if (target.closest("button, [role='switch']"))
+																return;
+															onSelect?.(guide.variety_id);
+														}}
+														onKeyDown={(e) => {
+															if (e.key === "Enter" || e.key === " ") {
+																e.preventDefault();
+																onSelect?.(guide.variety_id);
+															}
 														}}
 													>
-														<AlertDialogTrigger asChild>
-															<Button
-																type="button"
-																variant="destructive"
-																size="icon"
-																aria-label={`Delete ${guide.variety_name}`}
-																onClick={() =>
-																	setPendingDeleteId(guide.variety_id)
-																}
-																className="shrink-0 w-10 h-10"
-																disabled={
-																	isDeleting &&
-																	pendingDeleteId === guide.variety_id
-																}
-															>
-																<Trash2 className="h-4 w-4" />
-															</Button>
-														</AlertDialogTrigger>
-														<AlertDialogContent>
-															<AlertDialogHeader>
-																<AlertDialogTitle>
-																	Delete Grow Guide
-																</AlertDialogTitle>
-																<AlertDialogDescription>
-																	Are you sure you want to delete "
-																	{guide.variety_name}"? This action is
-																	permanent and cannot be undone.
-																</AlertDialogDescription>
-															</AlertDialogHeader>
-															<AlertDialogFooter>
-																<AlertDialogCancel disabled={isDeleting}>
-																	Cancel
-																</AlertDialogCancel>
-																<AlertDialogAction
-																	onClick={() => handleDelete(guide.variety_id)}
-																	disabled={isDeleting}
+														{/* Delete Button */}
+														<AlertDialog
+															open={pendingDeleteId === guide.variety_id}
+															onOpenChange={(open: boolean) => {
+																if (open) setPendingDeleteId(guide.variety_id);
+																else if (pendingDeleteId === guide.variety_id)
+																	setPendingDeleteId(null);
+															}}
+														>
+															<AlertDialogTrigger asChild>
+																<Button
+																	type="button"
+																	variant="destructive"
+																	size="icon"
+																	aria-label={`Delete ${guide.variety_name}`}
+																	onClick={() =>
+																		setPendingDeleteId(guide.variety_id)
+																	}
+																	className="shrink-0 w-10 h-10"
+																	disabled={
+																		isDeleting &&
+																		pendingDeleteId === guide.variety_id
+																	}
 																>
-																	{isDeleting &&
-																	pendingDeleteId === guide.variety_id
-																		? "Deleting..."
-																		: "Delete"}
-																</AlertDialogAction>
-															</AlertDialogFooter>
-														</AlertDialogContent>
-													</AlertDialog>
+																	<Trash2 className="h-4 w-4" />
+																</Button>
+															</AlertDialogTrigger>
+															<AlertDialogContent>
+																<AlertDialogHeader>
+																	<AlertDialogTitle>
+																		Delete Grow Guide
+																	</AlertDialogTitle>
+																	<AlertDialogDescription>
+																		Are you sure you want to delete "
+																		{guide.variety_name}"? This action is
+																		permanent and cannot be undone.
+																	</AlertDialogDescription>
+																</AlertDialogHeader>
+																<AlertDialogFooter>
+																	<AlertDialogCancel disabled={isDeleting}>
+																		Cancel
+																	</AlertDialogCancel>
+																	<AlertDialogAction
+																		onClick={() =>
+																			handleDelete(guide.variety_id)
+																		}
+																		disabled={isDeleting}
+																	>
+																		{isDeleting &&
+																		pendingDeleteId === guide.variety_id
+																			? "Deleting..."
+																			: "Delete"}
+																	</AlertDialogAction>
+																</AlertDialogFooter>
+															</AlertDialogContent>
+														</AlertDialog>
 
-													{/* Public / Private Toggle */}
-													<Button
-														type="button"
-														variant={isPublic ? "secondary" : "outline"}
-														size="icon"
-														aria-pressed={isPublic}
-														aria-label={`${isPublic ? "Make" : "Set"} ${guide.variety_name} ${isPublic ? "Private" : "Public"}`}
-														onClick={() => handleTogglePublic(guide.variety_id)}
-														className="shrink-0 w-10 h-10"
-													>
-														{isPublic ? (
-															<Eye className="h-4 w-4" />
-														) : (
-															<EyeOff className="h-4 w-4" />
-														)}
-													</Button>
-
-													{/* Guide Name & Meta */}
-													<div className="flex-1 min-w-0 pl-1">
-														<div className="flex items-center gap-2 flex-wrap">
-															<span className="font-medium truncate">
-																{guide.variety_name}
-															</span>
-															<Badge
-																variant="outline"
-																className="hidden sm:inline"
-															>
-																{guide.lifecycle.lifecycle_name}
-															</Badge>
-														</div>
-														<p className="text-xs text-muted-foreground mt-0.5">
-															Updated{" "}
-															{new Date(
-																guide.last_updated,
-															).toLocaleDateString()}
-														</p>
-													</div>
-
-													{/* Active Toggle */}
-													<div className="flex items-center gap-2 ml-auto">
-														<span className="text-xs text-muted-foreground hidden sm:inline">
-															Active
-														</span>
-														<Switch
-															checked={isActive}
-															onCheckedChange={(checked) =>
-																handleToggleActive(guide.variety_id, checked)
+														{/* Public / Private Toggle */}
+														<Button
+															type="button"
+															variant={isPublic ? "secondary" : "outline"}
+															size="icon"
+															aria-pressed={isPublic}
+															aria-label={`${isPublic ? "Make" : "Set"} ${guide.variety_name} ${isPublic ? "Private" : "Public"}`}
+															onClick={() =>
+																handleTogglePublic(guide.variety_id)
 															}
-															aria-label={`Set ${guide.variety_name} ${isActive ? "inactive" : "active"}`}
-														/>
-													</div>
+															className="shrink-0 w-10 h-10"
+														>
+															{isPublic ? (
+																<Eye className="h-4 w-4" />
+															) : (
+																<EyeOff className="h-4 w-4" />
+															)}
+														</Button>
+
+														{/* Guide Name & Meta */}
+														<div className="flex-1 min-w-0 pl-1">
+															<div className="flex items-center gap-2 flex-wrap">
+																<span className="font-medium truncate">
+																	{guide.variety_name}
+																</span>
+																<Badge
+																	variant="outline"
+																	className="hidden sm:inline"
+																>
+																	{guide.lifecycle.lifecycle_name}
+																</Badge>
+															</div>
+															<p className="text-xs text-muted-foreground mt-0.5">
+																Updated{" "}
+																{new Date(
+																	guide.last_updated,
+																).toLocaleDateString()}
+															</p>
+														</div>
+
+														{/* Active Toggle */}
+														<div className="flex items-center gap-2 ml-auto">
+															<span className="text-xs text-muted-foreground hidden sm:inline">
+																Active
+															</span>
+															<Switch
+																checked={isActive}
+																onCheckedChange={(checked) =>
+																	handleToggleActive(guide.variety_id, checked)
+																}
+																aria-label={`Set ${guide.variety_name} ${isActive ? "inactive" : "active"}`}
+															/>
+														</div>
+													</button>
 												</li>
 											);
 										})}

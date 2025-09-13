@@ -13,6 +13,11 @@ const OPTIONS_KEY = ["growGuideOptions"]; // must match useGrowGuideOptions hook
 
 const GrowGuides = () => {
 	const [isFormOpen, setIsFormOpen] = useState(false);
+	const [selectedVarietyId, setSelectedVarietyId] = useState<string | null>(
+		null,
+	);
+	// Mode: create (new guide) or edit (existing guide)
+	const [mode, setMode] = useState<"create" | "edit">("create");
 	const queryClient = useQueryClient();
 
 	// Prefetch options & user guides on mount so form opens instantly
@@ -27,6 +32,18 @@ const GrowGuides = () => {
 		});
 	}, [queryClient]);
 
+	const handleAddNew = () => {
+		setSelectedVarietyId(null);
+		setMode("create");
+		setIsFormOpen(true);
+	};
+
+	const handleSelectGuide = (varietyId: string) => {
+		setSelectedVarietyId(varietyId);
+		setMode("edit");
+		setIsFormOpen(true);
+	};
+
 	return (
 		<PageLayout>
 			<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
@@ -36,15 +53,23 @@ const GrowGuides = () => {
 						Manage and explore your plant grow guides
 					</p>
 				</div>
-				<Button onClick={() => setIsFormOpen(true)}>
+				<Button onClick={handleAddNew}>
 					<Plus className="mr-2 h-4 w-4" />
 					Add New Guide
 				</Button>
 			</div>
-			<GrowGuideListContainer />
+			<GrowGuideListContainer
+				onSelect={handleSelectGuide}
+				selectedVarietyId={selectedVarietyId}
+			/>
 
-			{/* Add new grow guide form dialog */}
-			<GrowGuideForm isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} />
+			{/* Grow guide form handles create, view, edit based on props */}
+			<GrowGuideForm
+				isOpen={isFormOpen}
+				onClose={() => setIsFormOpen(false)}
+				varietyId={selectedVarietyId || undefined}
+				mode={mode}
+			/>
 		</PageLayout>
 	);
 };
