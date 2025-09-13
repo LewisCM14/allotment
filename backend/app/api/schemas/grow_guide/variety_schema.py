@@ -151,12 +151,12 @@ class VarietyCreate(SecureBaseModel):
     # Watering details (required)
     water_frequency_id: UUID = Field(..., description="Required water frequency ID")
 
-    # High temperature details
-    high_temp_degrees: Optional[int] = Field(
-        None, ge=-50, le=60, description="High temperature threshold"
+    # High temperature details (both required)
+    high_temp_degrees: int = Field(
+        ..., ge=-50, le=60, description="Required high temperature threshold"
     )
-    high_temp_water_frequency_id: Optional[UUID] = Field(
-        None, description="High temp water frequency ID"
+    high_temp_water_frequency_id: UUID = Field(
+        ..., description="Required high temperature water frequency ID"
     )
 
     # Harvest details (both required)
@@ -192,7 +192,7 @@ class VarietyCreate(SecureBaseModel):
             "feed_id",
             "feed_week_start_id",
             "feed_frequency_id",
-            "high_temp_water_frequency_id",
+            # high_temp_water_frequency_id now required, so excluded
             "prune_week_start_id",
             "prune_week_end_id",
         ]
@@ -249,12 +249,13 @@ class VarietyUpdate(SecureBaseModel):
     # Watering details
     water_frequency_id: Optional[UUID] = Field(None, description="Water frequency ID")
 
-    # High temperature details
+    # High temperature details (both required for updates when provided together)
+    # For partial updates we allow omission, but if one is provided the other must be too.
     high_temp_degrees: Optional[int] = Field(
-        None, ge=-50, le=60, description="High temperature threshold"
+        None, ge=-50, le=60, description="High temperature threshold (required with high_temp_water_frequency_id)"
     )
     high_temp_water_frequency_id: Optional[UUID] = Field(
-        None, description="High temp water frequency ID"
+        None, description="High temp water frequency ID (required with high_temp_degrees)"
     )
 
     # Harvest details
@@ -341,9 +342,9 @@ class VarietyRead(SecureBaseModel):
     # Watering details (required)
     water_frequency: FrequencyRead
 
-    # High temperature details
-    high_temp_degrees: Optional[int] = None
-    high_temp_water_frequency: Optional[FrequencyRead] = None
+    # High temperature details (required)
+    high_temp_degrees: int
+    high_temp_water_frequency: FrequencyRead
 
     # Harvest details (required)
     harvest_week_start_id: UUID

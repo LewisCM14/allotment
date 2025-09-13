@@ -129,12 +129,12 @@ const baseGrowGuideFormSchema = z.object({
 	// Watering details (required)
 	water_frequency_id: requiredId("Watering frequency"),
 
-	// High temperature details (optional, but both must be provided together)
-	high_temp_degrees: optionalNumber({ min: -50, max: 60 }),
-	high_temp_water_frequency_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
+	// High temperature details (required)
+	high_temp_degrees: requiredNumber("High temperature threshold", {
+		min: -50,
+		max: 60,
+	}),
+	high_temp_water_frequency_id: requiredId("High temperature water frequency"),
 
 	// Harvest details (required)
 	harvest_week_start_id: requiredId("Harvest start week"),
@@ -216,32 +216,8 @@ const refinedGrowGuideFormSchema = baseGrowGuideFormSchema
 				path: [m.field],
 			});
 		}
-	})
-	// High temperature symmetric pairing validation
-	.superRefine((data, ctx) => {
-		const validHighTemp =
-			data.high_temp_degrees !== undefined &&
-			!Number.isNaN(data.high_temp_degrees);
-		const hasFreq = !!data.high_temp_water_frequency_id;
-		if (!validHighTemp && !hasFreq) return; // both absent OK
-		if (validHighTemp && hasFreq) return; // both present OK
-		if (validHighTemp && !hasFreq) {
-			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
-				message:
-					"High temperature water frequency is required when a high temperature threshold is set",
-				path: ["high_temp_water_frequency_id"],
-			});
-		}
-		if (!validHighTemp && hasFreq) {
-			ctx.addIssue({
-				code: z.ZodIssueCode.custom,
-				message:
-					"High temperature threshold is required when high temperature water frequency is selected",
-				path: ["high_temp_degrees"],
-			});
-		}
 	});
+// (High temperature fields now individually required; previous pairing validation removed)
 
 export type GrowGuideFormData = z.infer<typeof growGuideFormSchema>;
 export const growGuideFormSchema = refinedGrowGuideFormSchema;

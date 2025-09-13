@@ -158,14 +158,14 @@ class Variety(Base):
     )
 
     # High temperature details
-    high_temp_degrees: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    high_temp_water_frequency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+    high_temp_degrees: Mapped[int] = mapped_column(Integer, nullable=False)
+    high_temp_water_frequency_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("frequency.frequency_id"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
-    high_temp_water_frequency: Mapped[Optional["Frequency"]] = relationship(
+    high_temp_water_frequency: Mapped["Frequency"] = relationship(
         "Frequency", foreign_keys=[high_temp_water_frequency_id]
     )
 

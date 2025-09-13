@@ -1,8 +1,8 @@
 """initial migration
 
-Revision ID: b9ae10f113e0
+Revision ID: 1d2550f8d4a6
 Revises:
-Create Date: 2025-09-12 20:51:59.101954
+Create Date: 2025-09-13 09:55:53.413658
 
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision: str = "b9ae10f113e0"
+revision: str = "1d2550f8d4a6"
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -416,8 +416,8 @@ def upgrade() -> None:
         sa.Column("feed_week_start_id", sa.UUID(), nullable=True),
         sa.Column("feed_frequency_id", sa.UUID(), nullable=True),
         sa.Column("water_frequency_id", sa.UUID(), nullable=False),
-        sa.Column("high_temp_degrees", sa.Integer(), nullable=True),
-        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=True),
+        sa.Column("high_temp_degrees", sa.Integer(), nullable=False),
+        sa.Column("high_temp_water_frequency_id", sa.UUID(), nullable=False),
         sa.Column("harvest_week_start_id", sa.UUID(), nullable=False),
         sa.Column("harvest_week_end_id", sa.UUID(), nullable=False),
         sa.Column("prune_week_start_id", sa.UUID(), nullable=True),
