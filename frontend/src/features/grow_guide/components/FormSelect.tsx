@@ -23,6 +23,8 @@ interface FormSelectProps {
 	error?: boolean;
 	className?: string;
 	disabled?: boolean;
+	/** When true and a value is selected, renders an inline clear (reset) control */
+	allowClear?: boolean;
 }
 
 export const FormSelect: React.FC<FormSelectProps> = ({
@@ -35,6 +37,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 	error = false,
 	className,
 	disabled = false,
+	allowClear = false,
 }) => {
 	// For single select
 	const handleSingleSelect = (val: string) => {
@@ -83,35 +86,58 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 	};
 
 	return (
-		<Select
-			value={multiple ? undefined : (value as string)}
-			onValueChange={multiple ? undefined : handleSingleSelect}
-			disabled={disabled}
-		>
-			<SelectTrigger
-				id={id}
-				className={cn("w-full", error && "border-destructive", className)}
+		<div className={cn("relative w-full", className)}>
+			<Select
+				value={multiple ? undefined : (value as string)}
+				onValueChange={multiple ? undefined : handleSingleSelect}
+				disabled={disabled}
 			>
-				<SelectValue placeholder={displayValue()} />
-			</SelectTrigger>
-			<SelectContent>
-				{options.map((option) => (
-					<SelectItem
-						key={option.value}
-						value={option.value}
-						onClick={
-							multiple ? () => handleMultiSelect(option.value) : undefined
+				<SelectTrigger
+					id={id}
+					className={cn("w-full pr-8", error && "border-destructive")}
+				>
+					<SelectValue placeholder={displayValue()} />
+				</SelectTrigger>
+				<SelectContent>
+					{options.map((option) => (
+						<SelectItem
+							key={option.value}
+							value={option.value}
+							onClick={
+								multiple ? () => handleMultiSelect(option.value) : undefined
+							}
+							className={
+								multiple && isSelected(option.value)
+									? "bg-accent text-accent-foreground"
+									: ""
 						}
-						className={
-							multiple && isSelected(option.value)
-								? "bg-accent text-accent-foreground"
-								: ""
+						>
+							{option.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
+			{allowClear && !disabled && (
+				<button
+					type="button"
+					aria-label="Clear selection"
+					onClick={(e) => {
+						e.preventDefault();
+						if (multiple) {
+							onValueChange([]);
+						} else {
+							onValueChange("");
 						}
-					>
-						{option.label}
-					</SelectItem>
-				))}
-			</SelectContent>
-		</Select>
+					}}
+					className={cn(
+						"absolute inset-y-0 right-1 flex items-center rounded px-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+						(!value || (Array.isArray(value) && value.length === 0)) &&
+							"hidden"
+					)}
+				>
+					&times;
+				</button>
+			)}
+		</div>
 	);
 };

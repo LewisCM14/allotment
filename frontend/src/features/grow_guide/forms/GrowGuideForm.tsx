@@ -98,29 +98,35 @@ export const GrowGuideForm = ({
 		setValue,
 	} = useForm<GrowGuideFormData>({
 		resolver: zodResolver(growGuideFormSchema),
-		defaultValues: {
-			variety_name: "",
-			family_id: "",
-			lifecycle_id: "",
-			sow_week_start_id: "",
-			sow_week_end_id: "",
-			planting_conditions_id: "",
-			soil_ph: undefined as unknown as number,
-			plant_depth_cm: undefined as unknown as number,
-			plant_space_cm: undefined as unknown as number,
-			water_frequency_id: "",
-			harvest_week_start_id: "",
-			harvest_week_end_id: "",
-			feed_id: "",
-			feed_frequency_id: "",
-			feed_week_start_id: "",
-			high_temp_degrees: undefined as unknown as number,
-			high_temp_water_frequency_id: "",
-			prune_week_start_id: "",
-			prune_week_end_id: "",
-			notes: undefined,
-			is_public: false,
-		},
+		defaultValues: (() => {
+			const initialDefaults: GrowGuideFormData = {
+				variety_name: "",
+				family_id: "",
+				lifecycle_id: "",
+				sow_week_start_id: "",
+				sow_week_end_id: "",
+				transplant_week_start_id: "",
+				transplant_week_end_id: "",
+				planting_conditions_id: "",
+				soil_ph: undefined as unknown as number,
+				plant_depth_cm: undefined as unknown as number,
+				plant_space_cm: undefined as unknown as number,
+				row_width_cm: undefined,
+				water_frequency_id: "",
+				harvest_week_start_id: "",
+				harvest_week_end_id: "",
+				feed_id: "",
+				feed_frequency_id: "",
+				feed_week_start_id: "",
+				high_temp_degrees: undefined as unknown as number,
+				high_temp_water_frequency_id: "",
+				prune_week_start_id: "",
+				prune_week_end_id: "",
+				notes: undefined,
+				is_public: false,
+			};
+			return initialDefaults;
+		})(),
 	});
 
 	const createGrowGuideMutation = useCreateGrowGuide();
@@ -140,7 +146,42 @@ export const GrowGuideForm = ({
 
 			await createGrowGuideMutation.mutateAsync(formData);
 			toast.success("Grow guide created successfully");
-			reset();
+			// Always reset to a fresh object to avoid stale retained values
+			reset({
+				variety_name: "",
+				family_id: "",
+				lifecycle_id: "",
+				sow_week_start_id: "",
+				sow_week_end_id: "",
+				transplant_week_start_id: "",
+				transplant_week_end_id: "",
+				planting_conditions_id: "",
+				soil_ph: undefined as unknown as number,
+				plant_depth_cm: undefined as unknown as number,
+				plant_space_cm: undefined as unknown as number,
+				row_width_cm: undefined,
+				water_frequency_id: "",
+				harvest_week_start_id: "",
+				harvest_week_end_id: "",
+				feed_id: "",
+				feed_frequency_id: "",
+				feed_week_start_id: "",
+				high_temp_degrees: undefined as unknown as number,
+				high_temp_water_frequency_id: "",
+				prune_week_start_id: "",
+				prune_week_end_id: "",
+				notes: undefined,
+				is_public: false,
+			});
+
+			// Force numeric input DOM elements to clear (React Hook Form may retain last displayed string for undefined numeric)
+			setTimeout(() => {
+				setValue("soil_ph", undefined as unknown as number);
+				setValue("plant_depth_cm", undefined as unknown as number);
+				setValue("plant_space_cm", undefined as unknown as number);
+				setValue("row_width_cm", undefined);
+				setValue("high_temp_degrees", undefined as unknown as number);
+			}, 0);
 			onSuccess?.();
 			onClose();
 		} catch (error) {
@@ -201,6 +242,13 @@ export const GrowGuideForm = ({
 		value: d.day_id,
 		label: d.day_name,
 	}));
+
+	// Helper: clear all feed-related fields together to avoid partial trio state
+	const clearFeedFields = () => {
+		setValue("feed_id", "");
+		setValue("feed_week_start_id", "");
+		setValue("feed_frequency_id", "");
+	};
 
 	// Detect missing critical option sets after load
 	const coreSetsMissing =
@@ -387,6 +435,7 @@ export const GrowGuideForm = ({
 											options={weeks}
 											error={!!errors.transplant_week_start_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -413,6 +462,7 @@ export const GrowGuideForm = ({
 											options={weeks}
 											error={!!errors.transplant_week_end_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -528,10 +578,16 @@ export const GrowGuideForm = ({
 											id="feed_id"
 											placeholder="Select feed type"
 											value={field.value || ""}
-											onValueChange={field.onChange}
+											onValueChange={(val) => {
+												field.onChange(val);
+												if (val === "") {
+													clearFeedFields();
+												}
+											}}
 											options={feedTypes}
 											error={!!errors.feed_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -552,10 +608,16 @@ export const GrowGuideForm = ({
 											id="feed_week_start_id"
 											placeholder="Select feed start week"
 											value={field.value || ""}
-											onValueChange={field.onChange}
+											onValueChange={(val) => {
+												field.onChange(val);
+												if (val === "") {
+													clearFeedFields();
+												}
+											}}
 											options={weeks}
 											error={!!errors.feed_week_start_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -576,10 +638,16 @@ export const GrowGuideForm = ({
 											id="feed_frequency_id"
 											placeholder="Select feed frequency"
 											value={field.value || ""}
-											onValueChange={field.onChange}
+											onValueChange={(val) => {
+												field.onChange(val);
+												if (val === "") {
+													clearFeedFields();
+												}
+											}}
 											options={feedFrequencies}
 											error={!!errors.feed_frequency_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -725,6 +793,7 @@ export const GrowGuideForm = ({
 											options={weeks}
 											error={!!errors.prune_week_start_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
@@ -748,6 +817,7 @@ export const GrowGuideForm = ({
 											options={weeks}
 											error={!!errors.prune_week_end_id}
 											disabled={isLoadingOptions}
+											allowClear
 										/>
 									)}
 								/>
