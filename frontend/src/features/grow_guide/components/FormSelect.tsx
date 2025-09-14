@@ -85,10 +85,16 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 		return placeholder;
 	};
 
+	const radixValue = multiple
+		? undefined // multi handled via custom click logic
+		: typeof value === "string" && value.length === 0
+			? undefined
+			: (value as string);
+
 	return (
 		<div className={cn("relative w-full", className)}>
 			<Select
-				value={multiple ? undefined : (value as string)}
+				value={radixValue}
 				onValueChange={multiple ? undefined : handleSingleSelect}
 				disabled={disabled}
 			>
@@ -96,7 +102,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 					id={id}
 					className={cn("w-full pr-8", error && "border-destructive")}
 				>
-					<SelectValue placeholder={displayValue()} />
+					<SelectValue placeholder={placeholder} />
 				</SelectTrigger>
 				<SelectContent>
 					{options.map((option) => (

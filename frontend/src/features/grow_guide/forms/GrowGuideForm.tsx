@@ -88,6 +88,7 @@ export const GrowGuideForm = ({
 	mode = "create",
 }: GrowGuideFormProps) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [formResetKey, setFormResetKey] = useState(0);
 	const queryClient = useQueryClient();
 
 	// Load existing guide when editing
@@ -219,39 +220,66 @@ export const GrowGuideForm = ({
 		}
 	};
 
-	// Populate form when existing guide loads (switch to edit only on user action)
+	// Populate form when editing
 	useEffect(() => {
-		if (existingGuide && mode === "edit") {
-			reset({
-				variety_name: existingGuide.variety_name,
-				family_id: existingGuide.family.family_id,
-				lifecycle_id: existingGuide.lifecycle.lifecycle_id,
-				sow_week_start_id: existingGuide.sow_week_start_id,
-				sow_week_end_id: existingGuide.sow_week_end_id,
-				transplant_week_start_id: existingGuide.transplant_week_start_id || "",
-				transplant_week_end_id: existingGuide.transplant_week_end_id || "",
-				planting_conditions_id:
-					existingGuide.planting_conditions.planting_condition_id,
-				soil_ph: existingGuide.soil_ph as unknown as number,
-				plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
-				plant_space_cm: existingGuide.plant_space_cm as unknown as number,
-				row_width_cm: existingGuide.row_width_cm,
-				water_frequency_id: existingGuide.water_frequency.frequency_id,
-				harvest_week_start_id: existingGuide.harvest_week_start_id,
-				harvest_week_end_id: existingGuide.harvest_week_end_id,
-				feed_id: existingGuide.feed?.feed_id || "",
-				feed_frequency_id: existingGuide.feed_frequency?.frequency_id || "",
-				feed_week_start_id: existingGuide.feed_week_start_id || "",
-				high_temp_degrees: existingGuide.high_temp_degrees as unknown as number,
-				high_temp_water_frequency_id:
-					existingGuide.high_temp_water_frequency?.frequency_id || "",
-				prune_week_start_id: existingGuide.prune_week_start_id || "",
-				prune_week_end_id: existingGuide.prune_week_end_id || "",
-				notes: existingGuide.notes ?? "",
-				is_public: existingGuide.is_public,
-			});
+		if (
+			mode === "edit" &&
+			varietyId &&
+			existingGuide &&
+			existingGuide.variety_id === varietyId &&
+			!isLoadingGuide &&
+			!isLoadingOptions
+		) {
+			// Use setTimeout to ensure Select components have rendered with options
+			setTimeout(() => {
+				reset({
+					variety_name: existingGuide.variety_name,
+					family_id: existingGuide.family.family_id,
+					lifecycle_id: existingGuide.lifecycle.lifecycle_id,
+					sow_week_start_id: existingGuide.sow_week_start_id,
+					sow_week_end_id: existingGuide.sow_week_end_id,
+					transplant_week_start_id:
+						existingGuide.transplant_week_start_id || "",
+					transplant_week_end_id: existingGuide.transplant_week_end_id || "",
+					planting_conditions_id:
+						existingGuide.planting_conditions.planting_condition_id,
+					soil_ph: existingGuide.soil_ph as unknown as number,
+					plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
+					plant_space_cm: existingGuide.plant_space_cm as unknown as number,
+					row_width_cm: existingGuide.row_width_cm,
+					water_frequency_id: existingGuide.water_frequency.frequency_id,
+					harvest_week_start_id: existingGuide.harvest_week_start_id,
+					harvest_week_end_id: existingGuide.harvest_week_end_id,
+					feed_id: existingGuide.feed?.feed_id || "",
+					feed_frequency_id: existingGuide.feed_frequency?.frequency_id || "",
+					feed_week_start_id: existingGuide.feed_week_start_id || "",
+					high_temp_degrees:
+						existingGuide.high_temp_degrees as unknown as number,
+					high_temp_water_frequency_id:
+						existingGuide.high_temp_water_frequency?.frequency_id || "",
+					prune_week_start_id: existingGuide.prune_week_start_id || "",
+					prune_week_end_id: existingGuide.prune_week_end_id || "",
+					notes: existingGuide.notes ?? "",
+					is_public: existingGuide.is_public,
+				});
+			}, 100);
 		}
-	}, [existingGuide, mode, reset]);
+	}, [mode, varietyId, existingGuide, isLoadingGuide, isLoadingOptions, reset]);
+
+	// Reset form key when dialog opens in edit mode to force re-render
+	useEffect(() => {
+		if (isOpen && mode === "edit" && varietyId) {
+			setFormResetKey((prev) => prev + 1);
+		}
+	}, [isOpen, mode, varietyId]);
+
+	// Alternative approach: Use form key to force re-render when switching guides
+	const formKey = useMemo(() => {
+		if (mode === "edit" && varietyId) {
+			return `edit-${varietyId}-${formResetKey}`;
+		}
+		return "create";
+	}, [mode, varietyId, formResetKey]);
 
 	// Option data (no hardcoded fallbacks; rely entirely on API)
 	const families: Option[] = (options?.families ?? []).map((f) => ({
@@ -373,577 +401,591 @@ export const GrowGuideForm = ({
 						</DialogFooter>
 					</div>
 				) : (
-					<form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-4">
-						{mode !== "create" && existingGuide && (
-							<p className="text-xs text-muted-foreground -mt-2">
-								Editing guide last updated{" "}
-								{new Date(existingGuide.last_updated).toLocaleDateString()}
-							</p>
-						)}
-						<div className="space-y-2">
-							<Label htmlFor="variety_name">{labelFor("variety_name")}</Label>
-							<Input
-								id="variety_name"
-								{...register("variety_name")}
-								placeholder="e.g. Roma Tomato"
-								className={errors.variety_name ? "border-destructive" : ""}
-							/>
-							{errors.variety_name && (
-								<FormError message={errors.variety_name.message} />
+					<>
+						<form
+							key={formKey}
+							onSubmit={handleSubmit(onSubmit)}
+							className="space-y-4 mt-4"
+						>
+							{mode !== "create" && existingGuide && (
+								<p className="text-xs text-muted-foreground -mt-2">
+									Editing guide last updated{" "}
+									{new Date(existingGuide.last_updated).toLocaleDateString()}
+								</p>
 							)}
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<Label htmlFor="family_id">{labelFor("family_id")}</Label>
-								<Controller
-									name="family_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="family_id"
-											placeholder="Select plant family"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={families}
-											error={!!errors.family_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
+								<Label htmlFor="variety_name">{labelFor("variety_name")}</Label>
+								<Input
+									id="variety_name"
+									{...register("variety_name")}
+									placeholder="e.g. Roma Tomato"
+									className={errors.variety_name ? "border-destructive" : ""}
 								/>
-								{errors.family_id && (
-									<FormError message={errors.family_id.message} />
+								{errors.variety_name && (
+									<FormError message={errors.variety_name.message} />
 								)}
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="lifecycle_id">{labelFor("lifecycle_id")}</Label>
-								<Controller
-									name="lifecycle_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="lifecycle_id"
-											placeholder="Select lifecycle"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={lifecycles}
-											error={!!errors.lifecycle_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.lifecycle_id && (
-									<FormError message={errors.lifecycle_id.message} />
-								)}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="sow_week_start_id">
-									{labelFor("sow_week_start_id")}
-								</Label>
-								<Controller
-									name="sow_week_start_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="sow_week_start_id"
-											placeholder="Select start week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.sow_week_start_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.sow_week_start_id && (
-									<FormError message={errors.sow_week_start_id.message} />
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="sow_week_end_id">
-									{labelFor("sow_week_end_id")}
-								</Label>
-								<Controller
-									name="sow_week_end_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="sow_week_end_id"
-											placeholder="Select end week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.sow_week_end_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.sow_week_end_id && (
-									<FormError message={errors.sow_week_end_id.message} />
-								)}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="transplant_week_start_id">
-									{labelFor("transplant_week_start_id")}
-								</Label>
-								<Controller
-									name="transplant_week_start_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="transplant_week_start_id"
-											placeholder="Select start week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.transplant_week_start_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.transplant_week_start_id && (
-									<FormError
-										message={errors.transplant_week_start_id.message}
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="family_id">{labelFor("family_id")}</Label>
+									<Controller
+										name="family_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="family_id"
+												placeholder="Select plant family"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={families}
+												error={!!errors.family_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
 									/>
-								)}
+									{errors.family_id && (
+										<FormError message={errors.family_id.message} />
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="lifecycle_id">
+										{labelFor("lifecycle_id")}
+									</Label>
+									<Controller
+										name="lifecycle_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="lifecycle_id"
+												placeholder="Select lifecycle"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={lifecycles}
+												error={!!errors.lifecycle_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.lifecycle_id && (
+										<FormError message={errors.lifecycle_id.message} />
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="sow_week_start_id">
+										{labelFor("sow_week_start_id")}
+									</Label>
+									<Controller
+										name="sow_week_start_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="sow_week_start_id"
+												placeholder="Select start week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.sow_week_start_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.sow_week_start_id && (
+										<FormError message={errors.sow_week_start_id.message} />
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="sow_week_end_id">
+										{labelFor("sow_week_end_id")}
+									</Label>
+									<Controller
+										name="sow_week_end_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="sow_week_end_id"
+												placeholder="Select end week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.sow_week_end_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.sow_week_end_id && (
+										<FormError message={errors.sow_week_end_id.message} />
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="transplant_week_start_id">
+										{labelFor("transplant_week_start_id")}
+									</Label>
+									<Controller
+										name="transplant_week_start_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="transplant_week_start_id"
+												placeholder="Select start week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.transplant_week_start_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
+									/>
+									{errors.transplant_week_start_id && (
+										<FormError
+											message={errors.transplant_week_start_id.message}
+										/>
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="transplant_week_end_id">
+										{labelFor("transplant_week_end_id")}
+									</Label>
+									<Controller
+										name="transplant_week_end_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="transplant_week_end_id"
+												placeholder="Select end week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.transplant_week_end_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
+									/>
+									{errors.transplant_week_end_id && (
+										<FormError
+											message={errors.transplant_week_end_id.message}
+										/>
+									)}
+								</div>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="transplant_week_end_id">
-									{labelFor("transplant_week_end_id")}
+								<Label htmlFor="planting_conditions_id">
+									{labelFor("planting_conditions_id")}
 								</Label>
 								<Controller
-									name="transplant_week_end_id"
+									name="planting_conditions_id"
 									control={control}
 									render={({ field }) => (
 										<FormSelect
-											id="transplant_week_end_id"
-											placeholder="Select end week"
+											id="planting_conditions_id"
+											placeholder="Select planting conditions"
 											value={field.value || ""}
 											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.transplant_week_end_id}
+											options={plantingConditions}
+											error={!!errors.planting_conditions_id}
 											disabled={isLoadingOptions}
-											allowClear
 										/>
 									)}
 								/>
-								{errors.transplant_week_end_id && (
-									<FormError message={errors.transplant_week_end_id.message} />
+								{errors.planting_conditions_id && (
+									<FormError message={errors.planting_conditions_id.message} />
 								)}
 							</div>
-						</div>
 
-						<div className="space-y-2">
-							<Label htmlFor="planting_conditions_id">
-								{labelFor("planting_conditions_id")}
-							</Label>
-							<Controller
-								name="planting_conditions_id"
-								control={control}
-								render={({ field }) => (
-									<FormSelect
-										id="planting_conditions_id"
-										placeholder="Select planting conditions"
-										value={field.value || ""}
-										onValueChange={field.onChange}
-										options={plantingConditions}
-										error={!!errors.planting_conditions_id}
-										disabled={isLoadingOptions}
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="soil_ph">{labelFor("soil_ph")}</Label>
+									<Input
+										id="soil_ph"
+										type="number"
+										step="0.1"
+										min="0"
+										max="14"
+										{...register("soil_ph", { valueAsNumber: true })}
+										placeholder="e.g. 7.0"
+										className={errors.soil_ph ? "border-destructive" : ""}
 									/>
-								)}
-							/>
-							{errors.planting_conditions_id && (
-								<FormError message={errors.planting_conditions_id.message} />
-							)}
-						</div>
+									{errors.soil_ph && (
+										<FormError message={errors.soil_ph.message} />
+									)}
+								</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="soil_ph">{labelFor("soil_ph")}</Label>
-								<Input
-									id="soil_ph"
-									type="number"
-									step="0.1"
-									min="0"
-									max="14"
-									{...register("soil_ph", { valueAsNumber: true })}
-									placeholder="e.g. 7.0"
-									className={errors.soil_ph ? "border-destructive" : ""}
-								/>
-								{errors.soil_ph && (
-									<FormError message={errors.soil_ph.message} />
-								)}
+								<div className="space-y-2">
+									<Label htmlFor="plant_depth_cm">
+										{labelFor("plant_depth_cm")}
+									</Label>
+									<Input
+										id="plant_depth_cm"
+										type="number"
+										min="1"
+										max="100"
+										{...register("plant_depth_cm", { valueAsNumber: true })}
+										placeholder="e.g. 5"
+										className={
+											errors.plant_depth_cm ? "border-destructive" : ""
+										}
+									/>
+									{errors.plant_depth_cm && (
+										<FormError message={errors.plant_depth_cm.message} />
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="plant_space_cm">
+										{labelFor("plant_space_cm")}
+									</Label>
+									<Input
+										id="plant_space_cm"
+										type="number"
+										min="1"
+										max="1000"
+										{...register("plant_space_cm", { valueAsNumber: true })}
+										placeholder="e.g. 30"
+										className={
+											errors.plant_space_cm ? "border-destructive" : ""
+										}
+									/>
+									{errors.plant_space_cm && (
+										<FormError message={errors.plant_space_cm.message} />
+									)}
+								</div>
 							</div>
 
 							<div className="space-y-2">
-								<Label htmlFor="plant_depth_cm">
-									{labelFor("plant_depth_cm")}
-								</Label>
+								<Label htmlFor="row_width_cm">{labelFor("row_width_cm")}</Label>
 								<Input
-									id="plant_depth_cm"
-									type="number"
-									min="1"
-									max="100"
-									{...register("plant_depth_cm", { valueAsNumber: true })}
-									placeholder="e.g. 5"
-									className={errors.plant_depth_cm ? "border-destructive" : ""}
-								/>
-								{errors.plant_depth_cm && (
-									<FormError message={errors.plant_depth_cm.message} />
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="plant_space_cm">
-									{labelFor("plant_space_cm")}
-								</Label>
-								<Input
-									id="plant_space_cm"
+									id="row_width_cm"
 									type="number"
 									min="1"
 									max="1000"
-									{...register("plant_space_cm", { valueAsNumber: true })}
-									placeholder="e.g. 30"
-									className={errors.plant_space_cm ? "border-destructive" : ""}
+									{...register("row_width_cm")}
+									placeholder="e.g. 60"
+									className={errors.row_width_cm ? "border-destructive" : ""}
 								/>
-								{errors.plant_space_cm && (
-									<FormError message={errors.plant_space_cm.message} />
-								)}
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="row_width_cm">{labelFor("row_width_cm")}</Label>
-							<Input
-								id="row_width_cm"
-								type="number"
-								min="1"
-								max="1000"
-								{...register("row_width_cm")}
-								placeholder="e.g. 60"
-								className={errors.row_width_cm ? "border-destructive" : ""}
-							/>
-							{errors.row_width_cm && (
-								<FormError message={errors.row_width_cm.message} />
-							)}
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="feed_id">{labelFor("feed_id")}</Label>
-								<Controller
-									name="feed_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="feed_id"
-											placeholder="Select feed type"
-											value={field.value || ""}
-											onValueChange={(val) => {
-												field.onChange(val);
-												if (val === "") {
-													clearFeedFields();
-												}
-											}}
-											options={feedTypes}
-											error={!!errors.feed_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.feed_id && (
-									<FormError message={errors.feed_id.message} />
+								{errors.row_width_cm && (
+									<FormError message={errors.row_width_cm.message} />
 								)}
 							</div>
 
-							<div className="space-y-2">
-								<Label htmlFor="feed_week_start_id">
-									{labelFor("feed_week_start_id")}
-								</Label>
-								<Controller
-									name="feed_week_start_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="feed_week_start_id"
-											placeholder="Select feed start week"
-											value={field.value || ""}
-											onValueChange={(val) => {
-												field.onChange(val);
-												if (val === "") {
-													clearFeedFields();
-												}
-											}}
-											options={weeks}
-											error={!!errors.feed_week_start_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.feed_week_start_id && (
-									<FormError message={errors.feed_week_start_id.message} />
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="feed_frequency_id">
-									{labelFor("feed_frequency_id")}
-								</Label>
-								<Controller
-									name="feed_frequency_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="feed_frequency_id"
-											placeholder="Select feed frequency"
-											value={field.value || ""}
-											onValueChange={(val) => {
-												field.onChange(val);
-												if (val === "") {
-													clearFeedFields();
-												}
-											}}
-											options={feedFrequencies}
-											error={!!errors.feed_frequency_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.feed_frequency_id && (
-									<FormError message={errors.feed_frequency_id.message} />
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="water_frequency_id">
-									{labelFor("water_frequency_id")}
-								</Label>
-								<Controller
-									name="water_frequency_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="water_frequency_id"
-											placeholder="Select water frequency"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={frequencies}
-											error={!!errors.water_frequency_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.water_frequency_id && (
-									<FormError message={errors.water_frequency_id.message} />
-								)}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="high_temp_degrees">
-									{labelFor("high_temp_degrees")}
-								</Label>
-								<Input
-									id="high_temp_degrees"
-									type="number"
-									{...register("high_temp_degrees")}
-									placeholder="e.g. 30"
-									className={
-										errors.high_temp_degrees ? "border-destructive" : ""
-									}
-								/>
-								{errors.high_temp_degrees && (
-									<FormError message={errors.high_temp_degrees.message} />
-								)}
-							</div>
-
-							<div className="space-y-2">
-								<Label htmlFor="high_temp_water_frequency_id">
-									{labelFor("high_temp_water_frequency_id")}
-								</Label>
-								<Controller
-									name="high_temp_water_frequency_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="high_temp_water_frequency_id"
-											placeholder="Select high temp water frequency"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={frequencies}
-											error={!!errors.high_temp_water_frequency_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.high_temp_water_frequency_id && (
-									<FormError
-										message={errors.high_temp_water_frequency_id.message}
+							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="feed_id">{labelFor("feed_id")}</Label>
+									<Controller
+										name="feed_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="feed_id"
+												placeholder="Select feed type"
+												value={field.value || ""}
+												onValueChange={(val) => {
+													field.onChange(val);
+													if (val === "") {
+														clearFeedFields();
+													}
+												}}
+												options={feedTypes}
+												error={!!errors.feed_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
 									/>
-								)}
-							</div>
-						</div>
-
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="harvest_week_start_id">
-									{labelFor("harvest_week_start_id")}
-								</Label>
-								<Controller
-									name="harvest_week_start_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="harvest_week_start_id"
-											placeholder="Select harvest start week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.harvest_week_start_id}
-											disabled={isLoadingOptions}
-										/>
+									{errors.feed_id && (
+										<FormError message={errors.feed_id.message} />
 									)}
-								/>
-								{errors.harvest_week_start_id && (
-									<FormError message={errors.harvest_week_start_id.message} />
-								)}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="harvest_week_end_id">
-									{labelFor("harvest_week_end_id")}
-								</Label>
-								<Controller
-									name="harvest_week_end_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="harvest_week_end_id"
-											placeholder="Select harvest end week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.harvest_week_end_id}
-											disabled={isLoadingOptions}
-										/>
-									)}
-								/>
-								{errors.harvest_week_end_id && (
-									<FormError message={errors.harvest_week_end_id.message} />
-								)}
-							</div>
-						</div>
+								</div>
 
-						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-							<div className="space-y-2">
-								<Label htmlFor="prune_week_start_id">
-									{labelFor("prune_week_start_id")}
-								</Label>
-								<Controller
-									name="prune_week_start_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="prune_week_start_id"
-											placeholder="Select prune start week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.prune_week_start_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.prune_week_start_id && (
-									<FormError message={errors.prune_week_start_id.message} />
-								)}
-							</div>
-							<div className="space-y-2">
-								<Label htmlFor="prune_week_end_id">
-									{labelFor("prune_week_end_id")}
-								</Label>
-								<Controller
-									name="prune_week_end_id"
-									control={control}
-									render={({ field }) => (
-										<FormSelect
-											id="prune_week_end_id"
-											placeholder="Select prune end week"
-											value={field.value || ""}
-											onValueChange={field.onChange}
-											options={weeks}
-											error={!!errors.prune_week_end_id}
-											disabled={isLoadingOptions}
-											allowClear
-										/>
-									)}
-								/>
-								{errors.prune_week_end_id && (
-									<FormError message={errors.prune_week_end_id.message} />
-								)}
-							</div>
-						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="notes">{labelFor("notes")}</Label>
-							<Textarea
-								id="notes"
-								placeholder="Optional notes about this grow guide (minimum 5 characters)"
-								className={errors.notes ? "border-destructive" : ""}
-								{...register("notes")}
-							/>
-							{errors.notes && <FormError message={errors.notes.message} />}
-						</div>
-
-						<div className="flex items-center space-x-2">
-							<Controller
-								name="is_public"
-								control={control}
-								render={({ field }) => (
-									<Switch
-										id="is_public"
-										checked={field.value}
-										onCheckedChange={field.onChange}
+								<div className="space-y-2">
+									<Label htmlFor="feed_week_start_id">
+										{labelFor("feed_week_start_id")}
+									</Label>
+									<Controller
+										name="feed_week_start_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="feed_week_start_id"
+												placeholder="Select feed start week"
+												value={field.value || ""}
+												onValueChange={(val) => {
+													field.onChange(val);
+													if (val === "") {
+														clearFeedFields();
+													}
+												}}
+												options={weeks}
+												error={!!errors.feed_week_start_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
 									/>
-								)}
-							/>
-							<Label htmlFor="is_public">{labelFor("is_public")}</Label>
-						</div>
+									{errors.feed_week_start_id && (
+										<FormError message={errors.feed_week_start_id.message} />
+									)}
+								</div>
 
-						<DialogFooter className="pt-4">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={onClose}
-								disabled={isSubmitting}
-							>
-								Cancel
-							</Button>
-							<Button type="submit" disabled={isSubmitting}>
-								{isSubmitting
-									? mode === "create"
-										? "Creating..."
-										: "Saving..."
-									: mode === "create"
-										? "Create Guide"
-										: "Save Changes"}
-							</Button>
-						</DialogFooter>
-					</form>
+								<div className="space-y-2">
+									<Label htmlFor="feed_frequency_id">
+										{labelFor("feed_frequency_id")}
+									</Label>
+									<Controller
+										name="feed_frequency_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="feed_frequency_id"
+												placeholder="Select feed frequency"
+												value={field.value || ""}
+												onValueChange={(val) => {
+													field.onChange(val);
+													if (val === "") {
+														clearFeedFields();
+													}
+												}}
+												options={feedFrequencies}
+												error={!!errors.feed_frequency_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
+									/>
+									{errors.feed_frequency_id && (
+										<FormError message={errors.feed_frequency_id.message} />
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="water_frequency_id">
+										{labelFor("water_frequency_id")}
+									</Label>
+									<Controller
+										name="water_frequency_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="water_frequency_id"
+												placeholder="Select water frequency"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={frequencies}
+												error={!!errors.water_frequency_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.water_frequency_id && (
+										<FormError message={errors.water_frequency_id.message} />
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="high_temp_degrees">
+										{labelFor("high_temp_degrees")}
+									</Label>
+									<Input
+										id="high_temp_degrees"
+										type="number"
+										{...register("high_temp_degrees")}
+										placeholder="e.g. 30"
+										className={
+											errors.high_temp_degrees ? "border-destructive" : ""
+										}
+									/>
+									{errors.high_temp_degrees && (
+										<FormError message={errors.high_temp_degrees.message} />
+									)}
+								</div>
+
+								<div className="space-y-2">
+									<Label htmlFor="high_temp_water_frequency_id">
+										{labelFor("high_temp_water_frequency_id")}
+									</Label>
+									<Controller
+										name="high_temp_water_frequency_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="high_temp_water_frequency_id"
+												placeholder="Select high temp water frequency"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={frequencies}
+												error={!!errors.high_temp_water_frequency_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.high_temp_water_frequency_id && (
+										<FormError
+											message={errors.high_temp_water_frequency_id.message}
+										/>
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="harvest_week_start_id">
+										{labelFor("harvest_week_start_id")}
+									</Label>
+									<Controller
+										name="harvest_week_start_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="harvest_week_start_id"
+												placeholder="Select harvest start week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.harvest_week_start_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.harvest_week_start_id && (
+										<FormError message={errors.harvest_week_start_id.message} />
+									)}
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="harvest_week_end_id">
+										{labelFor("harvest_week_end_id")}
+									</Label>
+									<Controller
+										name="harvest_week_end_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="harvest_week_end_id"
+												placeholder="Select harvest end week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.harvest_week_end_id}
+												disabled={isLoadingOptions}
+											/>
+										)}
+									/>
+									{errors.harvest_week_end_id && (
+										<FormError message={errors.harvest_week_end_id.message} />
+									)}
+								</div>
+							</div>
+
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+								<div className="space-y-2">
+									<Label htmlFor="prune_week_start_id">
+										{labelFor("prune_week_start_id")}
+									</Label>
+									<Controller
+										name="prune_week_start_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="prune_week_start_id"
+												placeholder="Select prune start week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.prune_week_start_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
+									/>
+									{errors.prune_week_start_id && (
+										<FormError message={errors.prune_week_start_id.message} />
+									)}
+								</div>
+								<div className="space-y-2">
+									<Label htmlFor="prune_week_end_id">
+										{labelFor("prune_week_end_id")}
+									</Label>
+									<Controller
+										name="prune_week_end_id"
+										control={control}
+										render={({ field }) => (
+											<FormSelect
+												id="prune_week_end_id"
+												placeholder="Select prune end week"
+												value={field.value || ""}
+												onValueChange={field.onChange}
+												options={weeks}
+												error={!!errors.prune_week_end_id}
+												disabled={isLoadingOptions}
+												allowClear
+											/>
+										)}
+									/>
+									{errors.prune_week_end_id && (
+										<FormError message={errors.prune_week_end_id.message} />
+									)}
+								</div>
+							</div>
+
+							<div className="space-y-2">
+								<Label htmlFor="notes">{labelFor("notes")}</Label>
+								<Textarea
+									id="notes"
+									placeholder="Optional notes about this grow guide (minimum 5 characters)"
+									className={errors.notes ? "border-destructive" : ""}
+									{...register("notes")}
+								/>
+								{errors.notes && <FormError message={errors.notes.message} />}
+							</div>
+
+							<div className="flex items-center space-x-2">
+								<Controller
+									name="is_public"
+									control={control}
+									render={({ field }) => (
+										<Switch
+											id="is_public"
+											checked={field.value}
+											onCheckedChange={field.onChange}
+										/>
+									)}
+								/>
+								<Label htmlFor="is_public">{labelFor("is_public")}</Label>
+							</div>
+
+							<DialogFooter className="pt-4">
+								<Button
+									type="button"
+									variant="outline"
+									onClick={onClose}
+									disabled={isSubmitting}
+								>
+									Cancel
+								</Button>
+								<Button type="submit" disabled={isSubmitting}>
+									{isSubmitting
+										? mode === "create"
+											? "Creating..."
+											: "Saving..."
+										: mode === "create"
+											? "Create Guide"
+											: "Save Changes"}
+								</Button>
+							</DialogFooter>
+						</form>
+					</>
 				)}
 			</DialogContent>
 		</Dialog>
