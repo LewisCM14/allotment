@@ -253,18 +253,21 @@ const deleteVariety = async (varietyId: string): Promise<void> => {
 
 const toggleVarietyPublic = async (
 	varietyId: string,
+	currentIsPublic: boolean,
 ): Promise<GrowGuideDetail> => {
+	const payload = { is_public: !currentIsPublic };
 	try {
-		const response = await api.patch<GrowGuideDetail>(
-			`/grow-guides/${varietyId}/toggle-public`,
-			{},
+		const response = await api.put<GrowGuideDetail>(
+			`/grow-guides/${varietyId}`,
+			payload,
 		);
 		return response.data;
 	} catch (error: unknown) {
 		errorMonitor.captureException(error, {
 			context: "toggleVarietyPublic",
-			url: `/grow-guides/${varietyId}/toggle-public`,
-			method: "PATCH",
+			url: `/grow-guides/${varietyId}`,
+			method: "PUT",
+			data: payload,
 		});
 		return handleApiError(error, "Failed to toggle public status.");
 	}

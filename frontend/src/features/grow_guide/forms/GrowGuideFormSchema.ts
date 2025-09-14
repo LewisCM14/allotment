@@ -151,15 +151,19 @@ const baseGrowGuideFormSchema = z.object({
 		.transform((v) => (v === "" ? undefined : v)),
 
 	// Notes (optional - allow blank string which will be stripped later)
-	notes: z
-		.string()
-		.optional()
-		.transform((val) =>
-			val === undefined || val.trim() === "" ? undefined : val.trim(),
-		)
-		.refine((val) => val === undefined || val.length >= 5, {
-			message: "Notes must be at least 5 characters or left blank",
-		}),
+	// Use preprocess to coerce null / empty / whitespace-only to undefined so field remains optional.
+	// Validation only applies when a non-empty trimmed string is present (min 5 chars).
+	notes: z.preprocess((val) => {
+		if (val === null || val === undefined) return undefined; // treat null same as absent
+		if (typeof val === "string") {
+			const trimmed = val.trim();
+			return trimmed === "" ? undefined : trimmed;
+		}
+		return val; // any other type will be validated by inner schema (and likely rejected)
+	}, z
+		.string({ invalid_type_error: "Notes must be a string" })
+		.min(5, { message: "Notes must be at least 5 characters or left blank" })
+		.optional()),
 
 	// Public/private setting
 	is_public: z.boolean().default(false),

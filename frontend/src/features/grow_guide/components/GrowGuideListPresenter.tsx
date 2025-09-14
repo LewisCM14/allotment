@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useEffect, useMemo, useState } from "react";
 import { useDeleteVariety } from "../hooks/useDeleteVariety";
+import { useToggleVarietyPublic } from "../hooks/useToggleVarietyPublic";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -43,6 +44,8 @@ export const GrowGuideListPresenter = ({
 	const [suppressNextSelect, setSuppressNextSelect] = useState(false);
 
 	const { mutate: deleteVariety, isPending: isDeleting } = useDeleteVariety();
+	const { mutate: togglePublicMutation, isPending: isToggling } =
+		useToggleVarietyPublic();
 
 	useEffect(() => {
 		setLocalGuides(growGuides);
@@ -80,7 +83,17 @@ export const GrowGuideListPresenter = ({
 	};
 
 	const togglePublic = (id: string) => {
-		setPublicMap((prev) => ({ ...prev, [id]: !prev[id] }));
+		setPublicMap((prev) => ({ ...prev, [id]: !prev[id] })); // optimistic local state
+		const current = publicMap[id];
+		togglePublicMutation(
+			{ varietyId: id, currentIsPublic: current },
+			{
+				onError: () => {
+					// rollback local map on error
+					setPublicMap((prev) => ({ ...prev, [id]: current }));
+				},
+			},
+		);
 	};
 
 	const toggleActive = (id: string, checked: boolean) => {
@@ -264,6 +277,7 @@ export const GrowGuideListPresenter = ({
 															data-row-action
 															onClick={(e) => {
 																e.stopPropagation();
+																if (isToggling) return;
 																togglePublic(g.variety_id);
 															}}
 														>

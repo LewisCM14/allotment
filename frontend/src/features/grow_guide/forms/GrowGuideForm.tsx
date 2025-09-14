@@ -247,7 +247,7 @@ export const GrowGuideForm = ({
 					existingGuide.high_temp_water_frequency?.frequency_id || "",
 				prune_week_start_id: existingGuide.prune_week_start_id || "",
 				prune_week_end_id: existingGuide.prune_week_end_id || "",
-				notes: existingGuide.notes,
+				notes: existingGuide.notes ?? "",
 				is_public: existingGuide.is_public,
 			});
 		}
