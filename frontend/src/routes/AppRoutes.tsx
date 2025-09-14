@@ -1,4 +1,4 @@
-import { Progress } from "@/components/ui/Progress";
+import { SuspenseSpinnerFallback } from "../components/ui/LoadingSpinner";
 import React, { Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
@@ -39,7 +39,7 @@ const GrowGuidePage = React.lazy(
 
 const AppRoutes = () => {
 	return (
-		<Suspense fallback={<Progress value={100} className="w-full" />}>
+		<Suspense fallback={<SuspenseSpinnerFallback size="lg" delay={150} />}> 
 			<Routes>
 				{/* Public routes - only for non-authenticated users */}
 				<Route

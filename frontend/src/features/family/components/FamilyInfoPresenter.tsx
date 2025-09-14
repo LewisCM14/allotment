@@ -1,5 +1,5 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { IFamilyInfo } from "../services/FamilyService";
 import { Link } from "react-router-dom";
 
@@ -136,12 +136,7 @@ export function FamilyInfoPresenter({
 	isSuccess,
 }: Props) {
 	if (isLoading) {
-		return (
-			<div className="flex justify-center items-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-				<p className="ml-2">Loading family information...</p>
-			</div>
-		);
+		return <LoadingSpinner size="lg" className="h-64" />;
 	}
 	if (error) {
 		return (

@@ -1,6 +1,6 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Accordion } from "@/components/ui/Accordion";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type * as React from "react";
 import { BotanicalGroupItemContainer } from "./BotanicalGroupItemContainer";
 import type { IBotanicalGroup } from "../services/FamilyService";
@@ -21,12 +21,7 @@ export function BotanicalGroupPresenter({
 	onFamilyClick,
 }: BotanicalGroupPresenterProps) {
 	if (isLoading) {
-		return (
-			<div className="flex justify-center items-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-				<p className="ml-2">Loading botanical groups...</p>
-			</div>
-		);
+		return <LoadingSpinner size="lg" className="h-64" aria-label="Loading botanical groups" />;
 	}
 
 	if (error) {

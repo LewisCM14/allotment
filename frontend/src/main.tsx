@@ -1,4 +1,4 @@
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { StrictMode, Suspense, lazy, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import "./global.css";
@@ -51,13 +51,7 @@ function Main() {
 	return (
 		<StrictMode>
 			<ThemeProvider>
-				<Suspense
-					fallback={
-						<div className="flex h-screen w-screen items-center justify-center bg-background">
-							<Loader2 className="h-8 w-8 animate-spin text-primary" />
-						</div>
-					}
-				>
+				<Suspense fallback={<LoadingSpinner size="lg" fullScreen delay={150} />}> 
 					<App />
 				</Suspense>
 			</ThemeProvider>
