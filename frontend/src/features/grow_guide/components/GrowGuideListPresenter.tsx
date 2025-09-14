@@ -184,24 +184,9 @@ export const GrowGuideListPresenter = ({
 											const isSelected = selectedVarietyId === g.variety_id;
 											return (
 												<li key={g.variety_id} className="list-none">
-													<button
-														type="button"
-														aria-pressed={isSelected}
-														className={`w-full flex items-center gap-4 p-3 border rounded-md transition-colors cursor-pointer text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"}`}
-														onClick={(e) => {
-															if (pendingDeleteId) return;
-															if (
-																(e.target as HTMLElement).closest(
-																	"[data-row-action]",
-																)
-															)
-																return;
-															if (suppressNextSelect) {
-																setSuppressNextSelect(false);
-																return;
-															}
-															onSelect?.(g.variety_id);
-														}}
+													<div
+														className={`w-full flex items-center gap-4 p-3 border rounded-md transition-colors ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"} cursor-pointer`}
+														data-row-container
 													>
 														{/* Delete */}
 														<AlertDialog
@@ -288,8 +273,20 @@ export const GrowGuideListPresenter = ({
 															)}
 														</Button>
 
-														{/* Main content */}
-														<div className="flex-1 text-left pl-1">
+														{/* Main selectable content */}
+														<button
+															type="button"
+															className="flex-1 text-left pl-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer"
+															aria-pressed={isSelected}
+															data-row-select
+															onClick={() => {
+																if (suppressNextSelect) {
+																	setSuppressNextSelect(false);
+																	return;
+																}
+																onSelect?.(g.variety_id);
+															}}
+														>
 															<div className="flex items-center gap-2 flex-wrap">
 																<span className="font-medium truncate">
 																	{g.variety_name}
@@ -305,7 +302,7 @@ export const GrowGuideListPresenter = ({
 																Updated{" "}
 																{new Date(g.last_updated).toLocaleDateString()}
 															</p>
-														</div>
+														</button>
 
 														{/* Active toggle */}
 														<div
@@ -325,7 +322,7 @@ export const GrowGuideListPresenter = ({
 																className="cursor-pointer"
 															/>
 														</div>
-													</button>
+													</div>
 												</li>
 											);
 										})}

@@ -39,7 +39,7 @@ const GrowGuidePage = React.lazy(
 
 const AppRoutes = () => {
 	return (
-		<Suspense fallback={<SuspenseSpinnerFallback size="lg" delay={150} />}> 
+		<Suspense fallback={<SuspenseSpinnerFallback size="lg" delay={150} />}>
 			<Routes>
 				{/* Public routes - only for non-authenticated users */}
 				<Route

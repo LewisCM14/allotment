@@ -21,7 +21,13 @@ export function BotanicalGroupPresenter({
 	onFamilyClick,
 }: BotanicalGroupPresenterProps) {
 	if (isLoading) {
-		return <LoadingSpinner size="lg" className="h-64" aria-label="Loading botanical groups" />;
+		return (
+			<LoadingSpinner
+				size="lg"
+				className="h-64"
+				aria-label="Loading botanical groups"
+			/>
+		);
 	}
 
 	if (error) {

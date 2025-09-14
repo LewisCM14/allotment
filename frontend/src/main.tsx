@@ -51,7 +51,9 @@ function Main() {
 	return (
 		<StrictMode>
 			<ThemeProvider>
-				<Suspense fallback={<LoadingSpinner size="lg" fullScreen delay={150} />}> 
+				<Suspense
+					fallback={<LoadingSpinner size="lg" fullScreen delay={150} />}
+				>
 					<App />
 				</Suspense>
 			</ThemeProvider>

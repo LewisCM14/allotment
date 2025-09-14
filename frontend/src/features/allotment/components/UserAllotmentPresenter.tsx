@@ -203,7 +203,13 @@ export default function UserAllotmentPresenter({
 	hasExistingData,
 }: UserAllotmentPresenterProps) {
 	if (isLoading) {
-		return <LoadingSpinner size="lg" className="h-64" aria-label="Loading allotment data" />;
+		return (
+			<LoadingSpinner
+				size="lg"
+				className="h-64"
+				aria-label="Loading allotment data"
+			/>
+		);
 	}
 
 	const cardDescription = hasExistingData
