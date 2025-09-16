@@ -8,7 +8,7 @@ import { growGuideService } from "../services/growGuideService";
 vi.mock("../components/GrowGuideListContainer", () => ({
 	GrowGuideListContainer: vi.fn(({ onSelect, selectedVarietyId }) => (
 		<div data-testid="grow-guide-list-container">
-			<button onClick={() => onSelect("test-variety-id")}>Select Guide</button>
+			<button type="button" onClick={() => onSelect("test-variety-id")}>Select Guide</button>
 			<div>Selected: {selectedVarietyId || "none"}</div>
 		</div>
 	)),
@@ -22,7 +22,7 @@ vi.mock("../forms/GrowGuideForm", () => ({
 					<div>Form is open</div>
 					<div>Mode: {mode}</div>
 					<div>Variety ID: {varietyId || "none"}</div>
-					<button onClick={onClose}>Close Form</button>
+					<button type="button" onClick={onClose}>Close Form</button>
 				</div>
 			)}
 		</div>

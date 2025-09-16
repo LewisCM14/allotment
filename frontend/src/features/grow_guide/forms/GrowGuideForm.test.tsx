@@ -53,19 +53,4 @@ describe("GrowGuideForm", () => {
 			).toBeInTheDocument();
 		});
 	});
-
-	describe("Edit Mode", () => {
-		beforeEach(() => {
-			server.use(
-				http.get(buildUrl("/grow-guides/variety-123"), () => {
-					return HttpResponse.json({
-						id: "variety-123",
-						variety_name: "Existing Tomato",
-						family_id: "1",
-						soil_ph: 6.5,
-					});
-				}),
-			);
-		});
-	});
 });
