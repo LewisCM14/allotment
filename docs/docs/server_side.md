@@ -109,6 +109,7 @@ Ability to read from the following tables found within the database:
     1. Planting Conditions
     1. Feed
     1. Frequency
+    1. Frequency Default Day
     1. Country Season
     1. Season
 

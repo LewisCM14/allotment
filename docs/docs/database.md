@@ -151,20 +151,26 @@ The solution must also allow for modularity in the applications architecture suc
 === "Feed"
     A reference table for the possible plant feeds available when creating grow guides i.e. Bone Meal, Tomato Feed, etc.
 
-=== "Variety Water Day"
-    A junction table that uses a composite primary key for linking what day each variety detailed within a unique grow guide should be watered on.
-    
-    !!! info
-        - A trigger is required at the database layer that ensures the amount of days nominated within this table, for a specific variety per week, is equal to that of the integer value stored in the column titled frequency days per year, found in the Frequency table, that is linked within the Variety table via ID. To do this the amount of days in the Variety Water Day table is multiplied by 52.
-    
-    ???+ tip "Future Improvement"
-        - This entire table will be de-prioritized once live weather information is provided to users. In favour of using the Water Frequency columns on the Variety table to recommend to users when to water crops based on the weather in their Postal \ Zip code.
-
 === "Frequency"
     A table that holds different frequency units available for use when creating grow guides. i.e. a frequency of Weekly that means the activity would be performed 52 days across this year.
     
     ???+ tip "Future Improvement"
         This table will replace the Variety Water Day table as the predominate table for detailing watering activities when live weather monitoring is functional. Allowing for use cases like a certain variety needs watering every three days. The weather can then be monitored and if there has been no rainfall at the users allotment location within the last three days they will be prompted to water that variety.
+
+=== "Frequency Default Day"
+    A junction table that stores, for each frequency, the corresponding day, i.e. weekly tasks are always performed on a sunday.
+
+    ???+ tip "Future Improvement"
+        Long term this table can be updated to include a users id, allowing then an interface to be provided for a user to specify their own default days for a frequency.
+    
+=== "Variety Water Day"
+    A junction table that uses a composite primary key for linking what day each variety detailed within a unique grow guide should be watered on.
+    
+    !!! info
+        - Currently the API handles populating this table at variety creation by using the frequency a user has selected for watering and the default days to water on for that frequency, based on the frequency default table, to create the required entries.
+    
+    ???+ tip "Future Improvement"
+        - This entire table will be de-prioritized once live weather information is provided to users. In favour of using the Water Frequency columns on the Variety table to recommend to users when to water crops based on the weather in their Postal \ Zip code.
 
 === "Day"
     A reference table for the seven days of the week available when creating grow guides. Also provides a clear entry point when collecting specific information for daily tasks to provide to end users.
