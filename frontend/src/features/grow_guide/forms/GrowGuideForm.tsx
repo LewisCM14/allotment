@@ -15,7 +15,7 @@ import {
 	DialogTitle,
 	DialogFooter,
 } from "../../../components/ui/Dialog";
-import { FormSelect } from "../components/FormSelect";
+import { FormSelect } from "../../../components/ui/FormSelect";
 import {
 	growGuideFormSchema,
 	type GrowGuideFormData,

@@ -5,7 +5,7 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "../../../components/ui/Select";
+} from "./Select";
 import { cn } from "@/utils/utils";
 
 interface Option {
