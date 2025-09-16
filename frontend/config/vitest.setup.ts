@@ -3,6 +3,7 @@ import { beforeAll, afterAll, afterEach, vi } from "vitest";
 import "@testing-library/jest-dom";
 import { server } from "../src/mocks/server";
 import { cleanup } from "@testing-library/react";
+import React from "react";
 
 // Polyfill for IE event methods that React might try to use
 if (typeof HTMLElement !== "undefined") {
@@ -70,6 +71,16 @@ vi.stubGlobal("window", {
     },
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
+    getComputedStyle: vi.fn().mockImplementation(() => ({
+        marginLeft: '0px',
+        marginRight: '0px',
+        paddingLeft: '0px',
+        paddingRight: '0px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+        overflow: 'visible',
+        boxSizing: 'border-box',
+    })),
     matchMedia:
         global.window?.matchMedia ||
         vi.fn().mockImplementation((query) => ({
@@ -97,6 +108,21 @@ if (global.window && !global.window.matchMedia) {
         addEventListener: vi.fn(),
         removeEventListener: vi.fn(),
         dispatchEvent: vi.fn(),
+    }));
+}
+
+// Mock getComputedStyle for components that need it (like react-remove-scroll-bar)
+if (global.window && !global.window.getComputedStyle) {
+    global.window.getComputedStyle = vi.fn().mockImplementation(() => ({
+        marginLeft: '0px',
+        marginRight: '0px',
+        paddingLeft: '0px',
+        paddingRight: '0px',
+        borderLeftWidth: '0px',
+        borderRightWidth: '0px',
+        overflow: 'visible',
+        boxSizing: 'border-box',
+        getPropertyValue: vi.fn().mockReturnValue('0px'),
     }));
 }
 
@@ -154,6 +180,92 @@ console.error = (...args) => {
     }
 };
 
+// Mock Radix UI components that are causing prototype issues in tests
+vi.mock("@radix-ui/react-select", () => ({
+    Root: vi.fn(({ children, onValueChange, value, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-root', ...props }, children)
+    ),
+    Trigger: vi.fn(({ children, ...props }) => 
+        React.createElement('button', { 'data-testid': 'select-trigger', ...props }, children)
+    ),
+    Value: vi.fn(({ children, placeholder, ...props }) => 
+        React.createElement('span', { 'data-testid': 'select-value', ...props }, children || placeholder)
+    ),
+    Icon: vi.fn(({ children, ...props }) => 
+        React.createElement('span', { 'data-testid': 'select-icon', ...props }, children)
+    ),
+    Portal: vi.fn(({ children }) => children),
+    Content: vi.fn(({ children, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-content', ...props }, children)
+    ),
+    Viewport: vi.fn(({ children, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-viewport', ...props }, children)
+    ),
+    Group: vi.fn(({ children, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-group', ...props }, children)
+    ),
+    Label: vi.fn(({ children, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-label', ...props }, children)
+    ),
+    Item: vi.fn(({ children, value, ...props }) => 
+        React.createElement('div', { 'data-testid': 'select-item', 'data-value': value, ...props }, children)
+    ),
+    ItemText: vi.fn(({ children, ...props }) => 
+        React.createElement('span', { 'data-testid': 'select-item-text', ...props }, children)
+    ),
+    ItemIndicator: vi.fn(({ children, ...props }) => 
+        React.createElement('span', { 'data-testid': 'select-item-indicator', ...props }, children)
+    ),
+    ScrollUpButton: vi.fn(({ children, ...props }) => 
+        React.createElement('button', { 'data-testid': 'select-scroll-up', ...props }, children)
+    ),
+    ScrollDownButton: vi.fn(({ children, ...props }) => 
+        React.createElement('button', { 'data-testid': 'select-scroll-down', ...props }, children)
+    ),
+    Separator: vi.fn((props) => 
+        React.createElement('div', { 'data-testid': 'select-separator', ...props })
+    ),
+}));
+
+vi.mock("@radix-ui/react-switch", () => ({
+    Root: vi.fn(({ children, checked, onCheckedChange, ...props }) => 
+        React.createElement('button', { 
+            'data-testid': 'switch-root', 
+            'aria-checked': checked,
+            onClick: () => onCheckedChange?.(!checked),
+            role: 'switch',
+            ...props 
+        }, children)
+    ),
+    Thumb: vi.fn((props) => 
+        React.createElement('span', { 'data-testid': 'switch-thumb', ...props })
+    ),
+}));
+
+vi.mock("@radix-ui/react-dialog", () => ({
+    Root: vi.fn(({ children, open, onOpenChange, ...props }) => 
+        React.createElement('div', { 'data-testid': 'dialog-root', 'data-open': open, ...props }, children)
+    ),
+    Portal: vi.fn(({ children }) => children),
+    Overlay: vi.fn((props) => 
+        React.createElement('div', { 'data-testid': 'dialog-overlay', ...props })
+    ),
+    Content: vi.fn(({ children, ...props }) => 
+        React.createElement('div', { 'data-testid': 'dialog-content', ...props }, children)
+    ),
+    Title: vi.fn(({ children, ...props }) => 
+        React.createElement('h2', { 'data-testid': 'dialog-title', ...props }, children)
+    ),
+    Description: vi.fn(({ children, ...props }) => 
+        React.createElement('p', { 'data-testid': 'dialog-description', ...props }, children)
+    ),
+    Close: vi.fn(({ children, ...props }) => 
+        React.createElement('button', { 'data-testid': 'dialog-close', ...props }, children)
+    ),
+    Trigger: vi.fn(({ children, ...props }) => 
+        React.createElement('button', { 'data-testid': 'dialog-trigger', ...props }, children)
+    ),
+}));
+
 // Add global helper to identify slow-running tests
-globalThis.__VitestPerformanceMarks = new Map();
-globalThis.__VitestPerformanceMarks = new Map();
+(globalThis as any).__VitestPerformanceMarks = new Map();

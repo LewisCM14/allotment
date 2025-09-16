@@ -258,7 +258,7 @@ const toggleVarietyPublic = async (
 	const payload = { is_public: !currentIsPublic };
 	try {
 		const response = await api.put<GrowGuideDetail>(
-			`/grow-guides/${varietyId}`,
+			`/grow-guides/${varietyId}/visibility`,
 			payload,
 		);
 		return response.data;
