@@ -90,6 +90,9 @@ const mockGrowGuideOptions: GrowGuideOptions = {
 		week_number: i + 1,
 		week_start_date: new Date(2024, 0, i * 7 + 1).toISOString().split("T")[0],
 		week_end_date: new Date(2024, 0, i * 7 + 7).toISOString().split("T")[0],
+	})).map((w) => ({
+		...w,
+		week_label: `Week ${w.week_number.toString().padStart(2, "0")}`,
 	})),
 	families: [
 		{ family_id: "family-1", family_name: "Brassicaceae" },
@@ -382,6 +385,10 @@ export const growGuideHandlers = [
 			return jsonError("Internal server error", 500);
 		}
 
+		if (varietyId === "variety-error") {
+			return jsonError("Internal server error", 500);
+		}
+
 		if (data.variety_name === "invalid-update") {
 			return jsonError("Invalid update data", 422);
 		}
@@ -432,46 +439,6 @@ export const growGuideHandlers = [
 	}),
 
 	http.options(buildUrl("/grow-guides/:varietyId"), () => {
-		return new HttpResponse(null, { status: 204 });
-	}),
-
-	// Toggle variety public status
-	http.put(
-		buildUrl("/grow-guides/:varietyId/visibility"),
-		async ({ params, request }) => {
-			const { varietyId } = params;
-			const body = await request.json();
-			const { is_public } = body as { is_public: boolean };
-
-			if (varietyId === "not-found") {
-				return jsonError("Grow guide not found", 404);
-			}
-
-			if (varietyId === "variety-error") {
-				return jsonError("Internal server error", 500);
-			}
-
-			// Update variety in store
-			const index = varietiesStore.findIndex((v) => v.variety_id === varietyId);
-			if (index >= 0) {
-				varietiesStore[index] = {
-					...varietiesStore[index],
-					is_public,
-					last_updated: new Date().toISOString(),
-				};
-			}
-
-			const updatedDetail = createMockGrowGuideDetail(varietyId as string, {
-				variety_id: varietyId as string,
-				is_public,
-				last_updated: new Date().toISOString(),
-			});
-
-			return jsonOk(updatedDetail);
-		},
-	),
-
-	http.options(buildUrl("/grow-guides/:varietyId/visibility"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 

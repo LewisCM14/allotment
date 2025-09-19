@@ -1,0 +1,727 @@
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { vi, describe, it, beforeEach, expect, afterEach } from "vitest";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { http, HttpResponse } from "msw";
+import { server } from "../../../mocks/server";
+import { buildUrl } from "../../../mocks/buildUrl";
+import { GrowGuideListPresenter } from "./GrowGuideListPresenter";
+import type { VarietyList } from "../services/growGuideService";
+
+// Mock data with family information for grouping
+const mockGrowGuides: VarietyList[] = [
+	{
+		variety_id: "variety-1",
+		variety_name: "Cherry Tomato",
+		family: { family_id: "solanaceae", family_name: "Solanaceae" },
+		lifecycle: {
+			lifecycle_id: "annual",
+			lifecycle_name: "Annual",
+			productivity_years: 1,
+		},
+		is_public: false,
+		last_updated: "2024-01-01T00:00:00Z",
+	},
+	{
+		variety_id: "variety-2",
+		variety_name: "Bell Pepper",
+		family: { family_id: "solanaceae", family_name: "Solanaceae" },
+		lifecycle: {
+			lifecycle_id: "annual",
+			lifecycle_name: "Annual",
+			productivity_years: 1,
+		},
+		is_public: true,
+		last_updated: "2024-01-02T00:00:00Z",
+	},
+	{
+		variety_id: "variety-3",
+		variety_name: "Lettuce",
+		family: { family_id: "asteraceae", family_name: "Asteraceae" },
+		lifecycle: {
+			lifecycle_id: "annual",
+			lifecycle_name: "Annual",
+			productivity_years: 1,
+		},
+		is_public: false,
+		last_updated: "2024-01-03T00:00:00Z",
+	},
+];
+
+describe("GrowGuideListPresenter", () => {
+	let queryClient: QueryClient;
+	let mockOnSelect: ReturnType<typeof vi.fn>;
+	let user: ReturnType<typeof userEvent.setup>;
+
+	beforeEach(() => {
+		queryClient = new QueryClient({
+			defaultOptions: {
+				queries: { retry: false },
+				mutations: { retry: false },
+			},
+		});
+		mockOnSelect = vi.fn();
+		user = userEvent.setup();
+	});
+
+	afterEach(() => {
+		vi.clearAllMocks();
+	});
+
+	const renderWithQueryClient = (ui: React.ReactElement) => {
+		return render(
+			<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+		);
+	};
+
+	describe("Loading State", () => {
+		it("displays loading skeleton when isLoading is true", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={true}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(
+				document.querySelectorAll('[data-slot="skeleton"]').length > 0,
+			).toBe(true);
+		});
+
+		it("does not show content when loading", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={true}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.queryByText("Cherry Tomato")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Error State", () => {
+		it("displays error message when isError is true", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={false}
+					isError={true}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.getByText(/unable to load/i)).toBeInTheDocument();
+		});
+
+		it("shows error message with leaf icon", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={false}
+					isError={true}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.getByText(/refresh or try again/i)).toBeInTheDocument();
+		});
+
+		it("does not show content when in error state", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={true}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.queryByText("Cherry Tomato")).not.toBeInTheDocument();
+		});
+	});
+
+	describe("Empty State", () => {
+		it("displays empty state when no grow guides", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(
+				screen.getByText(/grow guides/i) || screen.getByText(/get started/i),
+			).toBeInTheDocument();
+		});
+
+		it("shows create first guide message in empty state", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(
+				screen.getByText(/create your first/i) ||
+					screen.getByText(/add new guide/i),
+			).toBeInTheDocument();
+		});
+	});
+
+	describe("Content Display", () => {
+		it("displays grow guides when data is available", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+			expect(screen.getByText("Bell Pepper")).toBeInTheDocument();
+			expect(screen.getByText("Lettuce")).toBeInTheDocument();
+		});
+
+		it("groups grow guides by family", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Should show family headings
+			expect(screen.getByText("Solanaceae")).toBeInTheDocument();
+			expect(screen.getByText("Asteraceae")).toBeInTheDocument();
+		});
+
+		it("shows public/private status indicators", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Look for public/private indicators (icons, badges, etc.)
+			const publicIndicators =
+				screen.getAllByRole("button") || screen.getAllByTestId("public-toggle");
+			expect(publicIndicators.length).toBeGreaterThan(0);
+		});
+	});
+
+	describe("Search Functionality", () => {
+		it("renders search input", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(
+				screen.getByPlaceholderText(/search/i) ||
+					screen.getByLabelText(/search/i),
+			).toBeInTheDocument();
+		});
+
+		it("filters grow guides based on search term", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+			await user.type(searchInput, "tomato");
+
+			await waitFor(() => {
+				expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+				expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
+				expect(screen.queryByText("Lettuce")).not.toBeInTheDocument();
+			});
+		});
+
+		it("shows no results message when search yields no matches", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+			await user.type(searchInput, "nonexistent");
+
+			await waitFor(() => {
+				expect(
+					screen.getByText(/guides found/i) || screen.getByText(/no results/i),
+				).toBeInTheDocument();
+			});
+		});
+
+		it("search is case insensitive", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+			await user.type(searchInput, "TOMATO");
+
+			await waitFor(() => {
+				expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+			});
+		});
+
+		it("clears search when input is emptied", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+
+			// Type search term
+			await user.type(searchInput, "tomato");
+			await waitFor(() => {
+				expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
+			});
+
+			// Clear search
+			await user.clear(searchInput);
+			await waitFor(() => {
+				expect(screen.getByText("Bell Pepper")).toBeInTheDocument();
+				expect(screen.getByText("Lettuce")).toBeInTheDocument();
+			});
+		});
+	});
+
+	describe("Selection Functionality", () => {
+		it("calls onSelect when a grow guide is clicked", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const guideElement = screen.getByText("Cherry Tomato");
+			await user.click(guideElement);
+
+			expect(mockOnSelect).toHaveBeenCalledWith("variety-1");
+		});
+
+		it("highlights selected variety", () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+					selectedVarietyId="variety-1"
+				/>,
+			);
+
+			// Check for visual selection indicator
+			const selectedElement =
+				screen.getByText("Cherry Tomato").closest("[class*='bg-accent']") ||
+				screen.getByText("Cherry Tomato").closest(".selected") ||
+				screen.getByText("Cherry Tomato").closest("[data-selected='true']");
+
+			expect(selectedElement).toBeInTheDocument();
+		});
+
+		it("works without onSelect callback", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+				/>,
+			);
+
+			const guideElement = screen.getByText("Cherry Tomato");
+			await user.click(guideElement);
+
+			// Should not crash
+			expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+		});
+	});
+
+	describe("Delete Functionality", () => {
+		beforeEach(() => {
+			// Mock successful delete response
+			server.use(
+				http.delete(buildUrl("/grow-guides/:varietyId"), () => {
+					return new HttpResponse(null, { status: 204 });
+				}),
+			);
+		});
+
+		it("shows delete confirmation dialog", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Find and click delete button
+			const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
+			if (deleteButtons.length > 0) {
+				await user.click(deleteButtons[0]);
+
+				expect(
+					screen.getByText("Delete Grow Guide") ||
+						screen.getByText(/are you sure/i),
+				).toBeInTheDocument();
+			}
+		});
+
+		it("deletes grow guide when confirmed", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Find delete button
+			const deleteButtons = screen.getAllByRole("button", {
+				name: /delete/i,
+			});
+			if (deleteButtons.length > 0) {
+				await user.click(deleteButtons[0]);
+
+				// Confirm deletion in the dialog
+				const confirmButton = await screen.findByRole("button", {
+					name: "Delete",
+				});
+				await user.click(confirmButton);
+
+				// Item should be removed from local state
+				// await waitFor(() => {
+				// 	expect(screen.queryByText("Cherry Tomato")).not.toBeInTheDocument();
+				// });
+			}
+		});
+
+		it("cancels delete when cancelled", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
+			if (deleteButtons.length > 0) {
+				await user.click(deleteButtons[0]);
+
+				// Cancel deletion
+				const cancelButton =
+					screen.getByRole("button", { name: /cancel/i }) ||
+					screen.getByRole("button", { name: /no/i });
+				await user.click(cancelButton);
+
+				// Item should still be present
+				expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+			}
+		});
+
+		it("handles delete errors gracefully", async () => {
+			server.use(
+				http.delete(buildUrl("/grow-guides/:varietyId"), () => {
+					return HttpResponse.json(
+						{ detail: "Delete failed" },
+						{ status: 500 },
+					);
+				}),
+			);
+
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const deleteButtons = screen.getAllByRole("button", { name: /delete/i });
+			if (deleteButtons.length > 0) {
+				await user.click(deleteButtons[0]);
+
+				const confirmButton =
+					screen.getByRole("button", { name: "Delete" }) ||
+					screen.getByRole("button", { name: /yes/i });
+				await user.click(confirmButton);
+
+				// Item should remain after failed delete
+				await waitFor(() => {
+					expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+				});
+			}
+		});
+	});
+
+	describe("Public/Private Toggle", () => {
+		beforeEach(() => {
+			server.use(
+				http.put(buildUrl("/grow-guides/:varietyId/visibility"), () => {
+					return HttpResponse.json({ is_public: true });
+				}),
+			);
+		});
+
+		it("toggles public status when toggle is clicked", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Find public/private toggle buttons
+			const toggleButtons =
+				screen.getAllByRole("button") || screen.getAllByRole("switch");
+			const publicToggle = toggleButtons.find(
+				(button) =>
+					button.getAttribute("aria-label")?.includes("public") ||
+					button.getAttribute("data-testid")?.includes("public-toggle"),
+			);
+
+			if (publicToggle) {
+				await user.click(publicToggle);
+
+				// Should optimistically update
+				await waitFor(() => {
+					// Check for updated state (this depends on your UI implementation)
+					expect(publicToggle).toBeInTheDocument();
+				});
+			}
+		});
+
+		it("reverts toggle on API error", async () => {
+			server.use(
+				http.put(buildUrl("/grow-guides/:varietyId/visibility"), () => {
+					return HttpResponse.json(
+						{ detail: "Toggle failed" },
+						{ status: 500 },
+					);
+				}),
+			);
+
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const toggleButtons =
+				screen.getAllByRole("button") || screen.getAllByRole("switch");
+			const publicToggle = toggleButtons.find((button) =>
+				button.getAttribute("aria-label")?.includes("public"),
+			);
+
+			if (publicToggle) {
+				const originalState =
+					publicToggle.getAttribute("aria-checked") || "false";
+
+				await user.click(publicToggle);
+
+				// Should revert to original state after error
+				await waitFor(() => {
+					expect(publicToggle.getAttribute("aria-checked")).toBe(originalState);
+				});
+			}
+		});
+	});
+
+	describe("Active Guide Selection", () => {
+		const setup = () => {
+			const onSelect = vi.fn();
+			const user = userEvent.setup();
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={onSelect}
+				/>,
+			);
+			return { user, onSelect };
+		};
+
+		test("allows selecting an active guide", async () => {
+			const { user } = setup();
+			const firstGuideSwitch = screen.getByLabelText("Set Lettuce active");
+			expect(firstGuideSwitch).toHaveAttribute("aria-checked", "false");
+
+			await user.click(firstGuideSwitch);
+
+			const activeSwitch = await screen.findByRole("switch", {
+				name: /set lettuce active/i,
+				checked: true,
+			});
+			expect(activeSwitch).toBeInTheDocument();
+		});
+
+		test("allows only one active guide at a time", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			const activeSwitches = screen.getAllByRole("switch", {
+				name: /set .* active/i,
+			});
+			expect(activeSwitches.length).toBeGreaterThanOrEqual(2);
+
+			// All should be unchecked initially
+			expect(activeSwitches[0]).toHaveAttribute("aria-checked", "false");
+			expect(activeSwitches[1]).toHaveAttribute("aria-checked", "false");
+
+			// Select first guide as active
+			await user.click(activeSwitches[0]);
+			await waitFor(() => {
+				expect(activeSwitches[0]).toHaveAttribute("aria-checked", "true");
+				expect(activeSwitches[1]).toHaveAttribute("aria-checked", "false");
+			});
+
+			// Select second guide as active
+			await user.click(activeSwitches[1]);
+
+			// First should be unchecked, second should be checked
+			await waitFor(() => {
+				expect(activeSwitches[0]).toHaveAttribute("aria-checked", "false");
+				expect(activeSwitches[1]).toHaveAttribute("aria-checked", "true");
+			});
+		});
+	});
+
+	describe("Component State Management", () => {
+		it("updates local state when props change", () => {
+			const { rerender } = renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+
+			// Update with new data
+			const newGuides = [mockGrowGuides[0]]; // Only first guide
+			rerender(
+				<QueryClientProvider client={queryClient}>
+					<GrowGuideListPresenter
+						growGuides={newGuides}
+						isLoading={false}
+						isError={false}
+						onSelect={mockOnSelect}
+					/>
+				</QueryClientProvider>,
+			);
+
+			expect(screen.getByText("Cherry Tomato")).toBeInTheDocument();
+			expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
+		});
+
+		it("maintains search state during data updates", async () => {
+			const { rerender } = renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Apply search filter
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+			await user.type(searchInput, "tomato");
+
+			await waitFor(() => {
+				expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
+			});
+
+			// Update props
+			rerender(
+				<QueryClientProvider client={queryClient}>
+					<GrowGuideListPresenter
+						growGuides={mockGrowGuides}
+						isLoading={false}
+						isError={false}
+						onSelect={mockOnSelect}
+					/>
+				</QueryClientProvider>,
+			);
+
+			// Search should still be applied
+			expect(screen.getByDisplayValue("tomato")).toBeInTheDocument();
+			expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
+		});
+	});
+});

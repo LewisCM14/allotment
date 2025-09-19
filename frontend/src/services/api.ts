@@ -305,6 +305,20 @@ api.interceptors.response.use(
 			pendingRequests.delete(requestKey);
 		}
 
+		// For malformed JSON
+		if (
+			response.headers["content-type"]?.includes("application/json") &&
+			typeof response.data === "string"
+		) {
+			try {
+				JSON.parse(response.data);
+			} catch (error) {
+				return Promise.reject(
+					new Error(`Malformed JSON in response: ${error}`),
+				);
+			}
+		}
+
 		return response;
 	},
 	async (error) => {

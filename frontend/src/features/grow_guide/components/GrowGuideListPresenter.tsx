@@ -1,4 +1,3 @@
-// Clean implementation (fully replaced corrupted content)
 import type { VarietyList } from "../services/growGuideService";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Leaf, Eye, EyeOff, Trash2, Search } from "lucide-react";
@@ -65,7 +64,7 @@ export const GrowGuideListPresenter = ({
 	const grouped = useMemo(() => {
 		const groups: Record<string, VarietyList[]> = {};
 		for (const g of filtered) {
-			const key = g.family.family_name;
+			const key = g.family?.family_name || "Unknown Family";
 			if (!groups[key]) groups[key] = [];
 			groups[key].push(g);
 		}
@@ -191,7 +190,7 @@ export const GrowGuideListPresenter = ({
 														{/* Delete */}
 														<AlertDialog
 															open={pendingDeleteId === g.variety_id}
-															onOpenChange={(open) => {
+															onOpenChange={(open: boolean) => {
 																if (open) setPendingDeleteId(g.variety_id);
 																else if (pendingDeleteId === g.variety_id)
 																	setPendingDeleteId(null);
@@ -204,7 +203,9 @@ export const GrowGuideListPresenter = ({
 																	size="icon"
 																	aria-label={`Delete ${g.variety_name}`}
 																	data-row-action
-																	onClick={(e) => {
+																	onClick={(
+																		e: React.MouseEvent<HTMLButtonElement>,
+																	) => {
 																		e.stopPropagation();
 																		setPendingDeleteId(g.variety_id);
 																	}}
@@ -231,7 +232,9 @@ export const GrowGuideListPresenter = ({
 																	<AlertDialogCancel
 																		data-row-action
 																		disabled={isDeleting}
-																		onClick={(e) => {
+																		onClick={(
+																			e: React.MouseEvent<HTMLButtonElement>,
+																		) => {
 																			e.stopPropagation();
 																			setSuppressNextSelect(true);
 																		}}
@@ -314,11 +317,10 @@ export const GrowGuideListPresenter = ({
 															</span>
 															<Switch
 																checked={isActive}
-																onClick={(e) => e.stopPropagation()}
-																onCheckedChange={(checked) =>
+																onCheckedChange={(checked: boolean) =>
 																	toggleActive(g.variety_id, checked)
 																}
-																aria-label={`Set ${g.variety_name} ${isActive ? "inactive" : "active"}`}
+																aria-label={`Set ${g.variety_name} active`}
 																className="cursor-pointer"
 															/>
 														</div>

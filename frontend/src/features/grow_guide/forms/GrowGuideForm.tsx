@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "../../../components/ui/Button";
@@ -92,9 +92,11 @@ export const GrowGuideForm = ({
 	const queryClient = useQueryClient();
 
 	// Load existing guide when editing
-	const { data: existingGuide, isLoading: isLoadingGuide } = useGrowGuide(
-		varietyId && mode === "edit" ? varietyId : undefined,
-	);
+	const {
+		data: existingGuide,
+		isLoading: isLoadingGuide,
+		isError: isGuideError,
+	} = useGrowGuide(varietyId && mode === "edit" ? varietyId : undefined);
 
 	// Get options from API
 	const {
@@ -147,7 +149,7 @@ export const GrowGuideForm = ({
 
 	const isEditFlow = mode === "edit" && !!varietyId;
 
-	const resetToBlank = () => {
+	const resetToBlank = useCallback(() => {
 		reset({
 			variety_name: "",
 			family_id: "",
@@ -181,7 +183,7 @@ export const GrowGuideForm = ({
 			setValue("row_width_cm", undefined);
 			setValue("high_temp_degrees", undefined as unknown as number);
 		}, 0);
-	};
+	}, [reset, setValue]);
 
 	const onSubmit = async (data: GrowGuideFormData) => {
 		setIsSubmitting(true);
@@ -266,12 +268,12 @@ export const GrowGuideForm = ({
 		}
 	}, [mode, varietyId, existingGuide, isLoadingGuide, isLoadingOptions, reset]);
 
-	// Reset form key when dialog opens in edit mode to force re-render
+	// Reset form when dialog opens in create mode
 	useEffect(() => {
-		if (isOpen && mode === "edit" && varietyId) {
-			setFormResetKey((prev) => prev + 1);
+		if (isOpen && mode === "create") {
+			resetToBlank();
 		}
-	}, [isOpen, mode, varietyId]);
+	}, [isOpen, mode, resetToBlank]);
 
 	// Alternative approach: Use form key to force re-render when switching guides
 	const formKey = useMemo(() => {
@@ -312,10 +314,9 @@ export const GrowGuideForm = ({
 
 	const weeks: Option[] = (options?.weeks ?? []).map((w) => {
 		const num = w.week_number?.toString().padStart(2, "0");
-		const start = w.week_start_date || ""; // expected format MM/DD
 		return {
 			value: w.week_id,
-			label: `${start} - Week ${num}`.trim(),
+			label: `Week ${num}`.trim(),
 		};
 	});
 
@@ -358,7 +359,7 @@ export const GrowGuideForm = ({
 	}, [mode, existingGuide]);
 
 	return (
-		<Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+		<Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
 			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
@@ -372,6 +373,18 @@ export const GrowGuideForm = ({
 					<div className="py-6 space-y-4">
 						<p className="text-sm text-destructive">
 							Failed to load grow guide options. Please try again later.
+						</p>
+						<DialogFooter className="pt-2">
+							<Button type="button" variant="outline" onClick={onClose}>
+								Close
+							</Button>
+						</DialogFooter>
+					</div>
+				) : isGuideError ? (
+					<div className="py-6 space-y-4">
+						<p className="text-sm text-destructive">
+							Failed to load the requested grow guide. It may have been deleted
+							or is no longer available.
 						</p>
 						<DialogFooter className="pt-2">
 							<Button type="button" variant="outline" onClick={onClose}>
