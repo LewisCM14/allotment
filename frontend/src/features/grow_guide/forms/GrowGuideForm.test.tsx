@@ -410,7 +410,7 @@ describe("GrowGuideForm", () => {
 
 			// Should render something (likely in create mode fallback)
 			await waitFor(() => {
-				expect(screen.getByText(/guide/i)).toBeInTheDocument();
+				expect(screen.getByText("Edit Grow Guide")).toBeInTheDocument();
 			});
 		});
 	});

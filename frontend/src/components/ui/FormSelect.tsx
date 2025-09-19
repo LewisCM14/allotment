@@ -87,9 +87,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 
 	const radixValue = multiple
 		? undefined // multi handled via custom click logic
-		: typeof value === "string" && value.length === 0
-			? undefined
-			: (value as string);
+		: (value as string);
 
 	return (
 		<div className={cn("relative w-full", className)}>

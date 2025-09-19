@@ -13,6 +13,7 @@ import {
 	DialogContent,
 	DialogHeader,
 	DialogTitle,
+	DialogDescription,
 	DialogFooter,
 } from "../../../components/ui/Dialog";
 import { FormSelect } from "../../../components/ui/FormSelect";
@@ -275,6 +276,13 @@ export const GrowGuideForm = ({
 		}
 	}, [isOpen, mode, resetToBlank]);
 
+	// Reset form when varietyId changes (for switching between varieties)
+	useEffect(() => {
+		if (varietyId) {
+			resetToBlank();
+		}
+	}, [varietyId, resetToBlank]);
+
 	// Alternative approach: Use form key to force re-render when switching guides
 	const formKey = useMemo(() => {
 		if (mode === "edit" && varietyId) {
@@ -363,6 +371,10 @@ export const GrowGuideForm = ({
 			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
+					<DialogDescription>
+						Form to create or edit a grow guide with details like variety,
+						family, lifecycle, and planting conditions.
+					</DialogDescription>
 				</DialogHeader>
 
 				{isLoadingOptions || (isLoadingGuide && mode !== "create") ? (
@@ -428,11 +440,19 @@ export const GrowGuideForm = ({
 							)}
 							<div className="space-y-2">
 								<Label htmlFor="variety_name">{labelFor("variety_name")}</Label>
-								<Input
-									id="variety_name"
-									{...register("variety_name")}
-									placeholder="e.g. Roma Tomato"
-									className={errors.variety_name ? "border-destructive" : ""}
+								<Controller
+									name="variety_name"
+									control={control}
+									render={({ field }) => (
+										<Input
+											id="variety_name"
+											{...field}
+											placeholder="e.g. Roma Tomato"
+											className={
+												errors.variety_name ? "border-destructive" : ""
+											}
+										/>
+									)}
 								/>
 								{errors.variety_name && (
 									<FormError message={errors.variety_name.message} />
