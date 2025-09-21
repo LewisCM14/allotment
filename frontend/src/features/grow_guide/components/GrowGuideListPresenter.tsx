@@ -198,10 +198,11 @@ export const GrowGuideListPresenter = ({
 														{/* Delete */}
 														<AlertDialog
 															open={pendingDeleteId === g.variety_id}
-															onOpenChange={(open: boolean) => {
-																if (open) openDeleteDialog(g.variety_id);
-																else closeDeleteDialog();
-															}}
+															onOpenChange={(open: boolean) =>
+																open
+																	? openDeleteDialog(g.variety_id)
+																	: closeDeleteDialog()
+															}
 														>
 															<AlertDialogTrigger asChild>
 																<Button

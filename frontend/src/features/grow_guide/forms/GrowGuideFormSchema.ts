@@ -24,9 +24,9 @@ const requiredNumber = (
 			if (typeof v === "number") return v;
 			if (typeof v === "string") {
 				const n = Number(v);
-				return Number.isNaN(n) ? (Number.NaN as number) : n;
+				return Number.isNaN(n) ? Number.NaN : n;
 			}
-			return Number.NaN as number;
+			return Number.NaN;
 		})
 		.refine((v) => v !== undefined, { message: `${fieldLabel} is required` })
 		.refine((v) => v !== undefined && !Number.isNaN(v), {
@@ -35,8 +35,8 @@ const requiredNumber = (
 		.refine(
 			(v) =>
 				v === undefined ||
-				((opts.min === undefined || (v as number) >= opts.min) &&
-					(opts.max === undefined || (v as number) <= opts.max)),
+				((opts.min === undefined || v >= opts.min) &&
+					(opts.max === undefined || v <= opts.max)),
 			{
 				message: `${fieldLabel} must be between ${opts.min ?? "-∞"} and ${opts.max ?? "+∞"}`,
 			},
@@ -52,10 +52,10 @@ const optionalNumber = (opts?: { min?: number; max?: number }) =>
 			if (typeof raw === "string") {
 				if (raw.trim() === "") return undefined;
 				const n = Number(raw);
-				return Number.isNaN(n) ? (Number.NaN as number) : n;
+				return Number.isNaN(n) ? Number.NaN : n;
 			}
 			if (typeof raw === "number") return raw;
-			return Number.NaN as number;
+			return Number.NaN;
 		})
 		.refine((v) => v === undefined || !Number.isNaN(v), {
 			message: "Must be a valid number",
@@ -63,8 +63,8 @@ const optionalNumber = (opts?: { min?: number; max?: number }) =>
 		.refine(
 			(v) =>
 				v === undefined ||
-				((opts?.min === undefined || (v as number) >= (opts?.min as number)) &&
-					(opts?.max === undefined || (v as number) <= (opts?.max as number))),
+				((opts?.min === undefined || v >= opts?.min) &&
+					(opts?.max === undefined || v <= opts?.max)),
 			{
 				message: opts
 					? `Must be between ${opts.min ?? "-∞"} and ${opts.max ?? "+∞"}`
@@ -174,7 +174,7 @@ const refinedGrowGuideFormSchema = baseGrowGuideFormSchema
 	// Transplant weeks validation
 	.refine(
 		(data) => {
-			if (data.transplant_week_start_id || data.transplant_week_end_id) {
+			if (data.transplant_week_start_id ?? data.transplant_week_end_id) {
 				return !!data.transplant_week_start_id && !!data.transplant_week_end_id;
 			}
 			return true;
@@ -187,7 +187,7 @@ const refinedGrowGuideFormSchema = baseGrowGuideFormSchema
 	// Prune weeks validation
 	.refine(
 		(data) => {
-			if (data.prune_week_start_id || data.prune_week_end_id) {
+			if (data.prune_week_start_id ?? data.prune_week_end_id) {
 				return !!data.prune_week_start_id && !!data.prune_week_end_id;
 			}
 			return true;
@@ -200,7 +200,7 @@ const refinedGrowGuideFormSchema = baseGrowGuideFormSchema
 	// Feed trio validation (custom messages on each field)
 	.superRefine((data, ctx) => {
 		const anyFeed =
-			data.feed_id || data.feed_week_start_id || data.feed_frequency_id;
+			data.feed_id ?? data.feed_week_start_id ?? data.feed_frequency_id;
 		if (!anyFeed) return; // all empty OK
 		const missing: {
 			field: "feed_id" | "feed_week_start_id" | "feed_frequency_id";
