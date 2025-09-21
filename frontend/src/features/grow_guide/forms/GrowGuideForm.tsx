@@ -233,39 +233,34 @@ export const GrowGuideForm = ({
 			!isLoadingGuide &&
 			!isLoadingOptions
 		) {
-			// Use setTimeout to ensure Select components have rendered with options
-			setTimeout(() => {
-				reset({
-					variety_name: existingGuide.variety_name,
-					family_id: existingGuide.family.family_id,
-					lifecycle_id: existingGuide.lifecycle.lifecycle_id,
-					sow_week_start_id: existingGuide.sow_week_start_id,
-					sow_week_end_id: existingGuide.sow_week_end_id,
-					transplant_week_start_id:
-						existingGuide.transplant_week_start_id || "",
-					transplant_week_end_id: existingGuide.transplant_week_end_id || "",
-					planting_conditions_id:
-						existingGuide.planting_conditions.planting_condition_id,
-					soil_ph: existingGuide.soil_ph as unknown as number,
-					plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
-					plant_space_cm: existingGuide.plant_space_cm as unknown as number,
-					row_width_cm: existingGuide.row_width_cm,
-					water_frequency_id: existingGuide.water_frequency.frequency_id,
-					harvest_week_start_id: existingGuide.harvest_week_start_id,
-					harvest_week_end_id: existingGuide.harvest_week_end_id,
-					feed_id: existingGuide.feed?.feed_id || "",
-					feed_frequency_id: existingGuide.feed_frequency?.frequency_id || "",
-					feed_week_start_id: existingGuide.feed_week_start_id || "",
-					high_temp_degrees:
-						existingGuide.high_temp_degrees as unknown as number,
-					high_temp_water_frequency_id:
-						existingGuide.high_temp_water_frequency?.frequency_id || "",
-					prune_week_start_id: existingGuide.prune_week_start_id || "",
-					prune_week_end_id: existingGuide.prune_week_end_id || "",
-					notes: existingGuide.notes ?? "",
-					is_public: existingGuide.is_public,
-				});
-			}, 100);
+			reset({
+				variety_name: existingGuide.variety_name,
+				family_id: existingGuide.family.family_id,
+				lifecycle_id: existingGuide.lifecycle.lifecycle_id,
+				sow_week_start_id: existingGuide.sow_week_start_id,
+				sow_week_end_id: existingGuide.sow_week_end_id,
+				transplant_week_start_id: existingGuide.transplant_week_start_id || "",
+				transplant_week_end_id: existingGuide.transplant_week_end_id || "",
+				planting_conditions_id:
+					existingGuide.planting_conditions.planting_condition_id,
+				soil_ph: existingGuide.soil_ph as unknown as number,
+				plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
+				plant_space_cm: existingGuide.plant_space_cm as unknown as number,
+				row_width_cm: existingGuide.row_width_cm,
+				water_frequency_id: existingGuide.water_frequency.frequency_id,
+				harvest_week_start_id: existingGuide.harvest_week_start_id,
+				harvest_week_end_id: existingGuide.harvest_week_end_id,
+				feed_id: existingGuide.feed?.feed_id || "",
+				feed_frequency_id: existingGuide.feed_frequency?.frequency_id || "",
+				feed_week_start_id: existingGuide.feed_week_start_id || "",
+				high_temp_degrees: existingGuide.high_temp_degrees as unknown as number,
+				high_temp_water_frequency_id:
+					existingGuide.high_temp_water_frequency?.frequency_id || "",
+				prune_week_start_id: existingGuide.prune_week_start_id || "",
+				prune_week_end_id: existingGuide.prune_week_end_id || "",
+				notes: existingGuide.notes ?? "",
+				is_public: existingGuide.is_public,
+			});
 		}
 	}, [mode, varietyId, existingGuide, isLoadingGuide, isLoadingOptions, reset]);
 
