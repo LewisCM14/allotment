@@ -78,10 +78,10 @@ export function SuspenseSpinnerFallback({
 	size = "lg",
 	delay = 120,
 	fullScreen = false,
-}: {
+}: Readonly<{
 	size?: LoadingSpinnerProps["size"];
 	delay?: number;
 	fullScreen?: boolean;
-}) {
+}>) {
 	return <LoadingSpinner size={size} delay={delay} fullScreen={fullScreen} />;
 }

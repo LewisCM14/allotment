@@ -46,6 +46,20 @@ export const GrowGuideListPresenter = ({
 	const { mutate: togglePublicMutation, isPending: isToggling } =
 		useToggleVarietyPublic();
 
+	const openDeleteDialog = (id: string) => setPendingDeleteId(id);
+	const closeDeleteDialog = () => setPendingDeleteId(null);
+
+	const handleDeleteSuccess = (id: string) => {
+		setLocalGuides((prev) => prev.filter((g) => g.variety_id !== id));
+		setPendingDeleteId(null);
+	};
+
+	const handleDeleteError = () => setPendingDeleteId(null);
+
+	const handleToggleError = (id: string, current: boolean) => {
+		setPublicMap((prev) => ({ ...prev, [id]: current }));
+	};
+
 	useEffect(() => {
 		setLocalGuides(growGuides);
 		const map: Record<string, boolean> = {};
@@ -73,11 +87,8 @@ export const GrowGuideListPresenter = ({
 
 	const handleDelete = (id: string) => {
 		deleteVariety(id, {
-			onSuccess: () => {
-				setLocalGuides((prev) => prev.filter((g) => g.variety_id !== id));
-				setPendingDeleteId(null);
-			},
-			onError: () => setPendingDeleteId(null),
+			onSuccess: () => handleDeleteSuccess(id),
+			onError: handleDeleteError,
 		});
 	};
 
@@ -87,10 +98,7 @@ export const GrowGuideListPresenter = ({
 		togglePublicMutation(
 			{ varietyId: id, currentIsPublic: current },
 			{
-				onError: () => {
-					// rollback local map on error
-					setPublicMap((prev) => ({ ...prev, [id]: current }));
-				},
+				onError: () => handleToggleError(id, current),
 			},
 		);
 	};
@@ -191,9 +199,8 @@ export const GrowGuideListPresenter = ({
 														<AlertDialog
 															open={pendingDeleteId === g.variety_id}
 															onOpenChange={(open: boolean) => {
-																if (open) setPendingDeleteId(g.variety_id);
-																else if (pendingDeleteId === g.variety_id)
-																	setPendingDeleteId(null);
+																if (open) openDeleteDialog(g.variety_id);
+																else closeDeleteDialog();
 															}}
 														>
 															<AlertDialogTrigger asChild>
@@ -203,12 +210,6 @@ export const GrowGuideListPresenter = ({
 																	size="icon"
 																	aria-label={`Delete ${g.variety_name}`}
 																	data-row-action
-																	onClick={(
-																		e: React.MouseEvent<HTMLButtonElement>,
-																	) => {
-																		e.stopPropagation();
-																		setPendingDeleteId(g.variety_id);
-																	}}
 																	disabled={
 																		isDeleting &&
 																		pendingDeleteId === g.variety_id

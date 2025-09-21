@@ -398,11 +398,8 @@ export const growGuideHandlers = [
 		if (index >= 0) {
 			varietiesStore[index] = {
 				...varietiesStore[index],
-				variety_name: data.variety_name || varietiesStore[index].variety_name,
-				is_public:
-					data.is_public !== undefined
-						? data.is_public
-						: varietiesStore[index].is_public,
+				variety_name: data.variety_name ?? varietiesStore[index].variety_name,
+				is_public: data.is_public ?? varietiesStore[index].is_public,
 				last_updated: new Date().toISOString(),
 			};
 		}

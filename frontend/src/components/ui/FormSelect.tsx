@@ -64,27 +64,6 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 		return value === optionValue;
 	};
 
-	// Format display value for trigger
-	const displayValue = () => {
-		if (multiple && Array.isArray(value) && value.length > 0) {
-			const selectedLabels = options
-				.filter((option) => value.includes(option.value))
-				.map((option) => option.label);
-
-			if (selectedLabels.length === 1) {
-				return selectedLabels[0];
-			}
-			if (selectedLabels.length > 1) {
-				return `${selectedLabels[0]} (+${selectedLabels.length - 1} more)`;
-			}
-		} else if (!multiple && typeof value === "string" && value) {
-			const option = options.find((opt) => opt.value === value);
-			return option ? option.label : placeholder;
-		}
-
-		return placeholder;
-	};
-
 	const radixValue = multiple
 		? undefined // multi handled via custom click logic
 		: (value as string);

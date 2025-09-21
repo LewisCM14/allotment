@@ -67,7 +67,7 @@ const GrowGuides = () => {
 			<GrowGuideForm
 				isOpen={isFormOpen}
 				onClose={() => setIsFormOpen(false)}
-				varietyId={selectedVarietyId || undefined}
+				varietyId={selectedVarietyId ?? undefined}
 				mode={mode}
 			/>
 		</PageLayout>
