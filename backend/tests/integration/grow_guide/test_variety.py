@@ -80,6 +80,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[0]["id"]),  # Daily
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -133,6 +134,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[1]["id"]),  # Weekly
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[1]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -173,6 +175,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[2]["id"]),  # Monthly
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[2]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -213,6 +216,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[0]["id"]),  # Daily
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -263,6 +267,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[1]["id"]),  # Weekly
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[1]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -314,6 +319,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),
@@ -531,6 +537,7 @@ class TestVarietyEndpointsIntegration:
             "plant_depth_cm": 2,
             "plant_space_cm": 30,
             "water_frequency_id": str(seed_frequency_data[0]["id"]),
+            "high_temp_degrees": 30,
             "high_temp_water_frequency_id": str(seed_frequency_data[0]["id"]),
             "harvest_week_start_id": str(seed_week_data[1]["id"]),
             "harvest_week_end_id": str(seed_week_data[2]["id"]),

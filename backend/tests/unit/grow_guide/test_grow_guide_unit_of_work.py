@@ -336,6 +336,7 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
             plant_depth_cm=2,
             plant_space_cm=30,
             water_frequency_id=uuid.uuid4(),
+            high_temp_degrees=30,
             high_temp_water_frequency_id=uuid.uuid4(),
             harvest_week_start_id=uuid.uuid4(),
             harvest_week_end_id=uuid.uuid4(),

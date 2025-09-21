@@ -355,6 +355,7 @@ def make_variety(owner_user_id, **overrides):
     variety.plant_depth_cm = 2
     variety.plant_space_cm = 30
     variety.water_frequency_id = uuid4()
+    variety.high_temp_degrees = 30
     variety.high_temp_water_frequency_id = uuid4()
     variety.harvest_week_start_id = uuid4()
     variety.harvest_week_end_id = uuid4()

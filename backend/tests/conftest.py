@@ -1008,6 +1008,7 @@ async def seed_variety_data(
             plant_depth_cm=2,
             plant_space_cm=30,
             water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_degrees=30,
             high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
             harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
             harvest_week_end_id=seed_week_data[2]["id"],  # Week 3
@@ -1070,6 +1071,7 @@ async def seed_public_variety_data(
             plant_depth_cm=2,
             plant_space_cm=30,
             water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_degrees=30,
             high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
             harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
             harvest_week_end_id=seed_week_data[2]["id"],  # Week 3

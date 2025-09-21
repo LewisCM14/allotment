@@ -252,10 +252,14 @@ class VarietyUpdate(SecureBaseModel):
     # High temperature details (both required for updates when provided together)
     # For partial updates we allow omission, but if one is provided the other must be too.
     high_temp_degrees: Optional[int] = Field(
-        None, ge=-50, le=60, description="High temperature threshold (required with high_temp_water_frequency_id)"
+        None,
+        ge=-50,
+        le=60,
+        description="High temperature threshold (required with high_temp_water_frequency_id)",
     )
     high_temp_water_frequency_id: Optional[UUID] = Field(
-        None, description="High temp water frequency ID (required with high_temp_degrees)"
+        None,
+        description="High temp water frequency ID (required with high_temp_degrees)",
     )
 
     # Harvest details

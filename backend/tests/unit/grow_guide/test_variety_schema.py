@@ -16,6 +16,8 @@ def test_variety_create_empty_string_optional_uuid_fields_coerced():
         "plant_depth_cm": 2,
         "plant_space_cm": 30,
         "water_frequency_id": str(base_uuid),
+        "high_temp_degrees": 30,
+        "high_temp_water_frequency_id": str(base_uuid),
         "harvest_week_start_id": str(base_uuid),
         "harvest_week_end_id": str(base_uuid),
         # Optional UUID fields submitted as empty strings
@@ -24,7 +26,6 @@ def test_variety_create_empty_string_optional_uuid_fields_coerced():
         "feed_id": "",
         "feed_week_start_id": "",
         "feed_frequency_id": "",
-        "high_temp_water_frequency_id": "",
         "prune_week_start_id": "",
         "prune_week_end_id": "",
         "notes": "Some notes",
@@ -36,7 +37,6 @@ def test_variety_create_empty_string_optional_uuid_fields_coerced():
     assert model.feed_id is None
     assert model.feed_week_start_id is None
     assert model.feed_frequency_id is None
-    assert model.high_temp_water_frequency_id is None
     assert model.prune_week_start_id is None
     assert model.prune_week_end_id is None
 
