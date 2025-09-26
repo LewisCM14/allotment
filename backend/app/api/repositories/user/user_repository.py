@@ -44,11 +44,11 @@ class UserRepository:
         user_feed_days = result.scalars().all()
         existing_feed_ids = {ufd.feed_id for ufd in user_feed_days}
         for feed in feeds:
-            if feed.id not in existing_feed_ids and default_day:
+            if feed.feed_id not in existing_feed_ids and default_day:
                 new_preference = UserFeedDay()
                 new_preference.user_id = user_uuid
-                new_preference.feed_id = feed.id
-                new_preference.day_id = default_day.id
+                new_preference.feed_id = feed.feed_id
+                new_preference.day_id = default_day.day_id
                 self.db.add(new_preference)
         await self.db.flush()
 

@@ -204,8 +204,8 @@ class TestUserPreferencesUnitOfWork:
         # Update the sample to match the test parameters
         sample_user_feed_day.feed_id = uuid.UUID(feed_id)
         sample_user_feed_day.day_id = uuid.UUID(day_id)
-        sample_user_feed_day.feed.id = sample_user_feed_day.feed_id
-        sample_user_feed_day.day.id = sample_user_feed_day.day_id
+        sample_user_feed_day.feed.feed_id = sample_user_feed_day.feed_id
+        sample_user_feed_day.day.day_id = sample_user_feed_day.day_id
         user_feed_days = [sample_user_feed_day]
 
         with (

@@ -60,10 +60,7 @@ describe("API Service", () => {
 			vi.spyOn(axios, "isAxiosError").mockReturnValue(true);
 
 			expect(() => handleApiError(mockError, "Default error message")).toThrow(
-				JSON.stringify([
-					{ msg: "Field is required", loc: ["field"] },
-					{ msg: "Invalid format", loc: ["email"] },
-				]),
+				"Field is required\nInvalid format",
 			);
 		});
 

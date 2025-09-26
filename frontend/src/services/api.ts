@@ -19,6 +19,63 @@ declare module "axios" {
 	}
 }
 
+const extractDetailMessage = (detail: unknown): string | null => {
+	if (typeof detail === "string") {
+		return detail;
+	}
+
+	if (Array.isArray(detail)) {
+		const messages = detail
+			.map((item) => {
+				if (typeof item === "string") {
+					return item;
+				}
+				if (item && typeof item === "object") {
+					const itemDetail = item as {
+						msg?: unknown;
+						message?: unknown;
+					};
+					let possible: string | null = null;
+					if (typeof itemDetail.msg === "string") {
+						possible = itemDetail.msg;
+					} else if (typeof itemDetail.message === "string") {
+						possible = itemDetail.message;
+					}
+					if (possible) {
+						return possible;
+					}
+				}
+				return null;
+			})
+			.filter((msg): msg is string => Boolean(msg));
+
+		if (messages.length > 0) {
+			return messages.join("\n");
+		}
+	}
+
+	if (detail && typeof detail === "object") {
+		const objectDetail = detail as {
+			msg?: unknown;
+			message?: unknown;
+			detail?: unknown;
+		};
+		let possible: string | null = null;
+		if (typeof objectDetail.msg === "string") {
+			possible = objectDetail.msg;
+		} else if (typeof objectDetail.message === "string") {
+			possible = objectDetail.message;
+		} else if (typeof objectDetail.detail === "string") {
+			possible = objectDetail.detail;
+		}
+		if (possible) {
+			return possible;
+		}
+	}
+
+	return null;
+};
+
 export const handleApiError = (
 	error: unknown,
 	defaultMessage: string,
@@ -40,11 +97,14 @@ export const handleApiError = (
 
 		const errorDetail = error.response?.data?.detail;
 		if (errorDetail) {
-			throw new Error(
-				typeof errorDetail === "string"
-					? errorDetail
-					: JSON.stringify(errorDetail),
-			);
+			const friendlyMessage = extractDetailMessage(errorDetail);
+			if (friendlyMessage) {
+				throw new Error(friendlyMessage);
+			}
+			if (typeof errorDetail === "string") {
+				throw new Error(errorDetail);
+			}
+			throw new Error(JSON.stringify(errorDetail));
 		}
 	}
 
