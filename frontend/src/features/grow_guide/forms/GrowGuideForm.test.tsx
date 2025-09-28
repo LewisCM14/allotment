@@ -402,6 +402,30 @@ describe("GrowGuideForm", () => {
 			});
 		});
 
+		it("regression: immediately pre-populates variety name on first open without extra interaction", async () => {
+			// This guards against a regression where the edit form opened with blank fields until the user re-selected the guide.
+			renderWithQueryClient(
+				<GrowGuideForm
+					mode="edit"
+					isOpen={true}
+					onClose={mockOnClose}
+					onSuccess={mockOnSuccess}
+					varietyId="test-variety-id"
+				/>,
+			);
+
+			// The variety input should get populated once data + options resolve, no second click/select required.
+			await waitFor(() => {
+				const varietyInput = screen.getByLabelText(
+					/variety name/i,
+				) as HTMLInputElement;
+				expect(varietyInput.value).toBe("Test Tomato");
+			});
+
+			// Sanity: title reflects edit mode
+			expect(screen.getByText(/edit test tomato/i)).toBeInTheDocument();
+		});
+
 		it("handles missing varietyId in edit mode", async () => {
 			renderWithQueryClient(
 				<GrowGuideForm

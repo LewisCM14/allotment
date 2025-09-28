@@ -7,14 +7,12 @@ const growGuideKey = (varietyId: string | undefined) =>
 
 export const useGrowGuide = (varietyId: string | undefined) => {
 	return useQuery({
-		queryKey: growGuideKey(varietyId),
+		queryKey: growGuideQueryKey(varietyId),
 		queryFn: () => {
 			if (!varietyId) throw new Error("varietyId is required");
 			return growGuideService.getGrowGuide(varietyId);
 		},
 		enabled: !!varietyId,
-		// Ensure fresh data when switching between guides
-		refetchOnMount: "always",
 		// Keep cache relatively fresh to avoid stale data issues
 		staleTime: 30 * 1000, // 30 seconds
 	});

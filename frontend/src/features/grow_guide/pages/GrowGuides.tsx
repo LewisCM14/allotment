@@ -2,10 +2,12 @@ import { PageLayout } from "../../../components/layouts/PageLayout";
 import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { Button } from "../../../components/ui/Button";
 import { Plus } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { GrowGuideForm } from "../forms/GrowGuideForm";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { growGuideService } from "../services/growGuideService";
+import { growGuideQueryKey } from "../hooks/useGrowGuide";
 
 // Keys reused across list + options
 const USER_GUIDES_KEY = ["userGrowGuides"]; // must match useUserGrowGuides hook key
@@ -38,11 +40,26 @@ const GrowGuides = () => {
 		setIsFormOpen(true);
 	};
 
-	const handleSelectGuide = (varietyId: string) => {
-		setSelectedVarietyId(varietyId);
-		setMode("edit");
-		setIsFormOpen(true);
-	};
+	const handleSelectGuide = useCallback(
+		(varietyId: string) => {
+			setSelectedVarietyId(varietyId);
+			setMode("edit");
+			setIsFormOpen(true);
+			void queryClient
+				.ensureQueryData({
+					queryKey: growGuideQueryKey(varietyId),
+					queryFn: () => growGuideService.getGrowGuide(varietyId),
+				})
+				.catch((error) => {
+					const message =
+						error instanceof Error
+							? error.message
+							: "Failed to load grow guide";
+					toast.error(message);
+				});
+		},
+		[queryClient],
+	);
 
 	return (
 		<PageLayout>

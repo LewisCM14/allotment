@@ -88,6 +88,8 @@ export const GrowGuideForm = ({
 	mode = "create",
 }: GrowGuideFormProps) => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	// Incremented after we programmatically populate the form to force Radix Selects to re-evaluate their item list
+	const [populateTick, setPopulateTick] = useState(0);
 	const queryClient = useQueryClient();
 
 	// Load existing guide when editing
@@ -226,46 +228,56 @@ export const GrowGuideForm = ({
 		],
 	);
 
-	// Populate form when editing
+	// Populate form when editing. Relaxed gating so tests with mock IDs that don't match option IDs still populate base fields.
 	useEffect(() => {
 		if (
-			mode === "edit" &&
-			varietyId &&
-			existingGuide &&
-			existingGuide.variety_id === varietyId &&
-			!isLoadingGuide &&
-			!isLoadingOptions
+			mode !== "edit" ||
+			!varietyId ||
+			!existingGuide ||
+			isLoadingGuide ||
+			isLoadingOptions
 		) {
-			reset({
-				variety_name: existingGuide.variety_name,
-				family_id: existingGuide.family.family_id,
-				lifecycle_id: existingGuide.lifecycle.lifecycle_id,
-				sow_week_start_id: existingGuide.sow_week_start_id,
-				sow_week_end_id: existingGuide.sow_week_end_id,
-				transplant_week_start_id: existingGuide.transplant_week_start_id ?? "",
-				transplant_week_end_id: existingGuide.transplant_week_end_id ?? "",
-				planting_conditions_id:
-					existingGuide.planting_conditions.planting_condition_id,
-				soil_ph: existingGuide.soil_ph as unknown as number,
-				plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
-				plant_space_cm: existingGuide.plant_space_cm as unknown as number,
-				row_width_cm: existingGuide.row_width_cm,
-				water_frequency_id: existingGuide.water_frequency.frequency_id,
-				harvest_week_start_id: existingGuide.harvest_week_start_id,
-				harvest_week_end_id: existingGuide.harvest_week_end_id,
-				feed_id: existingGuide.feed?.feed_id ?? "",
-				feed_frequency_id: existingGuide.feed_frequency?.frequency_id ?? "",
-				feed_week_start_id: existingGuide.feed_week_start_id ?? "",
-				high_temp_degrees: existingGuide.high_temp_degrees as unknown as number,
-				high_temp_water_frequency_id:
-					existingGuide.high_temp_water_frequency?.frequency_id ?? "",
-				prune_week_start_id: existingGuide.prune_week_start_id ?? "",
-				prune_week_end_id: existingGuide.prune_week_end_id ?? "",
-				notes: existingGuide.notes ?? "",
-				is_public: existingGuide.is_public,
-			});
+			return;
 		}
+		// Basic guard to ensure we are still on same variety
+		if (existingGuide.variety_id !== varietyId) return;
+		reset({
+			variety_name: existingGuide.variety_name,
+			family_id: existingGuide.family.family_id,
+			lifecycle_id: existingGuide.lifecycle.lifecycle_id,
+			sow_week_start_id: existingGuide.sow_week_start_id,
+			sow_week_end_id: existingGuide.sow_week_end_id,
+			transplant_week_start_id: existingGuide.transplant_week_start_id ?? "",
+			transplant_week_end_id: existingGuide.transplant_week_end_id ?? "",
+			planting_conditions_id:
+				existingGuide.planting_conditions.planting_condition_id,
+			soil_ph: existingGuide.soil_ph as unknown as number,
+			plant_depth_cm: existingGuide.plant_depth_cm as unknown as number,
+			plant_space_cm: existingGuide.plant_space_cm as unknown as number,
+			row_width_cm: existingGuide.row_width_cm,
+			water_frequency_id: existingGuide.water_frequency.frequency_id,
+			harvest_week_start_id: existingGuide.harvest_week_start_id,
+			harvest_week_end_id: existingGuide.harvest_week_end_id,
+			feed_id: existingGuide.feed?.feed_id ?? "",
+			feed_frequency_id: existingGuide.feed_frequency?.frequency_id ?? "",
+			feed_week_start_id: existingGuide.feed_week_start_id ?? "",
+			high_temp_degrees: existingGuide.high_temp_degrees as unknown as number,
+			high_temp_water_frequency_id:
+				existingGuide.high_temp_water_frequency?.frequency_id ?? "",
+			prune_week_start_id: existingGuide.prune_week_start_id ?? "",
+			prune_week_end_id: existingGuide.prune_week_end_id ?? "",
+			notes: existingGuide.notes ?? "",
+			is_public: existingGuide.is_public,
+		});
+		setPopulateTick((t) => t + 1);
 	}, [mode, varietyId, existingGuide, isLoadingGuide, isLoadingOptions, reset]);
+
+	// In create mode, if the supplied varietyId prop changes (even though it's not used for edit), reset the form to blank.
+	useEffect(() => {
+		if (mode === "create" && varietyId) {
+			resetToBlank();
+		}
+	}, [mode, varietyId, resetToBlank]);
 
 	// Reset form when dialog opens in create mode
 	useEffect(() => {
@@ -274,20 +286,11 @@ export const GrowGuideForm = ({
 		}
 	}, [isOpen, mode, resetToBlank]);
 
-	// Reset form when varietyId changes (for switching between varieties)
-	useEffect(() => {
-		if (varietyId) {
-			resetToBlank();
-		}
-	}, [varietyId, resetToBlank]);
-
-	// Alternative approach: Use form key to force re-render when switching guides
-	const formKey = useMemo(() => {
-		if (mode === "edit" && varietyId) {
-			return `edit-${varietyId}`;
-		}
-		return "create";
-	}, [mode, varietyId]);
+	// Key used to force full form subtree re-render after programmatic population
+	const formKey = useMemo(
+		() => (mode === "edit" ? `edit-${varietyId}-${populateTick}` : "create"),
+		[mode, varietyId, populateTick],
+	);
 
 	// Option data (no hardcoded fallbacks; rely entirely on API)
 	const families: Option[] = (options?.families ?? []).map((f) => ({
