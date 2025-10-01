@@ -16,30 +16,30 @@ export const familyHandlers = [
 
 		return jsonOk([
 			{
-				id: "group-1",
-				name: "Brassicaceae",
-				recommended_rotation_years: 3,
+				botanical_group_id: "group-1",
+				botanical_group_name: "Brassicaceae",
+				rotate_years: 3,
 				families: [
-					{ id: "family-1", name: "Cabbage" },
-					{ id: "family-2", name: "Broccoli" },
+					{ family_id: "family-1", family_name: "Cabbage" },
+					{ family_id: "family-2", family_name: "Broccoli" },
 				],
 			},
 			{
-				id: "group-2",
-				name: "Solanaceae",
-				recommended_rotation_years: 4,
+				botanical_group_id: "group-2",
+				botanical_group_name: "Solanaceae",
+				rotate_years: 4,
 				families: [
-					{ id: "family-3", name: "Tomatoes" },
-					{ id: "family-4", name: "Potatoes" },
+					{ family_id: "family-3", family_name: "Tomatoes" },
+					{ family_id: "family-4", family_name: "Potatoes" },
 				],
 			},
 			{
-				id: "group-3",
-				name: "Leguminosae",
-				recommended_rotation_years: null,
+				botanical_group_id: "group-3",
+				botanical_group_name: "Leguminosae",
+				rotate_years: null,
 				families: [
-					{ id: "family-5", name: "Peas" },
-					{ id: "family-6", name: "Beans" },
+					{ family_id: "family-5", family_name: "Peas" },
+					{ family_id: "family-6", family_name: "Beans" },
 				],
 			},
 		]);

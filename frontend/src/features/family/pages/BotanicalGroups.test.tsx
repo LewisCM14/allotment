@@ -52,9 +52,9 @@ describe("BotanicalGroupsPage", () => {
 			{
 				data: [
 					{
-						id: 1,
-						name: "Group 1",
-						recommended_rotation_years: 2,
+						botanical_group_id: 1,
+						botanical_group_name: "Group 1",
+						rotate_years: 2,
 						families: [],
 					},
 				],
@@ -82,9 +82,9 @@ it("renders botanical group with null rotation years as Perennial", () => {
 	(BotanicalGroupsHook.useBotanicalGroups as unknown as Mock).mockReturnValue({
 		data: [
 			{
-				id: 1,
-				name: "Group 1",
-				recommended_rotation_years: null,
+				botanical_group_id: 1,
+				botanical_group_name: "Group 1",
+				rotate_years: null,
 				families: [],
 			},
 		],
@@ -104,12 +104,12 @@ it("renders botanical group with multiple families and allows navigation", async
 	(BotanicalGroupsHook.useBotanicalGroups as unknown as Mock).mockReturnValue({
 		data: [
 			{
-				id: 1,
-				name: "Group 1",
-				recommended_rotation_years: 2,
+				botanical_group_id: 1,
+				botanical_group_name: "Group 1",
+				rotate_years: 2,
 				families: [
-					{ id: "f1", name: "Family One" },
-					{ id: "f2", name: "Family Two" },
+					{ family_id: "f1", family_name: "Family One" },
+					{ family_id: "f2", family_name: "Family Two" },
 				],
 			},
 		],
@@ -131,7 +131,7 @@ it("renders botanical group with multiple families and allows navigation", async
 
 it("handles group with missing recommended_rotation_years and families fields", async () => {
 	(BotanicalGroupsHook.useBotanicalGroups as unknown as Mock).mockReturnValue({
-		data: [{ id: 1, name: "Group 1" }],
+		data: [{ botanical_group_id: 1, botanical_group_name: "Group 1" }],
 		isLoading: false,
 		error: null,
 		isSuccess: true,

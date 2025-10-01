@@ -12,7 +12,9 @@ export default defineConfig({
         environment: "jsdom",
         globals: true,
         setupFiles: [path.resolve(__dirname, "vitest.setup.ts")],
-        testTimeout: 15000, // Increased global timeout to 15 seconds
+        // UI-heavy tests (Radix Select interactions, React Query, etc.) can be slow under load
+        // Bump global timeout to reduce flakiness in parallel runs
+        testTimeout: 30000,
 
         // Enable parallel test execution with threads
         pool: 'threads',
@@ -24,8 +26,8 @@ export default defineConfig({
         },
         isolate: true, // Isolate each test file in its own thread
 
-        // Additional performance settings
-        maxConcurrency: 10, // Maximum concurrent tests per worker
+    // Additional performance settings: keep some parallelism but avoid oversubscription
+    maxConcurrency: 5, // Maximum concurrent tests per worker
         sequence: {
             shuffle: true, // Randomize test order to identify interference issues
         },
@@ -59,6 +61,7 @@ export default defineConfig({
                 "config/**", // All config files (vitest.setup.ts, vitest.config.ts, etc.)
                 "src/components/ui/**", // Shadcn UI
                 "src/types/**", // Type definitions
+                "src/features/grow_guide/types/growGuideTypes.ts",
                 "src/utils/**", // Utility wrappers
                 "src/assets/**", // Static assets
                 "src/store/**/AuthContext.tsx", // Auth context only

@@ -34,13 +34,13 @@ family_antagonists_assoc = Table(
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "antagonist_family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -51,13 +51,13 @@ family_companions_assoc = Table(
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "companion_family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.id", ondelete="CASCADE"),
+        ForeignKey("family.family_id", ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -68,17 +68,17 @@ class Family(Base):
 
     __tablename__ = "family"
 
-    id: Mapped[uuid.UUID] = mapped_column(
+    family_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    family_name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     botanical_group_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("botanical_group.id", ondelete="RESTRICT"),
+        ForeignKey("botanical_group.botanical_group_id", ondelete="RESTRICT"),
         nullable=False,
     )
 
@@ -90,8 +90,8 @@ class Family(Base):
     antagonises: Mapped[List["Family"]] = relationship(
         "Family",
         secondary=family_antagonists_assoc,
-        primaryjoin=id == family_antagonists_assoc.c.family_id,
-        secondaryjoin=id == family_antagonists_assoc.c.antagonist_family_id,
+        primaryjoin=family_id == family_antagonists_assoc.c.family_id,
+        secondaryjoin=family_id == family_antagonists_assoc.c.antagonist_family_id,
         back_populates="antagonised_by",
     )
 
@@ -99,8 +99,8 @@ class Family(Base):
     antagonised_by: Mapped[List["Family"]] = relationship(
         "Family",
         secondary=family_antagonists_assoc,
-        primaryjoin=id == family_antagonists_assoc.c.antagonist_family_id,
-        secondaryjoin=id == family_antagonists_assoc.c.family_id,
+        primaryjoin=family_id == family_antagonists_assoc.c.antagonist_family_id,
+        secondaryjoin=family_id == family_antagonists_assoc.c.family_id,
         back_populates="antagonises",
     )
 
@@ -108,8 +108,8 @@ class Family(Base):
     companion_to: Mapped[List["Family"]] = relationship(
         "Family",
         secondary=family_companions_assoc,
-        primaryjoin=id == family_companions_assoc.c.family_id,
-        secondaryjoin=id == family_companions_assoc.c.companion_family_id,
+        primaryjoin=family_id == family_companions_assoc.c.family_id,
+        secondaryjoin=family_id == family_companions_assoc.c.companion_family_id,
         back_populates="companion_with",
     )
 
@@ -117,8 +117,8 @@ class Family(Base):
     companion_with: Mapped[List["Family"]] = relationship(
         "Family",
         secondary=family_companions_assoc,
-        primaryjoin=id == family_companions_assoc.c.companion_family_id,
-        secondaryjoin=id == family_companions_assoc.c.family_id,
+        primaryjoin=family_id == family_companions_assoc.c.companion_family_id,
+        secondaryjoin=family_id == family_companions_assoc.c.family_id,
         back_populates="companion_to",
     )
 
@@ -131,9 +131,11 @@ class Family(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("name", name="uq_family_name"),
-        CheckConstraint("name = LOWER(name)", name="ck_family_name_lower"),
+        UniqueConstraint("family_name", name="uq_family_name"),
+        CheckConstraint(
+            "family_name = LOWER(family_name)", name="ck_family_name_lower"
+        ),
     )
 
     def __repr__(self) -> str:
-        return f"<Family(id={self.id}, name='{self.name}')>"
+        return f"<Family(family_id={self.family_id}, family_name='{self.family_name}')>"

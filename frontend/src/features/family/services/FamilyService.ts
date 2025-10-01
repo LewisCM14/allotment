@@ -12,40 +12,61 @@ export const FAMILY_SERVICE_ERRORS = {
 };
 
 export interface IFamily {
-	id: string; // UUID serialized as string
-	name: string;
+	family_id: string;
+	family_name: string;
 }
 
 export interface IBotanicalGroup {
-	id: string; // UUID serialized as string
-	name: string;
-	recommended_rotation_years: number | null;
+	botanical_group_id: string;
+	botanical_group_name: string;
+	rotate_years: number | null;
 	families: IFamily[];
 }
 
+export interface IInterventionRef {
+	intervention_id: string;
+	intervention_name: string;
+}
+
+export interface IPest {
+	pest_id: string;
+	pest_name: string;
+	treatments?: IInterventionRef[];
+	preventions?: IInterventionRef[];
+}
+
+export interface ISymptom {
+	symptom_id: string;
+	symptom_name: string;
+}
+
+export interface IDisease {
+	disease_id: string;
+	disease_name: string;
+	symptoms?: ISymptom[];
+	treatments?: IInterventionRef[];
+	preventions?: IInterventionRef[];
+}
+
+export interface IFamilyRelation {
+	family_id: string;
+	family_name: string;
+}
+
+export interface IBotanicalGroupInfo {
+	botanical_group_id: string;
+	botanical_group_name: string;
+	rotate_years: number | null;
+}
+
 export interface IFamilyInfo {
-	id: string; // UUID serialized as string
-	name: string;
-	botanical_group: {
-		id: string; // UUID serialized as string
-		name: string;
-		recommended_rotation_years: number | null;
-	};
-	pests?: Array<{
-		id: string; // UUID serialized as string
-		name: string;
-		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
-		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
-	}>;
-	diseases?: Array<{
-		id: string; // UUID serialized as string
-		name: string;
-		symptoms?: Array<{ id: string; name: string }>; // UUID serialized as string
-		treatments?: Array<{ id: string; name: string }>; // UUID serialized as string
-		preventions?: Array<{ id: string; name: string }>; // UUID serialized as string
-	}>;
-	antagonises?: Array<{ id: string; name: string }>; // UUID serialized as string
-	companion_to?: Array<{ id: string; name: string }>; // UUID serialized as string
+	family_id: string;
+	family_name: string;
+	botanical_group: IBotanicalGroupInfo;
+	pests?: IPest[];
+	diseases?: IDisease[];
+	antagonises?: IFamilyRelation[];
+	companion_to?: IFamilyRelation[];
 }
 
 export async function getBotanicalGroups(
@@ -56,16 +77,7 @@ export async function getBotanicalGroups(
 			"/families/botanical-groups/",
 			{ signal },
 		);
-
-		// Handle null or malformed response
-		if (!Array.isArray(response.data)) {
-			return [];
-		}
-
-		return response.data.map((group) => ({
-			...group,
-			recommended_rotation_years: group.recommended_rotation_years ?? null,
-		}));
+		return Array.isArray(response.data) ? response.data : [];
 	} catch (error: unknown) {
 		if (axios.isCancel(error)) throw error;
 		return handleApiError(

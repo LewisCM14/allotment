@@ -220,8 +220,8 @@ def make_feed(name: str = "Feed", feed_id=None):
     from app.api.models.grow_guide.guide_options_model import Feed
 
     f = Feed()
-    f.id = UUID(str(feed_id)) if feed_id else uuid4()
-    f.name = name
+    f.feed_id = UUID(str(feed_id)) if feed_id else uuid4()
+    f.feed_name = name
     return f
 
 
@@ -231,8 +231,8 @@ def make_day(name: str = "Monday", day_number: int = 1, day_id=None):
     from app.api.models.grow_guide.calendar_model import Day
 
     d = Day()
-    d.id = UUID(str(day_id)) if day_id else uuid4()
-    d.name = name
+    d.day_id = UUID(str(day_id)) if day_id else uuid4()
+    d.day_name = name
     d.day_number = day_number
     return d
 
@@ -273,6 +273,23 @@ def make_user_feed_day(
     ufd.feed = feed
     ufd.day = day
     return ufd
+
+
+def make_user_active_variety(*, user_id=None, variety_id=None, activated_at=None):
+    """Create a UserActiveVariety instance."""
+    from datetime import UTC, datetime
+    from uuid import UUID, uuid4
+
+    from app.api.models.user.user_model import UserActiveVariety
+
+    association = UserActiveVariety(
+        user_id=UUID(str(user_id)) if user_id else uuid4(),
+        variety_id=UUID(str(variety_id)) if variety_id else uuid4(),
+    )
+    if activated_at is None:
+        activated_at = datetime.now(UTC)
+    association.activated_at = activated_at
+    return association
 
 
 def setup_auth_unit_test_mocks(
@@ -327,3 +344,42 @@ def build_week_days(names: Optional[list[str]] = None):
             "Sunday",
         ]
     return [make_day(name=n, day_number=i + 1) for i, n in enumerate(names)]
+
+
+def make_variety(owner_user_id, **overrides):
+    """Create a valid Variety model instance for testing.
+
+    Args:
+        owner_user_id: UUID of the user who owns this variety
+        **overrides: Fields to override in the default variety data
+
+    Returns:
+        Variety model instance with sensible defaults
+    """
+    from uuid import uuid4
+
+    from app.api.models.grow_guide.variety_model import Variety
+
+    variety = Variety()
+    variety.variety_name = "Test Tomato"
+    variety.owner_user_id = owner_user_id
+    variety.family_id = uuid4()
+    variety.lifecycle_id = uuid4()
+    variety.sow_week_start_id = uuid4()
+    variety.sow_week_end_id = uuid4()
+    variety.planting_conditions_id = uuid4()
+    variety.soil_ph = 6.5
+    variety.plant_depth_cm = 2
+    variety.plant_space_cm = 30
+    variety.water_frequency_id = uuid4()
+    variety.high_temp_degrees = 30
+    variety.high_temp_water_frequency_id = uuid4()
+    variety.harvest_week_start_id = uuid4()
+    variety.harvest_week_end_id = uuid4()
+    variety.is_public = False
+
+    # Apply any overrides
+    for key, value in overrides.items():
+        setattr(variety, key, value)
+
+    return variety

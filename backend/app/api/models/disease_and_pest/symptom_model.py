@@ -19,18 +19,18 @@ if TYPE_CHECKING:
 
 class Symptom(Base):
     __tablename__ = "symptom"
-    id: Mapped[uuid.UUID] = mapped_column(
+    symptom_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    symptom_name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
 
     # Relationships
     diseases: Mapped[List["Disease"]] = relationship(
         "Disease", secondary="disease_symptom", back_populates="symptoms"
     )
 
-    __table_args__ = (UniqueConstraint("name", name="uq_symptom_name"),)
+    __table_args__ = (UniqueConstraint("symptom_name", name="uq_symptom_name"),)

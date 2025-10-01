@@ -1,6 +1,6 @@
 """
 User Models
-- Defines SQLAlchemy ORM models for the User and UserAllotment tables.
+- Defines SQLAlchemy ORM models for the User, User Active Varieties, User Feed Day and User Allotment tables.
 - Includes utility methods for password hashing and verification.
 """
 
@@ -34,8 +34,11 @@ from app.api.middleware.logging_middleware import (
 if TYPE_CHECKING:
     from app.api.models.grow_guide.calendar_model import Day
     from app.api.models.grow_guide.guide_options_model import Feed
+    from app.api.models.grow_guide.variety_model import Variety
 
 logger = structlog.get_logger()
+
+USER_TABLE_USER_ID = "user.user_id"
 
 
 class User(Base):
@@ -74,6 +77,15 @@ class User(Base):
     )
     feed_days: Mapped[list["UserFeedDay"]] = relationship(
         "UserFeedDay", back_populates="user", cascade="all, delete-orphan"
+    )
+    active_varieties: Mapped[list["UserActiveVariety"]] = relationship(
+        "UserActiveVariety", back_populates="user", cascade="all, delete-orphan"
+    )
+    varieties: Mapped[list["Variety"]] = relationship(
+        "Variety",
+        back_populates="user",
+        foreign_keys="[Variety.owner_user_id]",
+        cascade="all, delete-orphan",
     )
 
     @property
@@ -150,7 +162,7 @@ class UserAllotment(Base):
     )
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("user.user_id", ondelete="CASCADE"),
+        ForeignKey(USER_TABLE_USER_ID, ondelete="CASCADE"),
         unique=True,
         nullable=False,
     )
@@ -213,21 +225,21 @@ class UserFeedDay(Base):
 
     user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("user.user_id", ondelete="CASCADE"),
+        ForeignKey(USER_TABLE_USER_ID, ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
         index=True,
     )
     feed_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("feed.id", ondelete="CASCADE"),
+        ForeignKey("feed.feed_id", ondelete="CASCADE"),
         primary_key=True,
         nullable=False,
         index=True,
     )
     day_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("day.id", ondelete="CASCADE"),
+        ForeignKey("day.day_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
@@ -236,3 +248,30 @@ class UserFeedDay(Base):
     user: Mapped["User"] = relationship("User", back_populates="feed_days")
     feed: Mapped["Feed"] = relationship("Feed", back_populates="user_feed_days")
     day: Mapped["Day"] = relationship("Day")
+
+
+class UserActiveVariety(Base):
+    """Junction table linking users to the varieties they have marked as active."""
+
+    __tablename__ = "user_active_variety"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey(USER_TABLE_USER_ID, ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    variety_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("variety.variety_id", ondelete="CASCADE"),
+        primary_key=True,
+        nullable=False,
+        index=True,
+    )
+    activated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    user: Mapped["User"] = relationship("User", back_populates="active_varieties")
+    variety: Mapped["Variety"] = relationship("Variety", back_populates="active_users")

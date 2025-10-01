@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { FormError } from "@/components/FormError";
 import { Save, Loader2, Edit, X } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import type { AllotmentFormData } from "../forms/AllotmentSchema";
 
@@ -203,10 +204,11 @@ export default function UserAllotmentPresenter({
 }: UserAllotmentPresenterProps) {
 	if (isLoading) {
 		return (
-			<div className="flex justify-center items-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-				<p className="ml-2">Loading allotment data...</p>
-			</div>
+			<LoadingSpinner
+				size="lg"
+				className="h-64"
+				aria-label="Loading allotment data"
+			/>
 		);
 	}
 

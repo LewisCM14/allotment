@@ -174,17 +174,17 @@ async def seed_family_data():
         # Create a botanical group
         group_id = uuid.uuid4()
         group = BotanicalGroup(
-            id=group_id,
-            name="testgroup",
-            recommended_rotation_years=2,
+            botanical_group_id=group_id,
+            botanical_group_name="testgroup",
+            rotate_years=2,
         )
         session.add(group)
         await session.flush()
         # Create a family
         family_id = uuid.uuid4()
         family = Family(
-            id=family_id,
-            name="testfamily",
+            family_id=family_id,
+            family_name="testfamily",
             botanical_group_id=group_id,
         )
         session.add(family)
@@ -215,9 +215,9 @@ async def seed_day_data():
         for day_data in days_data:
             day_id = uuid.uuid4()
             day = Day(
-                id=day_id,
+                day_id=day_id,
                 day_number=day_data["day_number"],
-                name=day_data["name"],
+                day_name=day_data["name"],
             )
             session.add(day)
             created_days.append(
@@ -248,8 +248,8 @@ async def seed_feed_data():
         for feed_name in feeds_data:
             feed_id = uuid.uuid4()
             feed = Feed(
-                id=feed_id,
-                name=feed_name,
+                feed_id=feed_id,
+                feed_name=feed_name,
             )
             session.add(feed)
             created_feeds.append(
@@ -278,9 +278,9 @@ async def complete_family_seed_data():
     async with TestingSessionLocal() as session:
         # Create multiple botanical groups
         groups_data = [
-            {"name": "Brassicas", "rotation_years": 3},
-            {"name": "Legumes", "rotation_years": 2},
-            {"name": "Solanaceae", "rotation_years": 4},
+            {"name": "brassicas", "rotation_years": 3},
+            {"name": "legumes", "rotation_years": 2},
+            {"name": "solanaceae", "rotation_years": 4},
         ]
 
         created_groups = []
@@ -289,9 +289,9 @@ async def complete_family_seed_data():
         for group_data in groups_data:
             group_id = uuid.uuid4()
             group = BotanicalGroup(
-                id=group_id,
-                name=group_data["name"],
-                recommended_rotation_years=group_data["rotation_years"],
+                botanical_group_id=group_id,
+                botanical_group_name=group_data["name"],
+                rotate_years=group_data["rotation_years"],
             )
             session.add(group)
             created_groups.append(
@@ -304,16 +304,16 @@ async def complete_family_seed_data():
 
             # Add families for each group
             families_per_group = {
-                "Brassicas": ["Cabbage", "Broccoli", "Kale"],
-                "Legumes": ["Peas", "Beans", "Lentils"],
-                "Solanaceae": ["Tomatoes", "Peppers", "Eggplant"],
+                "brassicas": ["cabbage", "broccoli", "kale"],
+                "legumes": ["peas", "beans", "lentils"],
+                "solanaceae": ["tomatoes", "peppers", "eggplant"],
             }
 
             for family_name in families_per_group.get(group_data["name"], []):
                 family_id = uuid.uuid4()
                 family = Family(
-                    id=family_id,
-                    name=family_name,
+                    family_id=family_id,
+                    family_name=family_name,
                     botanical_group_id=group_id,
                 )
                 session.add(family)
@@ -339,23 +339,24 @@ async def user_in_database(sample_user_data):
     import uuid
     from datetime import datetime, timezone
 
-    from app.api.core.auth_utils import hash_password
     from app.api.models.user.user_model import User
 
     async with TestingSessionLocal() as session:
         user_id = uuid.uuid4()
-        hashed_password = hash_password(sample_user_data["user_password"])
 
         user = User(
             user_id=user_id,
             user_email=sample_user_data["user_email"],
-            user_password=hashed_password,
+            user_password_hash="dummy_hash",  # Will be set properly below
             user_first_name=sample_user_data["user_first_name"],
             user_country_code=sample_user_data["user_country_code"],
             is_email_verified=False,
             registered_date=datetime.now(timezone.utc),
             last_active_date=datetime.now(timezone.utc),
         )
+
+        # Use the model's set_password method to properly hash the password
+        user.set_password(sample_user_data["user_password"])
 
         session.add(user)
         await session.commit()
@@ -452,6 +453,19 @@ def auth_headers(mock_user):
     from app.api.core.auth_utils import create_token
 
     token = create_token(str(mock_user.user_id))
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+async def integration_auth_headers(user_in_database):
+    """Generate authorization headers for integration tests with a real user in database."""
+    import uuid
+
+    from app.api.core.auth_utils import create_token
+
+    # Convert the string UUID to UUID object and back to hex format for token
+    user_uuid = uuid.UUID(user_in_database["user_id"])
+    token = create_token(user_uuid.hex)  # Use hex format (no dashes) for token
     return {"Authorization": f"Bearer {token}"}
 
 
@@ -729,3 +743,345 @@ def sample_user_create():
         first_name="Test",
         country_code="US",
     )
+
+
+@pytest.fixture
+async def seed_lifecycle_data():
+    """Seed the test database with lifecycle data."""
+    from app.api.models.grow_guide.guide_options_model import Lifecycle
+
+    async with TestingSessionLocal() as session:
+        lifecycles_data = [
+            {"name": "Annual", "productivity_years": 1},
+            {"name": "Biennial", "productivity_years": 2},
+            {"name": "Perennial", "productivity_years": 10},
+        ]
+
+        created_lifecycles = []
+        for lifecycle_data in lifecycles_data:
+            lifecycle_id = uuid.uuid4()
+            lifecycle = Lifecycle(
+                lifecycle_id=lifecycle_id,
+                lifecycle_name=lifecycle_data["name"],
+                productivity_years=lifecycle_data["productivity_years"],
+            )
+            session.add(lifecycle)
+            created_lifecycles.append(
+                {
+                    "id": lifecycle_id,
+                    "name": lifecycle_data["name"],
+                    "productivity_years": lifecycle_data["productivity_years"],
+                }
+            )
+
+        await session.commit()
+        yield created_lifecycles
+
+
+@pytest.fixture
+async def seed_planting_conditions_data():
+    """Seed the test database with planting conditions data."""
+    from app.api.models.grow_guide.guide_options_model import PlantingConditions
+
+    async with TestingSessionLocal() as session:
+        conditions_data = [
+            "Full Sun",
+            "Partial Shade",
+            "Full Shade",
+            "Sheltered",
+        ]
+
+        created_conditions = []
+        for condition_name in conditions_data:
+            condition_id = uuid.uuid4()
+            condition = PlantingConditions(
+                planting_condition_id=condition_id,
+                planting_condition=condition_name,
+            )
+            session.add(condition)
+            created_conditions.append(
+                {
+                    "id": condition_id,
+                    "name": condition_name,
+                }
+            )
+
+        await session.commit()
+        yield created_conditions
+
+
+@pytest.fixture
+async def seed_frequency_data(seed_day_data):
+    """Seed the test database with frequency data and default watering day mappings.
+
+    Depends on day data so we can create FrequencyDefaultDay rows for deterministic tests.
+    Daily -> all days
+    Weekly -> Sunday only
+    Monthly -> Sunday only (placeholder until monthly logic is defined)
+    """
+    from app.api.models.grow_guide.guide_options_model import (
+        Frequency,
+        FrequencyDefaultDay,
+    )
+
+    async with TestingSessionLocal() as session:
+        frequencies_data = [
+            {"name": "Daily", "days_per_year": 365},
+            {"name": "Weekly", "days_per_year": 52},
+            {"name": "Monthly", "days_per_year": 12},
+        ]
+
+        created_frequencies = []
+        frequency_id_map = {}
+        for freq_data in frequencies_data:
+            freq_id = uuid.uuid4()
+            frequency = Frequency(
+                frequency_id=freq_id,
+                frequency_name=freq_data["name"],
+                frequency_days_per_year=freq_data["days_per_year"],
+            )
+            session.add(frequency)
+            created_frequencies.append(
+                {
+                    "id": freq_id,
+                    "name": freq_data["name"],
+                    "days_per_year": freq_data["days_per_year"],
+                }
+            )
+            frequency_id_map[freq_data["name"]] = freq_id
+
+        await session.flush()
+
+        # Build default day mappings
+        # seed_day_data list ordered Mon..Sun
+        day_ids_ordered = [d["id"] for d in seed_day_data]
+        daily_id = frequency_id_map["Daily"]
+        weekly_id = frequency_id_map["Weekly"]
+        monthly_id = frequency_id_map["Monthly"]
+
+        default_rows = []
+        # Daily: all 7
+        for d_id in day_ids_ordered:
+            default_rows.append(FrequencyDefaultDay(frequency_id=daily_id, day_id=d_id))
+        # Weekly: Sunday (day_number 7)
+        default_rows.append(
+            FrequencyDefaultDay(frequency_id=weekly_id, day_id=day_ids_ordered[-1])
+        )
+        # Monthly: Sunday (placeholder)
+        default_rows.append(
+            FrequencyDefaultDay(frequency_id=monthly_id, day_id=day_ids_ordered[-1])
+        )
+
+        session.add_all(default_rows)
+        await session.commit()
+        yield created_frequencies
+
+
+@pytest.fixture
+async def seed_week_data():
+    """Seed the test database with week data."""
+    from app.api.models.grow_guide.calendar_model import Month, Week
+
+    async with TestingSessionLocal() as session:
+        # First create some months
+        months_data = [
+            {"number": 1, "name": "January"},
+            {"number": 2, "name": "February"},
+            {"number": 12, "name": "December"},
+        ]
+
+        created_months = []
+        for month_data in months_data:
+            month_id = uuid.uuid4()
+            month = Month(
+                month_id=month_id,
+                month_number=month_data["number"],
+                month_name=month_data["name"],
+            )
+            session.add(month)
+            created_months.append({"id": month_id, **month_data})
+
+        await session.flush()
+
+        # Create some test weeks
+        weeks_data = [
+            {
+                "number": 1,
+                "start_date": "01/01",
+                "end_date": "07/01",
+                "start_month_id": created_months[0]["id"],
+            },
+            {
+                "number": 2,
+                "start_date": "08/01",
+                "end_date": "14/01",
+                "start_month_id": created_months[0]["id"],
+            },
+            {
+                "number": 52,
+                "start_date": "25/12",
+                "end_date": "31/12",
+                "start_month_id": created_months[2]["id"],
+            },
+        ]
+
+        created_weeks = []
+        for week_data in weeks_data:
+            week_id = uuid.uuid4()
+            week = Week(
+                week_id=week_id,
+                week_number=week_data["number"],
+                start_month_id=week_data["start_month_id"],
+                week_start_date=week_data["start_date"],
+                week_end_date=week_data["end_date"],
+            )
+            session.add(week)
+            created_weeks.append(
+                {
+                    "id": week_id,
+                    "number": week_data["number"],
+                    "start_date": week_data["start_date"],
+                    "end_date": week_data["end_date"],
+                }
+            )
+
+        await session.commit()
+        yield created_weeks
+
+
+@pytest.fixture(scope="class")
+async def authenticated_user():
+    """Create an authenticated user for testing."""
+    from datetime import datetime, timezone
+
+    from app.api.models.user.user_model import User
+
+    async with TestingSessionLocal() as session:
+        user_id = uuid.uuid4()
+        # Use a unique email for each test class to avoid conflicts
+        unique_email = f"test-{user_id.hex[:8]}@example.com"
+        user = User(
+            user_id=user_id,
+            user_email=unique_email,
+            user_password_hash="dummy_hash",  # Will be set properly below
+            user_first_name="Test",
+            user_country_code="GB",
+            is_email_verified=True,
+            registered_date=datetime.now(timezone.utc),
+            last_active_date=datetime.now(timezone.utc),
+        )
+
+        # Use the model's set_password method to properly hash the password
+        user.set_password("testpass123")
+
+        session.add(user)
+        await session.commit()
+        yield user
+
+
+@pytest.fixture
+async def seed_variety_data(
+    user_in_database,
+    seed_lifecycle_data,
+    seed_planting_conditions_data,
+    complete_family_seed_data,
+    seed_frequency_data,
+    seed_week_data,
+):
+    """Seed the test database with variety data."""
+    import uuid
+
+    from app.api.models.grow_guide.variety_model import Variety
+
+    async with TestingSessionLocal() as session:
+        variety_id = uuid.uuid4()
+        variety = Variety(
+            variety_id=variety_id,
+            owner_user_id=uuid.UUID(user_in_database["user_id"]),
+            variety_name="Test Tomato",
+            family_id=complete_family_seed_data["families"][0]["id"],  # Tomato family
+            lifecycle_id=seed_lifecycle_data[0]["id"],  # Annual
+            sow_week_start_id=seed_week_data[0]["id"],  # Week 1
+            sow_week_end_id=seed_week_data[1]["id"],  # Week 2
+            planting_conditions_id=seed_planting_conditions_data[0]["id"],  # Full Sun
+            soil_ph=6.5,
+            plant_depth_cm=2,
+            plant_space_cm=30,
+            water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_degrees=30,
+            high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
+            harvest_week_end_id=seed_week_data[2]["id"],  # Week 3
+            is_public=False,
+        )
+        session.add(variety)
+        await session.commit()
+
+        yield {
+            "variety_id": variety_id,
+            "variety_name": "Test Tomato",
+            "owner_user_id": uuid.UUID(user_in_database["user_id"]),
+        }
+
+
+@pytest.fixture
+async def seed_public_variety_data(
+    seed_lifecycle_data,
+    seed_planting_conditions_data,
+    complete_family_seed_data,
+    seed_frequency_data,
+    seed_week_data,
+):
+    """Seed the test database with public variety data."""
+    from datetime import datetime, timezone
+
+    from app.api.models.grow_guide.variety_model import Variety
+    from app.api.models.user.user_model import User
+
+    async with TestingSessionLocal() as session:
+        # Create a user for the public variety
+        user_id = uuid.uuid4()
+        user = User(
+            user_id=user_id,
+            user_email="public@example.com",
+            user_password_hash="dummy_hash",  # Will be set properly below
+            user_first_name="Public",
+            user_country_code="GB",
+            is_email_verified=True,
+            registered_date=datetime.now(timezone.utc),
+            last_active_date=datetime.now(timezone.utc),
+        )
+
+        # Use the model's set_password method to properly hash the password
+        user.set_password("testpass123")
+
+        session.add(user)
+
+        variety_id = uuid.uuid4()
+        variety = Variety(
+            variety_id=variety_id,
+            owner_user_id=user_id,
+            variety_name="Public Tomato",
+            family_id=complete_family_seed_data["families"][0]["id"],  # Tomato family
+            lifecycle_id=seed_lifecycle_data[0]["id"],  # Annual
+            sow_week_start_id=seed_week_data[0]["id"],  # Week 1
+            sow_week_end_id=seed_week_data[1]["id"],  # Week 2
+            planting_conditions_id=seed_planting_conditions_data[0]["id"],  # Full Sun
+            soil_ph=6.5,
+            plant_depth_cm=2,
+            plant_space_cm=30,
+            water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            high_temp_degrees=30,
+            high_temp_water_frequency_id=seed_frequency_data[0]["id"],  # Daily
+            harvest_week_start_id=seed_week_data[1]["id"],  # Week 2
+            harvest_week_end_id=seed_week_data[2]["id"],  # Week 3
+            is_public=True,
+        )
+        session.add(variety)
+        await session.commit()
+
+        yield {
+            "variety_id": variety_id,
+            "variety_name": "Public Tomato",
+            "owner_user_id": user_id,
+        }

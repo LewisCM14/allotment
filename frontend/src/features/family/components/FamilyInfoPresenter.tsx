@@ -1,22 +1,22 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
-import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { IFamilyInfo } from "../services/FamilyService";
 import { Link } from "react-router-dom";
 
-// Local types based on IFamilyInfo structure
-type Symptom = { id: string; name: string };
-type Treatment = { id: string; name: string };
-type Prevention = { id: string; name: string };
+// Types matching backend schema
+type Symptom = { symptom_id: string; symptom_name: string };
+type Treatment = { intervention_id: string; intervention_name: string };
+type Prevention = { intervention_id: string; intervention_name: string };
 type Disease = {
-	id: string;
-	name: string;
+	disease_id: string;
+	disease_name: string;
 	symptoms?: Symptom[];
 	treatments?: Treatment[];
 	preventions?: Prevention[];
 };
 type Pest = {
-	id: string;
-	name: string;
+	pest_id: string;
+	pest_name: string;
 	treatments?: Treatment[];
 	preventions?: Prevention[];
 };
@@ -35,7 +35,7 @@ interface ListSectionProps<T> {
 	readonly emptyText: string;
 }
 
-function ListSection<T extends { id: string; name: string }>({
+function ListSection<T extends { family_id: string; family_name: string }>({
 	title,
 	items,
 	renderItem,
@@ -57,15 +57,15 @@ function DiseaseList({ diseases }: { diseases: Disease[] }) {
 	return diseases && diseases.length > 0 ? (
 		<ul className="space-y-3">
 			{diseases.map((disease) => (
-				<li key={disease.id} className="border rounded p-3">
+				<li key={disease.disease_id} className="border rounded p-3">
 					<h3 className="text-lg font-bold capitalize mb-2 text-foreground bg-accent/20 p-1 rounded">
-						{disease.name}
+						{disease.disease_name}
 					</h3>
 					<div className="grid gap-1">
 						<div>
 							<strong className="text-sm">Symptoms:</strong>{" "}
 							{disease.symptoms && disease.symptoms.length > 0 ? (
-								disease.symptoms.map((s: Symptom) => s.name).join(", ")
+								disease.symptoms.map((s) => s.symptom_name).join(", ")
 							) : (
 								<span className="text-muted-foreground">None listed</span>
 							)}
@@ -73,7 +73,7 @@ function DiseaseList({ diseases }: { diseases: Disease[] }) {
 						<div>
 							<strong className="text-sm">Treatments:</strong>{" "}
 							{disease.treatments && disease.treatments.length > 0 ? (
-								disease.treatments.map((t: Treatment) => t.name).join(", ")
+								disease.treatments.map((t) => t.intervention_name).join(", ")
 							) : (
 								<span className="text-muted-foreground">None listed</span>
 							)}
@@ -81,7 +81,7 @@ function DiseaseList({ diseases }: { diseases: Disease[] }) {
 						<div>
 							<strong className="text-sm">Preventions:</strong>{" "}
 							{disease.preventions && disease.preventions.length > 0 ? (
-								disease.preventions.map((p: Prevention) => p.name).join(", ")
+								disease.preventions.map((p) => p.intervention_name).join(", ")
 							) : (
 								<span className="text-muted-foreground">None listed</span>
 							)}
@@ -99,15 +99,15 @@ function PestList({ pests }: { pests: Pest[] }) {
 	return pests && pests.length > 0 ? (
 		<ul className="space-y-3">
 			{pests.map((pest) => (
-				<li key={pest.id} className="border rounded p-3">
+				<li key={pest.pest_id} className="border rounded p-3">
 					<h3 className="text-lg font-bold capitalize mb-2 text-foreground bg-accent/20 p-1 rounded">
-						{pest.name}
+						{pest.pest_name}
 					</h3>
 					<div className="grid gap-1">
 						<div>
 							<strong className="text-sm">Treatments:</strong>{" "}
 							{pest.treatments && pest.treatments.length > 0 ? (
-								pest.treatments.map((t: Treatment) => t.name).join(", ")
+								pest.treatments.map((t) => t.intervention_name).join(", ")
 							) : (
 								<span className="text-muted-foreground">None listed</span>
 							)}
@@ -115,7 +115,7 @@ function PestList({ pests }: { pests: Pest[] }) {
 						<div>
 							<strong className="text-sm">Preventions:</strong>{" "}
 							{pest.preventions && pest.preventions.length > 0 ? (
-								pest.preventions.map((p: Prevention) => p.name).join(", ")
+								pest.preventions.map((p) => p.intervention_name).join(", ")
 							) : (
 								<span className="text-muted-foreground">None listed</span>
 							)}
@@ -136,12 +136,7 @@ export function FamilyInfoPresenter({
 	isSuccess,
 }: Props) {
 	if (isLoading) {
-		return (
-			<div className="flex justify-center items-center h-64">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-				<p className="ml-2">Loading family information...</p>
-			</div>
-		);
+		return <LoadingSpinner size="lg" className="h-64" />;
 	}
 	if (error) {
 		return (
@@ -170,7 +165,7 @@ export function FamilyInfoPresenter({
 
 	return (
 		<div className="w-full max-w-2xl mx-auto min-h-[32rem] flex flex-col">
-			<h1 className="text-3xl font-bold mb-2 capitalize">{data.name}</h1>
+			<h1 className="text-3xl font-bold mb-2 capitalize">{data.family_name}</h1>
 			{hasBotanicalGroup && (
 				<div className="mb-4 text-muted-foreground">
 					<span>
@@ -179,15 +174,15 @@ export function FamilyInfoPresenter({
 							to="/botanical_groups"
 							className="capitalize underline underline-offset-4 font-semibold text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors"
 						>
-							{data.botanical_group.name}
+							{data.botanical_group.botanical_group_name}
 						</Link>
 					</span>
 					<span>
 						{" "}
 						Rotation:{" "}
-						{data.botanical_group.recommended_rotation_years !== null &&
-						data.botanical_group.recommended_rotation_years !== undefined
-							? `${data.botanical_group.recommended_rotation_years} year(s)`
+						{data.botanical_group.rotate_years !== null &&
+						data.botanical_group.rotate_years !== undefined
+							? `${data.botanical_group.rotate_years} year(s)`
 							: "Perennial"}
 					</span>
 				</div>
@@ -197,12 +192,12 @@ export function FamilyInfoPresenter({
 					title="Companion Families"
 					items={data.companion_to || []}
 					renderItem={(fam) => (
-						<li key={fam.id} className="capitalize">
+						<li key={fam.family_id} className="capitalize">
 							<Link
-								to={`/family/${fam.id}`}
+								to={`/family/${fam.family_id}`}
 								className="underline underline-offset-4 text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors"
 							>
-								{fam.name}
+								{fam.family_name}
 							</Link>
 						</li>
 					)}
@@ -212,12 +207,12 @@ export function FamilyInfoPresenter({
 					title="Antagonist Families"
 					items={data.antagonises || []}
 					renderItem={(fam) => (
-						<li key={fam.id} className="capitalize">
+						<li key={fam.family_id} className="capitalize">
 							<Link
-								to={`/family/${fam.id}`}
+								to={`/family/${fam.family_id}`}
 								className="underline underline-offset-4 text-primary dark:text-primary-foreground hover:text-interactive-foreground dark:hover:text-interactive-foreground focus-visible:outline-2 focus-visible:outline-ring transition-colors"
 							>
-								{fam.name}
+								{fam.family_name}
 							</Link>
 						</li>
 					)}

@@ -26,7 +26,7 @@ def _patch_feeds(return_value=None, side_effect=None):
 
 def _standard_feeds():
     names = ["Tomato Feed", "General Purpose Feed", "Organic Feed"]
-    return [Feed(id=uuid.uuid4(), name=n) for n in names]
+    return [Feed(feed_id=uuid.uuid4(), feed_name=n) for n in names]
 
 
 @pytest.mark.asyncio
@@ -36,13 +36,13 @@ async def test_feeds_success(client):
         mock_get_db.return_value = mock_db
         items = _standard_feeds()
         with _patch_feeds(return_value=items):
-            response = await client.get(f"{PREFIX}/feed")
+            response = await client.get(f"{PREFIX}/feeds")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data) == 3
     for i, feed in enumerate(data):
-        assert set(feed.keys()) == {"id", "name"}
-        assert feed["name"] == items[i].name
+        assert set(feed.keys()) == {"feed_id", "feed_name"}
+        assert feed["feed_name"] == items[i].feed_name
 
 
 @pytest.mark.asyncio
@@ -51,7 +51,7 @@ async def test_feeds_empty(client):
         mock_db = AsyncMock(spec=AsyncSession)
         mock_get_db.return_value = mock_db
         with _patch_feeds(return_value=[]):
-            response = await client.get(f"{PREFIX}/feed")
+            response = await client.get(f"{PREFIX}/feeds")
     assert response.status_code == status.HTTP_200_OK
     assert response.json() == []
 
@@ -62,7 +62,7 @@ async def test_feeds_database_error(client):
         mock_db = AsyncMock(spec=AsyncSession)
         mock_get_db.return_value = mock_db
         with _patch_feeds(side_effect=Exception("Database connection failed")):
-            response = await client.get(f"{PREFIX}/feed")
+            response = await client.get(f"{PREFIX}/feeds")
     assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
 
@@ -71,9 +71,11 @@ async def test_feeds_large_dataset(client):
     with _patch_db() as mock_get_db:
         mock_db = AsyncMock(spec=AsyncSession)
         mock_get_db.return_value = mock_db
-        items = [Feed(id=uuid.uuid4(), name=f"Feed Type {i}") for i in range(60)]
+        items = [
+            Feed(feed_id=uuid.uuid4(), feed_name=f"Feed Type {i}") for i in range(60)
+        ]
         with _patch_feeds(return_value=items):
-            response = await client.get(f"{PREFIX}/feed")
+            response = await client.get(f"{PREFIX}/feeds")
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json()) == 60
 
@@ -88,7 +90,7 @@ async def test_feeds_rate_limiting(client):
         try:
             limiter.enabled = True
             with _patch_feeds(return_value=items):
-                responses = [await client.get(f"{PREFIX}/feed") for _ in range(11)]
+                responses = [await client.get(f"{PREFIX}/feeds") for _ in range(11)]
         finally:
             limiter.enabled = original_enabled
 
@@ -107,9 +109,9 @@ async def test_feeds_basic_field_validation(client):
         mock_get_db.return_value = mock_db
         items = _standard_feeds()[:2]
         with _patch_feeds(return_value=items):
-            response = await client.get(f"{PREFIX}/feed")
+            response = await client.get(f"{PREFIX}/feeds")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     for f in data:
-        assert isinstance(f["name"], str)
-        assert len(f["name"]) >= 3
+        assert isinstance(f["feed_name"], str)
+        assert len(f["feed_name"]) >= 3

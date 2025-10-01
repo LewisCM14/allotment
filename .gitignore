@@ -62,4 +62,5 @@ dev/*
 .scannerwork/
 .scannerwork/report-task.txt
 
+# LLM Files
 prompt.md

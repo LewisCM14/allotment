@@ -154,9 +154,9 @@ class TestUserPreferencesUnitOfWork:
         feed_day = result.user_feed_days[0]
         assert isinstance(feed_day, FeedDayRead)
         assert feed_day.feed_id == sample_user_feed_day.feed_id
-        assert feed_day.feed_name == sample_user_feed_day.feed.name
+        assert feed_day.feed_name == sample_user_feed_day.feed.feed_name
         assert feed_day.day_id == sample_user_feed_day.day_id
-        assert feed_day.day_name == sample_user_feed_day.day.name
+        assert feed_day.day_name == sample_user_feed_day.day.day_name
 
     @pytest.mark.asyncio
     async def test_get_user_preferences_empty_results(
@@ -204,8 +204,8 @@ class TestUserPreferencesUnitOfWork:
         # Update the sample to match the test parameters
         sample_user_feed_day.feed_id = uuid.UUID(feed_id)
         sample_user_feed_day.day_id = uuid.UUID(day_id)
-        sample_user_feed_day.feed.id = sample_user_feed_day.feed_id
-        sample_user_feed_day.day.id = sample_user_feed_day.day_id
+        sample_user_feed_day.feed.feed_id = sample_user_feed_day.feed_id
+        sample_user_feed_day.day.day_id = sample_user_feed_day.day_id
         user_feed_days = [sample_user_feed_day]
 
         with (
@@ -225,8 +225,8 @@ class TestUserPreferencesUnitOfWork:
         assert isinstance(result, FeedDayRead)
         assert str(result.feed_id) == feed_id
         assert str(result.day_id) == day_id
-        assert result.feed_name == sample_user_feed_day.feed.name
-        assert result.day_name == sample_user_feed_day.day.name
+        assert result.feed_name == sample_user_feed_day.feed.feed_name
+        assert result.day_name == sample_user_feed_day.day.day_name
 
         mock_update.assert_called_once_with(user_id, feed_id, day_id)
         mock_get_feed_days.assert_called_once_with(user_id)
@@ -396,11 +396,19 @@ class TestUserPreferencesUnitOfWork:
     @pytest.mark.parametrize(
         "schema_cls, builder_list, attr_map",
         [
-            (FeedRead, "sample_feeds", [("id", "id"), ("name", "name")]),
+            (
+                FeedRead,
+                "sample_feeds",
+                [("feed_id", "feed_id"), ("feed_name", "feed_name")],
+            ),
             (
                 DayRead,
                 "sample_days",
-                [("id", "id"), ("day_number", "day_number"), ("name", "name")],
+                [
+                    ("day_id", "day_id"),
+                    ("day_number", "day_number"),
+                    ("day_name", "day_name"),
+                ],
             ),
         ],
     )

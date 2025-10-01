@@ -14,7 +14,7 @@ from app.api.core.limiter import limiter
 from app.api.core.logging import log_timing
 from app.api.middleware.error_handler import safe_operation
 from app.api.middleware.logging_middleware import request_id_ctx_var
-from app.api.schemas.user.user_preference_schema import FeedRead
+from app.api.schemas.grow_guide.variety_schema import FeedRead
 from app.api.services.grow_guide.grow_guide_unit_of_work import GrowGuideUnitOfWork
 
 router = APIRouter()
@@ -49,4 +49,4 @@ async def get_feeds(
                 count=len(feeds),
                 **log_context,
             )
-            return [FeedRead(id=feed.id, name=feed.name) for feed in feeds]
+            return [FeedRead.model_validate(feed) for feed in feeds]

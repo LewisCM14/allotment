@@ -66,7 +66,7 @@ The application is designed to be implemented following the Walking Skeleton app
 
 ---
 
-### Meat
+### Body
 
 1. **Botanical Group List Interface**
     
@@ -91,15 +91,10 @@ The application is designed to be implemented following the Walking Skeleton app
         ???+ tip "Future Improvement"
             This is the first point where offline data synchronization would offer tangible benefit. Cross tab sync for authentication could also be considered here.
 
-1. **Grow Guide**
+1. **Grow Guide & User Owned Grow Guide Interfaces**
 
     ??? info
-        Will require the implementation of the: Day, Week, Month, Lifecycle, Planting Conditions and Frequency tables followed by the Variety and Variety Water Day tables.
-
-1. **User Owned Grow Guide Interface**
-    
-    ??? info
-        Will require the implementation of the User Active Varieties table.
+        Will require the implementation of the: Week, Month, Lifecycle, Planting Conditions, Frequency and Frequency Default Day tables followed by the Variety and Variety Water Day tables. Allowing for users to create Grow Guides that can then be viewed and set to active once the User Active Varieties table has been implemented.
 
 1. **Weekly ToDo**
 

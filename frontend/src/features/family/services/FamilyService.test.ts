@@ -15,12 +15,12 @@ describe("FamilyService", () => {
 		it("should fetch family info successfully", async () => {
 			const { getFamilyInfo } = await import("./FamilyService");
 			const mockData = {
-				id: "550e8400-e29b-41d4-a716-446655440008", // UUID format
-				name: "Test Family",
+				family_id: "550e8400-e29b-41d4-a716-446655440008", // UUID format
+				family_name: "Test Family",
 				botanical_group: {
-					id: "550e8400-e29b-41d4-a716-446655440009", // UUID format
-					name: "BG",
-					recommended_rotation_years: 2,
+					botanical_group_id: "550e8400-e29b-41d4-a716-446655440009", // UUID format
+					botanical_group_name: "BG",
+					rotate_years: 2,
 				},
 				companion_to: [],
 				antagonises: [],
@@ -86,21 +86,33 @@ describe("FamilyService", () => {
 		it("should fetch botanical groups successfully", async () => {
 			const mockBotanicalGroups: IBotanicalGroup[] = [
 				{
-					id: "550e8400-e29b-41d4-a716-446655440000", // UUID format
-					name: "Brassicaceae",
-					recommended_rotation_years: 3,
+					botanical_group_id: "550e8400-e29b-41d4-a716-446655440000", // UUID format
+					botanical_group_name: "Brassicaceae",
+					rotate_years: 3,
 					families: [
-						{ id: "550e8400-e29b-41d4-a716-446655440001", name: "Cabbage" },
-						{ id: "550e8400-e29b-41d4-a716-446655440002", name: "Broccoli" },
+						{
+							family_id: "550e8400-e29b-41d4-a716-446655440001",
+							family_name: "Cabbage",
+						},
+						{
+							family_id: "550e8400-e29b-41d4-a716-446655440002",
+							family_name: "Broccoli",
+						},
 					],
 				},
 				{
-					id: "550e8400-e29b-41d4-a716-446655440003", // UUID format
-					name: "Solanaceae",
-					recommended_rotation_years: 4,
+					botanical_group_id: "550e8400-e29b-41d4-a716-446655440003", // UUID format
+					botanical_group_name: "Solanaceae",
+					rotate_years: 4,
 					families: [
-						{ id: "550e8400-e29b-41d4-a716-446655440004", name: "Tomatoes" },
-						{ id: "550e8400-e29b-41d4-a716-446655440005", name: "Potatoes" },
+						{
+							family_id: "550e8400-e29b-41d4-a716-446655440004",
+							family_name: "Tomatoes",
+						},
+						{
+							family_id: "550e8400-e29b-41d4-a716-446655440005",
+							family_name: "Potatoes",
+						},
 					],
 				},
 			];
@@ -271,11 +283,14 @@ describe("FamilyService", () => {
 		it("should handle botanical group with null rotation years", async () => {
 			const mockBotanicalGroups: IBotanicalGroup[] = [
 				{
-					id: "550e8400-e29b-41d4-a716-446655440006", // UUID format
-					name: "Mixed Group",
-					recommended_rotation_years: null,
+					botanical_group_id: "550e8400-e29b-41d4-a716-446655440006", // UUID format
+					botanical_group_name: "Mixed Group",
+					rotate_years: null,
 					families: [
-						{ id: "550e8400-e29b-41d4-a716-446655440007", name: "Herbs" },
+						{
+							family_id: "550e8400-e29b-41d4-a716-446655440007",
+							family_name: "Herbs",
+						},
 					],
 				},
 			];
@@ -287,8 +302,8 @@ describe("FamilyService", () => {
 
 			expect(getSpy).toHaveBeenCalled();
 			expect(result).not.toBeNull();
-			expect(result?.[0].recommended_rotation_years).toBeNull();
-			expect(result?.[0].name).toBe("Mixed Group");
+			expect(result?.[0].rotate_years).toBeNull();
+			expect(result?.[0].botanical_group_name).toBe("Mixed Group");
 
 			getSpy.mockRestore();
 		});

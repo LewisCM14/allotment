@@ -76,19 +76,19 @@ describe("FamilyInfoPage", () => {
 	it("renders family info with all fields and lists", () => {
 		(useFamilyInfoHook.useFamilyInfo as unknown as Mock).mockReturnValue({
 			data: {
-				id: "123",
-				name: "Test Family",
+				family_id: "123",
+				family_name: "Test Family",
 				description: "A test family",
 				botanical_group: {
-					id: "bg1",
-					name: "Root Crops",
-					recommended_rotation_years: 3,
+					botanical_group_id: "bg1",
+					botanical_group_name: "Root Crops",
+					rotate_years: 3,
 				},
 				companion_to: [
-					{ id: "c1", name: "Carrot" },
-					{ id: "c2", name: "Pea" },
+					{ family_id: "c1", family_name: "Carrot" },
+					{ family_id: "c2", family_name: "Pea" },
 				],
-				antagonises: [{ id: "a1", name: "Onion" }],
+				antagonises: [{ family_id: "a1", family_name: "Onion" }],
 				pests: ["Aphid", "Slug"],
 				diseases: ["Blight"],
 			},
@@ -108,15 +108,16 @@ describe("FamilyInfoPage", () => {
 	});
 
 	it("renders 'Perennial' if recommended_rotation_years is null", () => {
+		// Note: rotate_years null indicates perennial
 		(useFamilyInfoHook.useFamilyInfo as unknown as Mock).mockReturnValue({
 			data: {
-				id: "123",
-				name: "Test Family",
+				family_id: "123",
+				family_name: "Test Family",
 				description: "A test family",
 				botanical_group: {
-					id: "bg1",
-					name: "Root Crops",
-					recommended_rotation_years: null,
+					botanical_group_id: "bg1",
+					botanical_group_name: "Root Crops",
+					rotate_years: null,
 				},
 				companion_to: [],
 				antagonises: [],
@@ -134,13 +135,13 @@ describe("FamilyInfoPage", () => {
 	it("renders empty states for all lists", () => {
 		(useFamilyInfoHook.useFamilyInfo as unknown as Mock).mockReturnValue({
 			data: {
-				id: "123",
-				name: "Test Family",
+				family_id: "123",
+				family_name: "Test Family",
 				description: "A test family",
 				botanical_group: {
-					id: "bg1",
-					name: "Root Crops",
-					recommended_rotation_years: 2,
+					botanical_group_id: "bg1",
+					botanical_group_name: "Root Crops",
+					rotate_years: 2,
 				},
 				companion_to: [],
 				antagonises: [],
@@ -165,8 +166,8 @@ describe("FamilyInfoPage", () => {
 	it("handles missing botanical_group gracefully", () => {
 		(useFamilyInfoHook.useFamilyInfo as unknown as Mock).mockReturnValue({
 			data: {
-				id: "123",
-				name: "Test Family",
+				family_id: "123",
+				family_name: "Test Family",
 				description: "A test family",
 				botanical_group: undefined,
 				companion_to: [],

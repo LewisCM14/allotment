@@ -20,14 +20,16 @@ if TYPE_CHECKING:
 
 class Intervention(Base):
     __tablename__ = "intervention"
-    id: Mapped[uuid.UUID] = mapped_column(
+    intervention_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         nullable=False,
         index=True,
     )
-    name: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
+    intervention_name: Mapped[str] = mapped_column(
+        String(50), unique=True, nullable=False
+    )
 
     # Relationships
     treats_diseases: Mapped[List["Disease"]] = relationship(
@@ -43,4 +45,6 @@ class Intervention(Base):
         "Pest", secondary="pest_prevention", back_populates="preventions"
     )
 
-    __table_args__ = (UniqueConstraint("name", name="uq_intervention_name"),)
+    __table_args__ = (
+        UniqueConstraint("intervention_name", name="uq_intervention_name"),
+    )

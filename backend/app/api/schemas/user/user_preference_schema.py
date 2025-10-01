@@ -10,6 +10,7 @@ from pydantic import Field
 from pydantic.config import ConfigDict
 
 from app.api.schemas.base_schema import SecureBaseModel
+from app.api.schemas.grow_guide.variety_schema import DayRead, FeedRead
 
 
 class FeedDayRead(SecureBaseModel):
@@ -27,25 +28,6 @@ class UserFeedDayUpdate(SecureBaseModel):
     """Schema for updating a user's feed day preference."""
 
     day_id: UUID = Field(..., description="The ID of the preferred day")
-
-
-class FeedRead(SecureBaseModel):
-    """Schema for reading a feed type."""
-
-    id: UUID
-    name: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DayRead(SecureBaseModel):
-    """Schema for reading a day."""
-
-    id: UUID
-    day_number: int
-    name: str
-
-    model_config = ConfigDict(from_attributes=True)
 
 
 class UserPreferencesRead(SecureBaseModel):

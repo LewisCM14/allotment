@@ -26,7 +26,9 @@ def _patch_days(return_value=None, side_effect=None):
 
 def _standard_days():  # seven day objects
     names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    return [Day(id=uuid.uuid4(), day_number=i + 1, name=names[i]) for i in range(7)]
+    return [
+        Day(day_id=uuid.uuid4(), day_number=i + 1, day_name=names[i]) for i in range(7)
+    ]
 
 
 @pytest.mark.asyncio
@@ -42,8 +44,8 @@ async def test_days_success(client):
     data = response.json()
     assert len(data) == 7
     for i, day in enumerate(data):
-        assert set(day.keys()) == {"id", "name", "day_number"}
-        assert day["name"] == items[i].name
+        assert set(day.keys()) == {"day_id", "day_name", "day_number"}
+        assert day["day_name"] == items[i].day_name
         assert day["day_number"] == items[i].day_number
 
 
@@ -74,7 +76,7 @@ async def test_days_large_dataset(client):
         mock_db = AsyncMock(spec=AsyncSession)
         mock_get_db.return_value = mock_db
         items = [
-            Day(id=uuid.uuid4(), day_number=(i % 7) + 1, name=f"Day{i}")
+            Day(day_id=uuid.uuid4(), day_number=(i % 7) + 1, day_name=f"Day{i}")
             for i in range(20)
         ]
         with _patch_days(return_value=items):
@@ -118,4 +120,4 @@ async def test_days_basic_field_validation(client):
     for d in data:
         assert isinstance(d["day_number"], int)
         assert 1 <= d["day_number"] <= 7
-        assert len(d["name"]) >= 3
+        assert len(d["day_name"]) >= 3

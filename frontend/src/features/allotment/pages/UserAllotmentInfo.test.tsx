@@ -47,7 +47,9 @@ describe("AllotmentPage", () => {
 		);
 
 		renderPage();
-		expect(screen.getByText(/loading allotment data/i)).toBeInTheDocument();
+		expect(
+			screen.getByLabelText(/loading allotment data/i),
+		).toBeInTheDocument();
 	});
 
 	it("renders form for new user (no existing allotment)", async () => {

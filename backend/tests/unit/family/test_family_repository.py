@@ -36,14 +36,18 @@ class TestFamilyRepository:
     def sample_botanical_group(self):
         """Create a sample botanical group."""
         return BotanicalGroup(
-            id=uuid.uuid4(), name="Test Botanical Group", recommended_rotation_years=3
+            botanical_group_id=uuid.uuid4(),
+            botanical_group_name="Test Botanical Group",
+            rotate_years=3,
         )
 
     @pytest.fixture
     def sample_family(self, sample_botanical_group):
         """Create a sample family."""
         return Family(
-            id=uuid.uuid4(), name="Test Family", botanical_group=sample_botanical_group
+            family_id=uuid.uuid4(),
+            family_name="Test Family",
+            botanical_group=sample_botanical_group,
         )
 
     def test_init(self, mock_db):
@@ -123,7 +127,7 @@ class TestFamilyRepository:
         mock_result.unique.return_value.scalar_one_or_none.return_value = sample_family
         mock_db.execute.return_value = mock_result
 
-        result = await family_repository._fetch_family_by_uuid(sample_family.id)
+        result = await family_repository._fetch_family_by_uuid(sample_family.family_id)
 
         assert result == sample_family
         mock_db.execute.assert_called_once()
@@ -242,7 +246,7 @@ class TestFamilyRepository:
         self, family_repository, sample_family, sample_botanical_group
     ):
         """Test successful family info retrieval."""
-        family_id = sample_family.id
+        family_id = sample_family.family_id
 
         with (
             patch.object(
@@ -260,8 +264,8 @@ class TestFamilyRepository:
 
             assert result is not None
             assert isinstance(result, FamilyInfoSchema)
-            assert result.id == sample_family.id
-            assert result.name == sample_family.name
+            assert result.family_id == sample_family.family_id
+            assert result.family_name == sample_family.family_name
 
     def test_add_family(self, family_repository):
         """Test add_family stub method."""
@@ -309,20 +313,20 @@ class TestFamilyRepository:
         self, family_repository, sample_family
     ):
         """get_family_info aggregates pests, diseases, antagonises, companions."""
-        fam_id = sample_family.id
+        fam_id = sample_family.family_id
         pest_schema = PestSchema(
-            id=uuid.uuid4(), name="Pest A", treatments=None, preventions=None
+            pest_id=uuid.uuid4(), pest_name="Pest A", treatments=None, preventions=None
         )
         disease_schema = DiseaseSchema(
-            id=uuid.uuid4(),
-            name="Disease A",
+            disease_id=uuid.uuid4(),
+            disease_name="Disease A",
             symptoms=None,
             treatments=None,
             preventions=None,
         )
         relation_family = Family(
-            id=uuid.uuid4(),
-            name="RelFam",
+            family_id=uuid.uuid4(),
+            family_name="RelFam",
             botanical_group=sample_family.botanical_group,
         )
         with (
@@ -346,16 +350,20 @@ class TestFamilyRepository:
             result = await family_repository.get_family_info(fam_id)
             assert result is not None
             assert isinstance(result, FamilyInfoSchema)
-            assert result.pests and result.pests[0].name == "Pest A"
-            assert result.diseases and result.diseases[0].name == "Disease A"
-            assert result.antagonises and result.antagonises[0].name == "RelFam"
-            assert result.companion_to and result.companion_to[0].name == "RelFam"
+            assert result.pests and result.pests[0].pest_name == "Pest A"
+            assert result.diseases and result.diseases[0].disease_name == "Disease A"
+            assert result.antagonises and result.antagonises[0].family_name == "RelFam"
+            assert (
+                result.companion_to and result.companion_to[0].family_name == "RelFam"
+            )
 
     @pytest.mark.asyncio
     async def test_map_interventions_to_items_with_data(self, family_repository):
         """Test mapping interventions to items when data exists."""
         with patch.object(family_repository.db, "execute") as mock_execute:
-            mock_intervention = Intervention(id=uuid.uuid4(), name="Test Intervention")
+            mock_intervention = Intervention(
+                intervention_id=uuid.uuid4(), intervention_name="Test Intervention"
+            )
             item_id = uuid.uuid4()
 
             mock_result = MagicMock()
@@ -388,7 +396,7 @@ class TestFamilyRepository:
     async def test_map_symptoms_to_diseases_with_data(self, family_repository):
         """Test mapping symptoms to diseases when data exists."""
         with patch.object(family_repository.db, "execute") as mock_execute:
-            mock_symptom = Symptom(id=uuid.uuid4(), name="Test Symptom")
+            mock_symptom = Symptom(symptom_id=uuid.uuid4(), symptom_name="Test Symptom")
             disease_id = uuid.uuid4()
 
             mock_result = MagicMock()
@@ -426,7 +434,7 @@ class TestFamilyRepository:
 
         with patch.object(family_repository.db, "execute") as mock_execute:
             pest_id = uuid.uuid4()
-            mock_pest = Pest(id=pest_id, name="Test Pest")
+            mock_pest = Pest(pest_id=pest_id, pest_name="Test Pest")
 
             mock_pest_result = MagicMock()
             mock_pest_result.scalars.return_value.all.return_value = [mock_pest]
@@ -436,14 +444,20 @@ class TestFamilyRepository:
                 "app.api.schemas.family.family_schema.PestSchema.model_validate"
             ) as mock_schema:
                 mock_schema.return_value = PestSchema(
-                    id=pest_id, name="Test Pest", treatments=None, preventions=None
+                    pest_id=pest_id,
+                    pest_name="Test Pest",
+                    treatments=None,
+                    preventions=None,
                 )
 
                 result = await family_repository._fetch_pests_for_family(family_id)
 
                 assert result == [
                     PestSchema(
-                        id=pest_id, name="Test Pest", treatments=None, preventions=None
+                        pest_id=pest_id,
+                        pest_name="Test Pest",
+                        treatments=None,
+                        preventions=None,
                     )
                 ]
 
@@ -454,7 +468,7 @@ class TestFamilyRepository:
 
         with patch.object(family_repository.db, "execute") as mock_execute:
             disease_id = uuid.uuid4()
-            mock_disease = Disease(id=disease_id, name="Test Disease")
+            mock_disease = Disease(disease_id=disease_id, disease_name="Test Disease")
 
             mock_disease_result = MagicMock()
             mock_disease_result.scalars.return_value.all.return_value = [mock_disease]
@@ -464,8 +478,8 @@ class TestFamilyRepository:
                 "app.api.schemas.family.family_schema.DiseaseSchema.model_validate"
             ) as mock_schema:
                 mock_schema.return_value = DiseaseSchema(
-                    id=disease_id,
-                    name="Test Disease",
+                    disease_id=disease_id,
+                    disease_name="Test Disease",
                     symptoms=None,
                     treatments=None,
                     preventions=None,
@@ -475,8 +489,8 @@ class TestFamilyRepository:
 
                 assert result == [
                     DiseaseSchema(
-                        id=disease_id,
-                        name="Test Disease",
+                        disease_id=disease_id,
+                        disease_name="Test Disease",
                         symptoms=None,
                         treatments=None,
                         preventions=None,
@@ -488,7 +502,7 @@ class TestFamilyRepository:
         """Test fetching related families when data exists."""
         family_id = uuid.uuid4()
         related_family_id = uuid.uuid4()
-        mock_family = Family(id=related_family_id, name="Related Family")
+        mock_family = Family(family_id=related_family_id, family_name="Related Family")
 
         # Mock the association table with the required structure
         mock_association_table = MagicMock()

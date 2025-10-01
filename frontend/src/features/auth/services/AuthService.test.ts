@@ -407,9 +407,7 @@ describe("AuthService", () => {
 
 			await expect(
 				resetPassword("expired-token", "newPassword123!"),
-			).rejects.toThrow(
-				'[{"msg":"Reset token has expired","type":"token_expired_error"}]',
-			);
+			).rejects.toThrow("Reset token has expired");
 		});
 
 		it("should handle password validation errors", async () => {
