@@ -63,6 +63,21 @@ const labelFor = (name: keyof typeof FIELD_META) => {
 	return meta.required ? `${meta.label}*` : meta.label;
 };
 
+const formatWeekStart = (raw?: string | null): string | undefined => {
+	if (!raw) return undefined;
+	const trimmed = raw.trim();
+	if (trimmed === "") return undefined;
+	// Accept ISO (YYYY-MM-DD) or already formatted MM/DD strings.
+	if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+		const [, month, day] = trimmed.split("-");
+		return `${month}/${day}`;
+	}
+	if (/^\d{2}\/\d{2}$/.test(trimmed)) {
+		return trimmed;
+	}
+	return trimmed;
+};
+
 // Define interface for option objects
 interface Option {
 	value: string;
@@ -322,10 +337,19 @@ export const GrowGuideForm = ({
 	);
 
 	const weeks: Option[] = (options?.weeks ?? []).map((w) => {
-		const num = w.week_number?.toString().padStart(2, "0");
+		const num =
+			typeof w.week_number === "number"
+				? w.week_number.toString().padStart(2, "0")
+				: undefined;
+		const baseLabel = num ? `Week ${num}` : "Week";
+		const start = formatWeekStart(w.week_start_date);
+		const parts = [] as string[];
+		if (start) parts.push(start);
+		parts.push(baseLabel);
+		const label = parts.join(" ").trim();
 		return {
 			value: w.week_id,
-			label: `Week ${num}`.trim(),
+			label,
 		};
 	});
 

@@ -22,7 +22,11 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
 )
 from app.api.models import User
-from app.api.models.user.user_model import UserAllotment, UserFeedDay
+from app.api.models.user.user_model import (
+    UserActiveVariety,
+    UserAllotment,
+    UserFeedDay,
+)
 from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
     UserAllotmentUpdate,
@@ -364,3 +368,95 @@ class UserRepository:
                     **log_context,
                 )
                 return new_preference
+
+    @translate_db_exceptions
+    async def get_active_varieties(self, user_id: str) -> List[UserActiveVariety]:
+        """Return all active varieties for a user."""
+        user_uuid = UUID(user_id)
+        log_context = {"user_id": user_id}
+        with log_timing(
+            "db_get_active_varieties",
+            request_id=self.request_id,
+            **log_context,
+        ):
+            query = (
+                select(UserActiveVariety)
+                .where(UserActiveVariety.user_id == user_uuid)
+                .options(selectinload(UserActiveVariety.variety))
+                .order_by(UserActiveVariety.activated_at.desc())
+            )
+            result = await self.db.execute(query)
+            return list(result.scalars().all())
+
+    @translate_db_exceptions
+    async def get_active_variety(
+        self, user_id: UUID, variety_id: UUID
+    ) -> Optional[UserActiveVariety]:
+        """Fetch a specific active variety association for a user."""
+        log_context = {"user_id": str(user_id), "variety_id": str(variety_id)}
+        with log_timing(
+            "db_get_active_variety",
+            request_id=self.request_id,
+            **log_context,
+        ):
+            query = (
+                select(UserActiveVariety)
+                .where(
+                    UserActiveVariety.user_id == user_id,
+                    UserActiveVariety.variety_id == variety_id,
+                )
+                .options(selectinload(UserActiveVariety.variety))
+            )
+            result = await self.db.execute(query)
+            return result.scalar_one_or_none()
+
+    @translate_db_exceptions
+    async def add_active_variety(
+        self, association: UserActiveVariety
+    ) -> UserActiveVariety:
+        """Persist a new active variety association for a user."""
+        log_context = {
+            "user_id": str(association.user_id),
+            "variety_id": str(association.variety_id),
+        }
+        with log_timing(
+            "db_add_active_variety",
+            request_id=self.request_id,
+            **log_context,
+        ):
+            self.db.add(association)
+            await self.db.flush()
+            await self.db.refresh(association, attribute_names=["variety"])
+            logger.info(
+                "User active variety association created",
+                operation="create_user_active_variety",
+                **log_context,
+            )
+            return association
+
+    @translate_db_exceptions
+    async def delete_active_variety(self, user_id: UUID, variety_id: UUID) -> bool:
+        """Delete an active variety association. Returns True if deleted."""
+        log_context = {"user_id": str(user_id), "variety_id": str(variety_id)}
+        with log_timing(
+            "db_delete_active_variety",
+            request_id=self.request_id,
+            **log_context,
+        ):
+            query = select(UserActiveVariety).where(
+                UserActiveVariety.user_id == user_id,
+                UserActiveVariety.variety_id == variety_id,
+            )
+            result = await self.db.execute(query)
+            association = result.scalar_one_or_none()
+            if association is None:
+                return False
+
+            await self.db.delete(association)
+            await self.db.flush()
+            logger.info(
+                "User active variety association deleted",
+                operation="delete_user_active_variety",
+                **log_context,
+            )
+            return True

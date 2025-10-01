@@ -318,6 +318,10 @@ class VarietyRead(SecureBaseModel):
     variety_id: UUID
     variety_name: str
     owner_user_id: UUID
+    is_active: bool = Field(
+        default=False,
+        description="Whether the variety is marked as active for the current user",
+    )
 
     # Related objects
     family: FamilyRead
@@ -377,6 +381,10 @@ class VarietyListRead(SecureBaseModel):
     lifecycle: LifecycleRead
     is_public: bool
     last_updated: datetime
+    is_active: bool = Field(
+        default=False,
+        description="Whether the variety is marked as active for the current user",
+    )
 
     model_config = ConfigDict(from_attributes=True)
 

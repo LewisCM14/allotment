@@ -5,7 +5,12 @@ import pytest
 from fastapi import HTTPException, status
 
 from app.api.middleware.exception_handler import InvalidTokenError
-from app.api.models.user.user_model import User, UserAllotment, UserFeedDay
+from app.api.models.user.user_model import (
+    User,
+    UserActiveVariety,
+    UserAllotment,
+    UserFeedDay,
+)
 from app.api.repositories.user.user_repository import UserRepository
 from app.api.schemas.user.user_allotment_schema import (
     UserAllotmentCreate,
@@ -289,3 +294,131 @@ class TestUserRepository:
         assert str(result.feed_id) == feed_id
         assert str(result.day_id) == day_id
         mock_db.add.assert_called_once_with(result)
+
+    @pytest.mark.asyncio
+    async def test_ensure_user_feed_days_creates_missing_preferences(
+        self, user_repository, mock_db
+    ):
+        """Ensure missing feed day preferences are created."""
+        user_id = uuid.uuid4()
+        feeds = [Mock(feed_id=uuid.uuid4()) for _ in range(3)]
+        default_day = Mock(day_id=uuid.uuid4())
+
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = []
+        mock_result = Mock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        await user_repository.ensure_user_feed_days(str(user_id), feeds, default_day)
+
+        mock_db.execute.assert_called_once()
+        assert mock_db.add.call_count == len(feeds)
+        added_records = [call.args[0] for call in mock_db.add.call_args_list]
+        assert all(record.user_id == user_id for record in added_records)
+        assert all(record.day_id == default_day.day_id for record in added_records)
+        mock_db.flush.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_update_user_profile_success(
+        self, user_repository, mock_db, sample_user, monkeypatch
+    ):
+        async def fake_validate_user_exists(**kwargs):
+            return sample_user
+
+        monkeypatch.setattr(
+            "app.api.repositories.user.user_repository.validate_user_exists",
+            fake_validate_user_exists,
+        )
+
+        new_name = "GardenGuru"
+        new_country = "FR"
+
+        result = await user_repository.update_user_profile(
+            str(sample_user.user_id), new_name, new_country
+        )
+
+        assert result is sample_user
+        assert sample_user.user_first_name == new_name
+        assert sample_user.user_country_code == new_country
+
+    @pytest.mark.asyncio
+    async def test_get_active_varieties_returns_sorted_list(
+        self, user_repository, mock_db
+    ):
+        user_id = uuid.uuid4()
+        varieties = [
+            UserActiveVariety(user_id=user_id, variety_id=uuid.uuid4())
+            for _ in range(2)
+        ]
+
+        mock_scalars = Mock()
+        mock_scalars.all.return_value = varieties
+        mock_result = Mock()
+        mock_result.scalars.return_value = mock_scalars
+        mock_db.execute.return_value = mock_result
+
+        result = await user_repository.get_active_varieties(str(user_id))
+
+        assert result == varieties
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_get_active_variety_success(self, user_repository, mock_db):
+        user_id = uuid.uuid4()
+        variety_id = uuid.uuid4()
+        association = UserActiveVariety(user_id=user_id, variety_id=variety_id)
+
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = association
+        mock_db.execute.return_value = mock_result
+
+        result = await user_repository.get_active_variety(user_id, variety_id)
+
+        assert result is association
+        mock_db.execute.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_add_active_variety_flushes_and_refreshes(
+        self, user_repository, mock_db
+    ):
+        association = UserActiveVariety(user_id=uuid.uuid4(), variety_id=uuid.uuid4())
+
+        result = await user_repository.add_active_variety(association)
+
+        assert result is association
+        mock_db.add.assert_called_once_with(association)
+        mock_db.flush.assert_called_once()
+        mock_db.refresh.assert_awaited_once_with(
+            association, attribute_names=["variety"]
+        )
+
+    @pytest.mark.asyncio
+    async def test_delete_active_variety_success(self, user_repository, mock_db):
+        user_id = uuid.uuid4()
+        variety_id = uuid.uuid4()
+        association = UserActiveVariety(user_id=user_id, variety_id=variety_id)
+
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = association
+        mock_db.execute.return_value = mock_result
+
+        result = await user_repository.delete_active_variety(user_id, variety_id)
+
+        assert result is True
+        mock_db.delete.assert_awaited_once_with(association)
+        mock_db.flush.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_delete_active_variety_not_found(self, user_repository, mock_db):
+        user_id = uuid.uuid4()
+        variety_id = uuid.uuid4()
+
+        mock_result = Mock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_db.execute.return_value = mock_result
+
+        result = await user_repository.delete_active_variety(user_id, variety_id)
+
+        assert result is False
+        mock_db.delete.assert_not_called()

@@ -7,7 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 import structlog
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,6 +23,7 @@ from app.api.models.grow_guide.guide_options_model import (
     PlantingConditions,
 )
 from app.api.models.grow_guide.variety_model import Variety, VarietyWaterDay
+from app.api.models.user.user_model import UserActiveVariety
 
 logger = structlog.get_logger()
 
@@ -103,14 +104,56 @@ class VarietyRepository:
                 )
             )
             result = await self.db.execute(stmt)
+            variety = result.scalar_one_or_none()
+
+            if variety is None:
+                return None
+
+            is_active = False
+            if variety.owner_user_id == user_id:
+                active_stmt = (
+                    select(func.count(UserActiveVariety.variety_id))
+                    .where(
+                        UserActiveVariety.user_id == user_id,
+                        UserActiveVariety.variety_id == variety.variety_id,
+                    )
+                    .limit(1)
+                )
+                active_result = await self.db.execute(active_stmt)
+                is_active = (active_result.scalar_one_or_none() or 0) > 0
+
+            setattr(variety, "is_active", is_active)
+            return variety
+
+    @translate_db_exceptions
+    async def get_variety_owned_by_user(
+        self, variety_id: UUID, user_id: UUID
+    ) -> Optional[Variety]:
+        """Return a variety only if it is owned by the specified user."""
+        with log_timing("db_get_variety_owned_by_user", request_id=self.request_id):
+            stmt = select(Variety).where(
+                Variety.variety_id == variety_id,
+                Variety.owner_user_id == user_id,
+            )
+            result = await self.db.execute(stmt)
             return result.scalar_one_or_none()
 
     @translate_db_exceptions
     async def get_user_varieties(self, user_id: UUID) -> List[Variety]:
         """Get all varieties belonging to a user."""
         with log_timing("db_get_user_varieties", request_id=self.request_id):
+            active_count_subquery = (
+                select(func.count(UserActiveVariety.variety_id))
+                .where(
+                    UserActiveVariety.user_id == user_id,
+                    UserActiveVariety.variety_id == Variety.variety_id,
+                )
+                .correlate(Variety)
+                .scalar_subquery()
+            )
+
             stmt = (
-                select(Variety)
+                select(Variety, active_count_subquery.label("active_variety_count"))
                 .options(
                     selectinload(Variety.lifecycle),
                     selectinload(Variety.family),  # eager load family for list view
@@ -119,7 +162,13 @@ class VarietyRepository:
                 .order_by(Variety.variety_name)
             )
             result = await self.db.execute(stmt)
-            return list(result.scalars().all())
+            rows = result.unique().all()
+
+            varieties: List[Variety] = []
+            for variety, active_variety_count in rows:
+                setattr(variety, "is_active", (active_variety_count or 0) > 0)
+                varieties.append(variety)
+            return varieties
 
     @translate_db_exceptions
     async def get_public_varieties(self) -> List[Variety]:
@@ -135,7 +184,10 @@ class VarietyRepository:
                 .order_by(Variety.variety_name)
             )
             result = await self.db.execute(stmt)
-            return list(result.scalars().all())
+            varieties = list(result.scalars().unique().all())
+            for variety in varieties:
+                setattr(variety, "is_active", False)
+            return varieties
 
     @translate_db_exceptions
     async def update_variety(self, variety: Variety) -> Variety:

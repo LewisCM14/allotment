@@ -124,6 +124,7 @@ const mockUserGrowGuides: VarietyList[] = [
 		},
 		is_public: false,
 		last_updated: "2024-01-15T10:30:00Z",
+		is_active: false,
 	},
 	{
 		variety_id: "variety-2",
@@ -136,6 +137,7 @@ const mockUserGrowGuides: VarietyList[] = [
 		},
 		is_public: true,
 		last_updated: "2024-01-10T09:15:00Z",
+		is_active: false,
 	},
 	{
 		variety_id: "variety-3",
@@ -148,6 +150,7 @@ const mockUserGrowGuides: VarietyList[] = [
 		},
 		is_public: false,
 		last_updated: "2024-01-20T14:45:00Z",
+		is_active: false,
 	},
 ];
 
@@ -163,6 +166,7 @@ const mockPublicGrowGuides: VarietyList[] = [
 		},
 		is_public: true,
 		last_updated: "2024-01-05T08:00:00Z",
+		is_active: false,
 	},
 	{
 		variety_id: "public-variety-2",
@@ -175,6 +179,7 @@ const mockPublicGrowGuides: VarietyList[] = [
 		},
 		is_public: true,
 		last_updated: "2024-01-08T12:30:00Z",
+		is_active: false,
 	},
 ];
 
@@ -327,6 +332,7 @@ export const growGuideHandlers = [
 				) || mockGrowGuideOptions.lifecycles[0],
 			is_public: data.is_public || false,
 			last_updated: new Date().toISOString(),
+			is_active: false,
 		};
 
 		varietiesStore.push(newVariety);
@@ -464,6 +470,7 @@ export const growGuideHandlers = [
 			variety_id: `variety-copy-${Date.now()}`,
 			is_public: false,
 			last_updated: new Date().toISOString(),
+			is_active: false,
 		};
 
 		varietiesStore.push(copiedVariety);

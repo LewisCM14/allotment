@@ -42,6 +42,8 @@ vi.mock("../services/growGuideService", () => ({
 	growGuideService: {
 		getGrowGuideOptions: vi.fn(),
 		getUserGrowGuides: vi.fn(),
+		activateUserGrowGuide: vi.fn().mockResolvedValue({}),
+		deactivateUserGrowGuide: vi.fn().mockResolvedValue(null),
 	},
 }));
 
@@ -61,6 +63,7 @@ const mockGrowGuides: VarietyList[] = [
 		},
 		is_public: false,
 		last_updated: "2024-01-01T00:00:00Z",
+		is_active: false,
 	},
 	{
 		variety_id: "variety-2",
@@ -73,6 +76,7 @@ const mockGrowGuides: VarietyList[] = [
 		},
 		is_public: true,
 		last_updated: "2024-01-02T00:00:00Z",
+		is_active: false,
 	},
 	{
 		variety_id: "variety-3",
@@ -85,6 +89,7 @@ const mockGrowGuides: VarietyList[] = [
 		},
 		is_public: false,
 		last_updated: "2024-01-03T00:00:00Z",
+		is_active: false,
 	},
 ];
 

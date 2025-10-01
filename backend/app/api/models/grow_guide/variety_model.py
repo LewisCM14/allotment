@@ -34,7 +34,7 @@ if TYPE_CHECKING:
         Lifecycle,
         PlantingConditions,
     )
-    from app.api.models.user.user_model import User
+    from app.api.models.user.user_model import User, UserActiveVariety
 
 
 class Variety(Base):
@@ -216,6 +216,9 @@ class Variety(Base):
     # Water days relationship
     water_days: Mapped[list["VarietyWaterDay"]] = relationship(
         "VarietyWaterDay", back_populates="variety", cascade="all, delete-orphan"
+    )
+    active_users: Mapped[list["UserActiveVariety"]] = relationship(
+        "UserActiveVariety", back_populates="variety", cascade="all, delete-orphan"
     )
 
     __table_args__ = (

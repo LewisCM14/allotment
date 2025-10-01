@@ -467,9 +467,9 @@ describe("GrowGuideForm", () => {
 			await user.click(screen.getByLabelText(/lifecycle/i));
 			await user.click(screen.getByText("Annual"));
 			await user.click(screen.getByLabelText(/sowing start week/i));
-			await user.click(screen.getAllByText("Week 01")[0]);
+			await user.click(screen.getAllByText(/Week 01$/)[0]);
 			await user.click(screen.getByLabelText(/sowing end week/i));
-			await user.click(screen.getAllByText("Week 02")[0]);
+			await user.click(screen.getAllByText(/Week 02$/)[0]);
 			await user.click(screen.getByLabelText(/planting conditions/i));
 			await user.click(screen.getByText("Direct Sow"));
 			await user.type(screen.getByLabelText(/plant depth/i), "2");
@@ -480,9 +480,9 @@ describe("GrowGuideForm", () => {
 			await user.click(screen.getByLabelText(/high temp water frequency/i));
 			await user.click(screen.getAllByText("Daily")[0]);
 			await user.click(screen.getByLabelText(/harvest start week/i));
-			await user.click(screen.getAllByText("Week 27")[0]);
+			await user.click(screen.getAllByText(/Week 27$/)[0]);
 			await user.click(screen.getByLabelText(/harvest end week/i));
-			await user.click(screen.getAllByText("Week 32")[0]);
+			await user.click(screen.getAllByText(/Week 32$/)[0]);
 
 			// Test invalid pH (out of range)
 			const soilPhInput = screen.getByLabelText(/soil ph/i);
@@ -523,9 +523,9 @@ describe("GrowGuideForm", () => {
 			await user.click(screen.getByLabelText(/lifecycle/i));
 			await user.click(screen.getByText("Annual"));
 			await user.click(screen.getByLabelText(/sowing start week/i));
-			await user.click(screen.getAllByText("Week 01")[0]);
+			await user.click(screen.getAllByText(/Week 01$/)[0]);
 			await user.click(screen.getByLabelText(/sowing end week/i));
-			await user.click(screen.getAllByText("Week 02")[0]);
+			await user.click(screen.getAllByText(/Week 02$/)[0]);
 			await user.click(screen.getByLabelText(/planting conditions/i));
 			await user.click(screen.getByText("Direct Sow"));
 			await user.type(screen.getByLabelText(/plant depth/i), "2.5");
@@ -536,9 +536,9 @@ describe("GrowGuideForm", () => {
 			await user.click(screen.getByLabelText(/high temp water frequency/i));
 			await user.click(screen.getAllByText("Daily")[0]);
 			await user.click(screen.getByLabelText(/harvest start week/i));
-			await user.click(screen.getAllByText("Week 27")[0]);
+			await user.click(screen.getAllByText(/Week 27$/)[0]);
 			await user.click(screen.getByLabelText(/harvest end week/i));
-			await user.click(screen.getAllByText("Week 32")[0]);
+			await user.click(screen.getAllByText(/Week 32$/)[0]);
 
 			// Test invalid pH (out of range)
 			const soilPhInput = screen.getByLabelText(/soil ph/i);

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/Badge";
 import { useEffect, useMemo, useState } from "react";
 import { useDeleteVariety } from "../hooks/useDeleteVariety";
 import { useToggleVarietyPublic } from "../hooks/useToggleVarietyPublic";
+import { useToggleActiveVariety } from "../hooks/useToggleActiveVariety";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -38,19 +39,30 @@ export const GrowGuideListPresenter = ({
 	const [search, setSearch] = useState("");
 	const [localGuides, setLocalGuides] = useState<VarietyList[]>(growGuides);
 	const [publicMap, setPublicMap] = useState<Record<string, boolean>>({});
-	const [activeGuideId, setActiveGuideId] = useState<string | null>(null);
+	const [activeMap, setActiveMap] = useState<Record<string, boolean>>({});
+	const [pendingActiveId, setPendingActiveId] = useState<string | null>(null);
 	const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 	const [suppressNextSelect, setSuppressNextSelect] = useState(false);
 
 	const { mutate: deleteVariety, isPending: isDeleting } = useDeleteVariety();
-	const { mutate: togglePublicMutation, isPending: isToggling } =
+	const { mutate: togglePublicMutation, isPending: isTogglingPublic } =
 		useToggleVarietyPublic();
+	const { mutate: toggleActiveMutation, isPending: isTogglingActive } =
+		useToggleActiveVariety();
 
 	const openDeleteDialog = (id: string) => setPendingDeleteId(id);
 	const closeDeleteDialog = () => setPendingDeleteId(null);
 
 	const handleDeleteSuccess = (id: string) => {
 		setLocalGuides((prev) => prev.filter((g) => g.variety_id !== id));
+		setPublicMap((prev) => {
+			const { [id]: _removed, ...rest } = prev;
+			return rest;
+		});
+		setActiveMap((prev) => {
+			const { [id]: _removed, ...rest } = prev;
+			return rest;
+		});
 		setPendingDeleteId(null);
 	};
 
@@ -63,8 +75,14 @@ export const GrowGuideListPresenter = ({
 	useEffect(() => {
 		setLocalGuides(growGuides);
 		const map: Record<string, boolean> = {};
-		for (const g of growGuides) map[g.variety_id] = g.is_public;
+		const activeStatus: Record<string, boolean> = {};
+		for (const g of growGuides) {
+			map[g.variety_id] = g.is_public;
+			activeStatus[g.variety_id] = g.is_active;
+		}
 		setPublicMap(map);
+		setActiveMap(activeStatus);
+		setPendingActiveId(null);
 	}, [growGuides]);
 
 	const filtered = useMemo(
@@ -104,7 +122,28 @@ export const GrowGuideListPresenter = ({
 	};
 
 	const toggleActive = (id: string, checked: boolean) => {
-		setActiveGuideId(checked ? id : null);
+		const previousState = { ...activeMap };
+		const updatedState: Record<string, boolean> = {};
+		const keys = new Set([...Object.keys(previousState), id]);
+		for (const key of keys) {
+			if (key === id) {
+				updatedState[key] = checked;
+			} else if (checked) {
+				updatedState[key] = false;
+			} else {
+				updatedState[key] = previousState[key] ?? false;
+			}
+		}
+		setActiveMap(updatedState);
+		setPendingActiveId(id);
+		toggleActiveMutation(
+			{ varietyId: id, makeActive: checked },
+			{
+				onError: () => setActiveMap(previousState),
+				onSettled: () =>
+					setPendingActiveId((current) => (current === id ? null : current)),
+			},
+		);
 	};
 
 	if (isLoading) {
@@ -187,7 +226,7 @@ export const GrowGuideListPresenter = ({
 									<ul className="space-y-2">
 										{guides.map((g) => {
 											const isPublic = publicMap[g.variety_id] ?? g.is_public;
-											const isActive = activeGuideId === g.variety_id;
+											const isActive = activeMap[g.variety_id] ?? g.is_active;
 											const isSelected = selectedVarietyId === g.variety_id;
 											return (
 												<li key={g.variety_id} className="list-none">
@@ -267,7 +306,7 @@ export const GrowGuideListPresenter = ({
 															data-row-action
 															onClick={(e) => {
 																e.stopPropagation();
-																if (isToggling) return;
+																if (isTogglingPublic) return;
 																togglePublic(g.variety_id);
 															}}
 														>
@@ -302,6 +341,14 @@ export const GrowGuideListPresenter = ({
 																>
 																	{g.lifecycle.lifecycle_name}
 																</Badge>
+																{isActive && (
+																	<Badge
+																		variant="default"
+																		className="uppercase"
+																	>
+																		Active
+																	</Badge>
+																)}
 															</div>
 															<p className="text-xs text-muted-foreground mt-0.5">
 																Updated{" "}
@@ -321,6 +368,10 @@ export const GrowGuideListPresenter = ({
 																checked={isActive}
 																onCheckedChange={(checked: boolean) =>
 																	toggleActive(g.variety_id, checked)
+																}
+																disabled={
+																	isTogglingActive &&
+																	pendingActiveId === g.variety_id
 																}
 																aria-label={`Set ${g.variety_name} active`}
 																className="cursor-pointer"

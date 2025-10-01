@@ -275,6 +275,23 @@ def make_user_feed_day(
     return ufd
 
 
+def make_user_active_variety(*, user_id=None, variety_id=None, activated_at=None):
+    """Create a UserActiveVariety instance."""
+    from datetime import UTC, datetime
+    from uuid import UUID, uuid4
+
+    from app.api.models.user.user_model import UserActiveVariety
+
+    association = UserActiveVariety(
+        user_id=UUID(str(user_id)) if user_id else uuid4(),
+        variety_id=UUID(str(variety_id)) if variety_id else uuid4(),
+    )
+    if activated_at is None:
+        activated_at = datetime.now(UTC)
+    association.activated_at = activated_at
+    return association
+
+
 def setup_auth_unit_test_mocks(
     mocker, mock_uow_path: str = "app.api.v1.auth.UserUnitOfWork"
 ):

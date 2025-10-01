@@ -16,6 +16,7 @@ export interface VarietyList {
 	lifecycle: Lifecycle;
 	is_public: boolean;
 	last_updated: string;
+	is_active: boolean;
 }
 
 export interface GrowGuideOptions {
@@ -135,6 +136,43 @@ const getUserGrowGuides = async (): Promise<VarietyList[]> => {
 		return handleApiError(
 			error,
 			"Failed to fetch user grow guides. Please try again.",
+		);
+	}
+};
+
+const activateUserGrowGuide = async (varietyId: string) => {
+	try {
+		const response = await api.post("/users/active-varieties", {
+			variety_id: varietyId,
+		});
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "activateUserGrowGuide",
+			url: "/users/active-varieties",
+			method: "POST",
+			data: { variety_id: varietyId },
+		});
+		return handleApiError(
+			error,
+			"Failed to activate grow guide. Please try again.",
+		);
+	}
+};
+
+const deactivateUserGrowGuide = async (varietyId: string) => {
+	try {
+		await api.delete(`/users/active-varieties/${varietyId}`);
+		return null;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "deactivateUserGrowGuide",
+			url: `/users/active-varieties/${varietyId}`,
+			method: "DELETE",
+		});
+		return handleApiError(
+			error,
+			"Failed to deactivate grow guide. Please try again.",
 		);
 	}
 };
@@ -303,4 +341,6 @@ export const growGuideService = {
 	deleteVariety,
 	toggleVarietyPublic,
 	copyPublicVariety,
+	activateUserGrowGuide,
+	deactivateUserGrowGuide,
 };

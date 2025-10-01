@@ -18,6 +18,7 @@ from app.api.v1.grow_guide import (
 )
 from app.api.v1.user import (
     user,
+    user_active_varieties,
     user_allotment,
     user_preference,
 )
@@ -35,6 +36,11 @@ router.include_router(
 )
 router.include_router(
     user_preference.router, prefix="/users/preferences", tags=["User Preferences"]
+)
+router.include_router(
+    user_active_varieties.router,
+    prefix="/users/active-varieties",
+    tags=["User Active Varieties"],
 )
 router.include_router(family.router, prefix="/families", tags=["Families"])
 router.include_router(feed.router, prefix="/feeds", tags=["Feeds"])
