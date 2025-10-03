@@ -27,10 +27,10 @@ email_conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
     MAIL_PASSWORD=settings.MAIL_PASSWORD,
     MAIL_FROM=settings.MAIL_USERNAME,
-    MAIL_PORT=587,
+    MAIL_PORT=settings.MAIL_PORT,
     MAIL_SERVER="smtp.gmail.com",
-    MAIL_STARTTLS=True,
-    MAIL_SSL_TLS=False,
+    MAIL_STARTTLS=settings.MAIL_STARTTLS,
+    MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
     USE_CREDENTIALS=True,
 )
 
@@ -167,9 +167,10 @@ async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
 
                 Configuration details:
                 - SMTP Server: smtp.gmail.com
-                - Port: 587
+                - Port: {settings.MAIL_PORT}
                 - Username: {settings.MAIL_USERNAME}
-                - TLS: Enabled
+                - SSL/TLS: {settings.MAIL_SSL_TLS}
+                - STARTTLS: {settings.MAIL_STARTTLS}
 
                 Best regards,
                 The Allotment Team
