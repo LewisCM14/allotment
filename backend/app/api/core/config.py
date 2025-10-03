@@ -79,6 +79,9 @@ class Settings(BaseSettings):
 
     MAIL_USERNAME: str
     MAIL_PASSWORD: SecretStr
+    MAIL_PORT: int
+    MAIL_SSL_TLS: bool
+    MAIL_STARTTLS: bool
 
     LOG_LEVEL: str
     LOG_TO_FILE: bool
