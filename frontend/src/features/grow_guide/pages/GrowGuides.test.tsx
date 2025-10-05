@@ -825,6 +825,56 @@ describe("GrowGuideListPresenter", () => {
 				expect(activeSwitches[1]).toHaveAttribute("aria-checked", "true");
 			});
 		});
+
+		test("deactivating a guide does not affect other guides' toggle states", async () => {
+			// Regression test: ensure that when deactivating a guide,
+			// other guides maintain their current state (don't all appear to change)
+			const guidesWithOneActive = mockGrowGuides.map((g, idx) => ({
+				...g,
+				is_active: g.variety_name === "Cherry Tomato", // Make Cherry Tomato active
+			}));
+
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={guidesWithOneActive}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+
+			// Get switches by their specific labels
+			const cherryTomatoSwitch = screen.getByRole("switch", {
+				name: /set cherry tomato active/i,
+			});
+			const bellPepperSwitch = screen.getByRole("switch", {
+				name: /set bell pepper active/i,
+			});
+			const lettuceSwitch = screen.getByRole("switch", {
+				name: /set lettuce active/i,
+			});
+
+			// Wait for initial state to be set from props
+			await waitFor(() => {
+				expect(cherryTomatoSwitch).toHaveAttribute("aria-checked", "true");
+			});
+
+			// Initial state: Cherry Tomato is checked, others are unchecked
+			expect(bellPepperSwitch).toHaveAttribute("aria-checked", "false");
+			expect(lettuceSwitch).toHaveAttribute("aria-checked", "false");
+
+			// Deactivate Cherry Tomato
+			await user.click(cherryTomatoSwitch);
+
+			// Only Cherry Tomato switch should change, others should remain unchanged
+			await waitFor(() => {
+				expect(cherryTomatoSwitch).toHaveAttribute("aria-checked", "false");
+			});
+
+			// Verify other switches remain in their original state (unchecked)
+			expect(bellPepperSwitch).toHaveAttribute("aria-checked", "false");
+			expect(lettuceSwitch).toHaveAttribute("aria-checked", "false");
+		});
 	});
 
 	describe("Component State Management", () => {

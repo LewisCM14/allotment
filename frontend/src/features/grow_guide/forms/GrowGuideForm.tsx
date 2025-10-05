@@ -502,6 +502,7 @@ export const GrowGuideForm = ({
 									options={families}
 									error={!!errors.family_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -524,6 +525,7 @@ export const GrowGuideForm = ({
 									options={lifecycles}
 									error={!!errors.lifecycle_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -550,6 +552,7 @@ export const GrowGuideForm = ({
 									options={weeks}
 									error={!!errors.sow_week_start_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -574,6 +577,7 @@ export const GrowGuideForm = ({
 									options={weeks}
 									error={!!errors.sow_week_end_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -651,6 +655,7 @@ export const GrowGuideForm = ({
 								options={plantingConditions}
 								error={!!errors.planting_conditions_id}
 								disabled={isLoadingOptions}
+								allowClear
 							/>
 						)}
 					/>
@@ -827,6 +832,7 @@ export const GrowGuideForm = ({
 									options={frequencies}
 									error={!!errors.water_frequency_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -869,6 +875,7 @@ export const GrowGuideForm = ({
 									options={frequencies}
 									error={!!errors.high_temp_water_frequency_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -897,6 +904,7 @@ export const GrowGuideForm = ({
 									options={weeks}
 									error={!!errors.harvest_week_start_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
@@ -920,6 +928,7 @@ export const GrowGuideForm = ({
 									options={weeks}
 									error={!!errors.harvest_week_end_id}
 									disabled={isLoadingOptions}
+									allowClear
 								/>
 							)}
 						/>
