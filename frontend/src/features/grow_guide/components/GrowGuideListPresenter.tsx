@@ -123,18 +123,20 @@ export const GrowGuideListPresenter = ({
 
 	const toggleActive = (id: string, checked: boolean) => {
 		const previousState = { ...activeMap };
-		const updatedState: Record<string, boolean> = {};
-		const keys = new Set([...Object.keys(previousState), id]);
-		for (const key of keys) {
-			if (key === id) {
-				updatedState[key] = checked;
-			} else if (checked) {
-				updatedState[key] = false;
-			} else {
-				updatedState[key] = previousState[key] ?? false;
+		// Optimistic update: when activating, deactivate all others; when deactivating, only update this one
+		setActiveMap((prev) => {
+			if (checked) {
+				// Activating: set this one true, all others false
+				const updatedState: Record<string, boolean> = {};
+				const keys = new Set([...Object.keys(prev), id]);
+				for (const key of keys) {
+					updatedState[key] = key === id;
+				}
+				return updatedState;
 			}
-		}
-		setActiveMap(updatedState);
+			// Deactivating: only update this specific item
+			return { ...prev, [id]: false };
+		});
 		setPendingActiveId(id);
 		toggleActiveMutation(
 			{ varietyId: id, makeActive: checked },
@@ -231,7 +233,7 @@ export const GrowGuideListPresenter = ({
 											return (
 												<li key={g.variety_id} className="list-none">
 													<div
-														className={`w-full flex items-center gap-4 p-3 border rounded-md transition-colors ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"} cursor-pointer`}
+														className={`w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-md transition-colors ${isSelected ? "bg-accent/60 border-primary" : "bg-card hover:bg-accent/30"} cursor-pointer`}
 														data-row-container
 													>
 														{/* Delete */}
@@ -320,7 +322,7 @@ export const GrowGuideListPresenter = ({
 														{/* Main selectable content */}
 														<button
 															type="button"
-															className="flex-1 text-left pl-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer"
+															className="flex-1 text-left pl-0.5 sm:pl-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer min-w-0"
 															aria-pressed={isSelected}
 															data-row-select
 															onClick={() => {
@@ -331,37 +333,41 @@ export const GrowGuideListPresenter = ({
 																onSelect?.(g.variety_id);
 															}}
 														>
-															<div className="flex items-center gap-2 flex-wrap">
-																<span className="font-medium truncate">
+															<div className="space-y-0.5 sm:space-y-1">
+																<div className="text-xs sm:text-base font-medium truncate pr-1 sm:pr-2">
 																	{g.variety_name}
-																</span>
-																<Badge
-																	variant="outline"
-																	className="hidden sm:inline"
-																>
-																	{g.lifecycle.lifecycle_name}
-																</Badge>
-																{isActive && (
+																</div>
+																<div className="flex items-center gap-1 sm:gap-2 flex-wrap">
 																	<Badge
-																		variant="default"
-																		className="uppercase"
+																		variant="outline"
+																		className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5"
 																	>
-																		Active
+																		{g.lifecycle.lifecycle_name}
 																	</Badge>
-																)}
+																	{isActive && (
+																		<Badge
+																			variant="default"
+																			className="text-[9px] sm:text-xs uppercase px-1 py-0 sm:px-2 sm:py-0.5"
+																		>
+																			Active
+																		</Badge>
+																	)}
+																</div>
+																<p className="text-[9px] sm:text-xs text-muted-foreground">
+																	Updated{" "}
+																	{new Date(
+																		g.last_updated,
+																	).toLocaleDateString()}
+																</p>
 															</div>
-															<p className="text-xs text-muted-foreground mt-0.5">
-																Updated{" "}
-																{new Date(g.last_updated).toLocaleDateString()}
-															</p>
 														</button>
 
 														{/* Active toggle */}
 														<div
-															className="flex items-center gap-2 ml-auto"
+															className="flex items-center gap-1.5 sm:gap-2 ml-auto self-center"
 															data-row-action
 														>
-															<span className="text-xs text-muted-foreground hidden sm:inline">
+															<span className="text-[9px] sm:text-xs text-muted-foreground hidden sm:inline">
 																Active
 															</span>
 															<Switch

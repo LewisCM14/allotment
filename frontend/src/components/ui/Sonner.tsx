@@ -28,6 +28,7 @@ const Toaster = ({ ...props }: ToasterProps) => {
 			theme={theme as ToasterProps["theme"]}
 			className="toaster group"
 			position={config.position}
+			closeButton
 			style={
 				{
 					"--normal-bg": "var(--popover)",
