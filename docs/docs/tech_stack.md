@@ -9,8 +9,8 @@
 ||||||
 | Server | Python | 3.13 | Primary programming language for backend development. | PSF License |
 | Server | UV | 0.6.3 | Python package installer and resolver. | MIT |
-| Server | FastAPI | 0.115 | High-performance web framework for building APIs. | MIT |
-| Server | FastAPI-mail | 1.4.2 | Library for sending emails with FastAPI. | MIT |
+| Server | FastAPI | 0.115.11 | High-performance web framework for building APIs. | MIT |
+| Server | Resend | 2.8.0 | Modern email API for transactional emails. | MIT |
 | Server | SQLAlchemy | 2.0.38 | SQL toolkit and Object Relational Mapper (ORM). | MIT |
 | Server | asyncpg | 0.30.0 | Asynchronous PostgreSQL database client library. | Apache 2.0 |
 | Server | psycopg2-binary | 2.9.10 | PostgreSQL adapter for Python (binary distribution). | LGPL |
@@ -31,7 +31,7 @@
 | Server | Pytest Mock | 3.14.0 | Pytest plugin for mocking objects during tests. | MIT |
 | Server | Pytest X-Dist | 3.6.1 | Pytest plugin for distributing tests across multiple CPUs. | MIT |
 | Server | Pytest-cov | 6.0.0 | Pytest plugin for measuring code coverage. | MIT |
-| Server | Coverage | 7.6.9 | Tool for measuring code coverage of Python programs. | Apache 2.0 |
+| Server | Coverage | 7.9.1 | Tool for measuring code coverage of Python programs. | Apache 2.0 |
 | Server | HTTPX | 0.28.1 | Asynchronous HTTP client for Python, used for testing APIs. | BSD |
 | Server | AIOSQLite | 0.21.0 | Asynchronous SQLite driver, for in-memory testing. | MIT |
 | Server | Ruff | 0.9.10 | Extremely fast Python linter and code formatter. | MIT |
@@ -46,13 +46,15 @@
 | Client | Node | 22.14.0 | JavaScript runtime environment for frontend build tools and scripts. | MIT |
 | Client | @hookform/resolvers | 4.1.3 | Resolvers for React Hook Form to integrate with validation libraries (e.g., Zod). | MIT |
 | Client | @radix-ui/react-accordion | 1.2.11 | Unstyled, accessible accordion component for React (Radix UI). | MIT |
+| Client | @radix-ui/react-alert-dialog | 1.1.15 | Unstyled, accessible alert dialog component for React (Radix UI). | MIT |
+| Client | @radix-ui/react-checkbox | 1.3.3 | Unstyled, accessible checkbox component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-dialog | 1.1.6 | Unstyled, accessible dialog component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-label | 2.1.2 | Unstyled, accessible label component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-popover | 1.1.6 | Unstyled, accessible popover component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-progress | 1.1.2 | Unstyled, accessible progress bar component for React (Radix UI). | MIT |
 | Client | @radix-ui/react-select | 2.1.6 | Unstyled, accessible select component for React (Radix UI). | MIT |
-| Client | @radix-ui/react-slot | 1.1.2 | Utility component for composing React components (Radix UI). | MIT |
-| Client | @radix-ui/react-switch | 1.1.3 | Unstyled, accessible switch component for React (Radix UI). | MIT |
+| Client | @radix-ui/react-slot | 1.2.3 | Utility component for composing React components (Radix UI). | MIT |
+| Client | @radix-ui/react-switch | 1.2.6 | Unstyled, accessible switch component for React (Radix UI). | MIT |
 | Client | @tanstack/react-query | 5.69.0 | Data-fetching and state management library for React. | MIT |
 | Client | axios | 1.8.4 | Promise-based HTTP client for browsers and Node.js. | MIT |
 | Client | cmdk | 1.1.1 | Fast, composable command palette for React. | MIT |
@@ -74,9 +76,10 @@
 | Client | zod | 3.24.2 | TypeScript-first schema declaration and validation library. | MIT |
 | Client | @biomejs/biome | 1.9.4 | Fast formatter and linter for web projects. | MIT OR Apache-2.0 |
 | Client | @tailwindcss/vite | 4.0.15 | Tailwind CSS integration for Vite projects. | MIT |
+| Client | @testing-library/jest-dom | 6.6.3 | Custom Jest matchers for DOM testing. | MIT |
 | Client | @testing-library/react | 16.3.0 | Utilities for testing React components. | MIT |
+| Client | @testing-library/user-event | 14.6.1 | Utilities for simulating user events in tests. | MIT |
 | Client | @types/node | 22.13.11 | TypeScript type definitions for Node.js. | MIT |
-| Client | @types/react | 19.0.0 | TypeScript type definitions for React. | MIT |
 | Client | @types/react-dom | 19.0.0 | TypeScript type definitions for React DOM. | MIT |
 | Client | @types/react-window | 1.8.8 | TypeScript type definitions for react-window. | MIT |
 | Client | @vitejs/plugin-legacy | 6.1.0 | Vite plugin for legacy browser support. | MIT |
@@ -96,6 +99,7 @@
 | Client | vite-plugin-pwa | 0.21.2 | Vite plugin for Progressive Web App generation. | MIT |
 | Client | vitest | 3.1.1 | Blazing fast unit test framework powered by Vite. | MIT |
 | Client | @vitest/coverage-v8 | 3.1.1 | Coverage provider for Vitest using V8's built-in code coverage. | MIT |
+| Client | @vitest/ui | 3.2.4 | UI for Vitest test runner with interactive test exploration. | MIT |
 ||||||
 | Deployment | Docker |  | Platform for developing, shipping, and running applications in containers. | Apache 2.0 |
 | Deployment | Render |  | Cloud platform for hosting web applications, databases, and static sites. | Proprietary |

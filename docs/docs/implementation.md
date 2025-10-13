@@ -50,7 +50,7 @@ The application is designed to be implemented following the Walking Skeleton app
     - As the skeleton of the application offers little in terms of user functionality a password reset method is to be implemented in order to prepare for the likely event of returning users once the app becomes feature rich.
 
         !!! tip "Future Improvement"
-            Gmail SMTP is sufficient to handle the email confirmation and password reset flows in the products infancy but as the application scales solutions like SendGrid or Postmark will need to be explored.
+            Resend's free tier is sufficient to handle emails in development, but once in production a domain will need to be purchased and Resend configure appropriately.
 
 1. **User Profile Interface**
     - At this point it is minimal effort to setup the User Profile interface in its entirety.
