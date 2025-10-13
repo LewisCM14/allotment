@@ -141,26 +141,27 @@ async def root() -> Dict[str, str]:
 )
 async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
     """
-    Send a test email to verify SMTP configuration.
+    Send a test email to verify email configuration.
 
     Args:
-        email: Optional recipient email (defaults to sender if not provided)
+        email: Optional recipient email (defaults to configured MAIL_FROM address)
 
     Returns:
         dict: Success message
     """
+    recipient_email = email or settings.MAIL_FROM
+
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "test_email",
-        "recipient": email if email else settings.MAIL_USERNAME,
+        "recipient": recipient_email,
     }
 
     logger.info("Test email requested", **log_context)
 
     try:
         with log_timing("send_email", request_id=log_context["request_id"]):
-            recipient = email if email else settings.MAIL_USERNAME
-            await send_test_email(recipient)
+            await send_test_email(recipient_email)
             logger.info("Test email sent successfully", **log_context)
 
         return {"message": "Test email sent successfully"}

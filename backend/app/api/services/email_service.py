@@ -1,17 +1,18 @@
 """
 Email Service
-- Handles sending emails through SMTP
+- Handles sending emails through Resend API
 - Provides standard email templates
 - Centralizes email configuration
 """
 
 from datetime import datetime
+from typing import cast
 
+import resend
 import structlog
-from aiosmtplib import SMTPException
 from fastapi import HTTPException, status
-from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 from pydantic import EmailStr
+from resend.emails._emails import Emails
 
 from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
@@ -23,18 +24,8 @@ from app.api.middleware.logging_middleware import (
 
 logger = structlog.get_logger()
 
-email_conf = ConnectionConfig(
-    MAIL_USERNAME=settings.MAIL_USERNAME,
-    MAIL_PASSWORD=settings.MAIL_PASSWORD,
-    MAIL_FROM=settings.MAIL_USERNAME,
-    MAIL_PORT=settings.MAIL_PORT,
-    MAIL_SERVER="smtp.gmail.com",
-    MAIL_STARTTLS=settings.MAIL_STARTTLS,
-    MAIL_SSL_TLS=settings.MAIL_SSL_TLS,
-    USE_CREDENTIALS=True,
-)
-
-mail_client = FastMail(email_conf)
+# Configure Resend with API key
+resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 
 current_year = datetime.now().year
 
@@ -81,38 +72,46 @@ async def send_verification_email(
                 **log_context,
             )
 
-            message = MessageSchema(
-                subject="Email Verification Required - Allotment Service",
-                recipients=[user_email],
-                body=f"""Dear Allotment Member,
+            email_body = f"""Dear Allotment Member,
 
-                Thank you for creating an account. We're excited to have you join our community of gardening enthusiasts.
+Thank you for creating an account. We're excited to have you join our community of gardening enthusiasts.
 
-                To complete your registration and access all features, please verify your email address by clicking the link below:
+To complete your registration and access all features, please verify your email address by clicking the link below:
 
-                {verification_link}
+{verification_link}
 
-                This verification link will expire in 1 hour for security purposes. If you don't complete the verification within this timeframe, you'll need to request a new verification email.
+This verification link will expire in 1 hour for security purposes. If you don't complete the verification within this timeframe, you'll need to request a new verification email.
 
-                If you did not create an account with Allotment, please disregard this email or contact our support team.
+If you did not create an account with Allotment, please disregard this email or contact our support team.
 
-                Best regards,
-                The Allotment Team
+Best regards,
+The Allotment Team
 
-                ------------------------------
-                This is an automated message. Please do not reply directly to this email.
-                """,
-                subtype=MessageType.plain,
+------------------------------
+This is an automated message. Please do not reply directly to this email.
+© {current_year} Allotment Service. All rights reserved."""
+
+            params: Emails.SendParams = {
+                "from": settings.MAIL_FROM,
+                "to": user_email,
+                "subject": "Email Verification Required - Allotment Service",
+                "text": email_body,
+            }
+
+            # Resend SDK handles async operations internally
+            response = resend.Emails.send(params)
+
+            logger.info(
+                "Verification email sent successfully",
+                email_id=response.get("id"),
+                **log_context,
             )
-
-            await mail_client.send_message(message)
-            logger.info("Verification email sent successfully", **log_context)
             return {"message": "Verification email sent successfully"}
 
-    except (SMTPException, ConnectionError) as e:
+    except resend.exceptions.ResendError as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
-            "Email sending failed",
+            "Resend API error",
             error=sanitized_error,
             error_type=type(e).__name__,
             **log_context,
@@ -137,7 +136,7 @@ async def send_verification_email(
 
 async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
     """
-    Send a test email to verify SMTP configuration.
+    Send a test email to verify Resend configuration.
 
     Args:
         recipient_email: The recipient's email address
@@ -156,31 +155,41 @@ async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
 
     try:
         with log_timing("email_test", request_id=log_context["request_id"]):
-            message = MessageSchema(
-                subject="Test Email - Allotment Service",
-                recipients=[recipient_email],
-                body=f"""
-                Hello,
+            email_body = f"""Hello,
 
-                This is a test email from your Allotment Service application.
-                If you received this email, your email configuration is working correctly!
+This is a test email from your Allotment Service application.
+If you received this email, your Resend email configuration is working correctly!
 
-                Configuration details:
-                - SMTP Server: smtp.gmail.com
-                - Port: {settings.MAIL_PORT}
-                - Username: {settings.MAIL_USERNAME}
-                - SSL/TLS: {settings.MAIL_SSL_TLS}
-                - STARTTLS: {settings.MAIL_STARTTLS}
+Configuration details:
+- Email Provider: Resend
+- From Address: {settings.MAIL_FROM}
+- Environment: {settings.ENVIRONMENT}
 
-                Best regards,
-                The Allotment Team
-                """,
-                subtype=MessageType.plain,
+Best regards,
+The Allotment Team
+
+------------------------------
+© {current_year} Allotment Service. All rights reserved."""
+
+            params: Emails.SendParams = {
+                "from": settings.MAIL_FROM,
+                "to": recipient_email,
+                "subject": "Test Email - Allotment Service",
+                "text": email_body,
+            }
+
+            response = resend.Emails.send(params)
+
+            logger.info(
+                "Test email sent successfully",
+                email_id=response.get("id"),
+                **log_context,
             )
-
-            await mail_client.send_message(message)
-            logger.info("Test email sent successfully", **log_context)
-            return {"message": f"Test email sent successfully to {recipient_email}"}
+            email_id = response.get("id")
+            return {
+                "message": f"Test email sent successfully to {recipient_email}",
+                "email_id": email_id if email_id else "unknown",
+            }
 
     except Exception as e:
         sanitized_error = sanitize_error_message(str(e))
@@ -220,35 +229,42 @@ async def send_password_reset_email(
 
     try:
         with log_timing("email_password_reset", request_id=log_context["request_id"]):
-            message = MessageSchema(
-                subject="Password Reset - Allotment Service",
-                recipients=[user_email],
-                body=f"""Dear Allotment Member,
+            email_body = f"""Dear Allotment Member,
 
-                You recently requested to reset your password. Click the link below to set a new password:
+You recently requested to reset your password. Click the link below to set a new password:
 
-                {reset_url}
+{reset_url}
 
-                This password reset link will expire in 1 hour for security purposes. 
-                If you did not request a password reset, please ignore this email or contact support if you have concerns.
+This password reset link will expire in 1 hour for security purposes. 
+If you did not request a password reset, please ignore this email or contact support if you have concerns.
 
-                Best regards,
-                The Allotment Team
+Best regards,
+The Allotment Team
 
-                ------------------------------
-                This is an automated message. Please do not reply directly to this email.
-                """,
-                subtype=MessageType.plain,
+------------------------------
+This is an automated message. Please do not reply directly to this email.
+© {current_year} Allotment Service. All rights reserved."""
+
+            params: Emails.SendParams = {
+                "from": settings.MAIL_FROM,
+                "to": user_email,
+                "subject": "Password Reset - Allotment Service",
+                "text": email_body,
+            }
+
+            response = resend.Emails.send(params)
+
+            logger.info(
+                "Password reset email sent successfully",
+                email_id=response.get("id"),
+                **log_context,
             )
-
-            await mail_client.send_message(message)
-            logger.info("Password reset email sent successfully", **log_context)
             return {"message": "Password reset email sent successfully"}
 
-    except (SMTPException, ConnectionError) as e:
+    except resend.exceptions.ResendError as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
-            "Email sending failed",
+            "Resend API error",
             error=sanitized_error,
             error_type=type(e).__name__,
             **log_context,

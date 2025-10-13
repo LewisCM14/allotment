@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock
 import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
+from resend import exceptions as resend_exceptions
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
@@ -16,6 +17,7 @@ from app.api.models.family.family_model import Family
 from app.api.models.grow_guide.calendar_model import Day
 from app.api.models.grow_guide.guide_options_model import Feed
 from app.api.repositories.user.user_repository import UserRepository
+from app.api.services import email_service
 from app.main import app
 from tests.test_helpers import (
     make_user_allotment,
@@ -117,21 +119,22 @@ async def client_fixture():
 
 @pytest.fixture(autouse=True)
 def prevent_real_emails(monkeypatch):
-    """Prevent real emails from being sent during tests by overriding mail config."""
-    # Override mail settings to prevent real email sending
-    monkeypatch.setenv("MAIL_USERNAME", "test@example.com")
-    monkeypatch.setenv("MAIL_PASSWORD", "test_password")
+    """Prevent real emails from being sent during tests."""
+    # Override mail settings
+    monkeypatch.setenv("RESEND_API_KEY", "re_test_key_1234567890")
+    monkeypatch.setenv("MAIL_FROM", "test@resend.dev")
 
-    # Mock the mail client at module level to prevent actual SMTP connections
-    # Import inside the function to avoid import order issues
-    import app.api.services.email_service
+    # Mock Resend API
+    class MockResendEmails:
+        @staticmethod
+        def send(params):
+            return {"id": "test-email-id-12345"}
 
-    class MockFastMail:
-        async def send_message(self, message):
-            # Do nothing - just return successfully
-            pass
+    class MockResend:
+        Emails = MockResendEmails
+        exceptions = resend_exceptions
 
-    monkeypatch.setattr(app.api.services.email_service, "mail_client", MockFastMail())
+    monkeypatch.setattr(email_service, "resend", MockResend)
 
 
 @pytest.fixture(autouse=True)

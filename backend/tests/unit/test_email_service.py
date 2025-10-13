@@ -1,5 +1,6 @@
 import pytest
 from fastapi import HTTPException
+from resend.exceptions import ResendError
 
 from app.api.services import email_service
 from app.api.services.email_service import request_id_ctx_var
@@ -7,10 +8,11 @@ from app.api.services.email_service import request_id_ctx_var
 
 class TestEmailService:
     @pytest.fixture
-    def mock_email_client(self, mocker):
-        """Mock the email client for all tests in this class."""
-        return mocker.patch.object(
-            email_service.mail_client, "send_message", autospec=True
+    def mock_resend_send(self, mocker):
+        """Mock the Resend send method for all tests in this class."""
+        return mocker.patch(
+            "app.api.services.email_service.resend.Emails.send",
+            return_value={"id": "test-email-id"},
         )
 
     @pytest.fixture
@@ -20,7 +22,8 @@ class TestEmailService:
             "app.api.services.email_service.settings.FRONTEND_URL", "http://testserver"
         )
         mocker.patch(
-            "app.api.services.email_service.settings.MAIL_USERNAME", "testuser"
+            "app.api.services.email_service.settings.MAIL_FROM",
+            "test@resend.dev",
         )
 
     @pytest.fixture
@@ -41,12 +44,12 @@ class TestEmailService:
     async def test_send_verification_email_success(
         self,
         mock_user,
-        mock_email_client,
+        mock_resend_send,
         mock_settings,
         mock_token_creation,
         set_request_context,
     ):
-        """Test successful verification email sending using standardized fixtures."""
+        """Test successful verification email sending."""
         result = await email_service.send_verification_email(
             user_email=mock_user.user_email,
             user_id=str(mock_user.user_id),
@@ -54,21 +57,25 @@ class TestEmailService:
         )
 
         assert "message" in result
-        mock_email_client.assert_awaited_once()
+        mock_resend_send.assert_called_once()
         mock_token_creation.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_send_verification_email_smtp_failure(
+    async def test_send_verification_email_api_failure(
         self,
         mock_user,
-        mock_email_client,
+        mock_resend_send,
         mock_settings,
         mock_token_creation,
         set_request_context,
     ):
-        """Test verification email with SMTP failure."""
-        # Make email client raise an exception
-        mock_email_client.side_effect = Exception("SMTP error")
+        """Test verification email with Resend API failure."""
+        mock_resend_send.side_effect = ResendError(
+            code=400,
+            error_type="validation_error",
+            message="API error",
+            suggested_action="Check your API key",
+        )
 
         with pytest.raises(HTTPException) as exc:
             await email_service.send_verification_email(
@@ -77,21 +84,22 @@ class TestEmailService:
                 from_reset=False,
             )
 
-        assert exc.value.status_code == 500
+        assert exc.value.status_code == 503
 
     @pytest.mark.asyncio
     async def test_send_test_email_success(
-        self, mock_email_client, mock_settings, set_request_context
+        self, mock_resend_send, mock_settings, set_request_context
     ):
         """Test successful test email sending."""
         result = await email_service.send_test_email("test@example.com")
 
         assert "message" in result
-        mock_email_client.assert_awaited_once()
+        assert "email_id" in result
+        mock_resend_send.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_send_password_reset_email_success(
-        self, mock_email_client, set_request_context
+        self, mock_resend_send, set_request_context
     ):
         """Test successful password reset email sending."""
         result = await email_service.send_password_reset_email(
@@ -99,18 +107,23 @@ class TestEmailService:
         )
 
         assert "message" in result
-        mock_email_client.assert_awaited_once()
+        mock_resend_send.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_send_password_reset_email_smtp_failure(
-        self, mock_email_client, set_request_context
+    async def test_send_password_reset_email_api_failure(
+        self, mock_resend_send, set_request_context
     ):
-        """Test password reset email with SMTP failure."""
-        mock_email_client.side_effect = Exception("SMTP error")
+        """Test password reset email with Resend API failure."""
+        mock_resend_send.side_effect = ResendError(
+            code=400,
+            error_type="validation_error",
+            message="API error",
+            suggested_action="Check your API key",
+        )
 
         with pytest.raises(HTTPException) as exc:
             await email_service.send_password_reset_email(
                 user_email="reset@example.com", reset_url="http://reset-url"
             )
 
-        assert exc.value.status_code == 500
+        assert exc.value.status_code == 503

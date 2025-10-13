@@ -77,11 +77,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     FRONTEND_URL: str
 
-    MAIL_USERNAME: str
-    MAIL_PASSWORD: SecretStr
-    MAIL_PORT: int
-    MAIL_SSL_TLS: bool
-    MAIL_STARTTLS: bool
+    RESEND_API_KEY: SecretStr
+    MAIL_FROM: str
 
     LOG_LEVEL: str
     LOG_TO_FILE: bool

@@ -15,13 +15,15 @@ class TestEmailService:
 
     @pytest.mark.asyncio
     async def test_test_email_endpoint_default_sender(self, client, mocker):
+        """Test that email defaults to MAIL_FROM when not provided."""
         mocker.patch(
             "app.api.services.email_service.send_test_email",
-            return_value={"message": "sent"},
+            return_value={"message": "sent", "email_id": "test-id"},
         )
         response = await client.post("/test-email")
         assert response.status_code == status.HTTP_200_OK
-        assert response.json()["message"] == "Test email sent successfully"
+        body = response.json()
+        assert body["message"] == "Test email sent successfully"
 
     @pytest.mark.asyncio
     async def test_test_email_endpoint_failure(self, client, mocker):
