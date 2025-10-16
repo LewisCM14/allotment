@@ -27,6 +27,7 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
+from app.api.models.enums import LifecycleType
 from app.api.models.grow_guide.calendar_model import Week
 from app.api.models.grow_guide.guide_options_model import Frequency
 from app.api.models.grow_guide.variety_model import Variety
@@ -340,7 +341,9 @@ class WeeklyTodoUnitOfWork:
                 variety.feed_week_start_id,
                 variety.feed_frequency_id,
                 variety.harvest_week_end_id,
-                variety.lifecycle.lifecycle_name if variety.lifecycle else "annual",
+                variety.lifecycle.lifecycle_name
+                if variety.lifecycle
+                else LifecycleType.ANNUAL,
             ):
                 continue
 
@@ -397,7 +400,7 @@ class WeeklyTodoUnitOfWork:
         feed_week_start_id: uuid.UUID,
         feed_frequency_id: uuid.UUID,
         harvest_week_end_id: uuid.UUID,
-        lifecycle_name: str,
+        lifecycle_name: LifecycleType,
     ) -> bool:
         """
         Check if the given week is within the feeding period.
@@ -417,7 +420,7 @@ class WeeklyTodoUnitOfWork:
                 return False
 
             # For annuals, check we haven't passed harvest end
-            if lifecycle_name.lower() == "annual":
+            if lifecycle_name == LifecycleType.ANNUAL:
                 harvest_stmt = select(Week.week_number).where(
                     Week.week_id == harvest_week_end_id
                 )
@@ -566,13 +569,13 @@ class WeeklyTodoUnitOfWork:
         if not variety.lifecycle:
             return False
 
-        lifecycle_name = variety.lifecycle.lifecycle_name.lower()
+        lifecycle_name = variety.lifecycle.lifecycle_name
         harvest_end_week = week_id_to_number.get(variety.harvest_week_end_id)
 
         if harvest_end_week is None:
             return False
 
-        if lifecycle_name == "annual":
+        if lifecycle_name == LifecycleType.ANNUAL:
             # Annuals: compost immediately after harvest ends
             # Handle wrap-around
             if harvest_end_week < current_week_number:
@@ -582,11 +585,7 @@ class WeeklyTodoUnitOfWork:
                 # Could be in next year after harvest
                 return False
 
-        elif lifecycle_name in ("biennial", "perennial"):
-            # For biennials and perennials, we would need to track when they were sown
-            # This requires additional data (actual sow date for each active variety)
-            # For now, we'll return False as we don't have that information
-            # TODO: Implement UserActiveVariety.sown_date tracking
+        elif lifecycle_name in (LifecycleType.BIENNIAL, LifecycleType.PERENNIAL):
             return False
 
         return False

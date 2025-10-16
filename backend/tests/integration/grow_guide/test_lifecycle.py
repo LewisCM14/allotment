@@ -35,9 +35,9 @@ class TestLifecycleEndpoints:
 
         # Verify expected lifecycle names are present
         lifecycle_names = [lc["lifecycle_name"] for lc in lifecycles]
-        assert "Annual" in lifecycle_names
-        assert "Biennial" in lifecycle_names
-        assert "Perennial" in lifecycle_names
+        assert "annual" in lifecycle_names
+        assert "biennial" in lifecycle_names
+        assert "perennial" in lifecycle_names
 
     @pytest.mark.asyncio
     async def test_get_lifecycles_empty_database(self, client):
@@ -93,17 +93,17 @@ class TestLifecycleEndpoints:
         lifecycle_lookup = {lc["lifecycle_name"]: lc for lc in lifecycles}
 
         # Verify Annual lifecycle
-        annual = lifecycle_lookup.get("Annual")
+        annual = lifecycle_lookup.get("annual")
         assert annual is not None
         assert annual["productivity_years"] == 1
 
         # Verify Biennial lifecycle
-        biennial = lifecycle_lookup.get("Biennial")
+        biennial = lifecycle_lookup.get("biennial")
         assert biennial is not None
         assert biennial["productivity_years"] == 2
 
         # Verify Perennial lifecycle
-        perennial = lifecycle_lookup.get("Perennial")
+        perennial = lifecycle_lookup.get("perennial")
         assert perennial is not None
         assert perennial["productivity_years"] == 10
 
@@ -163,9 +163,9 @@ class TestLifecycleEndpoints:
 
             # Verify specific expected values based on lifecycle type
             name = lifecycle["lifecycle_name"]
-            if name == "Annual":
+            if name == "annual":
                 assert productivity_years == 1
-            elif name == "Biennial":
+            elif name == "biennial":
                 assert productivity_years == 2
-            elif name == "Perennial":
+            elif name == "perennial":
                 assert productivity_years >= 3  # Perennials live multiple years
