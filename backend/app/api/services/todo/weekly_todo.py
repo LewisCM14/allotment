@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, List, Optional, Type, Union
 
 import structlog
 from sqlalchemy import select
@@ -400,7 +400,7 @@ class WeeklyTodoUnitOfWork:
         feed_week_start_id: uuid.UUID,
         feed_frequency_id: uuid.UUID,
         harvest_week_end_id: uuid.UUID,
-        lifecycle_name: LifecycleType,
+        lifecycle_name: Union[LifecycleType, str],
     ) -> bool:
         """
         Check if the given week is within the feeding period.
@@ -419,8 +419,11 @@ class WeeklyTodoUnitOfWork:
             if start_week_number is None:
                 return False
 
+            # Coerce lifecycle to enum for comparisons (handles str inputs)
+            lifecycle = self._to_lifecycle_type(lifecycle_name)
+
             # For annuals, check we haven't passed harvest end
-            if lifecycle_name == LifecycleType.ANNUAL:
+            if lifecycle == LifecycleType.ANNUAL:
                 harvest_stmt = select(Week.week_number).where(
                     Week.week_id == harvest_week_end_id
                 )
@@ -569,13 +572,13 @@ class WeeklyTodoUnitOfWork:
         if not variety.lifecycle:
             return False
 
-        lifecycle_name = variety.lifecycle.lifecycle_name
+        lifecycle = self._to_lifecycle_type(variety.lifecycle.lifecycle_name)
         harvest_end_week = week_id_to_number.get(variety.harvest_week_end_id)
 
         if harvest_end_week is None:
             return False
 
-        if lifecycle_name == LifecycleType.ANNUAL:
+        if lifecycle == LifecycleType.ANNUAL:
             # Annuals: compost immediately after harvest ends
             # Handle wrap-around
             if harvest_end_week < current_week_number:
@@ -585,7 +588,7 @@ class WeeklyTodoUnitOfWork:
                 # Could be in next year after harvest
                 return False
 
-        elif lifecycle_name in (LifecycleType.BIENNIAL, LifecycleType.PERENNIAL):
+        elif lifecycle in (LifecycleType.BIENNIAL, LifecycleType.PERENNIAL):
             return False
 
         return False
@@ -596,6 +599,19 @@ class WeeklyTodoUnitOfWork:
         today = datetime.now()
         iso_calendar = today.isocalendar()
         return iso_calendar[1]  # Week number
+
+    def _to_lifecycle_type(self, value: Union[LifecycleType, str]) -> LifecycleType:
+        """Coerce a string or enum to LifecycleType safely.
+
+        Accepts lowercase/uppercase strings; defaults to ANNUAL if unknown.
+        """
+        if isinstance(value, LifecycleType):
+            return value
+        try:
+            # Normalize to lowercase values used by the enum
+            return LifecycleType(value.lower())
+        except Exception:
+            return LifecycleType.ANNUAL
 
     def _create_empty_todo_response(self, week: Week) -> Dict[str, Any]:
         """Create an empty todo response when user has no active varieties."""

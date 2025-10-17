@@ -28,7 +28,7 @@ vi.mock("../features/user/pages/UserProfile", () => ({
 	default: () => <div data-testid="user-profile">User Profile</div>,
 }));
 
-vi.mock("../features/misc/pages/Home", () => ({
+vi.mock("../features/todo/pages/Todo", () => ({
 	default: () => <div>Home Page</div>,
 }));
 

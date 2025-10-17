@@ -101,9 +101,9 @@ def upgrade() -> None:
         sa.Column(
             "lifecycle_name",
             sa.Enum(
-                "ANNUAL",
-                "BIENNIAL",
-                "PERENNIAL",
+                "annual",
+                "biennial",
+                "perennial",
                 name="lifecycletype",
                 native_enum=False,
                 length=50,

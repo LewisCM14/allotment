@@ -4,6 +4,7 @@ import { useWeeklyTodo } from "../hooks/useWeeklyTodo";
 import { WeekSelector } from "../components/WeekSelector";
 import { WeeklyTasksPresenter } from "../components/WeeklyTasksPresenter";
 import { DailyTasksPresenter } from "../components/DailyTasksPresenter";
+import { WelcomeEmptyState } from "../components/WelcomeEmptyState";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -40,15 +41,29 @@ export default function TodoPage() {
 	}
 
 	if (isError) {
+		// Check if it's a 404 error (no active varieties)
+		const errorMessage = error instanceof Error ? error.message : "";
+		const isNoActiveVarieties =
+			errorMessage.includes("Not Found") ||
+			errorMessage.includes("404") ||
+			errorMessage.includes("no active varieties");
+
+		if (isNoActiveVarieties) {
+			return (
+				<PageLayout>
+					<WelcomeEmptyState />
+				</PageLayout>
+			);
+		}
+
+		// Other errors (network issues, server errors, etc.)
 		return (
 			<PageLayout>
 				<Alert variant="destructive">
 					<AlertCircle className="h-4 w-4" />
 					<AlertTitle>Error Loading Tasks</AlertTitle>
 					<AlertDescription>
-						{error instanceof Error
-							? error.message
-							: "Failed to load weekly tasks. Please try again."}
+						{errorMessage || "Failed to load weekly tasks. Please try again."}
 					</AlertDescription>
 				</Alert>
 			</PageLayout>
@@ -56,16 +71,10 @@ export default function TodoPage() {
 	}
 
 	if (!weeklyTodo) {
+		// This shouldn't normally happen, but handle it gracefully
 		return (
 			<PageLayout>
-				<Alert>
-					<AlertCircle className="h-4 w-4" />
-					<AlertTitle>No Data Available</AlertTitle>
-					<AlertDescription>
-						No weekly tasks found. Make sure you have active varieties
-						configured.
-					</AlertDescription>
-				</Alert>
+				<WelcomeEmptyState />
 			</PageLayout>
 		);
 	}

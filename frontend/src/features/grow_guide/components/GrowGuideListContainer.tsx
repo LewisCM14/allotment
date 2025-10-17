@@ -4,11 +4,13 @@ import { GrowGuideListPresenter } from "./GrowGuideListPresenter";
 interface GrowGuideListContainerProps {
 	onSelect?: (varietyId: string) => void;
 	selectedVarietyId?: string | null;
+	onAddNew?: () => void;
 }
 
 export const GrowGuideListContainer = ({
 	onSelect,
 	selectedVarietyId,
+	onAddNew,
 }: GrowGuideListContainerProps) => {
 	const { data: growGuides, isLoading, isError } = useUserGrowGuides();
 
@@ -26,6 +28,7 @@ export const GrowGuideListContainer = ({
 			isError={isError && !hasNoGuides} // Only treat as error if not just an empty array
 			onSelect={onSelect}
 			selectedVarietyId={selectedVarietyId}
+			onAddNew={onAddNew}
 		/>
 	);
 };
