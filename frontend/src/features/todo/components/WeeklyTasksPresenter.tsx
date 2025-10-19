@@ -17,30 +17,58 @@ interface WeeklyTasksPresenterProps {
 	compostTasks: VarietyTaskDetail[];
 }
 
+type Tone = "primary" | "muted" | "accent" | "destructive";
+
+const toneClasses: Record<Tone, { bg: string; border: string; text: string }> =
+	{
+		primary: {
+			bg: "bg-primary/10",
+			border: "border-primary/20",
+			text: "text-primary",
+		},
+		muted: {
+			bg: "bg-muted/10",
+			border: "border-muted/20",
+			text: "text-foreground",
+		},
+		accent: {
+			bg: "bg-accent/20",
+			border: "border-accent/30",
+			text: "text-foreground",
+		},
+		destructive: {
+			bg: "bg-destructive/10",
+			border: "border-destructive/20",
+			text: "text-foreground",
+		},
+	};
+
 const TaskList = ({
 	tasks,
 	emptyMessage,
+	tone,
 }: {
 	tasks: VarietyTaskDetail[];
 	emptyMessage: string;
+	tone: Tone;
 }) => {
 	if (tasks.length === 0) {
 		return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
 	}
+
+	const t = toneClasses[tone];
 
 	return (
 		<div className="space-y-2">
 			{tasks.map((task) => (
 				<div
 					key={task.variety_id}
-					className="flex items-center justify-between p-3 bg-secondary/30 rounded-md hover:bg-secondary/50 transition-colors"
+					className={`flex items-center justify-between p-3 rounded-md border ${t.bg} ${t.border}`}
 				>
-					<div className="flex flex-col">
-						<span className="font-medium">{task.variety_name}</span>
-						<span className="text-sm text-muted-foreground">
-							{task.family_name}
-						</span>
-					</div>
+					<span className={`font-medium ${t.text}`}>{task.variety_name}</span>
+					<span className="text-sm text-muted-foreground">
+						{task.family_name}
+					</span>
 				</div>
 			))}
 		</div>
@@ -74,18 +102,23 @@ export const WeeklyTasksPresenter = ({
 	}
 
 	return (
-		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+		<div className="space-y-4">
 			{sowTasks.length > 0 && (
 				<Card>
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Sprout className="h-5 w-5 text-green-600" />
+						<Sprout className="h-5 w-5 text-primary" />
 						<CardTitle className="text-lg">Sow</CardTitle>
-						<Badge variant="secondary" className="ml-auto">
-							{sowTasks.length}
+						<Badge variant="outline" className="ml-auto bg-primary/10">
+							<Sprout className="h-3 w-3 mr-1" />
+							{sowTasks.length} Sow
 						</Badge>
 					</CardHeader>
 					<CardContent>
-						<TaskList tasks={sowTasks} emptyMessage="No sowing tasks" />
+						<TaskList
+							tasks={sowTasks}
+							emptyMessage="No sowing tasks"
+							tone="primary"
+						/>
 					</CardContent>
 				</Card>
 			)}
@@ -93,16 +126,18 @@ export const WeeklyTasksPresenter = ({
 			{transplantTasks.length > 0 && (
 				<Card>
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<MoveHorizontal className="h-5 w-5 text-blue-600" />
+						<MoveHorizontal className="h-5 w-5 text-muted" />
 						<CardTitle className="text-lg">Transplant</CardTitle>
-						<Badge variant="secondary" className="ml-auto">
-							{transplantTasks.length}
+						<Badge variant="outline" className="ml-auto bg-muted/10">
+							<MoveHorizontal className="h-3 w-3 mr-1" />
+							{transplantTasks.length} Transplant
 						</Badge>
 					</CardHeader>
 					<CardContent>
 						<TaskList
 							tasks={transplantTasks}
 							emptyMessage="No transplant tasks"
+							tone="muted"
 						/>
 					</CardContent>
 				</Card>
@@ -111,14 +146,19 @@ export const WeeklyTasksPresenter = ({
 			{harvestTasks.length > 0 && (
 				<Card>
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<ShoppingBasket className="h-5 w-5 text-orange-600" />
+						<ShoppingBasket className="h-5 w-5 text-accent" />
 						<CardTitle className="text-lg">Harvest</CardTitle>
-						<Badge variant="secondary" className="ml-auto">
-							{harvestTasks.length}
+						<Badge variant="outline" className="ml-auto bg-accent/20">
+							<ShoppingBasket className="h-3 w-3 mr-1" />
+							{harvestTasks.length} Harvest
 						</Badge>
 					</CardHeader>
 					<CardContent>
-						<TaskList tasks={harvestTasks} emptyMessage="No harvest tasks" />
+						<TaskList
+							tasks={harvestTasks}
+							emptyMessage="No harvest tasks"
+							tone="accent"
+						/>
 					</CardContent>
 				</Card>
 			)}
@@ -126,14 +166,19 @@ export const WeeklyTasksPresenter = ({
 			{pruneTasks.length > 0 && (
 				<Card>
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Scissors className="h-5 w-5 text-purple-600" />
+						<Scissors className="h-5 w-5 text-accent" />
 						<CardTitle className="text-lg">Prune</CardTitle>
-						<Badge variant="secondary" className="ml-auto">
-							{pruneTasks.length}
+						<Badge variant="outline" className="ml-auto bg-accent/20">
+							<Scissors className="h-3 w-3 mr-1" />
+							{pruneTasks.length} Prune
 						</Badge>
 					</CardHeader>
 					<CardContent>
-						<TaskList tasks={pruneTasks} emptyMessage="No pruning tasks" />
+						<TaskList
+							tasks={pruneTasks}
+							emptyMessage="No pruning tasks"
+							tone="accent"
+						/>
 					</CardContent>
 				</Card>
 			)}
@@ -141,14 +186,19 @@ export const WeeklyTasksPresenter = ({
 			{compostTasks.length > 0 && (
 				<Card>
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Trash2 className="h-5 w-5 text-brown-600" />
+						<Trash2 className="h-5 w-5 text-destructive" />
 						<CardTitle className="text-lg">Compost</CardTitle>
-						<Badge variant="secondary" className="ml-auto">
-							{compostTasks.length}
+						<Badge variant="outline" className="ml-auto bg-destructive/10">
+							<Trash2 className="h-3 w-3 mr-1" />
+							{compostTasks.length} Compost
 						</Badge>
 					</CardHeader>
 					<CardContent>
-						<TaskList tasks={compostTasks} emptyMessage="No compost tasks" />
+						<TaskList
+							tasks={compostTasks}
+							emptyMessage="No compost tasks"
+							tone="destructive"
+						/>
 					</CardContent>
 				</Card>
 			)}

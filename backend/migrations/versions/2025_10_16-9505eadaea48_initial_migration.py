@@ -2229,6 +2229,7 @@ def upgrade() -> None:
         {"name": "tomato feed"},
         {"name": "blood, fish and bone"},
         {"name": "balanced feed"},
+        {"name": "ericaceous fertilizer"},
     ]
     feed_ids = {feed["name"]: uuid.uuid4() for feed in feeds}
     op.bulk_insert(

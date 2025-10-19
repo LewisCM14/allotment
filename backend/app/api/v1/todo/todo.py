@@ -33,7 +33,7 @@ logger = structlog.get_logger()
         "Optionally specify a week number (1-52), otherwise returns tasks for the current week."
     ),
 )
-@limiter.limit("30/minute")
+@limiter.limit("52/minute")
 async def get_weekly_todo(
     request: Request,
     week_number: Optional[int] = Query(

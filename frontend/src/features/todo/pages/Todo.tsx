@@ -86,7 +86,11 @@ export default function TodoPage() {
 		weeklyTodo.weekly_tasks.prune_tasks.length > 0 ||
 		weeklyTodo.weekly_tasks.compost_tasks.length > 0;
 
-	const hasDailyTasks = Object.keys(weeklyTodo.daily_tasks).length > 0;
+	// Daily tasks object can contain entries for all days even if they have no tasks.
+	// Consider it "has daily tasks" only if any day has feed or water items.
+	const hasDailyTasks = Object.values(weeklyTodo.daily_tasks).some(
+		(d) => (d.feed_tasks?.length ?? 0) > 0 || (d.water_tasks?.length ?? 0) > 0,
+	);
 
 	return (
 		<PageLayout>

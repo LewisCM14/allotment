@@ -14,7 +14,7 @@ class TodoService {
 	async getWeeklyTodo(weekNumber?: number): Promise<WeeklyTodoRead> {
 		try {
 			const params = weekNumber ? { week_number: weekNumber } : {};
-			const response = await api.get<WeeklyTodoRead>("/weekly-todo", {
+			const response = await api.get<WeeklyTodoRead>("/todos/weekly", {
 				params,
 			});
 			return response.data;

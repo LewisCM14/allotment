@@ -283,6 +283,9 @@ class WeeklyTodoUnitOfWork:
         # Get user's feed preferences
         user_feed_days = await self._get_user_feed_days(user_id)
 
+        # Pre-load map of week_id -> week_number for range checks
+        week_id_to_number = await self._get_week_id_to_number_map(active_varieties)
+
         for day in all_days:
             day_info = {
                 "day_id": day.day_id,
@@ -298,8 +301,10 @@ class WeeklyTodoUnitOfWork:
             )
             day_info["feed_tasks"] = feed_tasks_by_feed
 
-            # Build water tasks
-            water_tasks = self._build_water_tasks_for_day(active_varieties, day.day_id)
+            # Build water tasks (annuals limited to active season)
+            water_tasks = await self._build_water_tasks_for_day(
+                active_varieties, day.day_id, week_number, week_id_to_number
+            )
             day_info["water_tasks"] = water_tasks
 
             daily_tasks[day.day_number] = day_info
@@ -370,13 +375,61 @@ class WeeklyTodoUnitOfWork:
 
         return list(feed_groups.values())
 
-    def _build_water_tasks_for_day(
-        self, active_varieties: List[Variety], day_id: uuid.UUID
+    async def _build_water_tasks_for_day(
+        self,
+        active_varieties: List[Variety],
+        day_id: uuid.UUID,
+        week_number: int,
+        week_id_to_number: Dict[uuid.UUID, int],
     ) -> List[Dict[str, Any]]:
         """Build watering tasks for a specific day using frequency default days."""
         water_tasks = []
 
         for variety in active_varieties:
+            # Limit annuals to their active season between sow start and harvest end (inclusive)
+            if variety.lifecycle:
+                lifecycle = self._to_lifecycle_type(variety.lifecycle.lifecycle_name)
+                if lifecycle == LifecycleType.ANNUAL:
+                    start_num = week_id_to_number.get(variety.sow_week_start_id)
+                    end_num = week_id_to_number.get(variety.harvest_week_end_id)
+
+                    # Fallback: fetch missing week numbers
+                    if start_num is None or end_num is None:
+                        with log_timing(
+                            "db_fetch_missing_week_numbers", request_id=self.request_id
+                        ):
+                            ids: List[uuid.UUID] = []
+                            if start_num is None:
+                                ids.append(variety.sow_week_start_id)
+                            if end_num is None:
+                                ids.append(variety.harvest_week_end_id)
+                            if ids:
+                                stmt = select(Week.week_id, Week.week_number).where(
+                                    Week.week_id.in_(ids)
+                                )
+                                result = await self.db.execute(stmt)
+                                for wid, wnum in result.all():
+                                    week_id_to_number[wid] = wnum
+                                start_num = week_id_to_number.get(
+                                    variety.sow_week_start_id
+                                )
+                                end_num = week_id_to_number.get(
+                                    variety.harvest_week_end_id
+                                )
+
+                    # If still missing, skip (cannot determine season)
+                    if start_num is None or end_num is None:
+                        continue
+
+                    # Check if current week in [start, end], handling wrap-around
+                    if start_num <= end_num:
+                        in_season = start_num <= week_number <= end_num
+                    else:
+                        in_season = week_number >= start_num or week_number <= end_num
+
+                    if not in_season:
+                        continue
+
             # Check if variety's water frequency includes this day
             if variety.water_frequency and variety.water_frequency.default_days:
                 for default_day in variety.water_frequency.default_days:
@@ -470,26 +523,24 @@ class WeeklyTodoUnitOfWork:
             if weeks_since_start < 0:
                 weeks_since_start += 52
 
-            # Calculate expected interval between feedings in weeks
-            # frequency_days_per_year / 7 gives feeds per year
-            # 52 / feeds_per_year gives weeks between feeds
-            if frequency.frequency_days_per_year == 0:
+            # Interpret frequency_days_per_year as number of feed occurrences per year
+            # Examples:
+            #   Weekly -> 52  => every 1 week
+            #   Fortnightly -> 26 => every 2 weeks
+            #   Monthly -> 12 => ~every 4 weeks (rounded)
+            #   Yearly -> 1 => every 52 weeks
+            occurrences_per_year = max(0, int(frequency.frequency_days_per_year))
+            if occurrences_per_year <= 0:
                 return False
 
-            feeds_per_year = frequency.frequency_days_per_year / 7.0
-            if feeds_per_year == 0:
-                return False
-
-            weeks_per_feed = 52.0 / feeds_per_year
-
-            # Check if this week aligns with feeding schedule
-            if weeks_per_feed >= 1:
-                # Feed every N weeks - check if current week is a feeding week
-                return weeks_since_start % int(round(weeks_per_feed)) == 0
+            if occurrences_per_year >= 52:
+                weeks_between_feeds = 1
             else:
-                # Feed multiple times per week (rare, but handle it)
-                # In this case, always feed during the active period
-                return True
+                # Round to the nearest whole number of weeks between feeds
+                weeks_between_feeds = max(1, int(round(52.0 / occurrences_per_year)))
+
+            # Check if this week aligns with the schedule anchored at start week
+            return weeks_since_start % weeks_between_feeds == 0
 
     async def _get_week_by_id(self, week_id: uuid.UUID) -> Optional[Week]:
         """Get a week by its ID."""

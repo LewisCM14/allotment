@@ -126,20 +126,8 @@ export const GrowGuideListPresenter = ({
 
 	const toggleActive = (id: string, checked: boolean) => {
 		const previousState = { ...activeMap };
-		// Optimistic update: when activating, deactivate all others; when deactivating, only update this one
-		setActiveMap((prev) => {
-			if (checked) {
-				// Activating: set this one true, all others false
-				const updatedState: Record<string, boolean> = {};
-				const keys = new Set([...Object.keys(prev), id]);
-				for (const key of keys) {
-					updatedState[key] = key === id;
-				}
-				return updatedState;
-			}
-			// Deactivating: only update this specific item
-			return { ...prev, [id]: false };
-		});
+		// Optimistic update: only update this specific item
+		setActiveMap((prev) => ({ ...prev, [id]: checked }));
 		setPendingActiveId(id);
 		toggleActiveMutation(
 			{ varietyId: id, makeActive: checked },

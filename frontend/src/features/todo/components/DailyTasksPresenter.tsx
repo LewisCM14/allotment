@@ -7,7 +7,15 @@ interface DailyTasksPresenterProps {
 	dailyTasks: Record<number, DailyTasks>;
 }
 
-const DAY_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const FULL_DAY_NAMES = [
+	"Monday",
+	"Tuesday",
+	"Wednesday",
+	"Thursday",
+	"Friday",
+	"Saturday",
+	"Sunday",
+];
 
 export const DailyTasksPresenter = ({
 	dailyTasks,
@@ -44,7 +52,7 @@ export const DailyTasksPresenter = ({
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
 								<CardTitle className="text-lg">
-									{DAY_NAMES[day.day_number - 1]} - {day.day_name}
+									{FULL_DAY_NAMES[day.day_number - 1]}
 								</CardTitle>
 								<div className="flex gap-2">
 									{hasFeedTasks && (
@@ -74,6 +82,7 @@ export const DailyTasksPresenter = ({
 										<Leaf className="h-4 w-4 text-green-600" />
 										<h4 className="font-semibold text-sm">Feeding</h4>
 									</div>
+
 									<div className="space-y-3">
 										{day.feed_tasks.map((feedTask) => (
 											<div
