@@ -13,8 +13,10 @@ class LifecycleType(str, Enum):
     - ANNUAL: Plants that complete their lifecycle in one growing season
     - BIENNIAL: Plants that complete their lifecycle in two growing seasons
     - PERENNIAL: Plants that live for multiple years
+    - SHORT_LIVED_PERENNIAL: Perennials with a notably shorter productive lifespan
     """
 
     ANNUAL = "annual"
     BIENNIAL = "biennial"
     PERENNIAL = "perennial"
+    SHORT_LIVED_PERENNIAL = "short-lived perennial"

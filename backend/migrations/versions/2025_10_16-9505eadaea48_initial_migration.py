@@ -104,6 +104,7 @@ def upgrade() -> None:
                 "annual",
                 "biennial",
                 "perennial",
+                "short-lived perennial",
                 name="lifecycletype",
                 native_enum=False,
                 length=50,
@@ -2377,6 +2378,7 @@ def upgrade() -> None:
         {"name": "annual", "productivity_years": 1},
         {"name": "biennial", "productivity_years": 2},
         {"name": "perennial", "productivity_years": 10},
+        {"name": "short-lived perennial", "productivity_years": 4},
     ]
     lifecycle_ids = {lifecycle["name"]: uuid.uuid4() for lifecycle in lifecycles}
     op.bulk_insert(

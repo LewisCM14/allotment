@@ -456,12 +456,12 @@ class WeeklyTodoUnitOfWork:
         lifecycle_name: Union[LifecycleType, str],
     ) -> bool:
         """
-        Check if the given week is within the feeding period.
+            Check if the given week is within the feeding period.
 
-        For annuals: Feed from feed_week_start until harvest_week_end.
+        For annuals and short-lived perennials: Feed from feed_week_start until harvest_week_end.
         For perennials/biennials: Feed from feed_week_start onwards (continues across years).
 
-        Frequency determines HOW OFTEN to feed within the period.
+            Frequency determines HOW OFTEN to feed within the period.
         """
         with log_timing("db_check_feeding_period", request_id=self.request_id):
             # Get the start week number
@@ -475,8 +475,8 @@ class WeeklyTodoUnitOfWork:
             # Coerce lifecycle to enum for comparisons (handles str inputs)
             lifecycle = self._to_lifecycle_type(lifecycle_name)
 
-            # For annuals, check we haven't passed harvest end
-            if lifecycle == LifecycleType.ANNUAL:
+            # For annuals and short-lived perennials, check we haven't passed harvest end
+            if lifecycle in (LifecycleType.ANNUAL, LifecycleType.SHORT_LIVED_PERENNIAL):
                 harvest_stmt = select(Week.week_number).where(
                     Week.week_id == harvest_week_end_id
                 )
@@ -639,7 +639,11 @@ class WeeklyTodoUnitOfWork:
                 # Could be in next year after harvest
                 return False
 
-        elif lifecycle in (LifecycleType.BIENNIAL, LifecycleType.PERENNIAL):
+        elif lifecycle in (
+            LifecycleType.BIENNIAL,
+            LifecycleType.PERENNIAL,
+            LifecycleType.SHORT_LIVED_PERENNIAL,
+        ):
             return False
 
         return False

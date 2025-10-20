@@ -81,7 +81,7 @@ export const WelcomeEmptyState = () => {
 								className="gap-2"
 							>
 								<Plus className="h-5 w-5" />
-								Create Your First Guide
+								Create A Guide
 							</Button>
 							<Button
 								size="lg"

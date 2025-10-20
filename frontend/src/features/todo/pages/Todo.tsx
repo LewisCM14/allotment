@@ -92,6 +92,19 @@ export default function TodoPage() {
 		(d) => (d.feed_tasks?.length ?? 0) > 0 || (d.water_tasks?.length ?? 0) > 0,
 	);
 
+	// If backend returned an empty daily_tasks map AND no weekly tasks,
+	// this indicates the user has no active varieties. Show the friendly empty state.
+	const isNoActiveVarieties =
+		Object.keys(weeklyTodo.daily_tasks || {}).length === 0 && !hasWeeklyTasks;
+
+	if (isNoActiveVarieties) {
+		return (
+			<PageLayout>
+				<WelcomeEmptyState />
+			</PageLayout>
+		);
+	}
+
 	return (
 		<PageLayout>
 			<div className="space-y-6">
