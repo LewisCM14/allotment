@@ -27,20 +27,13 @@ export const getUserFeedPreferences =
 			// Normalize API payload to the shapes expected by the UI with safe typing
 			const raw = response.data as unknown as Record<string, unknown>;
 
-			const user_feed_days = Array.isArray(
-				(raw as Record<string, unknown>)?.user_feed_days,
-			)
-				? ((raw as Record<string, unknown>)
-						.user_feed_days as UserPreferencesRead["user_feed_days"])
+			const user_feed_days = Array.isArray(raw.user_feed_days)
+				? (raw.user_feed_days as UserPreferencesRead["user_feed_days"])
 				: [];
 
 			// Map feeds to { id, name }
-			const available_feeds = Array.isArray(
-				(raw as Record<string, unknown>)?.available_feeds,
-			)
-				? (
-						(raw as Record<string, unknown>).available_feeds as Array<unknown>
-					).map((f) => {
+			const available_feeds = Array.isArray(raw.available_feeds)
+				? (raw.available_feeds as unknown[]).map((f) => {
 						const feed = f as {
 							id?: string;
 							feed_id?: string;
@@ -55,12 +48,8 @@ export const getUserFeedPreferences =
 				: [];
 
 			// Map days to { id, name } and preserve day_number when present
-			const available_days = Array.isArray(
-				(raw as Record<string, unknown>)?.available_days,
-			)
-				? (
-						(raw as Record<string, unknown>).available_days as Array<unknown>
-					).map((d) => {
+			const available_days = Array.isArray(raw.available_days)
+				? (raw.available_days as unknown[]).map((d) => {
 						const day = d as {
 							id?: string;
 							day_id?: string;
