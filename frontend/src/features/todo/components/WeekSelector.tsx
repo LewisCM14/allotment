@@ -70,15 +70,15 @@ export const WeekSelector = ({
 		}
 	}, [currentWeekNumber]);
 
-	// Enable mouse-wheel horizontal scrolling on desktop
 	const onWheelHorizontal = (e: React.WheelEvent<HTMLDivElement>) => {
 		const el = scrollContainerRef.current;
 		if (!el) return;
-		// When vertical wheel input is dominant, translate to horizontal scroll
-		if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-			e.preventDefault();
-			el.scrollLeft += e.deltaY;
-		}
+
+		e.preventDefault();
+		e.stopPropagation();
+		const delta =
+			Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+		el.scrollLeft += delta;
 	};
 
 	// Keyboard navigation for each week pill
@@ -140,9 +140,10 @@ export const WeekSelector = ({
 			{/* Carousel */}
 			<div
 				aria-label="Select week number"
-				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin"
+				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin touch-pan-x"
 				ref={scrollContainerRef}
-				onWheel={onWheelHorizontal}
+				onWheelCapture={onWheelHorizontal}
+				style={{ overscrollBehavior: "contain" }}
 			>
 				{weeks.map((week) => {
 					const isSelected = week === currentWeekNumber;
@@ -150,11 +151,17 @@ export const WeekSelector = ({
 					const disabled = week < minWeek || week > maxWeek;
 					const baseClasses =
 						"h-8 min-w-8 px-2 text-sm rounded-full border transition-colors outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
-					const variantClasses = isSelected
-						? "bg-primary text-primary-foreground border-primary hover:brightness-105"
-						: isActual
-							? "bg-accent text-accent-foreground border-accent ring-2 ring-accent/60 hover:brightness-105"
-							: "bg-card text-foreground border-border hover:bg-accent/15 hover:border-accent/40";
+					let variantClasses: string;
+					if (isSelected) {
+						variantClasses =
+							"bg-primary text-primary-foreground border-primary hover:brightness-105";
+					} else if (isActual) {
+						variantClasses =
+							"bg-accent text-accent-foreground border-accent ring-2 ring-accent/60 hover:brightness-105";
+					} else {
+						variantClasses =
+							"bg-card text-foreground border-border hover:bg-accent/15 hover:border-accent/40";
+					}
 					return (
 						<button
 							key={week}
