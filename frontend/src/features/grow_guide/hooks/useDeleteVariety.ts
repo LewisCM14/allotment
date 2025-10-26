@@ -45,7 +45,6 @@ export const useDeleteVariety = () => {
 				import.meta.env.MODE !== "test"
 			) {
 				window.location.reload();
-				return;
 			}
 		},
 		onSettled: () => {
