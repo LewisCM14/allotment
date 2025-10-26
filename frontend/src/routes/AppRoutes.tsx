@@ -133,6 +133,14 @@ const AppRoutes = () => {
 						</ProtectedRoute>
 					}
 				/>
+				<Route
+					path="/grow-guides/:varietyId"
+					element={
+						<ProtectedRoute>
+							<GrowGuidePage />
+						</ProtectedRoute>
+					}
+				/>
 
 				{/* Page Not Found */}
 				<Route
