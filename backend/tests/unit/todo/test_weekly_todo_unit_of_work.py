@@ -65,6 +65,22 @@ class TestWeeklyTodoUnitOfWork:
         )
 
     @pytest.mark.asyncio
+    async def test_aexit_rolls_back_on_unknown_error(self, uow, mocker):
+        """Covers the path where exc_type is set but exc_value is None."""
+        mock_logger = mocker.patch("app.api.services.todo.weekly_todo.logger")
+
+        class SomeError(Exception):
+            pass
+
+        await uow.__aexit__(SomeError, None, None)
+        uow.db.rollback.assert_called()
+        # Ensure the 'unknown error' log path is used
+        assert any(
+            call.kwargs.get("error_type") == str(SomeError)
+            for call in mock_logger.warning.call_args_list
+        )
+
+    @pytest.mark.asyncio
     async def test_parse_uuid_valid(self, uow):
         """Test _parse_uuid with valid UUID string."""
         test_uuid = uuid.uuid4()
@@ -204,6 +220,23 @@ class TestWeeklyTodoUnitOfWork:
         assert 1 in result["daily_tasks"]
 
     @pytest.mark.asyncio
+    async def test_get_weekly_todo_uses_current_week_when_none(self, uow, mocker):
+        """When week_number is None, it should use _get_current_week_number()."""
+        user_id = str(uuid.uuid4())
+        mock_week = MagicMock()
+        mock_week.week_id = uuid.uuid4()
+        mock_week.week_number = 42
+        mock_week.week_start_date = "10/09"
+        mock_week.week_end_date = "10/15"
+
+        mocker.patch.object(uow, "_get_current_week_number", return_value=42)
+        mocker.patch.object(uow, "_get_week_by_number", return_value=mock_week)
+        mocker.patch.object(uow, "_get_user_active_varieties", return_value=[])
+
+        result = await uow.get_weekly_todo(user_id, week_number=None)
+        assert result["week_number"] == 42
+
+    @pytest.mark.asyncio
     async def test_build_water_tasks_for_day(self, uow):
         """Test _build_water_tasks_for_day uses frequency default days."""
         day_id = uuid.uuid4()
@@ -213,6 +246,8 @@ class TestWeeklyTodoUnitOfWork:
         mock_variety_1.variety_id = uuid.uuid4()
         mock_variety_1.variety_name = "lettuce"
         mock_variety_1.family.family_name = "asteraceae"
+        # Ensure non-annual to avoid DB fallback path for missing week numbers
+        mock_variety_1.lifecycle.lifecycle_name = "perennial"
         mock_water_frequency = MagicMock()
         mock_default_day = MagicMock()
         mock_default_day.day_id = day_id
@@ -223,18 +258,58 @@ class TestWeeklyTodoUnitOfWork:
         mock_variety_2 = MagicMock()
         mock_variety_2.variety_id = uuid.uuid4()
         mock_variety_2.variety_name = "tomato"
+        mock_variety_2.lifecycle.lifecycle_name = "perennial"
         mock_water_frequency_2 = MagicMock()
         mock_other_day = MagicMock()
         mock_other_day.day_id = uuid.uuid4()  # Different day
         mock_water_frequency_2.default_days = [mock_other_day]
         mock_variety_2.water_frequency = mock_water_frequency_2
 
-        result = uow._build_water_tasks_for_day(
-            [mock_variety_1, mock_variety_2], day_id
+        result = await uow._build_water_tasks_for_day(
+            [mock_variety_1, mock_variety_2],
+            day_id,
+            week_number=10,
+            week_id_to_number={},
         )
 
         assert len(result) == 1
         assert result[0]["variety_name"] == "lettuce"
+
+    @pytest.mark.asyncio
+    async def test_to_lifecycle_type_and_compost_logic(self, uow):
+        """Cover _to_lifecycle_type and _should_compost_variety annual logic including wrap-around."""
+        from app.api.models.enums import LifecycleType
+
+        # _to_lifecycle_type accepts strings and enums, defaults to ANNUAL
+        assert uow._to_lifecycle_type("ANNUAL") == LifecycleType.ANNUAL
+        assert (
+            uow._to_lifecycle_type("short-lived perennial")
+            == LifecycleType.SHORT_LIVED_PERENNIAL
+        )
+        assert (
+            uow._to_lifecycle_type(LifecycleType.PERENNIAL) == LifecycleType.PERENNIAL
+        )
+        assert uow._to_lifecycle_type("UnknownKind") == LifecycleType.ANNUAL
+
+        # Compost logic for annuals: non-wrap season -> compost strictly after harvest_end
+        sow_id, harvest_id = uuid.uuid4(), uuid.uuid4()
+        week_map = {sow_id: 8, harvest_id: 30}
+        annual = MagicMock()
+        annual.lifecycle.lifecycle_name = "annual"
+        annual.sow_week_start_id = sow_id
+        annual.harvest_week_end_id = harvest_id
+        assert await uow._should_compost_variety(annual, 31, week_map) is True
+        assert await uow._should_compost_variety(annual, 5, week_map) is False
+
+        # Wrap-around season (e.g., sow 50 .. harvest 10) -> compost between harvest_end and next sow_start
+        sow2, harvest2 = uuid.uuid4(), uuid.uuid4()
+        week_map2 = {sow2: 50, harvest2: 10}
+        annual2 = MagicMock()
+        annual2.lifecycle.lifecycle_name = "annual"
+        annual2.sow_week_start_id = sow2
+        annual2.harvest_week_end_id = harvest2
+        assert await uow._should_compost_variety(annual2, 11, week_map2) is True
+        assert await uow._should_compost_variety(annual2, 9, week_map2) is False
 
     @pytest.mark.asyncio
     async def test_is_week_in_range_by_number(self, uow):
@@ -270,28 +345,71 @@ class TestWeeklyTodoUnitOfWork:
         )
         assert result is False
 
-        # Wrap-around case: week 50 to week 5
-        week_id_4 = uuid.uuid4()
-        week_id_5 = uuid.uuid4()
-        wrap_map = {week_id_4: 50, week_id_5: 5}
-
-        # Test week 52 (in range)
-        result = await uow._is_week_in_range_by_number(
-            52, week_id_4, week_id_5, wrap_map
+    @pytest.mark.asyncio
+    async def test_is_week_in_range_missing_numbers_returns_false(self, uow):
+        """If either start or end week number missing in map, result is False."""
+        week_map = {}
+        res = await uow._is_week_in_range_by_number(
+            10, uuid.uuid4(), uuid.uuid4(), week_map
         )
-        assert result is True
+        assert res is False
 
-        # Test week 3 (in range)
-        result = await uow._is_week_in_range_by_number(
-            3, week_id_4, week_id_5, wrap_map
-        )
-        assert result is True
+    @pytest.mark.asyncio
+    async def test_build_weekly_tasks_handles_none_week(self, uow, mocker):
+        """If _get_week_by_id returns None, returns empty tasks structure."""
+        mocker.patch.object(uow, "_get_week_by_id", return_value=None)
+        tasks = await uow._build_weekly_tasks([], uuid.uuid4())
+        assert tasks == {
+            "sow_tasks": [],
+            "transplant_tasks": [],
+            "harvest_tasks": [],
+            "prune_tasks": [],
+            "compost_tasks": [],
+        }
 
-        # Test week 25 (out of range)
-        result = await uow._is_week_in_range_by_number(
-            25, week_id_4, week_id_5, wrap_map
+    @pytest.mark.asyncio
+    async def test_build_weekly_tasks_transplant_and_prune(self, uow, mocker):
+        """Covers transplant and prune additions when in range."""
+        # Current week
+        mock_current_week = MagicMock()
+        mock_current_week.week_number = 15
+        mocker.patch.object(uow, "_get_week_by_id", return_value=mock_current_week)
+
+        # Week map so all ranges include week 15
+        mocker.patch.object(
+            uow, "_get_week_id_to_number_map", return_value={uuid.uuid4(): 10}
         )
-        assert result is False
+
+        # Shortcut range checks to True for specific calls
+        async def range_true(*args, **kwargs):
+            return True
+
+        mocker.patch.object(uow, "_is_week_in_range_by_number", side_effect=range_true)
+
+        variety = MagicMock()
+        variety.variety_id = uuid.uuid4()
+        variety.variety_name = "pepper"
+        variety.family.family_name = "nightshade"
+        # Needed ids (values only used by mocked range fn)
+        variety.sow_week_start_id = uuid.uuid4()
+        variety.sow_week_end_id = uuid.uuid4()
+        variety.harvest_week_start_id = uuid.uuid4()
+        variety.harvest_week_end_id = uuid.uuid4()
+        variety.transplant_week_start_id = uuid.uuid4()
+        variety.transplant_week_end_id = uuid.uuid4()
+        variety.prune_week_start_id = uuid.uuid4()
+        variety.prune_week_end_id = uuid.uuid4()
+        # Compost path
+        mocker.patch.object(uow, "_should_compost_variety", return_value=True)
+
+        res = await uow._build_weekly_tasks([variety], uuid.uuid4())
+        assert {"variety_name": "pepper", "family_name": "nightshade"}.items() <= res[
+            "sow_tasks"
+        ][0].items()
+        assert len(res["transplant_tasks"]) == 1
+        assert len(res["prune_tasks"]) == 1
+        assert len(res["harvest_tasks"]) == 1
+        assert len(res["compost_tasks"]) == 1
 
     @pytest.mark.asyncio
     async def test_create_empty_todo_response(self, uow):
@@ -367,3 +485,282 @@ class TestWeeklyTodoUnitOfWork:
 
         assert result[feed_id_1] == day_id_1
         assert result[feed_id_2] == day_id_2
+
+    @pytest.mark.asyncio
+    async def test_build_feed_tasks_for_day_grouping_and_default_lifecycle(
+        self, uow, mocker
+    ):
+        """Two varieties with same feed_id should group; one has no lifecycle to hit default ANNUAL path."""
+        day_id = uuid.uuid4()
+        feed_id = uuid.uuid4()
+        user_feed_days = {feed_id: day_id}
+
+        v1 = MagicMock()
+        v1.variety_id = uuid.uuid4()
+        v1.variety_name = "a"
+        v1.family.family_name = "fam"
+        v1.feed_id = feed_id
+        v1.feed = MagicMock()
+        v1.feed.feed_name = "Tomato Feed"
+        v1.feed_week_start_id = uuid.uuid4()
+        v1.feed_frequency_id = uuid.uuid4()
+        v1.harvest_week_end_id = uuid.uuid4()
+        v1.lifecycle = None  # hits default to ANNUAL
+
+        v2 = MagicMock()
+        v2.variety_id = uuid.uuid4()
+        v2.variety_name = "b"
+        v2.family.family_name = "fam"
+        v2.feed_id = feed_id
+        v2.feed = v1.feed
+        v2.feed_week_start_id = uuid.uuid4()
+        v2.feed_frequency_id = uuid.uuid4()
+        v2.harvest_week_end_id = uuid.uuid4()
+        v2.lifecycle.lifecycle_name = "annual"
+
+        # Force feeding period true for both
+        mocker.patch.object(uow, "_is_week_in_feeding_period", return_value=True)
+
+        res = await uow._build_feed_tasks_for_day([v1, v2], day_id, 12, user_feed_days)
+        assert len(res) == 1
+        assert res[0]["feed_id"] == feed_id
+        assert res[0]["feed_name"] == "Tomato Feed"
+        assert sorted([x["variety_name"] for x in res[0]["varieties"]]) == ["a", "b"]
+
+    @pytest.mark.asyncio
+    async def test_get_week_id_to_number_map(self, uow, mocker):
+        """Ensure we collect all referenced weeks and return a map from DB query."""
+        v = MagicMock()
+        # Supply required week ids
+        v.sow_week_start_id = uuid.uuid4()
+        v.sow_week_end_id = uuid.uuid4()
+        v.harvest_week_start_id = uuid.uuid4()
+        v.harvest_week_end_id = uuid.uuid4()
+        v.transplant_week_start_id = uuid.uuid4()
+        v.transplant_week_end_id = uuid.uuid4()
+        v.prune_week_start_id = uuid.uuid4()
+        v.prune_week_end_id = uuid.uuid4()
+        v.feed_week_start_id = uuid.uuid4()
+
+        pairs = [
+            (v.sow_week_start_id, 5),
+            (v.sow_week_end_id, 10),
+            (v.harvest_week_start_id, 20),
+            (v.harvest_week_end_id, 30),
+            (v.transplant_week_start_id, 12),
+            (v.transplant_week_end_id, 14),
+            (v.prune_week_start_id, 25),
+            (v.prune_week_end_id, 27),
+            (v.feed_week_start_id, 8),
+        ]
+
+        mock_result = MagicMock()
+        mock_result.all.return_value = pairs
+        uow.db.execute = AsyncMock(return_value=mock_result)
+
+        mapping = await uow._get_week_id_to_number_map([v])
+        for k, n in pairs:
+            assert mapping[k] == n
+
+    @pytest.mark.asyncio
+    async def test_build_water_tasks_fallback_fetch(self, uow):
+        """Annual variety triggers fallback fetch of missing week numbers and is added when in-season and day matches."""
+        sow_id, harv_id, day_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+
+        v = MagicMock()
+        v.variety_id = uuid.uuid4()
+        v.variety_name = "cucumber"
+        v.family.family_name = "cucurbit"
+        v.lifecycle.lifecycle_name = "annual"
+        v.sow_week_start_id = sow_id
+        v.harvest_week_end_id = harv_id
+        wf = MagicMock()
+        d = MagicMock()
+        d.day_id = day_id
+        wf.default_days = [d]
+        v.water_frequency = wf
+
+        # DB returns both week numbers in one call
+        pairs = [(sow_id, 8), (harv_id, 30)]
+        mock_result = MagicMock()
+        mock_result.all.return_value = pairs
+        uow.db.execute = AsyncMock(return_value=mock_result)
+
+        res = await uow._build_water_tasks_for_day([v], day_id, 10, {})
+        assert len(res) == 1 and res[0]["variety_name"] == "cucumber"
+
+        # Wrap-around case: week 50 to week 5
+        week_id_4 = uuid.uuid4()
+        week_id_5 = uuid.uuid4()
+        wrap_map = {week_id_4: 50, week_id_5: 5}
+
+        # Test week 52 (in range)
+        result = await uow._is_week_in_range_by_number(
+            52, week_id_4, week_id_5, wrap_map
+        )
+        assert result is True
+
+        # Test week 3 (in range)
+        result = await uow._is_week_in_range_by_number(
+            3, week_id_4, week_id_5, wrap_map
+        )
+        assert result is True
+
+        # Test week 25 (out of range)
+        result = await uow._is_week_in_range_by_number(
+            25, week_id_4, week_id_5, wrap_map
+        )
+        assert result is False
+
+
+# Lightweight, module-scoped feeding-period variants test
+@pytest.mark.asyncio
+async def test_is_week_in_feeding_period_variants():
+    """Exercise weekly/monthly/yearly cadence and perennial path including wrap-around handling using standard AsyncMock sessions."""
+    from types import SimpleNamespace
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    def scalar_result(value):
+        r = MagicMock()
+        r.scalar_one_or_none.return_value = value
+        return r
+
+    start_week = 10
+    harvest_end = 30
+
+    # Weekly cadence: every week from start within annual window
+    weekly_freq = SimpleNamespace(frequency_days_per_year=52)
+    db1 = AsyncMock(spec=AsyncSession)
+    db1.execute.side_effect = [
+        scalar_result(start_week),  # feed start
+        scalar_result(harvest_end),  # harvest end
+        scalar_result(weekly_freq),  # frequency
+    ]
+    uow1 = WeeklyTodoUnitOfWork(db1)
+    assert (
+        await uow1._is_week_in_feeding_period(
+            week_number=12,
+            feed_week_start_id=uuid.uuid4(),
+            feed_frequency_id=uuid.uuid4(),
+            harvest_week_end_id=uuid.uuid4(),
+            lifecycle_name="annual",
+        )
+        is True
+    )
+
+    # Monthly-ish cadence (~every 4 weeks)
+    monthly_freq = SimpleNamespace(frequency_days_per_year=12)
+    db2 = AsyncMock(spec=AsyncSession)
+    db2.execute.side_effect = [
+        scalar_result(start_week),
+        scalar_result(harvest_end),
+        scalar_result(monthly_freq),
+    ]
+    uow2 = WeeklyTodoUnitOfWork(db2)
+    # Exactly 4 weeks since start feeds
+    assert (
+        await uow2._is_week_in_feeding_period(
+            week_number=14,
+            feed_week_start_id=uuid.uuid4(),
+            feed_frequency_id=uuid.uuid4(),
+            harvest_week_end_id=uuid.uuid4(),
+            lifecycle_name="annual",
+        )
+        is True
+    )
+
+    # 3 weeks since start does not feed
+    db3 = AsyncMock(spec=AsyncSession)
+    db3.execute.side_effect = [
+        scalar_result(start_week),
+        scalar_result(harvest_end),
+        scalar_result(monthly_freq),
+    ]
+    uow3 = WeeklyTodoUnitOfWork(db3)
+    assert (
+        await uow3._is_week_in_feeding_period(
+            week_number=13,
+            feed_week_start_id=uuid.uuid4(),
+            feed_frequency_id=uuid.uuid4(),
+            harvest_week_end_id=uuid.uuid4(),
+            lifecycle_name="annual",
+        )
+        is False
+    )
+
+    # Perennial path where week < start_week is handled by adding 52 before cadence calculation
+    yearly_freq = SimpleNamespace(frequency_days_per_year=1)
+    db4 = AsyncMock(spec=AsyncSession)
+    db4.execute.side_effect = [
+        scalar_result(start_week),
+        scalar_result(yearly_freq),  # frequency; no harvest query for perennials path
+    ]
+    uow4 = WeeklyTodoUnitOfWork(db4)
+    assert (
+        await uow4._is_week_in_feeding_period(
+            week_number=5,  # < start -> adjusted by +52 internally
+            feed_week_start_id=uuid.uuid4(),
+            feed_frequency_id=uuid.uuid4(),
+            harvest_week_end_id=uuid.uuid4(),
+            lifecycle_name="perennial",
+        )
+        is False
+    )
+
+
+@pytest.mark.asyncio
+async def test_is_week_in_feeding_period_edge_cases():
+    """Covers start week missing, frequency missing, and <=0 occurrences cases."""
+    from types import SimpleNamespace
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    def scalar_result(value):
+        r = MagicMock()
+        r.scalar_one_or_none.return_value = value
+        return r
+
+    # Case 1: start week missing -> False
+    db1 = AsyncMock(spec=AsyncSession)
+    db1.execute.side_effect = [scalar_result(None)]
+    uow1 = WeeklyTodoUnitOfWork(db1)
+    assert (
+        await uow1._is_week_in_feeding_period(
+            10, uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), "annual"
+        )
+        is False
+    )
+
+    # Case 2: frequency row missing -> False
+    start_week = 8
+    harvest_end = 20
+    db2 = AsyncMock(spec=AsyncSession)
+    db2.execute.side_effect = [
+        scalar_result(start_week),
+        scalar_result(harvest_end),
+        scalar_result(None),
+    ]
+    uow2 = WeeklyTodoUnitOfWork(db2)
+    assert (
+        await uow2._is_week_in_feeding_period(
+            12, uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), "annual"
+        )
+        is False
+    )
+
+    # Case 3: occurrences_per_year <= 0 -> False
+    zero_freq = SimpleNamespace(frequency_days_per_year=0)
+    db3 = AsyncMock(spec=AsyncSession)
+    db3.execute.side_effect = [
+        scalar_result(start_week),
+        scalar_result(harvest_end),
+        scalar_result(zero_freq),
+    ]
+    uow3 = WeeklyTodoUnitOfWork(db3)
+    assert (
+        await uow3._is_week_in_feeding_period(
+            12, uuid.uuid4(), uuid.uuid4(), uuid.uuid4(), "annual"
+        )
+        is False
+    )

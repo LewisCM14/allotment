@@ -15,6 +15,7 @@ interface WeeklyTasksPresenterProps {
 	harvestTasks: VarietyTaskDetail[];
 	pruneTasks: VarietyTaskDetail[];
 	compostTasks: VarietyTaskDetail[];
+	onVarietyClick?: (varietyId: string) => void;
 }
 
 type Tone = "primary" | "muted" | "accent" | "destructive";
@@ -47,10 +48,12 @@ const TaskList = ({
 	tasks,
 	emptyMessage,
 	tone,
+	onVarietyClick,
 }: {
 	tasks: VarietyTaskDetail[];
 	emptyMessage: string;
 	tone: Tone;
+	onVarietyClick?: (varietyId: string) => void;
 }) => {
 	if (tasks.length === 0) {
 		return <p className="text-sm text-muted-foreground">{emptyMessage}</p>;
@@ -61,15 +64,17 @@ const TaskList = ({
 	return (
 		<div className="space-y-2">
 			{tasks.map((task) => (
-				<div
+				<button
 					key={task.variety_id}
-					className={`flex items-center justify-between p-3 rounded-md border ${t.bg} ${t.border}`}
+					type="button"
+					onClick={() => onVarietyClick?.(task.variety_id)}
+					className={`w-full text-left flex items-center justify-between p-3 rounded-md border ${t.bg} ${t.border} hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer`}
 				>
 					<span className={`font-medium ${t.text}`}>{task.variety_name}</span>
 					<span className="text-sm text-muted-foreground">
 						{task.family_name}
 					</span>
-				</div>
+				</button>
 			))}
 		</div>
 	);
@@ -81,6 +86,7 @@ export const WeeklyTasksPresenter = ({
 	harvestTasks,
 	pruneTasks,
 	compostTasks,
+	onVarietyClick,
 }: WeeklyTasksPresenterProps) => {
 	const hasAnyTasks =
 		sowTasks.length > 0 ||
@@ -118,6 +124,7 @@ export const WeeklyTasksPresenter = ({
 							tasks={sowTasks}
 							emptyMessage="No sowing tasks"
 							tone="primary"
+							onVarietyClick={onVarietyClick}
 						/>
 					</CardContent>
 				</Card>
@@ -138,6 +145,7 @@ export const WeeklyTasksPresenter = ({
 							tasks={transplantTasks}
 							emptyMessage="No transplant tasks"
 							tone="muted"
+							onVarietyClick={onVarietyClick}
 						/>
 					</CardContent>
 				</Card>
@@ -158,6 +166,7 @@ export const WeeklyTasksPresenter = ({
 							tasks={harvestTasks}
 							emptyMessage="No harvest tasks"
 							tone="accent"
+							onVarietyClick={onVarietyClick}
 						/>
 					</CardContent>
 				</Card>
@@ -178,6 +187,7 @@ export const WeeklyTasksPresenter = ({
 							tasks={pruneTasks}
 							emptyMessage="No pruning tasks"
 							tone="accent"
+							onVarietyClick={onVarietyClick}
 						/>
 					</CardContent>
 				</Card>
@@ -198,6 +208,7 @@ export const WeeklyTasksPresenter = ({
 							tasks={compostTasks}
 							emptyMessage="No compost tasks"
 							tone="destructive"
+							onVarietyClick={onVarietyClick}
 						/>
 					</CardContent>
 				</Card>

@@ -3,6 +3,7 @@ import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { Button } from "../../../components/ui/Button";
 import { Plus } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { GrowGuideForm } from "../forms/GrowGuideForm";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -23,6 +24,7 @@ const GrowGuides = () => {
 	const [mode, setMode] = useState<"create" | "edit">("create");
 	const queryClient = useQueryClient();
 	const { data: growGuides, isLoading } = useUserGrowGuides();
+	const { varietyId: varietyIdParam } = useParams<{ varietyId?: string }>();
 
 	const hasGuides =
 		!isLoading && Array.isArray(growGuides) && growGuides.length > 0;
@@ -38,6 +40,13 @@ const GrowGuides = () => {
 			queryFn: growGuideService.getUserGrowGuides,
 		});
 	}, [queryClient]);
+
+	// If the route was hit with a varietyId, open that guide in edit mode
+	useEffect(() => {
+		if (varietyIdParam) {
+			handleSelectGuide(varietyIdParam);
+		}
+	}, [varietyIdParam]);
 
 	const handleAddNew = () => {
 		setSelectedVarietyId(null);

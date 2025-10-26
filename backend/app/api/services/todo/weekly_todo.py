@@ -215,6 +215,29 @@ class WeeklyTodoUnitOfWork:
         # Pre-load all week IDs to week numbers for efficient lookup
         week_id_to_number = await self._get_week_id_to_number_map(active_varieties)
 
+        current_week_number = current_week.week_number
+
+        async def add_task_if_in_range(
+            task_key: str,
+            start_id: Optional[uuid.UUID],
+            end_id: Optional[uuid.UUID],
+            info: Dict[str, Any],
+        ) -> None:
+            """Append variety_info to tasks[task_key] if current week is in range.
+
+            Requires both start and end week IDs and delegates range logic to
+            _is_week_in_range_by_number.
+            """
+            if not (start_id and end_id):
+                return
+            # Narrow types for mypy
+            sid, eid = start_id, end_id
+            assert sid is not None and eid is not None
+            if await self._is_week_in_range_by_number(
+                current_week_number, sid, eid, week_id_to_number
+            ):
+                tasks[task_key].append(info)
+
         for variety in active_varieties:
             variety_info = {
                 "variety_id": variety.variety_id,
@@ -222,43 +245,31 @@ class WeeklyTodoUnitOfWork:
                 "family_name": variety.family.family_name if variety.family else "",
             }
 
-            # Check if this week is within sowing period
-            if await self._is_week_in_range_by_number(
-                current_week.week_number,
+            # Weekly windows
+            await add_task_if_in_range(
+                "sow_tasks",
                 variety.sow_week_start_id,
                 variety.sow_week_end_id,
-                week_id_to_number,
-            ):
-                tasks["sow_tasks"].append(variety_info)
-
-            # Check transplant period
-            if variety.transplant_week_start_id and variety.transplant_week_end_id:
-                if await self._is_week_in_range_by_number(
-                    current_week.week_number,
-                    variety.transplant_week_start_id,
-                    variety.transplant_week_end_id,
-                    week_id_to_number,
-                ):
-                    tasks["transplant_tasks"].append(variety_info)
-
-            # Check harvest period
-            if await self._is_week_in_range_by_number(
-                current_week.week_number,
+                variety_info,
+            )
+            await add_task_if_in_range(
+                "transplant_tasks",
+                variety.transplant_week_start_id,
+                variety.transplant_week_end_id,
+                variety_info,
+            )
+            await add_task_if_in_range(
+                "harvest_tasks",
                 variety.harvest_week_start_id,
                 variety.harvest_week_end_id,
-                week_id_to_number,
-            ):
-                tasks["harvest_tasks"].append(variety_info)
-
-            # Check prune period
-            if variety.prune_week_start_id and variety.prune_week_end_id:
-                if await self._is_week_in_range_by_number(
-                    current_week.week_number,
-                    variety.prune_week_start_id,
-                    variety.prune_week_end_id,
-                    week_id_to_number,
-                ):
-                    tasks["prune_tasks"].append(variety_info)
+                variety_info,
+            )
+            await add_task_if_in_range(
+                "prune_tasks",
+                variety.prune_week_start_id,
+                variety.prune_week_end_id,
+                variety_info,
+            )
 
             # Check if variety should be composted based on lifecycle
             if await self._should_compost_variety(
@@ -321,6 +332,22 @@ class WeeklyTodoUnitOfWork:
             user_feed_days = result.scalars().all()
             return {ufd.feed_id: ufd.day_id for ufd in user_feed_days}
 
+    def _get_lifecycle_name(self, variety: Variety) -> Union[LifecycleType, str]:
+        """Extract lifecycle name or default to ANNUAL."""
+        return (
+            variety.lifecycle.lifecycle_name
+            if variety.lifecycle
+            else LifecycleType.ANNUAL
+        )
+
+    def _create_variety_info(self, variety: Variety) -> Dict[str, Any]:
+        """Build standard variety info dict."""
+        return {
+            "variety_id": variety.variety_id,
+            "variety_name": variety.variety_name,
+            "family_name": variety.family.family_name if variety.family else "",
+        }
+
     async def _build_feed_tasks_for_day(
         self,
         active_varieties: List[Variety],
@@ -331,49 +358,115 @@ class WeeklyTodoUnitOfWork:
         """Build feeding tasks for a specific day, grouped by feed type."""
         feed_groups: Dict[uuid.UUID, Dict[str, Any]] = {}
 
-        for variety in active_varieties:
-            # Check if variety needs feeding
-            if (
-                not variety.feed_id
-                or not variety.feed_week_start_id
-                or not variety.feed_frequency_id
-            ):
-                continue
-
-            # Check if this week is within feeding period
-            if not await self._is_week_in_feeding_period(
-                week_number,
-                variety.feed_week_start_id,
-                variety.feed_frequency_id,
-                variety.harvest_week_end_id,
-                variety.lifecycle.lifecycle_name
-                if variety.lifecycle
-                else LifecycleType.ANNUAL,
-            ):
-                continue
-
-            # Check if user feeds this type on this day
-            user_feed_day = user_feed_days.get(variety.feed_id)
-            if user_feed_day != day_id:
-                continue
-
-            # Group by feed type
-            if variety.feed_id not in feed_groups:
-                feed_groups[variety.feed_id] = {
-                    "feed_id": variety.feed_id,
-                    "feed_name": variety.feed.feed_name if variety.feed else "",
+        def ensure_group(fid: uuid.UUID, feed_name: str) -> Dict[str, Any]:
+            if fid not in feed_groups:
+                feed_groups[fid] = {
+                    "feed_id": fid,
+                    "feed_name": feed_name,
                     "varieties": [],
                 }
+            return feed_groups[fid]
 
-            feed_groups[variety.feed_id]["varieties"].append(
-                {
-                    "variety_id": variety.variety_id,
-                    "variety_name": variety.variety_name,
-                    "family_name": variety.family.family_name if variety.family else "",
-                }
+        for variety in active_varieties:
+            fid = variety.feed_id
+            fws = variety.feed_week_start_id
+            ffid = variety.feed_frequency_id
+            if not (fid and fws and ffid):
+                continue
+            if user_feed_days.get(fid) != day_id:
+                continue
+
+            in_period = await self._is_week_in_feeding_period(
+                week_number,
+                fws,
+                ffid,
+                variety.harvest_week_end_id,
+                self._get_lifecycle_name(variety),
             )
+            if not in_period:
+                continue
+
+            feed_name = variety.feed.feed_name if variety.feed else ""
+            group = ensure_group(fid, feed_name)
+            group["varieties"].append(self._create_variety_info(variety))
 
         return list(feed_groups.values())
+
+    async def _fetch_missing_week_numbers(
+        self,
+        sid: uuid.UUID,
+        hid: uuid.UUID,
+        start_num: Optional[int],
+        end_num: Optional[int],
+        week_id_to_number: Dict[uuid.UUID, int],
+    ) -> tuple[Optional[int], Optional[int]]:
+        """Fetch missing week numbers from database and update cache."""
+        missing = [
+            wid for wid, num in [(sid, start_num), (hid, end_num)] if num is None
+        ]
+        if missing:
+            stmt = select(Week.week_id, Week.week_number).where(
+                Week.week_id.in_(missing)
+            )
+            result = await self.db.execute(stmt)
+            for wid, wnum in result.all():
+                if wid not in week_id_to_number:
+                    week_id_to_number[wid] = wnum
+            start_num = week_id_to_number.get(sid)
+            end_num = week_id_to_number.get(hid)
+        return start_num, end_num
+
+    async def _get_annual_bounds(
+        self, variety: Variety, week_id_to_number: Dict[uuid.UUID, int]
+    ) -> Optional[tuple[int, int]]:
+        """Return (start, end) week numbers for annual varieties, fetching missing values if needed."""
+        if not variety.lifecycle:
+            return None
+
+        if (
+            self._to_lifecycle_type(variety.lifecycle.lifecycle_name)
+            != LifecycleType.ANNUAL
+        ):
+            return None
+
+        sid = variety.sow_week_start_id
+        hid = variety.harvest_week_end_id
+
+        if not sid or not hid:
+            return None
+
+        start_num = week_id_to_number.get(sid)
+        end_num = week_id_to_number.get(hid)
+
+        if start_num is None or end_num is None:
+            start_num, end_num = await self._fetch_missing_week_numbers(
+                sid, hid, start_num, end_num, week_id_to_number
+            )
+
+        if start_num is None or end_num is None:
+            return None
+
+        return start_num, end_num
+
+    def _is_in_season(
+        self, current_week: int, bounds: Optional[tuple[int, int]]
+    ) -> bool:
+        """Check if current week is within the season bounds (handles year wrap-around)."""
+        if bounds is None:
+            return True
+
+        start, end = bounds
+        if start <= end:
+            return start <= current_week <= end
+
+        return current_week >= start or current_week <= end
+
+    def _should_water_today(self, variety: Variety, day_id: uuid.UUID) -> bool:
+        """Check if variety should be watered on the given day."""
+        if not (variety.water_frequency and variety.water_frequency.default_days):
+            return False
+
+        return any(d.day_id == day_id for d in variety.water_frequency.default_days)
 
     async def _build_water_tasks_for_day(
         self,
@@ -383,69 +476,41 @@ class WeeklyTodoUnitOfWork:
         week_id_to_number: Dict[uuid.UUID, int],
     ) -> List[Dict[str, Any]]:
         """Build watering tasks for a specific day using frequency default days."""
-        water_tasks = []
+        water_tasks: List[Dict[str, Any]] = []
 
         for variety in active_varieties:
-            # Limit annuals to their active season between sow start and harvest end (inclusive)
-            if variety.lifecycle:
-                lifecycle = self._to_lifecycle_type(variety.lifecycle.lifecycle_name)
-                if lifecycle == LifecycleType.ANNUAL:
-                    start_num = week_id_to_number.get(variety.sow_week_start_id)
-                    end_num = week_id_to_number.get(variety.harvest_week_end_id)
+            bounds = await self._get_annual_bounds(variety, week_id_to_number)
+            if bounds is not None and not self._is_in_season(week_number, bounds):
+                continue
 
-                    # Fallback: fetch missing week numbers
-                    if start_num is None or end_num is None:
-                        with log_timing(
-                            "db_fetch_missing_week_numbers", request_id=self.request_id
-                        ):
-                            ids: List[uuid.UUID] = []
-                            if start_num is None:
-                                ids.append(variety.sow_week_start_id)
-                            if end_num is None:
-                                ids.append(variety.harvest_week_end_id)
-                            if ids:
-                                stmt = select(Week.week_id, Week.week_number).where(
-                                    Week.week_id.in_(ids)
-                                )
-                                result = await self.db.execute(stmt)
-                                for wid, wnum in result.all():
-                                    week_id_to_number[wid] = wnum
-                                start_num = week_id_to_number.get(
-                                    variety.sow_week_start_id
-                                )
-                                end_num = week_id_to_number.get(
-                                    variety.harvest_week_end_id
-                                )
+            if not self._should_water_today(variety, day_id):
+                continue
 
-                    # If still missing, skip (cannot determine season)
-                    if start_num is None or end_num is None:
-                        continue
-
-                    # Check if current week in [start, end], handling wrap-around
-                    if start_num <= end_num:
-                        in_season = start_num <= week_number <= end_num
-                    else:
-                        in_season = week_number >= start_num or week_number <= end_num
-
-                    if not in_season:
-                        continue
-
-            # Check if variety's water frequency includes this day
-            if variety.water_frequency and variety.water_frequency.default_days:
-                for default_day in variety.water_frequency.default_days:
-                    if default_day.day_id == day_id:
-                        water_tasks.append(
-                            {
-                                "variety_id": variety.variety_id,
-                                "variety_name": variety.variety_name,
-                                "family_name": variety.family.family_name
-                                if variety.family
-                                else "",
-                            }
-                        )
-                        break  # Only add once per variety
+            water_tasks.append(self._create_variety_info(variety))
 
         return water_tasks
+
+    def _calculate_weeks_between_feeds(self, occurrences: int) -> int:
+        """Calculate weeks between feeds based on yearly occurrences."""
+        if occurrences >= 52:
+            return 1
+        return max(1, int(round(52.0 / occurrences)))
+
+    def _check_week_in_lifecycle_window(
+        self, wn: int, start: int, harvest_end: Optional[int], lifecycle: LifecycleType
+    ) -> int:
+        """Return adjusted week number if within lifecycle period; -1 if outside."""
+        if lifecycle in (LifecycleType.ANNUAL, LifecycleType.SHORT_LIVED_PERENNIAL):
+            if harvest_end is None:
+                return -1
+            if start <= harvest_end:
+                return wn if (start <= wn <= harvest_end) else -1
+            # wrap-around
+            return wn if (wn >= start or wn <= harvest_end) else -1
+        # perennials/biennials
+        if wn < start:
+            wn += 52
+        return wn
 
     async def _is_week_in_feeding_period(
         self,
@@ -464,18 +529,17 @@ class WeeklyTodoUnitOfWork:
             Frequency determines HOW OFTEN to feed within the period.
         """
         with log_timing("db_check_feeding_period", request_id=self.request_id):
-            # Get the start week number
+            # Get numeric start week
             stmt = select(Week.week_number).where(Week.week_id == feed_week_start_id)
             result = await self.db.execute(stmt)
             start_week_number = result.scalar_one_or_none()
-
             if start_week_number is None:
                 return False
 
-            # Coerce lifecycle to enum for comparisons (handles str inputs)
             lifecycle = self._to_lifecycle_type(lifecycle_name)
 
-            # For annuals and short-lived perennials, check we haven't passed harvest end
+            # Fetch harvest end week if needed for lifecycle window
+            harvest_end_week: Optional[int] = None
             if lifecycle in (LifecycleType.ANNUAL, LifecycleType.SHORT_LIVED_PERENNIAL):
                 harvest_stmt = select(Week.week_number).where(
                     Week.week_id == harvest_week_end_id
@@ -483,64 +547,33 @@ class WeeklyTodoUnitOfWork:
                 harvest_result = await self.db.execute(harvest_stmt)
                 harvest_end_week = harvest_result.scalar_one_or_none()
 
-                if harvest_end_week is None:
-                    return False
-
-                # Handle year wrap-around
-                if start_week_number <= harvest_end_week:
-                    # Normal case: start week before harvest
-                    if (
-                        week_number < start_week_number
-                        or week_number > harvest_end_week
-                    ):
-                        return False
-                else:
-                    # Wrap-around case: harvest crosses year boundary
-                    if (
-                        week_number < start_week_number
-                        and week_number > harvest_end_week
-                    ):
-                        return False
-            else:
-                # For perennials/biennials, check we're after start week
-                # Handle year wrap-around
-                if week_number < start_week_number:
-                    # Could be in next year's cycle
-                    week_number += 52
-
-            # Get the frequency details
+            # Get frequency
             freq_stmt = select(Frequency).where(
                 Frequency.frequency_id == feed_frequency_id
             )
             freq_result = await self.db.execute(freq_stmt)
             frequency = freq_result.scalar_one_or_none()
-
             if frequency is None:
                 return False
 
-            # Calculate weeks since start (handling wrap-around)
-            weeks_since_start = week_number - start_week_number
-            if weeks_since_start < 0:
-                weeks_since_start += 52
-
-            # Interpret frequency_days_per_year as number of feed occurrences per year
-            # Examples:
-            #   Weekly -> 52  => every 1 week
-            #   Fortnightly -> 26 => every 2 weeks
-            #   Monthly -> 12 => ~every 4 weeks (rounded)
-            #   Yearly -> 1 => every 52 weeks
-            occurrences_per_year = max(0, int(frequency.frequency_days_per_year))
-            if occurrences_per_year <= 0:
+            # Check if week is within lifecycle window
+            adjusted_week = self._check_week_in_lifecycle_window(
+                week_number, start_week_number, harvest_end_week, lifecycle
+            )
+            if adjusted_week < 0:
                 return False
 
-            if occurrences_per_year >= 52:
-                weeks_between_feeds = 1
-            else:
-                # Round to the nearest whole number of weeks between feeds
-                weeks_between_feeds = max(1, int(round(52.0 / occurrences_per_year)))
+            # Check feeding cadence
+            occurrences = max(0, int(frequency.frequency_days_per_year))
+            if occurrences <= 0:
+                return False
+            weeks_between = self._calculate_weeks_between_feeds(occurrences)
 
-            # Check if this week aligns with the schedule anchored at start week
-            return weeks_since_start % weeks_between_feeds == 0
+            # Normalize delta in [0, 51]
+            delta = adjusted_week - start_week_number
+            if delta < 0:
+                delta += 52
+            return delta % weeks_between == 0
 
     async def _get_week_by_id(self, week_id: uuid.UUID) -> Optional[Week]:
         """Get a week by its ID."""
@@ -616,7 +649,9 @@ class WeeklyTodoUnitOfWork:
         """
         Determine if a variety should be composted based on lifecycle.
 
-        Annual: Compost after harvest_week_end
+        Annual: Compost between the last harvest week and the next sow start week.
+        That is, outside the active season defined by [sow_week_start .. harvest_week_end]
+        (inclusive), correctly handling year wrap-around.
         Biennial: Compost after 2 years (104 weeks) from sow_week_start
         Perennial: Compost after productivity_years from sow_week_start
         """
@@ -624,20 +659,27 @@ class WeeklyTodoUnitOfWork:
             return False
 
         lifecycle = self._to_lifecycle_type(variety.lifecycle.lifecycle_name)
+        sow_start_week = week_id_to_number.get(variety.sow_week_start_id)
         harvest_end_week = week_id_to_number.get(variety.harvest_week_end_id)
 
-        if harvest_end_week is None:
-            return False
-
         if lifecycle == LifecycleType.ANNUAL:
-            # Annuals: compost immediately after harvest ends
-            # Handle wrap-around
-            if harvest_end_week < current_week_number:
-                # Normal case: harvest ended earlier in year
+            # Need both bounds to determine in-season vs compost window
+            if sow_start_week is None or harvest_end_week is None:
+                return False
+
+            if sow_start_week <= harvest_end_week:
+                # Season contained within a single year (e.g., Mar..Sep)
+                # Compost only AFTER harvest end within the same year; do not
+                # show compost in Jan/Feb before the season begins.
                 return current_week_number > harvest_end_week
             else:
-                # Could be in next year after harvest
-                return False
+                # Season wraps year (e.g., Nov..Sep)
+                # Compost strictly between harvest end and next sow start
+                # (weeks > harvest_end and < sow_start), e.g., October.
+                return (
+                    current_week_number > harvest_end_week
+                    and current_week_number < sow_start_week
+                )
 
         elif lifecycle in (
             LifecycleType.BIENNIAL,
