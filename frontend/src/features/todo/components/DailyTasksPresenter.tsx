@@ -8,16 +8,6 @@ interface DailyTasksPresenterProps {
 	readonly onVarietyClick?: (varietyId: string) => void;
 }
 
-const FULL_DAY_NAMES = [
-	"Monday",
-	"Tuesday",
-	"Wednesday",
-	"Thursday",
-	"Friday",
-	"Saturday",
-	"Sunday",
-];
-
 type FeedTask = DailyTasks["feed_tasks"][number];
 type WaterVariety = DailyTasks["water_tasks"][number];
 
@@ -195,9 +185,7 @@ export const DailyTasksPresenter = ({
 					<Card key={day.day_id}>
 						<CardHeader className="pb-3">
 							<div className="flex items-center justify-between">
-								<CardTitle className="text-lg">
-									{FULL_DAY_NAMES[day.day_number - 1]}
-								</CardTitle>
+								<CardTitle className="text-lg">{day.day_name}</CardTitle>
 								<div className="flex gap-2">
 									{hasFeedTasks && (
 										<Badge

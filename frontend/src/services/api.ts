@@ -76,42 +76,75 @@ const extractDetailMessage = (detail: unknown): string | null => {
 	return null;
 };
 
+// Custom error that preserves HTTP status codes for UI branching
+export class AppError extends Error {
+	statusCode?: number;
+	detail?: unknown;
+
+	constructor(
+		message: string,
+		options?: { statusCode?: number; detail?: unknown },
+	) {
+		super(message);
+		this.name = "AppError";
+		this.statusCode = options?.statusCode;
+		this.detail = options?.detail;
+	}
+}
+
 export const handleApiError = (
 	error: unknown,
 	defaultMessage: string,
 ): never => {
 	if (axios.isAxiosError(error)) {
 		if (!error.response) {
-			throw new Error(
+			throw new AppError(
 				"Network error. Please check your connection and try again.",
+				{ statusCode: 0 },
 			);
 		}
 
 		if (error.response.status === 401) {
-			throw new Error("Invalid email or password. Please try again.");
+			throw new AppError("Invalid email or password. Please try again.", {
+				statusCode: 401,
+				detail: error.response.data,
+			});
 		}
 
 		if (error.response.status === 500) {
-			throw new Error("Server error. Please try again later.");
+			throw new AppError("Server error. Please try again later.", {
+				statusCode: 500,
+				detail: error.response.data,
+			});
 		}
 
 		const errorDetail = error.response?.data?.detail;
 		if (errorDetail) {
 			const friendlyMessage = extractDetailMessage(errorDetail);
 			if (friendlyMessage) {
-				throw new Error(friendlyMessage);
+				throw new AppError(friendlyMessage, {
+					statusCode: error.response.status,
+					detail: errorDetail,
+				});
 			}
 			if (typeof errorDetail === "string") {
-				throw new Error(errorDetail);
+				throw new AppError(errorDetail, {
+					statusCode: error.response.status,
+					detail: errorDetail,
+				});
 			}
-			throw new Error(JSON.stringify(errorDetail));
+			throw new AppError(JSON.stringify(errorDetail), {
+				statusCode: error.response.status,
+				detail: errorDetail,
+			});
 		}
 	}
 
 	// Log to error monitoring
 	errorMonitor.captureException(error, { defaultMessage });
 
-	throw new Error(defaultMessage);
+	// Fallback to AppError to keep type consistency
+	throw new AppError(defaultMessage);
 };
 
 // Track in-flight requests for cancellation

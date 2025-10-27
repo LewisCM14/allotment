@@ -169,6 +169,7 @@ export const WeekSelector = ({
 							key={week}
 							type="button"
 							aria-pressed={isSelected}
+							aria-current={isSelected ? "date" : undefined}
 							disabled={disabled}
 							ref={isSelected ? selectedWeekRef : undefined}
 							onClick={() => onWeekChange(week)}
