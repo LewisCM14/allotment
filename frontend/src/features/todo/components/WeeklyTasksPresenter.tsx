@@ -20,29 +20,32 @@ interface WeeklyTasksPresenterProps {
 
 type Tone = "primary" | "muted" | "accent" | "destructive";
 
-const toneClasses: Record<Tone, { bg: string; border: string; text: string }> =
-	{
-		primary: {
-			bg: "bg-primary/10",
-			border: "border-primary/20",
-			text: "text-primary",
-		},
-		muted: {
-			bg: "bg-muted/10",
-			border: "border-muted/20",
-			text: "text-foreground",
-		},
-		accent: {
-			bg: "bg-accent/20",
-			border: "border-accent/30",
-			text: "text-foreground",
-		},
-		destructive: {
-			bg: "bg-destructive/10",
-			border: "border-destructive/20",
-			text: "text-foreground",
-		},
-	};
+// Accessible tone styling that respects theme tokens and improves contrast
+const toneClasses: Record<
+	Tone,
+	{ bg: string; border: string; hoverBg: string }
+> = {
+	primary: {
+		bg: "bg-primary/15",
+		border: "border-primary/40",
+		hoverBg: "hover:bg-primary/25",
+	},
+	muted: {
+		bg: "bg-muted/15",
+		border: "border-muted/40",
+		hoverBg: "hover:bg-muted/25",
+	},
+	accent: {
+		bg: "bg-accent/20",
+		border: "border-accent/40",
+		hoverBg: "hover:bg-accent/30",
+	},
+	destructive: {
+		bg: "bg-destructive/15",
+		border: "border-destructive/40",
+		hoverBg: "hover:bg-destructive/25",
+	},
+};
 
 const TaskList = ({
 	tasks,
@@ -68,9 +71,11 @@ const TaskList = ({
 					key={task.variety_id}
 					type="button"
 					onClick={() => onVarietyClick?.(task.variety_id)}
-					className={`w-full text-left flex items-center justify-between p-3 rounded-md border ${t.bg} ${t.border} hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer`}
+					className={`w-full text-left flex items-center justify-between p-3 rounded-md border ${t.bg} ${t.border} text-foreground ${t.hoverBg} focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/80 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer`}
 				>
-					<span className={`font-medium ${t.text}`}>{task.variety_name}</span>
+					<span className={"font-medium text-foreground"}>
+						{task.variety_name}
+					</span>
 					<span className="text-sm text-muted-foreground">
 						{task.family_name}
 					</span>
@@ -114,7 +119,10 @@ export const WeeklyTasksPresenter = ({
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
 						<Sprout className="h-5 w-5 text-primary" />
 						<CardTitle className="text-lg">Sow</CardTitle>
-						<Badge variant="outline" className="ml-auto bg-primary/10">
+						<Badge
+							variant="outline"
+							className="ml-auto bg-primary/20 text-foreground border-primary/40"
+						>
 							<Sprout className="h-3 w-3 mr-1" />
 							{sowTasks.length} Sow
 						</Badge>
@@ -135,7 +143,10 @@ export const WeeklyTasksPresenter = ({
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
 						<MoveHorizontal className="h-5 w-5 text-muted" />
 						<CardTitle className="text-lg">Transplant</CardTitle>
-						<Badge variant="outline" className="ml-auto bg-muted/10">
+						<Badge
+							variant="outline"
+							className="ml-auto bg-muted/20 text-foreground border-muted/40"
+						>
 							<MoveHorizontal className="h-3 w-3 mr-1" />
 							{transplantTasks.length} Transplant
 						</Badge>
@@ -156,7 +167,10 @@ export const WeeklyTasksPresenter = ({
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
 						<ShoppingBasket className="h-5 w-5 text-accent" />
 						<CardTitle className="text-lg">Harvest</CardTitle>
-						<Badge variant="outline" className="ml-auto bg-accent/20">
+						<Badge
+							variant="outline"
+							className="ml-auto bg-accent/25 text-foreground border-accent/40"
+						>
 							<ShoppingBasket className="h-3 w-3 mr-1" />
 							{harvestTasks.length} Harvest
 						</Badge>
@@ -177,7 +191,10 @@ export const WeeklyTasksPresenter = ({
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
 						<Scissors className="h-5 w-5 text-accent" />
 						<CardTitle className="text-lg">Prune</CardTitle>
-						<Badge variant="outline" className="ml-auto bg-accent/20">
+						<Badge
+							variant="outline"
+							className="ml-auto bg-accent/25 text-foreground border-accent/40"
+						>
 							<Scissors className="h-3 w-3 mr-1" />
 							{pruneTasks.length} Prune
 						</Badge>
@@ -198,7 +215,10 @@ export const WeeklyTasksPresenter = ({
 					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
 						<Trash2 className="h-5 w-5 text-destructive" />
 						<CardTitle className="text-lg">Compost</CardTitle>
-						<Badge variant="outline" className="ml-auto bg-destructive/10">
+						<Badge
+							variant="outline"
+							className="ml-auto bg-destructive/20 text-foreground border-destructive/40"
+						>
 							<Trash2 className="h-3 w-3 mr-1" />
 							{compostTasks.length} Compost
 						</Badge>

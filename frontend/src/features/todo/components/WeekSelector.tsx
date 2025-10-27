@@ -153,11 +153,13 @@ export const WeekSelector = ({
 						"h-8 min-w-8 px-2 text-sm rounded-full border transition-colors outline-none focus-visible:ring-ring/50 focus-visible:ring-[3px] cursor-pointer disabled:cursor-not-allowed disabled:opacity-50";
 					let variantClasses: string;
 					if (isSelected) {
+						// Use a lighter primary background so the foreground text remains readable in light mode
 						variantClasses =
-							"bg-primary text-primary-foreground border-primary hover:brightness-105";
+							"bg-primary/30 text-foreground border-primary ring-2 ring-primary/50 hover:bg-primary/40";
 					} else if (isActual) {
+						// Use a softer accent background with foreground text for accessible contrast, especially in dark mode
 						variantClasses =
-							"bg-accent text-accent-foreground border-accent ring-2 ring-accent/60 hover:brightness-105";
+							"bg-accent/30 text-foreground border-accent ring-2 ring-accent/60 hover:bg-accent/40";
 					} else {
 						variantClasses =
 							"bg-card text-foreground border-border hover:bg-accent/15 hover:border-accent/40";

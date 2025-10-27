@@ -36,9 +36,9 @@ function FeedVarietyButton({
 			key={variety.variety_id}
 			type="button"
 			onClick={handleClick}
-			className="w-full flex items-center justify-between text-sm p-2 bg-white dark:bg-gray-900 rounded hover:bg-muted/20 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer"
+			className="w-full flex items-center justify-between text-sm p-2 rounded border bg-primary/10 text-foreground border-primary/40 hover:bg-primary/20 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/80 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
 		>
-			<span>{variety.variety_name}</span>
+			<span className="text-foreground">{variety.variety_name}</span>
 			<span className="text-muted-foreground text-xs">
 				{variety.family_name}
 			</span>
@@ -55,13 +55,16 @@ function FeedTaskCard({ feedTask, onVarietyClick }: FeedTaskCardProps) {
 	return (
 		<div
 			key={feedTask.feed_id}
-			className="p-3 bg-green-50 dark:bg-green-950/20 rounded-md border border-green-200 dark:border-green-900"
+			className="p-3 rounded-md border bg-primary/10 border-primary/40"
 		>
 			<div className="flex items-center justify-between mb-2">
 				<span className="font-medium text-green-800 dark:text-green-200">
 					{feedTask.feed_name}
 				</span>
-				<Badge variant="secondary" className="bg-green-100 dark:bg-green-900">
+				<Badge
+					variant="secondary"
+					className="bg-primary/20 text-foreground border border-primary/40"
+				>
 					{feedTask.varieties.length}{" "}
 					{feedTask.varieties.length === 1 ? "variety" : "varieties"}
 				</Badge>
@@ -116,9 +119,9 @@ function WaterTaskButton({ variety, onVarietyClick }: WaterTaskButtonProps) {
 			key={variety.variety_id}
 			type="button"
 			onClick={handleClick}
-			className="w-full text-left flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-900 hover:bg-blue-100/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary cursor-pointer"
+			className="w-full text-left flex items-center justify-between p-3 rounded-md border bg-accent/15 text-foreground border-accent/40 hover:bg-accent/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/80 focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer"
 		>
-			<span className="font-medium text-blue-800 dark:text-blue-200">
+			<span className="font-medium text-foreground">
 				{variety.variety_name}
 			</span>
 			<span className="text-sm text-muted-foreground">
@@ -197,13 +200,19 @@ export const DailyTasksPresenter = ({
 								</CardTitle>
 								<div className="flex gap-2">
 									{hasFeedTasks && (
-										<Badge variant="outline" className="bg-green-50">
+										<Badge
+											variant="outline"
+											className="bg-primary/20 text-foreground border-primary/40"
+										>
 											<Leaf className="h-3 w-3 mr-1" />
 											{getTotalFeedVarieties(day.feed_tasks)} Feed
 										</Badge>
 									)}
 									{hasWaterTasks && (
-										<Badge variant="outline" className="bg-blue-50">
+										<Badge
+											variant="outline"
+											className="bg-accent/20 text-foreground border-accent/40"
+										>
 											<Droplets className="h-3 w-3 mr-1" />
 											{day.water_tasks.length} Water
 										</Badge>
