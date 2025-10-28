@@ -61,7 +61,7 @@ export default defineConfig({
                 "config/**", // All config files (vitest.setup.ts, vitest.config.ts, etc.)
                 "src/components/ui/**", // Shadcn UI
                 "src/types/**", // Type definitions
-                "src/features/grow_guide/types/growGuideTypes.ts",
+                "src/features/**/types/**",                 // Exclude all feature-level type definition folders
                 "src/utils/**", // Utility wrappers
                 "src/assets/**", // Static assets
                 "src/store/**/AuthContext.tsx", // Auth context only

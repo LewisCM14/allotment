@@ -1,5 +1,9 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { growGuideService } from "../services/growGuideService";
+import {
+	growGuideService,
+	type VarietyList,
+} from "../services/growGuideService";
+import { growGuideQueryKey } from "./useGrowGuide";
 
 // Query key must match list usage
 const USER_GUIDES_KEY = ["userGrowGuides"] as const;
@@ -12,9 +16,41 @@ export const useDeleteVariety = () => {
 			await growGuideService.deleteVariety(varietyId);
 			return varietyId;
 		},
-		onSuccess: () => {
-			// Invalidate so list refetches
+		// Optimistically remove from cache so the UI updates instantly
+		onMutate: async (varietyId: string) => {
+			await queryClient.cancelQueries({ queryKey: USER_GUIDES_KEY });
+			const previous = queryClient.getQueryData<VarietyList[]>(USER_GUIDES_KEY);
+			if (previous) {
+				queryClient.setQueryData<VarietyList[]>(
+					USER_GUIDES_KEY,
+					previous.filter((g) => g.variety_id !== varietyId),
+				);
+			}
+			return { previous } as { previous?: VarietyList[] };
+		},
+		onError: (_err, _id, context) => {
+			if (context?.previous) {
+				queryClient.setQueryData(USER_GUIDES_KEY, context.previous);
+			}
+		},
+		onSuccess: (_data, varietyId) => {
+			// Drop the detail cache for this variety if present
+			if (typeof varietyId === "string") {
+				queryClient.removeQueries({ queryKey: growGuideQueryKey(varietyId) });
+			}
+			// Force a full reload so the list is definitely up-to-date post-delete.
+			if (
+				typeof window !== "undefined" &&
+				typeof window.location?.reload === "function" &&
+				import.meta.env.MODE !== "test"
+			) {
+				window.location.reload();
+			}
+		},
+		onSettled: () => {
+			// Invalidate so list refetches and stays in sync with server
 			queryClient.invalidateQueries({ queryKey: USER_GUIDES_KEY });
+			queryClient.refetchQueries({ queryKey: USER_GUIDES_KEY });
 		},
 	});
 };

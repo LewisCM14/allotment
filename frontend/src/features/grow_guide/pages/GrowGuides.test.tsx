@@ -790,7 +790,7 @@ describe("GrowGuideListPresenter", () => {
 			expect(activeSwitch).toBeInTheDocument();
 		});
 
-		test("allows only one active guide at a time", async () => {
+		test("activating another guide does not auto-deactivate others", async () => {
 			renderWithQueryClient(
 				<GrowGuideListPresenter
 					growGuides={mockGrowGuides}
@@ -800,29 +800,45 @@ describe("GrowGuideListPresenter", () => {
 				/>,
 			);
 
-			const activeSwitches = screen.getAllByRole("switch", {
-				name: /set .* active/i,
+			// Get two specific switches by their accessible names
+			const cherrySwitch = screen.getByRole("switch", {
+				name: /set cherry tomato active/i,
 			});
-			expect(activeSwitches.length).toBeGreaterThanOrEqual(2);
-
-			// All should be unchecked initially
-			expect(activeSwitches[0]).toHaveAttribute("aria-checked", "false");
-			expect(activeSwitches[1]).toHaveAttribute("aria-checked", "false");
-
-			// Select first guide as active
-			await user.click(activeSwitches[0]);
-			await waitFor(() => {
-				expect(activeSwitches[0]).toHaveAttribute("aria-checked", "true");
-				expect(activeSwitches[1]).toHaveAttribute("aria-checked", "false");
+			const bellSwitch = screen.getByRole("switch", {
+				name: /set bell pepper active/i,
 			});
 
-			// Select second guide as active
-			await user.click(activeSwitches[1]);
+			// Initially both unchecked
+			expect(cherrySwitch).toHaveAttribute("aria-checked", "false");
+			expect(bellSwitch).toHaveAttribute("aria-checked", "false");
 
-			// First should be unchecked, second should be checked
+			// Activate Cherry Tomato
+			await user.click(cherrySwitch);
 			await waitFor(() => {
-				expect(activeSwitches[0]).toHaveAttribute("aria-checked", "false");
-				expect(activeSwitches[1]).toHaveAttribute("aria-checked", "true");
+				expect(
+					screen.getByRole("switch", {
+						name: /set cherry tomato active/i,
+					}),
+				).toHaveAttribute("aria-checked", "true");
+				expect(
+					screen.getByRole("switch", { name: /set bell pepper active/i }),
+				).toHaveAttribute("aria-checked", "false");
+			});
+
+			// Activate Bell Pepper as well; previously active should remain active
+			await user.click(
+				screen.getByRole("switch", { name: /set bell pepper active/i }),
+			);
+
+			await waitFor(() => {
+				expect(
+					screen.getByRole("switch", {
+						name: /set cherry tomato active/i,
+					}),
+				).toHaveAttribute("aria-checked", "true");
+				expect(
+					screen.getByRole("switch", { name: /set bell pepper active/i }),
+				).toHaveAttribute("aria-checked", "true");
 			});
 		});
 

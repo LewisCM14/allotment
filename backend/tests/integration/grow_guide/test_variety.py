@@ -96,7 +96,7 @@ class TestVarietyEndpointsIntegration:
         data = response.json()
         assert data["variety_name"] == "Test Tomato"
         assert data["is_public"] is False
-        assert data["lifecycle"]["lifecycle_name"] == "Annual"
+        assert data["lifecycle"]["lifecycle_name"] == "annual"
         assert data["planting_conditions"]["planting_condition"] == "Full Sun"
         assert len(data["water_days"]) == 7
         returned_day_names = [wd["day"]["day_name"] for wd in data["water_days"]]

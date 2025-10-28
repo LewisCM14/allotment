@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.api.core.config import settings
 from app.api.core.database import Base, get_db
+from app.api.models.enums import LifecycleType
 from app.api.models.family.botanical_group_model import BotanicalGroup
 from app.api.models.family.family_model import Family
 from app.api.models.grow_guide.calendar_model import Day
@@ -755,9 +756,9 @@ async def seed_lifecycle_data():
 
     async with TestingSessionLocal() as session:
         lifecycles_data = [
-            {"name": "Annual", "productivity_years": 1},
-            {"name": "Biennial", "productivity_years": 2},
-            {"name": "Perennial", "productivity_years": 10},
+            {"name": LifecycleType.ANNUAL, "productivity_years": 1},
+            {"name": LifecycleType.BIENNIAL, "productivity_years": 2},
+            {"name": LifecycleType.PERENNIAL, "productivity_years": 10},
         ]
 
         created_lifecycles = []

@@ -54,7 +54,9 @@ class Lifecycle(Base):
         nullable=False,
         index=True,
     )
-    lifecycle_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    lifecycle_name: Mapped[str] = mapped_column(
+        String(50), nullable=False, unique=True, index=True
+    )
     productivity_years: Mapped[int] = mapped_column(Integer, nullable=False)
 
     # Relationship to Variety

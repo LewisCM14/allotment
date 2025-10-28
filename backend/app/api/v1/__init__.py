@@ -16,6 +16,7 @@ from app.api.v1.grow_guide import (
     planting_conditions,
     week,
 )
+from app.api.v1.todo import todo
 from app.api.v1.user import (
     user,
     user_active_varieties,
@@ -55,3 +56,4 @@ router.include_router(
     tags=["Planting Conditions"],
 )
 router.include_router(grow_guide.router, prefix="/grow-guides", tags=["Grow Guides"])
+router.include_router(todo.router, prefix="/todos", tags=["Todos"])

@@ -3,11 +3,13 @@ import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { Button } from "../../../components/ui/Button";
 import { Plus } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
+import { useParams } from "react-router-dom";
 import { GrowGuideForm } from "../forms/GrowGuideForm";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { growGuideService } from "../services/growGuideService";
 import { growGuideQueryKey } from "../hooks/useGrowGuide";
+import { useUserGrowGuides } from "../hooks/useUserGrowGuides";
 
 // Keys reused across list + options
 const USER_GUIDES_KEY = ["userGrowGuides"]; // must match useUserGrowGuides hook key
@@ -21,6 +23,11 @@ const GrowGuides = () => {
 	// Mode: create (new guide) or edit (existing guide)
 	const [mode, setMode] = useState<"create" | "edit">("create");
 	const queryClient = useQueryClient();
+	const { data: growGuides, isLoading } = useUserGrowGuides();
+	const { varietyId: varietyIdParam } = useParams<{ varietyId?: string }>();
+
+	const hasGuides =
+		!isLoading && Array.isArray(growGuides) && growGuides.length > 0;
 
 	// Prefetch options & user guides on mount so form opens instantly
 	useEffect(() => {
@@ -33,6 +40,13 @@ const GrowGuides = () => {
 			queryFn: growGuideService.getUserGrowGuides,
 		});
 	}, [queryClient]);
+
+	// If the route was hit with a varietyId, open that guide in edit mode
+	useEffect(() => {
+		if (varietyIdParam) {
+			handleSelectGuide(varietyIdParam);
+		}
+	}, [varietyIdParam]);
 
 	const handleAddNew = () => {
 		setSelectedVarietyId(null);
@@ -63,21 +77,24 @@ const GrowGuides = () => {
 
 	return (
 		<PageLayout>
-			<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-				<div>
-					<h1 className="text-3xl font-bold tracking-tight">Grow Guides</h1>
-					<p className="text-muted-foreground mt-1">
-						Manage and explore your plant grow guides
-					</p>
+			{hasGuides && (
+				<div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+					<div>
+						<h1 className="text-3xl font-bold tracking-tight">Grow Guides</h1>
+						<p className="text-muted-foreground mt-1">
+							Manage and explore your plant grow guides
+						</p>
+					</div>
+					<Button onClick={handleAddNew}>
+						<Plus className="mr-2 h-4 w-4" />
+						Add New Guide
+					</Button>
 				</div>
-				<Button onClick={handleAddNew}>
-					<Plus className="mr-2 h-4 w-4" />
-					Add New Guide
-				</Button>
-			</div>
+			)}
 			<GrowGuideListContainer
 				onSelect={handleSelectGuide}
 				selectedVarietyId={selectedVarietyId}
+				onAddNew={handleAddNew}
 			/>
 
 			{/* Grow guide form handles create, view, edit based on props */}

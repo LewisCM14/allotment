@@ -140,7 +140,7 @@ The solution must also allow for modularity in the applications architecture suc
         - When a entry within this table is deleted a cascading delete upon the user active varieties and variety water day will be required.
 
 === "Lifecycle"
-    A reference table for the possible lifecycle's available when creating grow guides i.e. Perennial, Annual, etc.
+    A reference table for the possible lifecycle's available when creating grow guides i.e. Perennial, Annual, etc. Due to the lifecycle of a variety being key to defining the logic around their care, the names are to be controlled via a enum that is consistent between the server side and database layers.
 
 === "Planting Conditions"
     A reference table for the possible planting conditions available when creating grow guides i.e. Sunny, Sheltered, etc.

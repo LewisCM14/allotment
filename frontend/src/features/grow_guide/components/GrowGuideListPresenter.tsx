@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDeleteVariety } from "../hooks/useDeleteVariety";
 import { useToggleVarietyPublic } from "../hooks/useToggleVarietyPublic";
 import { useToggleActiveVariety } from "../hooks/useToggleActiveVariety";
+import { GrowGuideEmptyState } from "./GrowGuideEmptyState";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -27,6 +28,7 @@ interface Props {
 	isError: boolean;
 	onSelect?: (id: string) => void;
 	selectedVarietyId?: string | null;
+	onAddNew?: () => void;
 }
 
 export const GrowGuideListPresenter = ({
@@ -35,6 +37,7 @@ export const GrowGuideListPresenter = ({
 	isError,
 	onSelect,
 	selectedVarietyId,
+	onAddNew,
 }: Props) => {
 	const [search, setSearch] = useState("");
 	const [localGuides, setLocalGuides] = useState<VarietyList[]>(growGuides);
@@ -123,20 +126,8 @@ export const GrowGuideListPresenter = ({
 
 	const toggleActive = (id: string, checked: boolean) => {
 		const previousState = { ...activeMap };
-		// Optimistic update: when activating, deactivate all others; when deactivating, only update this one
-		setActiveMap((prev) => {
-			if (checked) {
-				// Activating: set this one true, all others false
-				const updatedState: Record<string, boolean> = {};
-				const keys = new Set([...Object.keys(prev), id]);
-				for (const key of keys) {
-					updatedState[key] = key === id;
-				}
-				return updatedState;
-			}
-			// Deactivating: only update this specific item
-			return { ...prev, [id]: false };
-		});
+		// Optimistic update: only update this specific item
+		setActiveMap((prev) => ({ ...prev, [id]: checked }));
 		setPendingActiveId(id);
 		toggleActiveMutation(
 			{ varietyId: id, makeActive: checked },
@@ -189,15 +180,11 @@ export const GrowGuideListPresenter = ({
 	return (
 		<div className="space-y-6">
 			{localGuides.length === 0 ? (
-				<div className="text-center py-10 space-y-4">
-					<div className="mx-auto bg-primary w-16 h-16 rounded-full flex items-center justify-center">
-						<Leaf className="h-8 w-8 text-primary-foreground" />
-					</div>
-					<p className="text-muted-foreground max-w-md mx-auto">
-						You don't have any grow guides yet. Click the "Add New Guide" button
-						above to create your first guide and start tracking your plants.
-					</p>
-				</div>
+				<GrowGuideEmptyState
+					onAddNew={() => {
+						onAddNew?.();
+					}}
+				/>
 			) : (
 				<>
 					<div className="relative">

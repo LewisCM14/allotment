@@ -36,6 +36,7 @@ const UserPreference = React.lazy(
 const GrowGuidePage = React.lazy(
 	() => import("../features/grow_guide/pages/GrowGuides"),
 );
+const TodoPage = React.lazy(() => import("../features/todo/pages/Todo"));
 
 const AppRoutes = () => {
 	return (
@@ -88,8 +89,7 @@ const AppRoutes = () => {
 					path="/"
 					element={
 						<ProtectedRoute>
-							{/* Replace this with your home component */}
-							<div>Home Page</div>
+							<TodoPage />
 						</ProtectedRoute>
 					}
 				/>
@@ -127,6 +127,14 @@ const AppRoutes = () => {
 				/>
 				<Route
 					path="/grow-guides"
+					element={
+						<ProtectedRoute>
+							<GrowGuidePage />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/grow-guides/:varietyId"
 					element={
 						<ProtectedRoute>
 							<GrowGuidePage />

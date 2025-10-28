@@ -113,7 +113,7 @@ export const FormSelect: React.FC<FormSelectProps> = ({
 						}
 					}}
 					className={cn(
-						"absolute inset-y-0 right-1 flex items-center rounded px-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+						"absolute inset-y-0 right-1 flex items-center rounded px-1 text-muted-foreground hover:text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 cursor-pointer",
 						(!value || (Array.isArray(value) && value.length === 0)) &&
 							"hidden",
 					)}

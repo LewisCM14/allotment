@@ -26,15 +26,11 @@ export const useToggleActiveVariety = () => {
 			queryClient.setQueryData<VarietyList[] | undefined>(
 				["userGrowGuides"],
 				(old) =>
-					old?.map((guide) => {
-						if (guide.variety_id === varietyId) {
-							return { ...guide, is_active: makeActive };
-						}
-						if (makeActive) {
-							return { ...guide, is_active: false };
-						}
-						return guide;
-					}),
+					old?.map((guide) =>
+						guide.variety_id === varietyId
+							? { ...guide, is_active: makeActive }
+							: guide,
+					),
 			);
 
 			queryClient.setQueryData(growGuideQueryKey(varietyId), (old: unknown) => {
