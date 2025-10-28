@@ -98,9 +98,9 @@ The application is designed to be implemented following the Walking Skeleton app
 
 1. **Weekly ToDo**
 
-1. **User Notification Interface**
+1. **Public Grow Guides**
 
-1. **Public Grow Guides** 
+1. **User Notification Interface**
 
 1. **Monthly ToDo**
 
