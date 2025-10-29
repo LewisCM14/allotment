@@ -51,7 +51,10 @@ export function LoadingSpinner({
 
 	const containerClasses = cn(
 		!inline && center && "flex items-center justify-center",
-		!inline && fullScreen && "h-screen w-screen",
+		!inline &&
+			fullScreen &&
+			"fixed inset-0 z-50 bg-background/60 backdrop-blur-sm p-[env(safe-area-inset-top)] pr-[env(safe-area-inset-right)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]",
+		!inline && fullScreen && "min-h-[100dvh]",
 		!inline && !fullScreen && center && "py-16",
 		className,
 	);

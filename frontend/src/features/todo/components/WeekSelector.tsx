@@ -103,44 +103,68 @@ export const WeekSelector = ({
 
 	return (
 		<div className="space-y-3 bg-card border rounded-lg p-4 shadow-sm">
-			<div className="flex items-center justify-between">
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={handlePreviousWeek}
-					disabled={isPreviousDisabled}
-					className="flex items-center gap-2"
-				>
-					<ChevronLeft className="h-4 w-4" />
-					Previous Week
-				</Button>
+			<div className="flex items-center gap-2">
+				<div className="flex-shrink-0">
+					<Button
+						variant="outline"
+						size="icon"
+						onClick={handlePreviousWeek}
+						disabled={isPreviousDisabled}
+						className="sm:hidden"
+						aria-label="Previous"
+					>
+						<ChevronLeft className="h-4 w-4" />
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handlePreviousWeek}
+						disabled={isPreviousDisabled}
+						className="hidden sm:inline-flex items-center gap-2"
+					>
+						<ChevronLeft className="h-4 w-4" />
+						<span>Previous Week</span>
+					</Button>
+				</div>
 
-				<div className="flex items-center gap-3">
-					<Calendar className="h-5 w-5 text-muted-foreground" />
-					<div className="text-center">
+				<div className="min-w-0 flex-1 flex items-center justify-center gap-2">
+					<Calendar className="h-5 w-5 text-muted-foreground hidden xs:block" />
+					<div className="text-center min-w-0">
 						<p className="text-sm font-medium">Week {currentWeekNumber}</p>
-						<p className="text-xs text-muted-foreground">
+						<p className="text-xs text-muted-foreground truncate">
 							{weekStartDate} - {weekEndDate}
 						</p>
 					</div>
 				</div>
 
-				<Button
-					variant="outline"
-					size="sm"
-					onClick={handleNextWeek}
-					disabled={isNextDisabled}
-					className="flex items-center gap-2"
-				>
-					Next Week
-					<ChevronRight className="h-4 w-4" />
-				</Button>
+				<div className="flex-shrink-0">
+					<Button
+						variant="outline"
+						size="icon"
+						onClick={handleNextWeek}
+						disabled={isNextDisabled}
+						className="sm:hidden"
+						aria-label="Next"
+					>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={handleNextWeek}
+						disabled={isNextDisabled}
+						className="hidden sm:inline-flex items-center gap-2"
+					>
+						<span>Next Week</span>
+						<ChevronRight className="h-4 w-4" />
+					</Button>
+				</div>
 			</div>
 
 			{/* Carousel */}
 			<div
 				aria-label="Select week number"
-				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin touch-pan-x"
+				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin touch-pan-x snap-x"
 				ref={scrollContainerRef}
 				onWheelCapture={onWheelHorizontal}
 				style={{ overscrollBehavior: "contain" }}
