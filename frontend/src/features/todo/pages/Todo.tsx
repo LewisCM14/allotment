@@ -28,10 +28,10 @@ export default function TodoPage() {
 				if (isLoading) {
 					return (
 						<PageLayout>
-							<div className="space-y-6">
-								<div>
-									<Skeleton className="h-10 w-64 mb-2" />
-									<Skeleton className="h-6 w-96" />
+							<div className="space-y-6 min-w-0 w-full">
+								<div className="min-w-0 w-full">
+									<Skeleton className="h-10 w-40 sm:w-64 max-w-full mb-2" />
+									<Skeleton className="h-6 w-full sm:w-96 max-w-full" />
 								</div>
 								<Skeleton className="h-24 w-full" />
 								<Skeleton className="h-64 w-full" />
