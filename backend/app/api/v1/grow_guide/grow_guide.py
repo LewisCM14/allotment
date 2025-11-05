@@ -252,3 +252,40 @@ async def delete_variety(
                 await uow.delete_variety(variety_id, current_user.user_id)
 
             logger.info("Variety deleted successfully", **log_context)
+
+
+@router.post(
+    "/{variety_id}/copy",
+    response_model=VarietyRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Copy public variety",
+    description=("Copy a public variety to your account."),
+)
+@limiter.limit("10/minute")
+async def copy_variety(
+    request: Request,
+    variety_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> VarietyRead:
+    log_context = {
+        "request_id": request_id_ctx_var.get(),
+        "operation": "copy_public_variety",
+        "user_id": str(current_user.user_id),
+        "variety_id": str(variety_id),
+    }
+    logger.info("Copying public variety", **log_context)
+
+    async with safe_operation("copying public variety", log_context):
+        with log_timing("copy_variety_endpoint", request_id=log_context["request_id"]):
+            async with GrowGuideUnitOfWork(db) as uow:
+                created = await uow.copy_public_variety_to_user(
+                    variety_id, current_user.user_id
+                )
+
+            logger.info("Variety copied successfully", **log_context)
+            async with GrowGuideUnitOfWork(db) as uow2:
+                complete = await uow2.get_variety(
+                    created.variety_id, current_user.user_id
+                )
+            return VarietyRead.model_validate(complete)

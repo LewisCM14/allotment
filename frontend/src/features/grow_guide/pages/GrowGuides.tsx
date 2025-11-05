@@ -85,7 +85,7 @@ const GrowGuides = () => {
 							Manage and explore your plant grow guides
 						</p>
 					</div>
-					<Button onClick={handleAddNew}>
+					<Button onClick={handleAddNew} className="text-white">
 						<Plus className="mr-2 h-4 w-4" />
 						Add New Guide
 					</Button>

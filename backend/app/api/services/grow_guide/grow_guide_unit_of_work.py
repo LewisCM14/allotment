@@ -459,3 +459,97 @@ class GrowGuideUnitOfWork:
 
             logger.info("Variety deleted successfully", **log_context)
             return success
+
+    @translate_db_exceptions
+    async def copy_public_variety_to_user(
+        self, public_variety_id: UUID, user_id: UUID
+    ) -> Variety:
+        """Copy a public variety to belong to the specified user.
+
+        Steps:
+        - Load the source public variety
+        - Create a VarietyCreate payload mirroring the source (is_public set to False)
+        - Ensure the new variety name is unique for the user by auto-suffixing when needed
+        - Delegate to create_variety for validation and water-day generation
+        """
+        log_context = {
+            "request_id": self.request_id,
+            "operation": "copy_public_variety_to_user_uow",
+            "user_id": str(user_id),
+            "public_variety_id": str(public_variety_id),
+        }
+
+        logger.info("Copying public variety to user", **log_context)
+
+        with log_timing("uow_copy_public_variety_to_user", request_id=self.request_id):
+            # Ensure the source variety exists and is public
+            source = await self.variety_repo.get_public_variety_by_id(public_variety_id)
+            if not source:
+                raise ResourceNotFoundError("variety", str(public_variety_id))
+
+            # Determine a unique name for the copied variety for this user using
+            # a deterministic single-query approach (no async while loops).
+            base_name = source.variety_name
+            existing_names = set(
+                await self.variety_repo.get_user_variety_names_for_copying(
+                    user_id, base_name
+                )
+            )
+
+            def next_copy_name(base: str, taken: set[str]) -> str:
+                # If base isn't taken, use it directly
+                if base not in taken:
+                    return base
+
+                # Build set of used copy indices: 1 is "(copy)", >=2 is "(copy N)"
+                used: set[int] = set()
+                copy1 = f"{base} (copy)"
+                if copy1 in taken:
+                    used.add(1)
+                prefix = f"{base} (copy "
+                suffix = ")"
+                for name in taken:
+                    if name.startswith(prefix) and name.endswith(suffix):
+                        num_part = name[len(prefix) : -len(suffix)]
+                        if num_part.isdigit():
+                            used.add(int(num_part))
+
+                # Smallest positive integer not in used
+                i = 1
+                while i in used:
+                    i += 1
+                return copy1 if i == 1 else f"{base} (copy {i})"
+
+            candidate_name = next_copy_name(base_name, existing_names)
+
+            # Build creation schema from source fields with the resolved unique name
+            create_payload = VarietyCreate(
+                variety_name=candidate_name,
+                family_id=source.family_id,
+                lifecycle_id=source.lifecycle_id,
+                sow_week_start_id=source.sow_week_start_id,
+                sow_week_end_id=source.sow_week_end_id,
+                transplant_week_start_id=source.transplant_week_start_id,
+                transplant_week_end_id=source.transplant_week_end_id,
+                planting_conditions_id=source.planting_conditions_id,
+                soil_ph=source.soil_ph,
+                row_width_cm=source.row_width_cm,
+                plant_depth_cm=source.plant_depth_cm,
+                plant_space_cm=source.plant_space_cm,
+                feed_id=source.feed_id,
+                feed_week_start_id=source.feed_week_start_id,
+                feed_frequency_id=source.feed_frequency_id,
+                water_frequency_id=source.water_frequency_id,
+                high_temp_degrees=source.high_temp_degrees,
+                high_temp_water_frequency_id=source.high_temp_water_frequency_id,
+                harvest_week_start_id=source.harvest_week_start_id,
+                harvest_week_end_id=source.harvest_week_end_id,
+                prune_week_start_id=source.prune_week_start_id,
+                prune_week_end_id=source.prune_week_end_id,
+                notes=source.notes,
+                is_public=False,
+            )
+
+            created = await self.create_variety(create_payload, user_id)
+            logger.info("Public variety copied successfully", **log_context)
+            return created

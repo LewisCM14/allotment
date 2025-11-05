@@ -7,7 +7,7 @@ from typing import List, Optional
 from uuid import UUID
 
 import structlog
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -190,6 +190,16 @@ class VarietyRepository:
             return varieties
 
     @translate_db_exceptions
+    async def get_public_variety_by_id(self, variety_id: UUID) -> Optional[Variety]:
+        """Get a single public variety by ID."""
+        with log_timing("db_get_public_variety_by_id", request_id=self.request_id):
+            stmt = select(Variety).where(
+                Variety.variety_id == variety_id, Variety.is_public
+            )
+            result = await self.db.execute(stmt)
+            return result.scalar_one_or_none()
+
+    @translate_db_exceptions
     async def update_variety(self, variety: Variety) -> Variety:
         """Update an existing variety."""
         with log_timing("db_update_variety", request_id=self.request_id):
@@ -270,3 +280,31 @@ class VarietyRepository:
 
             result = await self.db.execute(stmt)
             return result.scalar_one_or_none() is not None
+
+    @translate_db_exceptions
+    async def get_user_variety_names_for_copying(
+        self, user_id: UUID, base_name: str
+    ) -> List[str]:
+        """Return all existing variety names for a user that would conflict with a copy of base_name.
+
+        This includes exact base_name and any names following the pattern:
+        - "{base_name} (copy)"
+        - "{base_name} (copy N)" where N is a positive integer
+        """
+        with log_timing(
+            "db_get_user_variety_names_for_copying", request_id=self.request_id
+        ):
+            like_pattern = f"{base_name} (copy%"
+            stmt = (
+                select(Variety.variety_name)
+                .where(
+                    Variety.owner_user_id == user_id,
+                    or_(
+                        Variety.variety_name == base_name,
+                        Variety.variety_name.like(like_pattern),
+                    ),
+                )
+                .order_by(Variety.variety_name)
+            )
+            result = await self.db.execute(stmt)
+            return [row[0] for row in result.fetchall()]

@@ -388,6 +388,92 @@ class TestVarietyEndpointsIntegration:
         assert all(v["is_public"] for v in data)
 
     @pytest.mark.asyncio
+    async def test_copy_public_variety_creates_user_owned_copy(
+        self,
+        client,
+        integration_auth_headers,
+        seed_public_variety_data,
+    ):
+        """Copy a public variety to the authenticated user's account."""
+        public_variety_id = seed_public_variety_data["variety_id"]
+
+        resp = await client.post(
+            f"{settings.API_PREFIX}/grow-guides/{public_variety_id}/copy",
+            headers=integration_auth_headers,
+        )
+
+        assert resp.status_code == status.HTTP_201_CREATED
+        data = resp.json()
+        assert data["is_public"] is False
+        # Name should match the source public variety name
+        assert data["variety_name"] == seed_public_variety_data["variety_name"]
+        # Owner should be the authenticated user
+        assert isinstance(data["owner_user_id"], str)
+
+    @pytest.mark.asyncio
+    async def test_copy_public_variety_when_name_exists_auto_suffixes(
+        self,
+        client,
+        integration_auth_headers,
+        seed_public_variety_data,
+        seed_variety_data,
+    ):
+        """Copy should succeed and auto-suffix name if user already owns a variety with same name."""
+        # seed_variety_data exists for the same user; to force conflict, we need public name equal to user variety name
+        # If fixtures don't align names, this test may be skipped, but attempt typical conflict path
+        public_variety_id = seed_public_variety_data["variety_id"]
+
+        # Create a user variety with the same name as the public one (if not already the case)
+        if (
+            seed_variety_data["variety_name"]
+            != seed_public_variety_data["variety_name"]
+        ):
+            create_payload = {
+                "variety_name": seed_public_variety_data["variety_name"],
+                "family_id": seed_variety_data["family"]["family_id"],
+                "lifecycle_id": seed_variety_data["lifecycle"]["lifecycle_id"],
+                "sow_week_start_id": seed_variety_data["sow_week_start_id"],
+                "sow_week_end_id": seed_variety_data["sow_week_end_id"],
+                "planting_conditions_id": seed_variety_data["planting_conditions"][
+                    "planting_condition_id"
+                ],
+                "soil_ph": seed_variety_data["soil_ph"],
+                "plant_depth_cm": seed_variety_data["plant_depth_cm"],
+                "plant_space_cm": seed_variety_data["plant_space_cm"],
+                "water_frequency_id": seed_variety_data["water_frequency"][
+                    "frequency_id"
+                ],
+                "high_temp_degrees": seed_variety_data["high_temp_degrees"],
+                "high_temp_water_frequency_id": seed_variety_data[
+                    "high_temp_water_frequency"
+                ]["frequency_id"],
+                "harvest_week_start_id": seed_variety_data["harvest_week_start_id"],
+                "harvest_week_end_id": seed_variety_data["harvest_week_end_id"],
+                "is_public": False,
+            }
+            create_resp = await client.post(
+                f"{settings.API_PREFIX}/grow-guides",
+                headers=integration_auth_headers,
+                json=create_payload,
+            )
+            assert create_resp.status_code in (
+                status.HTTP_201_CREATED,
+                status.HTTP_409_CONFLICT,
+            )
+
+        # Now copying should conflict
+        resp = await client.post(
+            f"{settings.API_PREFIX}/grow-guides/{public_variety_id}/copy",
+            headers=integration_auth_headers,
+        )
+        assert resp.status_code == status.HTTP_201_CREATED
+        data = resp.json()
+        base_name = seed_public_variety_data["variety_name"]
+        # Should not collide with existing name; expect a suffixed variant
+        assert data["variety_name"].startswith(base_name)
+        assert data["variety_name"] != base_name
+
+    @pytest.mark.asyncio
     async def test_get_variety_by_id(
         self,
         client,

@@ -88,8 +88,8 @@ interface GrowGuideFormProps {
 	isOpen: boolean;
 	onClose: () => void;
 	onSuccess?: () => void;
-	varietyId?: string | null; // when provided, enables edit mode
-	mode?: "create" | "edit"; // external desired mode (create default)
+	varietyId?: string | null; // when provided, enables edit/view mode
+	mode?: "create" | "edit" | "view"; // add view-only mode
 }
 
 /**
@@ -112,7 +112,7 @@ export const GrowGuideForm = ({
 		data: existingGuide,
 		isLoading: isLoadingGuide,
 		isError: isGuideError,
-	} = useGrowGuide(varietyId && mode === "edit" ? varietyId : undefined);
+	} = useGrowGuide(varietyId && mode !== "create" ? varietyId : undefined);
 
 	// Get options from API
 	const {
@@ -243,10 +243,10 @@ export const GrowGuideForm = ({
 		],
 	);
 
-	// Populate form when editing. Relaxed gating so tests with mock IDs that don't match option IDs still populate base fields.
+	// Populate form when viewing or editing. Relaxed gating so tests with mock IDs that don't match option IDs still populate base fields.
 	useEffect(() => {
 		if (
-			mode !== "edit" ||
+			mode === "create" ||
 			!varietyId ||
 			!existingGuide ||
 			isLoadingGuide ||
@@ -303,7 +303,8 @@ export const GrowGuideForm = ({
 
 	// Key used to force full form subtree re-render after programmatic population
 	const formKey = useMemo(
-		() => (mode === "edit" ? `edit-${varietyId}-${populateTick}` : "create"),
+		() =>
+			mode !== "create" ? `detail-${varietyId}-${populateTick}` : "create",
 		[mode, varietyId, populateTick],
 	);
 
@@ -385,6 +386,10 @@ export const GrowGuideForm = ({
 
 	const title = useMemo(() => {
 		if (mode === "create") return "Add New Grow Guide";
+		if (mode === "view")
+			return existingGuide?.variety_name
+				? `View ${existingGuide.variety_name}`
+				: "View Grow Guide";
 		const editTitle = existingGuide?.variety_name
 			? `Edit ${existingGuide.variety_name}`
 			: "Edit Grow Guide";
@@ -456,6 +461,8 @@ export const GrowGuideForm = ({
 			);
 		}
 
+		const readOnly = mode === "view";
+
 		return (
 			<form
 				key={formKey}
@@ -464,7 +471,7 @@ export const GrowGuideForm = ({
 			>
 				{mode !== "create" && existingGuide && (
 					<p className="text-xs text-muted-foreground -mt-2">
-						Editing guide last updated{" "}
+						Last updated{" "}
 						{new Date(existingGuide.last_updated).toLocaleDateString()}
 					</p>
 				)}
@@ -479,6 +486,7 @@ export const GrowGuideForm = ({
 								{...field}
 								placeholder="e.g. Roma Tomato"
 								className={errors.variety_name ? "border-destructive" : ""}
+								disabled={readOnly}
 							/>
 						)}
 					/>
@@ -501,7 +509,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={families}
 									error={!!errors.family_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -524,7 +532,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={lifecycles}
 									error={!!errors.lifecycle_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -551,7 +559,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.sow_week_start_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -576,7 +584,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.sow_week_end_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -603,7 +611,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.transplant_week_start_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -628,7 +636,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.transplant_week_end_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -654,7 +662,7 @@ export const GrowGuideForm = ({
 								onValueChange={field.onChange}
 								options={plantingConditions}
 								error={!!errors.planting_conditions_id}
-								disabled={isLoadingOptions}
+								disabled={isLoadingOptions || readOnly}
 								allowClear
 							/>
 						)}
@@ -676,6 +684,7 @@ export const GrowGuideForm = ({
 							{...register("soil_ph", { valueAsNumber: true })}
 							placeholder="e.g. 7.0"
 							className={errors.soil_ph ? "border-destructive" : ""}
+							disabled={readOnly}
 						/>
 						{errors.soil_ph && <FormError message={errors.soil_ph.message} />}
 					</div>
@@ -690,6 +699,7 @@ export const GrowGuideForm = ({
 							{...register("plant_depth_cm", { valueAsNumber: true })}
 							placeholder="e.g. 5"
 							className={errors.plant_depth_cm ? "border-destructive" : ""}
+							disabled={readOnly}
 						/>
 						{errors.plant_depth_cm && (
 							<FormError message={errors.plant_depth_cm.message} />
@@ -706,6 +716,7 @@ export const GrowGuideForm = ({
 							{...register("plant_space_cm", { valueAsNumber: true })}
 							placeholder="e.g. 30"
 							className={errors.plant_space_cm ? "border-destructive" : ""}
+							disabled={readOnly}
 						/>
 						{errors.plant_space_cm && (
 							<FormError message={errors.plant_space_cm.message} />
@@ -723,6 +734,7 @@ export const GrowGuideForm = ({
 						{...register("row_width_cm")}
 						placeholder="e.g. 60"
 						className={errors.row_width_cm ? "border-destructive" : ""}
+						disabled={readOnly}
 					/>
 					{errors.row_width_cm && (
 						<FormError message={errors.row_width_cm.message} />
@@ -748,7 +760,7 @@ export const GrowGuideForm = ({
 									}}
 									options={feedTypes}
 									error={!!errors.feed_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -776,7 +788,7 @@ export const GrowGuideForm = ({
 									}}
 									options={weeks}
 									error={!!errors.feed_week_start_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -806,7 +818,7 @@ export const GrowGuideForm = ({
 									}}
 									options={feedFrequencies}
 									error={!!errors.feed_frequency_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -831,7 +843,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={frequencies}
 									error={!!errors.water_frequency_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -853,6 +865,7 @@ export const GrowGuideForm = ({
 							{...register("high_temp_degrees")}
 							placeholder="e.g. 30"
 							className={errors.high_temp_degrees ? "border-destructive" : ""}
+							disabled={readOnly}
 						/>
 						{errors.high_temp_degrees && (
 							<FormError message={errors.high_temp_degrees.message} />
@@ -874,7 +887,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={frequencies}
 									error={!!errors.high_temp_water_frequency_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -903,7 +916,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.harvest_week_start_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -927,7 +940,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.harvest_week_end_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -954,7 +967,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.prune_week_start_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -978,7 +991,7 @@ export const GrowGuideForm = ({
 									onValueChange={field.onChange}
 									options={weeks}
 									error={!!errors.prune_week_end_id}
-									disabled={isLoadingOptions}
+									disabled={isLoadingOptions || readOnly}
 									allowClear
 								/>
 							)}
@@ -996,6 +1009,7 @@ export const GrowGuideForm = ({
 						placeholder="Optional notes about this grow guide (minimum 5 characters)"
 						className={errors.notes ? "border-destructive" : ""}
 						{...register("notes")}
+						disabled={readOnly}
 					/>
 					{errors.notes && <FormError message={errors.notes.message} />}
 				</div>
@@ -1009,6 +1023,7 @@ export const GrowGuideForm = ({
 								id="is_public"
 								checked={field.value}
 								onCheckedChange={field.onChange}
+								disabled={readOnly}
 							/>
 						)}
 					/>
@@ -1022,11 +1037,17 @@ export const GrowGuideForm = ({
 						onClick={onClose}
 						disabled={isSubmitting}
 					>
-						Cancel
+						{mode === "view" ? "Close" : "Cancel"}
 					</Button>
-					<Button type="submit" disabled={isSubmitting}>
-						{submitButtonText}
-					</Button>
+					{mode !== "view" && (
+						<Button
+							type="submit"
+							disabled={isSubmitting}
+							className="text-white"
+						>
+							{submitButtonText}
+						</Button>
+					)}
 				</DialogFooter>
 			</form>
 		);

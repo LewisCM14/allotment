@@ -677,6 +677,40 @@ class TestGrowGuideUnitOfWorkVarietyCRUD:
         assert str(variety_id) in str(exc_info.value.message)
         mock_logger.info.assert_called_once()
 
+    async def test_copy_public_variety_success(self, uow, user_id, mocker):
+        """Copying a public variety delegates to repository and create_variety."""
+        mock_logger = mocker.patch(
+            "app.api.services.grow_guide.grow_guide_unit_of_work.logger"
+        )
+        mock_log_timing = mocker.patch(
+            "app.api.services.grow_guide.grow_guide_unit_of_work.log_timing"
+        )
+        public_id = uuid.uuid4()
+        source = make_variety(uuid.uuid4(), is_public=True)
+        uow.variety_repo.get_public_variety_by_id.return_value = source
+
+        created = make_variety(user_id, is_public=False)
+        # create_variety is a method on UoW; patch it to ensure reuse
+        uow.create_variety = AsyncMock(return_value=created)
+
+        result = await uow.copy_public_variety_to_user(public_id, user_id)
+
+        assert result == created
+        uow.variety_repo.get_public_variety_by_id.assert_called_once_with(public_id)
+        uow.create_variety.assert_called_once()
+        mock_logger.info.assert_called()
+        mock_log_timing.assert_called_once_with(
+            "uow_copy_public_variety_to_user", request_id=uow.request_id
+        )
+
+    async def test_copy_public_variety_not_found(self, uow, user_id, mocker):
+        """Copying fails when public variety does not exist."""
+        mocker.patch("app.api.services.grow_guide.grow_guide_unit_of_work.log_timing")
+        uow.variety_repo.get_public_variety_by_id.return_value = None
+
+        with pytest.raises(ResourceNotFoundError):
+            await uow.copy_public_variety_to_user(uuid.uuid4(), user_id)
+
 
 class TestGrowGuideUnitOfWorkInitialization:
     """Test the initialization and repository setup."""

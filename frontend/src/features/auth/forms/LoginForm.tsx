@@ -176,7 +176,7 @@ function LoginForm() {
 								<Button
 									type="submit"
 									disabled={isSubmitting || isOffline}
-									className="w-full"
+									className="w-full text-white"
 								>
 									{getButtonText()}
 								</Button>

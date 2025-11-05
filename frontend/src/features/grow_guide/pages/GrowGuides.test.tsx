@@ -14,6 +14,13 @@ import type { VarietyList } from "../services/growGuideService";
 import type { VarietyListRead } from "../types/growGuideTypes";
 
 // Mock the dependencies
+vi.mock("sonner", () => ({
+	toast: {
+		success: vi.fn(),
+		error: vi.fn(),
+		info: vi.fn(),
+	},
+}));
 
 vi.mock("../forms/GrowGuideForm", () => ({
 	GrowGuideForm: vi.fn(({ isOpen, onClose, varietyId, mode }) => (
@@ -394,6 +401,23 @@ describe("GrowGuideListPresenter", () => {
 				screen.getAllByRole("button") || screen.getAllByTestId("public-toggle");
 			expect(publicIndicators.length).toBeGreaterThan(0);
 		});
+	});
+
+	it("does not render a duplicate action on rows", () => {
+		renderWithQueryClient(
+			<GrowGuideListPresenter
+				growGuides={mockGrowGuides}
+				isLoading={false}
+				isError={false}
+			/>,
+		);
+
+		// No button with aria-label starting with Duplicate
+		const buttons = screen.getAllByRole("button");
+		const hasDuplicate = buttons.some((b) =>
+			(b.getAttribute("aria-label") || "").toLowerCase().includes("duplicate"),
+		);
+		expect(hasDuplicate).toBe(false);
 	});
 
 	describe("Search Functionality", () => {
