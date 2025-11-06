@@ -445,7 +445,6 @@ export const growGuideHandlers = [
 		return new HttpResponse(null, { status: 204 });
 	}),
 
-	// Copy public variety to user's collection
 	http.post(buildUrl("/grow-guides/:publicVarietyId/copy"), ({ params }) => {
 		const { publicVarietyId } = params;
 
@@ -457,7 +456,7 @@ export const growGuideHandlers = [
 			return jsonError("Internal server error", 500);
 		}
 
-		// Find public variety and create a copy
+		// Only allow copying from public guides
 		const publicVariety = mockPublicGrowGuides.find(
 			(v) => v.variety_id === publicVarietyId,
 		);
@@ -472,9 +471,7 @@ export const growGuideHandlers = [
 			last_updated: new Date().toISOString(),
 			is_active: false,
 		};
-
 		varietiesStore.push(copiedVariety);
-
 		const detailResponse = createMockGrowGuideDetail(copiedVariety.variety_id, {
 			variety_id: copiedVariety.variety_id,
 			variety_name: copiedVariety.variety_name,
@@ -483,7 +480,6 @@ export const growGuideHandlers = [
 			is_public: copiedVariety.is_public,
 			last_updated: copiedVariety.last_updated,
 		});
-
 		return jsonOk(detailResponse);
 	}),
 

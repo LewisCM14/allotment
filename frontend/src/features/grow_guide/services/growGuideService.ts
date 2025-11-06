@@ -331,6 +331,24 @@ const copyPublicVariety = async (
 	}
 };
 
+// Duplicate a user's own variety or copy a public one by ID (unified endpoint)
+const copyVariety = async (varietyId: string): Promise<GrowGuideDetail> => {
+	try {
+		const response = await api.post<GrowGuideDetail>(
+			`/grow-guides/${varietyId}/copy`,
+			{},
+		);
+		return response.data;
+	} catch (error: unknown) {
+		errorMonitor.captureException(error, {
+			context: "copyVariety",
+			url: `/grow-guides/${varietyId}/copy`,
+			method: "POST",
+		});
+		return handleApiError(error, "Failed to copy grow guide.");
+	}
+};
+
 export const growGuideService = {
 	getUserGrowGuides,
 	getPublicGrowGuides,
@@ -341,6 +359,7 @@ export const growGuideService = {
 	deleteVariety,
 	toggleVarietyPublic,
 	copyPublicVariety,
+	copyVariety,
 	activateUserGrowGuide,
 	deactivateUserGrowGuide,
 };

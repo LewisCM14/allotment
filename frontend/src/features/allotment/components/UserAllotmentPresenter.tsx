@@ -282,7 +282,12 @@ export default function UserAllotmentPresenter({
 							<X className="h-4 w-4 mr-1" />
 							Cancel
 						</Button>
-						<Button size="sm" onClick={onSave} disabled={isSaving}>
+						<Button
+							size="sm"
+							onClick={onSave}
+							disabled={isSaving}
+							className="text-white"
+						>
 							{isSaving ? (
 								<>
 									<Loader2 className="h-4 w-4 animate-spin mr-1" />

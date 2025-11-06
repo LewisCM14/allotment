@@ -37,6 +37,9 @@ const GrowGuidePage = React.lazy(
 	() => import("../features/grow_guide/pages/GrowGuides"),
 );
 const TodoPage = React.lazy(() => import("../features/todo/pages/Todo"));
+const PublicGrowGuidesPage = React.lazy(
+	() => import("../features/grow_guide/pages/PublicGrowGuides"),
+);
 
 const AppRoutes = () => {
 	return (
@@ -125,6 +128,8 @@ const AppRoutes = () => {
 						</ProtectedRoute>
 					}
 				/>
+				<Route path="/public/grow-guides" element={<PublicGrowGuidesPage />} />
+				<Route path="/public-guides" element={<PublicGrowGuidesPage />} />
 				<Route
 					path="/grow-guides"
 					element={

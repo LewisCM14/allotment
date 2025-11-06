@@ -1,7 +1,7 @@
 import type { VarietyList } from "../services/growGuideService";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Leaf, Eye, EyeOff, Trash2, Search } from "lucide-react";
-import { Input } from "@/components/ui/Input";
+import { Leaf, Eye, EyeOff, Trash2 } from "lucide-react";
+import { SearchField } from "@/components/ui/SearchField";
 import { Switch } from "@/components/ui/Switch";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -187,15 +187,12 @@ export const GrowGuideListPresenter = ({
 				/>
 			) : (
 				<>
-					<div className="relative">
-						<Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-						<Input
-							placeholder="Search guides..."
-							className="pl-10"
-							value={search}
-							onChange={(e) => setSearch(e.target.value)}
-						/>
-					</div>
+					<SearchField
+						value={search}
+						onChange={setSearch}
+						placeholder="Search guides..."
+						ariaLabel="Search your grow guides"
+					/>
 					{filtered.length === 0 ? (
 						<div className="text-center py-10">
 							<p className="text-muted-foreground">
@@ -273,6 +270,7 @@ export const GrowGuideListPresenter = ({
 																	</AlertDialogCancel>
 																	<AlertDialogAction
 																		data-row-action
+																		className="text-white"
 																		disabled={isDeleting}
 																		onClick={() => handleDelete(g.variety_id)}
 																	>
@@ -288,8 +286,11 @@ export const GrowGuideListPresenter = ({
 														{/* Visibility/public toggle */}
 														<Button
 															type="button"
-															variant={isPublic ? "secondary" : "outline"}
+															variant={isPublic ? "default" : "outline"}
 															size="icon"
+															className={
+																isPublic ? "text-white" : "bg-accent/30"
+															}
 															aria-pressed={isPublic}
 															aria-label={`${isPublic ? "Make" : "Set"} ${g.variety_name} ${isPublic ? "Private" : "Public"}`}
 															data-row-action
@@ -300,7 +301,7 @@ export const GrowGuideListPresenter = ({
 															}}
 														>
 															{isPublic ? (
-																<Eye className="h-4 w-4" />
+																<Eye className="h-4 w-4 text-white" />
 															) : (
 																<EyeOff className="h-4 w-4" />
 															)}
@@ -334,7 +335,7 @@ export const GrowGuideListPresenter = ({
 																	{isActive && (
 																		<Badge
 																			variant="default"
-																			className="text-[9px] sm:text-xs uppercase px-1 py-0 sm:px-2 sm:py-0.5"
+																			className="text-white text-[9px] sm:text-xs uppercase px-1 py-0 sm:px-2 sm:py-0.5"
 																		>
 																			Active
 																		</Badge>

@@ -174,7 +174,7 @@ export default function RegisterFormPresenter({
 							<Button
 								type="submit"
 								disabled={isSubmitting || isMutating || isOffline}
-								className="w-full"
+								className="w-full text-white"
 							>
 								{buttonText}
 							</Button>

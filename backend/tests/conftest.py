@@ -1025,6 +1025,30 @@ async def seed_variety_data(
             "variety_id": variety_id,
             "variety_name": "Test Tomato",
             "owner_user_id": uuid.UUID(user_in_database["user_id"]),
+            # Provide nested structures to help tests build payloads without re-querying metadata
+            "family": {
+                "family_id": str(complete_family_seed_data["families"][0]["id"]),
+            },
+            "lifecycle": {
+                "lifecycle_id": str(seed_lifecycle_data[0]["id"]),
+            },
+            "sow_week_start_id": str(seed_week_data[0]["id"]),
+            "sow_week_end_id": str(seed_week_data[1]["id"]),
+            "planting_conditions": {
+                "planting_condition_id": str(seed_planting_conditions_data[0]["id"]),
+            },
+            "soil_ph": 6.5,
+            "plant_depth_cm": 2,
+            "plant_space_cm": 30,
+            "water_frequency": {
+                "frequency_id": str(seed_frequency_data[0]["id"]),
+            },
+            "high_temp_degrees": 30,
+            "high_temp_water_frequency": {
+                "frequency_id": str(seed_frequency_data[0]["id"]),
+            },
+            "harvest_week_start_id": str(seed_week_data[1]["id"]),
+            "harvest_week_end_id": str(seed_week_data[2]["id"]),
         }
 
 
