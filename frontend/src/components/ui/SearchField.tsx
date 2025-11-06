@@ -4,12 +4,12 @@ import { cn } from "@/utils/utils";
 import type { InputHTMLAttributes } from "react";
 
 interface SearchFieldProps {
-	value: string;
-	onChange: (value: string) => void;
-	placeholder?: string;
-	ariaLabel?: string;
-	className?: string;
-	inputProps?: Omit<
+	readonly value: string;
+	readonly onChange: (value: string) => void;
+	readonly placeholder?: string;
+	readonly ariaLabel?: string;
+	readonly className?: string;
+	readonly inputProps?: Omit<
 		InputHTMLAttributes<HTMLInputElement>,
 		"value" | "onChange" | "placeholder" | "aria-label"
 	>;

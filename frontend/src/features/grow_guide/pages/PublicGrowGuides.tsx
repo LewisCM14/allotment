@@ -11,8 +11,7 @@ import {
 // We prefer a simpler list look here to mirror the Botanical Groups presentation
 import { Skeleton } from "@/components/ui/Skeleton";
 import { toast } from "sonner";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useMemo, useState, type ReactNode } from "react";
 import {
 	growGuideService,
 	type VarietyList,
@@ -31,15 +30,16 @@ const groupGuidesByFamily = (guides: VarietyList[]) => {
 		}
 		groups[key].push(g);
 	}
-	return Object.entries(groups)
-		.sort(([a], [b]) => a.localeCompare(b))
-		.map(
-			([family, items]) =>
-				[
-					family,
-					items.sort((a, b) => a.variety_name.localeCompare(b.variety_name)),
-				] as const,
-		);
+	const entries = Object.entries(groups);
+	entries.sort(([a], [b]) => a.localeCompare(b));
+	return entries.map(
+		([family, items]) =>
+			[
+				family,
+				// avoid mutating original array
+				[...items].sort((a, b) => a.variety_name.localeCompare(b.variety_name)),
+			] as const,
+	);
 };
 
 const PublicGrowGuides = () => {
@@ -47,7 +47,6 @@ const PublicGrowGuides = () => {
 	const { isAuthenticated } = useAuth();
 	const { data, isLoading, isError } = usePublicGrowGuides();
 	const [search, setSearch] = useState("");
-	const navigate = useNavigate();
 	const [viewOpen, setViewOpen] = useState(false);
 	const [viewVarietyId, setViewVarietyId] = useState<string | null>(null);
 
@@ -67,7 +66,7 @@ const PublicGrowGuides = () => {
 				return;
 			}
 			const created = await growGuideService.copyPublicVariety(varietyId);
-			toast.success(`Copied \"${created.variety_name}\" to your guides.`);
+			toast.success(`Copied "${created.variety_name}" to your guides.`);
 			// Invalidate user guides so it appears in their list on next visit
 			await queryClient.invalidateQueries({ queryKey: ["userGrowGuides"] });
 			return created;
@@ -87,6 +86,119 @@ const PublicGrowGuides = () => {
 		setViewOpen(true);
 	};
 
+	// Extract nested ternary into an independent statement for readability
+	let content: ReactNode;
+	if (isLoading) {
+		content = (
+			<div className="space-y-4">
+				<Skeleton className="h-6 w-1/4" />
+				{["sk-a", "sk-b", "sk-c", "sk-d", "sk-e", "sk-f"].map((id) => (
+					<div
+						key={id}
+						className="p-3 border rounded bg-card flex items-center gap-3"
+					>
+						<Skeleton className="h-4 w-1/3" />
+						<Skeleton className="h-8 w-24 rounded" />
+					</div>
+				))}
+			</div>
+		);
+	} else if (isError) {
+		content = (
+			<div className="text-center py-10">
+				<p className="text-muted-foreground">
+					We couldn't load public guides right now. Please try again later.
+				</p>
+			</div>
+		);
+	} else {
+		content = (
+			<div
+				className="space-y-6"
+				aria-label="Public grow guides grouped by family"
+			>
+				<SearchField
+					value={search}
+					onChange={setSearch}
+					placeholder="Search guides..."
+					ariaLabel="Search public grow guides"
+				/>
+
+				{filtered.length === 0 && (data?.length ?? 0) > 0 ? (
+					<div className="text-center py-10">
+						<p className="text-muted-foreground">
+							No public guides found. Try a different search term.
+						</p>
+					</div>
+				) : null}
+
+				<Accordion type="multiple" className="w-full space-y-2">
+					{grouped.map(([family, guides]) => (
+						<AccordionItem key={family} value={family}>
+							<AccordionTrigger className="cursor-pointer">
+								<h2 className="text-xl font-semibold text-card-foreground capitalize">
+									{family}
+								</h2>
+							</AccordionTrigger>
+							<AccordionContent>
+								<ul className="space-y-2">
+									{guides.map((g) => (
+										<li key={g.variety_id} className="list-none">
+											<div className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-md bg-card hover:bg-accent/30 transition-colors">
+												<button
+													type="button"
+													className="min-w-0 flex-1 text-left pl-0.5 sm:pl-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer"
+													onClick={() => handleOpenFromPublic(g.variety_id)}
+												>
+													<p className="text-xs sm:text-base font-medium truncate pr-1 sm:pr-2 text-card-foreground">
+														{g.variety_name}
+													</p>
+													<div className="flex items-center gap-1 sm:gap-2 flex-wrap">
+														<Badge
+															variant="outline"
+															className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5"
+														>
+															{g.lifecycle.lifecycle_name}
+														</Badge>
+														<p className="text-[9px] sm:text-xs text-muted-foreground">
+															Updated{" "}
+															{new Date(g.last_updated).toLocaleDateString()}
+														</p>
+													</div>
+												</button>
+												<Button
+													variant="default"
+													size="sm"
+													className="text-white"
+													onClick={() => handleCopy(g.variety_id)}
+												>
+													Use this guide
+												</Button>
+											</div>
+										</li>
+									))}
+								</ul>
+							</AccordionContent>
+						</AccordionItem>
+					))}
+				</Accordion>
+
+				{/* View-only form modal */}
+				<GrowGuideForm
+					isOpen={viewOpen}
+					onClose={() => setViewOpen(false)}
+					mode="view"
+					varietyId={viewVarietyId}
+				/>
+				{data && data.length === 0 && (
+					<p className="text-muted-foreground">
+						No public guides available yet.
+					</p>
+				)}
+			</div>
+		);
+	}
+
 	return (
 		<PageLayout>
 			<div className="mb-8">
@@ -98,111 +210,7 @@ const PublicGrowGuides = () => {
 					want to use.
 				</p>
 			</div>
-
-			{isLoading ? (
-				<div className="space-y-4">
-					<Skeleton className="h-6 w-1/4" />
-					{["sk-a", "sk-b", "sk-c", "sk-d", "sk-e", "sk-f"].map((id) => (
-						<div
-							key={id}
-							className="p-3 border rounded bg-card flex items-center gap-3"
-						>
-							<Skeleton className="h-4 w-1/3" />
-							<Skeleton className="h-8 w-24 rounded" />
-						</div>
-					))}
-				</div>
-			) : isError ? (
-				<div className="text-center py-10">
-					<p className="text-muted-foreground">
-						We couldn't load public guides right now. Please try again later.
-					</p>
-				</div>
-			) : (
-				<div
-					className="space-y-6"
-					aria-label="Public grow guides grouped by family"
-				>
-					<SearchField
-						value={search}
-						onChange={setSearch}
-						placeholder="Search guides..."
-						ariaLabel="Search public grow guides"
-					/>
-
-					{filtered.length === 0 && (data?.length ?? 0) > 0 ? (
-						<div className="text-center py-10">
-							<p className="text-muted-foreground">
-								No public guides found. Try a different search term.
-							</p>
-						</div>
-					) : null}
-
-					<Accordion type="multiple" className="w-full space-y-2">
-						{grouped.map(([family, guides]) => (
-							<AccordionItem key={family} value={family}>
-								<AccordionTrigger className="cursor-pointer">
-									<h2 className="text-xl font-semibold text-card-foreground capitalize">
-										{family}
-									</h2>
-								</AccordionTrigger>
-								<AccordionContent>
-									<ul className="space-y-2">
-										{guides.map((g) => (
-											<li key={g.variety_id} className="list-none">
-												<div className="w-full flex items-center gap-2 sm:gap-4 p-2 sm:p-3 border rounded-md bg-card hover:bg-accent/30 transition-colors">
-													<button
-														type="button"
-														className="min-w-0 flex-1 text-left pl-0.5 sm:pl-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded cursor-pointer"
-														onClick={() => handleOpenFromPublic(g.variety_id)}
-													>
-														<p className="text-xs sm:text-base font-medium truncate pr-1 sm:pr-2 text-card-foreground">
-															{g.variety_name}
-														</p>
-														<div className="flex items-center gap-1 sm:gap-2 flex-wrap">
-															<Badge
-																variant="outline"
-																className="text-[9px] sm:text-xs px-1 py-0 sm:px-2 sm:py-0.5"
-															>
-																{g.lifecycle.lifecycle_name}
-															</Badge>
-															<p className="text-[9px] sm:text-xs text-muted-foreground">
-																Updated{" "}
-																{new Date(g.last_updated).toLocaleDateString()}
-															</p>
-														</div>
-													</button>
-													<Button
-														variant="default"
-														size="sm"
-														className="text-white"
-														onClick={() => handleCopy(g.variety_id)}
-													>
-														Use this guide
-													</Button>
-												</div>
-											</li>
-										))}
-									</ul>
-								</AccordionContent>
-							</AccordionItem>
-						))}
-					</Accordion>
-
-					{/* View-only form modal */}
-					<GrowGuideForm
-						isOpen={viewOpen}
-						onClose={() => setViewOpen(false)}
-						mode="view"
-						varietyId={viewVarietyId}
-					/>
-					{data && data.length === 0 && (
-						<p className="text-muted-foreground">
-							No public guides available yet.
-						</p>
-					)}
-				</div>
-			)}
+			{content}
 		</PageLayout>
 	);
 };
