@@ -80,7 +80,7 @@ export const GrowGuideEmptyState = ({ onAddNew }: GrowGuideEmptyStateProps) => {
 						{/* Action Buttons */}
 						<div className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
 							<Button size="lg" onClick={onAddNew} className="gap-2">
-								<Plus className="h-5 w-5" />
+								<Plus className="h-5 w-5 text-white" />
 								Create Your First Guide
 							</Button>
 							<Button size="lg" variant="outline" className="gap-2" asChild>

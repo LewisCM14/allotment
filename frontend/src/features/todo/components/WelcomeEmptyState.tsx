@@ -80,7 +80,7 @@ export const WelcomeEmptyState = () => {
 								onClick={() => navigate("/grow-guides")}
 								className="gap-2"
 							>
-								<Plus className="h-5 w-5" />
+								<Plus className="h-5 w-5 text-white" />
 								Create A Guide
 							</Button>
 							<Button
