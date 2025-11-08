@@ -29,6 +29,13 @@ const GrowGuides = () => {
 	const hasGuides =
 		!isLoading && Array.isArray(growGuides) && growGuides.length > 0;
 
+	// Count active guides; use nullish coalescing to avoid treating 0 as falsy
+	const activeGuidesCount =
+		growGuides?.reduce(
+			(count, guide) => count + (guide.is_active ? 1 : 0),
+			0,
+		) ?? 0;
+
 	// Prefetch options & user guides on mount so form opens instantly
 	useEffect(() => {
 		queryClient.prefetchQuery({
@@ -84,6 +91,15 @@ const GrowGuides = () => {
 						<p className="text-muted-foreground mt-1">
 							Manage and explore your plant grow guides
 						</p>
+						{activeGuidesCount > 0 && (
+							<output
+								className="mt-1 font-medium text-primary dark:text-foreground"
+								aria-live="polite"
+							>
+								{activeGuidesCount} active guide
+								{activeGuidesCount !== 1 ? "s" : ""}
+							</output>
+						)}
 					</div>
 					<Button onClick={handleAddNew} className="text-white">
 						<Plus className="mr-2 h-4 w-4" />
