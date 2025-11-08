@@ -58,7 +58,7 @@ export default function EmailVerificationPresenter({
 								<p className="text-muted-foreground mt-2">
 									Now you can proceed to reset your password.
 								</p>
-								<Button onClick={onResetPassword} className="mt-2">
+								<Button onClick={onResetPassword} className="mt-2 text-white">
 									Reset Password
 								</Button>
 							</>

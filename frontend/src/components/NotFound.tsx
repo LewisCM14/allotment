@@ -15,7 +15,11 @@ const NotFound = () => {
 				<Button onClick={() => navigate(-1)} variant="outline">
 					Go Back
 				</Button>
-				<Button onClick={() => navigate("/")} variant="default">
+				<Button
+					onClick={() => navigate("/")}
+					variant="default"
+					className="text-white"
+				>
 					Go Home
 				</Button>
 			</div>

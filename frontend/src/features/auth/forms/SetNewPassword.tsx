@@ -221,7 +221,7 @@ export default function SetNewPassword() {
 							<Button
 								type="submit"
 								disabled={isSubmitting || isOffline}
-								className="w-full"
+								className="w-full text-white"
 							>
 								{isSubmitting ? "Setting Password..." : "Set New Password"}
 							</Button>

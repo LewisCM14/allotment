@@ -122,7 +122,7 @@ export default function ResetPassword() {
 								<Button
 									type="submit"
 									disabled={isSubmitting || isOffline}
-									className="w-full"
+									className="w-full text-white"
 								>
 									{isSubmitting ? "Sending..." : "Send Reset Link"}
 								</Button>
