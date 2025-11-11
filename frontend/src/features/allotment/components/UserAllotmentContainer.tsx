@@ -127,26 +127,23 @@ export default function UserAllotmentContainer() {
 		}
 	}, [existingAllotment, setValue, reset]);
 
-	const handleSave = useCallback(
-		handleSubmit(async (data: AllotmentFormData) => {
-			try {
-				setError("");
+	const handleSave = handleSubmit(async (data: AllotmentFormData) => {
+		try {
+			setError("");
 
-				if (existingAllotment) {
-					// Update existing allotment
-					await updateAllotmentMutation.mutateAsync(data);
-				} else {
-					// Create new allotment
-					await createAllotmentMutation.mutateAsync(data);
-				}
-				setIsEditing(false);
-			} catch (err: unknown) {
-				const errorMessage = formatError(err);
-				setError(errorMessage);
+			if (existingAllotment) {
+				// Update existing allotment
+				await updateAllotmentMutation.mutateAsync(data);
+			} else {
+				// Create new allotment
+				await createAllotmentMutation.mutateAsync(data);
 			}
-		}),
-		[],
-	);
+			setIsEditing(false);
+		} catch (err: unknown) {
+			const errorMessage = formatError(err);
+			setError(errorMessage);
+		}
+	});
 
 	// Derive presentation data
 	const postalCode = existingAllotment?.allotment_postal_zip_code ?? "";
