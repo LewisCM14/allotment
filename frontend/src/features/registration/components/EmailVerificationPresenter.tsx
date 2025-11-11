@@ -63,7 +63,7 @@ export default function EmailVerificationPresenter({
 								</Button>
 							</>
 						) : (
-							<Button onClick={onGoToDashboard} className="mt-4">
+							<Button onClick={onGoToDashboard} className="mt-4 text-white">
 								Go to Dashboard
 							</Button>
 						)}

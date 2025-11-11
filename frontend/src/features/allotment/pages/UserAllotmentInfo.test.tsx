@@ -283,4 +283,91 @@ describe("AllotmentPage", () => {
 			container,
 		});
 	});
+
+	it("creates then updates allotment (POST then PUT)", async () => {
+		let hasAllotment = false;
+		let createCalls = 0;
+		let updateCalls = 0;
+		let allotment = {
+			allotment_postal_zip_code: "",
+			allotment_width_meters: 0,
+			allotment_length_meters: 0,
+		};
+
+		server.use(
+			http.get(buildUrl("/users/allotment"), () => {
+				if (!hasAllotment) {
+					return new HttpResponse(
+						JSON.stringify({ detail: "No allotment found" }),
+						{ status: 404 },
+					);
+				}
+				return HttpResponse.json(allotment);
+			}),
+			http.post(buildUrl("/users/allotment"), async ({ request }) => {
+				createCalls += 1;
+				const body = (await request.json()) as typeof allotment;
+				allotment = { ...body };
+				hasAllotment = true;
+				return HttpResponse.json(allotment);
+			}),
+			http.put(buildUrl("/users/allotment"), async ({ request }) => {
+				updateCalls += 1;
+				const body = (await request.json()) as Partial<typeof allotment>;
+				allotment = { ...allotment, ...body };
+				return HttpResponse.json(allotment);
+			}),
+		);
+
+		const { container } = renderPage();
+		await waitFor(
+			() => expect(screen.getByText("Your Allotment")).toBeInTheDocument(),
+			{ container },
+		);
+
+		// New user: fill out form and save (should POST)
+		await userEvent.type(screen.getByLabelText(/postal\/zip code/i), "B2B 2B2");
+		await userEvent.clear(screen.getByLabelText(/width/i));
+		await userEvent.type(screen.getByLabelText(/width/i), "5");
+		await userEvent.clear(screen.getByLabelText(/length/i));
+		await userEvent.type(screen.getByLabelText(/length/i), "6");
+		await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+		await waitFor(
+			() => {
+				expect(screen.queryByText(/saving/i)).not.toBeInTheDocument();
+			},
+			{ container },
+		);
+
+		expect(createCalls).toBe(1);
+		expect(updateCalls).toBe(0);
+
+		// Should show read-only values
+		expect(screen.getByText("B2B 2B2")).toBeInTheDocument();
+		expect(screen.getByText("5 m")).toBeInTheDocument();
+		expect(screen.getByText("6 m")).toBeInTheDocument();
+
+		// Edit and save again (should PUT)
+		await userEvent.click(screen.getByRole("button", { name: /edit/i }));
+		const widthField = screen.getByLabelText(/width/i);
+		await userEvent.clear(widthField);
+		await userEvent.type(widthField, "7");
+		await userEvent.click(screen.getByRole("button", { name: /save/i }));
+
+		await waitFor(
+			() => {
+				expect(screen.queryByText(/saving/i)).not.toBeInTheDocument();
+			},
+			{ container },
+		);
+
+		expect(createCalls).toBe(1);
+		expect(updateCalls).toBe(1);
+
+		// Shows updated read-only values
+		expect(screen.getByText("B2B 2B2")).toBeInTheDocument();
+		expect(screen.getByText("7 m")).toBeInTheDocument();
+		expect(screen.getByText("6 m")).toBeInTheDocument();
+	});
 });

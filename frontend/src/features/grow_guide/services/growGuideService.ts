@@ -260,9 +260,54 @@ const updateVariety = async (
 	data: Partial<GrowGuideFormData>,
 ): Promise<GrowGuideDetail> => {
 	try {
+		// Build a payload that explicitly nulls optional fields when the user clears them in the form.
+		// Important: Only coerce keys that are actually present on the incoming data object
+		// (so callers like toggleVarietyPublic that send partial objects are unaffected).
+		const body: Record<string, unknown> = { ...data };
+
+		// Helper: if the given keys all exist on the input object and are all undefined,
+		// send them explicitly as null to clear in the backend update (which treats None as "set to null").
+		const nullOutIfAllUndefined = (keys: (keyof GrowGuideFormData)[]) => {
+			const allPresent = keys.every((k) => Object.hasOwn(data, k));
+			if (!allPresent) return;
+			const allUndef = keys.every(
+				(k) => (data as Record<string, unknown>)[k] === undefined,
+			);
+			if (allUndef) {
+				for (const k of keys) body[k] = null;
+			}
+		};
+
+		// Feed trio: feed_id, feed_week_start_id, feed_frequency_id must be provided together.
+		// When user clears them in the form, they become undefined; convert to null to clear in DB.
+		nullOutIfAllUndefined([
+			"feed_id",
+			"feed_week_start_id",
+			"feed_frequency_id",
+		]);
+
+		// Other optional fields that may be cleared individually in the form should also be sent as null
+		// when present on the payload but undefined after preprocessing.
+		const optionalSingles: (keyof GrowGuideFormData)[] = [
+			"transplant_week_start_id",
+			"transplant_week_end_id",
+			"prune_week_start_id",
+			"prune_week_end_id",
+			"row_width_cm",
+			"notes",
+		];
+		for (const key of optionalSingles) {
+			if (
+				Object.hasOwn(data, key) &&
+				(data as Record<string, unknown>)[key] === undefined
+			) {
+				body[key] = null;
+			}
+		}
+
 		const response = await api.put<GrowGuideDetail>(
 			`/grow-guides/${varietyId}`,
-			data,
+			body,
 		);
 		return response.data;
 	} catch (error: unknown) {
