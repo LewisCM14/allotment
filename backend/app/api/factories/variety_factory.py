@@ -6,7 +6,7 @@ Variety Factory
 """
 
 import uuid
-from typing import Any, Dict, List, Optional, TypeVar
+from typing import AbstractSet, Any, Dict, List, Optional, Set, TypeVar, cast
 from uuid import UUID
 
 import structlog
@@ -161,9 +161,19 @@ class VarietyFactory:
             with log_timing("variety_update", request_id=safe_context["request_id"]):
                 logger.info("Starting variety update", **safe_context)
 
-                # Create temporary object for validation
+                # Determine which fields were explicitly provided by the client
+                raw_fields_any: Any = getattr(
+                    variety_data,
+                    "model_fields_set",
+                    getattr(variety_data, "__fields_set__", set()),
+                )
+                provided_fields: AbstractSet[str] = cast(
+                    AbstractSet[str], raw_fields_any
+                )
+
+                # Create temporary object for validation based on the intended new state
                 temp_data = VarietyFactory._create_temp_variety_data(
-                    variety, variety_data
+                    variety, variety_data, provided_fields
                 )
 
                 # Validate business rules
@@ -243,73 +253,105 @@ class VarietyFactory:
 
     @staticmethod
     def _create_temp_variety_data(
-        variety: Variety, variety_data: VarietyUpdate
+        variety: Variety, variety_data: VarietyUpdate, provided_fields: AbstractSet[str]
     ) -> VarietyCreate:
         """Create a temporary VarietyCreate object for validation purposes."""
 
-        def get_value_or_fallback(new_value: Optional[T], fallback_value: T) -> T:
-            """Return new_value if not None, otherwise return fallback_value."""
-            return new_value if new_value is not None else fallback_value
+        def effective(field: str, new_value: Optional[T], fallback_value: T) -> T:
+            """Return new_value if the field was provided (even if None), else fallback."""
+            if field in provided_fields:
+                return cast(T, new_value)  # may be None for Optional[T]
+            return fallback_value
 
         return VarietyCreate(
-            variety_name=variety_data.variety_name or variety.variety_name,
-            family_id=get_value_or_fallback(variety_data.family_id, variety.family_id),
-            lifecycle_id=variety_data.lifecycle_id or variety.lifecycle_id,
-            sow_week_start_id=get_value_or_fallback(
-                variety_data.sow_week_start_id, variety.sow_week_start_id
+            variety_name=effective(
+                "variety_name", variety_data.variety_name, variety.variety_name
             ),
-            sow_week_end_id=get_value_or_fallback(
-                variety_data.sow_week_end_id, variety.sow_week_end_id
+            family_id=effective("family_id", variety_data.family_id, variety.family_id),
+            lifecycle_id=effective(
+                "lifecycle_id", variety_data.lifecycle_id, variety.lifecycle_id
             ),
-            transplant_week_start_id=get_value_or_fallback(
-                variety_data.transplant_week_start_id, variety.transplant_week_start_id
+            sow_week_start_id=effective(
+                "sow_week_start_id",
+                variety_data.sow_week_start_id,
+                variety.sow_week_start_id,
             ),
-            transplant_week_end_id=get_value_or_fallback(
-                variety_data.transplant_week_end_id, variety.transplant_week_end_id
+            sow_week_end_id=effective(
+                "sow_week_end_id", variety_data.sow_week_end_id, variety.sow_week_end_id
             ),
-            planting_conditions_id=variety_data.planting_conditions_id
-            or variety.planting_conditions_id,
-            soil_ph=get_value_or_fallback(variety_data.soil_ph, variety.soil_ph),
-            row_width_cm=get_value_or_fallback(
-                variety_data.row_width_cm, variety.row_width_cm
+            transplant_week_start_id=effective(
+                "transplant_week_start_id",
+                variety_data.transplant_week_start_id,
+                variety.transplant_week_start_id,
             ),
-            plant_depth_cm=get_value_or_fallback(
-                variety_data.plant_depth_cm, variety.plant_depth_cm
+            transplant_week_end_id=effective(
+                "transplant_week_end_id",
+                variety_data.transplant_week_end_id,
+                variety.transplant_week_end_id,
             ),
-            plant_space_cm=get_value_or_fallback(
-                variety_data.plant_space_cm, variety.plant_space_cm
+            planting_conditions_id=effective(
+                "planting_conditions_id",
+                variety_data.planting_conditions_id,
+                variety.planting_conditions_id,
             ),
-            feed_id=get_value_or_fallback(variety_data.feed_id, variety.feed_id),
-            feed_week_start_id=get_value_or_fallback(
-                variety_data.feed_week_start_id, variety.feed_week_start_id
+            soil_ph=effective("soil_ph", variety_data.soil_ph, variety.soil_ph),
+            row_width_cm=effective(
+                "row_width_cm", variety_data.row_width_cm, variety.row_width_cm
             ),
-            feed_frequency_id=get_value_or_fallback(
-                variety_data.feed_frequency_id, variety.feed_frequency_id
+            plant_depth_cm=effective(
+                "plant_depth_cm", variety_data.plant_depth_cm, variety.plant_depth_cm
             ),
-            water_frequency_id=get_value_or_fallback(
-                variety_data.water_frequency_id, variety.water_frequency_id
+            plant_space_cm=effective(
+                "plant_space_cm", variety_data.plant_space_cm, variety.plant_space_cm
             ),
-            high_temp_degrees=get_value_or_fallback(
-                variety_data.high_temp_degrees, variety.high_temp_degrees
+            feed_id=effective("feed_id", variety_data.feed_id, variety.feed_id),
+            feed_week_start_id=effective(
+                "feed_week_start_id",
+                variety_data.feed_week_start_id,
+                variety.feed_week_start_id,
             ),
-            high_temp_water_frequency_id=get_value_or_fallback(
+            feed_frequency_id=effective(
+                "feed_frequency_id",
+                variety_data.feed_frequency_id,
+                variety.feed_frequency_id,
+            ),
+            water_frequency_id=effective(
+                "water_frequency_id",
+                variety_data.water_frequency_id,
+                variety.water_frequency_id,
+            ),
+            high_temp_degrees=effective(
+                "high_temp_degrees",
+                variety_data.high_temp_degrees,
+                variety.high_temp_degrees,
+            ),
+            high_temp_water_frequency_id=effective(
+                "high_temp_water_frequency_id",
                 variety_data.high_temp_water_frequency_id,
                 variety.high_temp_water_frequency_id,
             ),
-            harvest_week_start_id=get_value_or_fallback(
-                variety_data.harvest_week_start_id, variety.harvest_week_start_id
+            harvest_week_start_id=effective(
+                "harvest_week_start_id",
+                variety_data.harvest_week_start_id,
+                variety.harvest_week_start_id,
             ),
-            harvest_week_end_id=get_value_or_fallback(
-                variety_data.harvest_week_end_id, variety.harvest_week_end_id
+            harvest_week_end_id=effective(
+                "harvest_week_end_id",
+                variety_data.harvest_week_end_id,
+                variety.harvest_week_end_id,
             ),
-            prune_week_start_id=get_value_or_fallback(
-                variety_data.prune_week_start_id, variety.prune_week_start_id
+            prune_week_start_id=effective(
+                "prune_week_start_id",
+                variety_data.prune_week_start_id,
+                variety.prune_week_start_id,
             ),
-            prune_week_end_id=get_value_or_fallback(
-                variety_data.prune_week_end_id, variety.prune_week_end_id
+            prune_week_end_id=effective(
+                "prune_week_end_id",
+                variety_data.prune_week_end_id,
+                variety.prune_week_end_id,
             ),
-            notes=get_value_or_fallback(variety_data.notes, variety.notes),
-            is_public=get_value_or_fallback(variety_data.is_public, variety.is_public),
+            notes=effective("notes", variety_data.notes, variety.notes),
+            is_public=effective("is_public", variety_data.is_public, variety.is_public),
         )
 
     @staticmethod
@@ -343,10 +385,19 @@ class VarietyFactory:
             ("is_public", "is_public"),
         ]
 
-        # Apply updates for all mapped fields
+        raw_fields_any: Any = getattr(
+            variety_data,
+            "model_fields_set",
+            getattr(variety_data, "__fields_set__", set()),
+        )
+        # Explicitly annotate after casting for mypy; treat unknown contents as AbstractSet[str]
+        raw_fields: AbstractSet[str] = cast(AbstractSet[str], raw_fields_any)
+        provided_fields: Set[str] = set(raw_fields)
+
+        # Apply updates only for fields present in the payload; this allows explicit nulls to clear values.
         for update_field, variety_field in field_mappings:
-            new_value = getattr(variety_data, update_field)
-            if new_value is not None:
+            if update_field in provided_fields:
+                new_value = getattr(variety_data, update_field)
                 setattr(variety, variety_field, new_value)
 
     @staticmethod

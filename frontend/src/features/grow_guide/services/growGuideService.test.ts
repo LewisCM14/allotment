@@ -984,3 +984,177 @@ describe("Error Monitoring", () => {
 		// Error context should include the request data
 	});
 });
+
+describe("updateVariety - Feed Field Clearing", () => {
+	it("sends explicit nulls for cleared feed trio fields", async () => {
+		// Setup: Mock a PUT request handler to capture the payload
+		let capturedPayload: Record<string, unknown> | null = null;
+
+		server.use(
+			http.put(buildUrl("/grow-guides/:varietyId"), async ({ request }) => {
+				capturedPayload = (await request.json()) as Record<string, unknown>;
+				return HttpResponse.json({
+					variety_id: "variety-1",
+					variety_name: "Cherry Tomato",
+					feed_id: null,
+					feed_week_start_id: null,
+					feed_frequency_id: null,
+				});
+			}),
+		);
+
+		// Call updateVariety with undefined feed trio fields (simulating cleared form)
+		const updateData = {
+			variety_name: "Cherry Tomato",
+			feed_id: undefined,
+			feed_week_start_id: undefined,
+			feed_frequency_id: undefined,
+		};
+
+		await growGuideService.updateVariety("variety-1", updateData);
+
+		// Assert: The payload should contain explicit nulls, not undefined
+		expect(capturedPayload).toBeTruthy();
+		expect(capturedPayload).toHaveProperty("feed_id", null);
+		expect(capturedPayload).toHaveProperty("feed_week_start_id", null);
+		expect(capturedPayload).toHaveProperty("feed_frequency_id", null);
+		expect(capturedPayload).toHaveProperty("variety_name", "Cherry Tomato");
+	});
+
+	it("sends explicit nulls for cleared optional single fields", async () => {
+		// Setup: Mock a PUT request handler to capture the payload
+		let capturedPayload: Record<string, unknown> | null = null;
+
+		server.use(
+			http.put(buildUrl("/grow-guides/:varietyId"), async ({ request }) => {
+				capturedPayload = (await request.json()) as Record<string, unknown>;
+				return HttpResponse.json({
+					variety_id: "variety-1",
+					variety_name: "Cherry Tomato",
+					transplant_week_start_id: null,
+					prune_week_start_id: null,
+					row_width_cm: null,
+					notes: null,
+				});
+			}),
+		);
+
+		// Call updateVariety with undefined optional fields (simulating cleared form)
+		const updateData = {
+			variety_name: "Cherry Tomato",
+			transplant_week_start_id: undefined,
+			prune_week_start_id: undefined,
+			row_width_cm: undefined,
+			notes: undefined,
+		};
+
+		await growGuideService.updateVariety("variety-1", updateData);
+
+		// Assert: The payload should contain explicit nulls for cleared fields
+		expect(capturedPayload).toBeTruthy();
+		expect(capturedPayload).toHaveProperty("transplant_week_start_id", null);
+		expect(capturedPayload).toHaveProperty("prune_week_start_id", null);
+		expect(capturedPayload).toHaveProperty("row_width_cm", null);
+		expect(capturedPayload).toHaveProperty("notes", null);
+	});
+
+	it("does not send nulls for feed fields when not all are cleared", async () => {
+		// Setup: Mock a PUT request handler to capture the payload
+		let capturedPayload: Record<string, unknown> | null = null;
+
+		server.use(
+			http.put(buildUrl("/grow-guides/:varietyId"), async ({ request }) => {
+				capturedPayload = (await request.json()) as Record<string, unknown>;
+				return HttpResponse.json({
+					variety_id: "variety-1",
+					variety_name: "Cherry Tomato",
+					feed_id: "feed-1",
+				});
+			}),
+		);
+
+		// Call updateVariety with only some feed fields cleared
+		const updateData = {
+			variety_name: "Cherry Tomato",
+			feed_id: "feed-1", // Keep feed_id
+			feed_week_start_id: undefined, // Clear this
+			feed_frequency_id: undefined, // Clear this
+		};
+
+		await growGuideService.updateVariety("variety-1", updateData);
+
+		// Assert: Since not all feed trio fields are undefined, they should NOT be converted to null
+		// undefined values are omitted during JSON serialization, so they won't be in the payload
+		expect(capturedPayload).toBeTruthy();
+		expect(capturedPayload).toHaveProperty("feed_id", "feed-1");
+		expect(capturedPayload).not.toHaveProperty("feed_week_start_id");
+		expect(capturedPayload).not.toHaveProperty("feed_frequency_id");
+	});
+
+	it("preserves non-feed fields when clearing feed trio", async () => {
+		// Setup: Mock a PUT request handler to capture the payload
+		let capturedPayload: Record<string, unknown> | null = null;
+
+		server.use(
+			http.put(buildUrl("/grow-guides/:varietyId"), async ({ request }) => {
+				capturedPayload = (await request.json()) as Record<string, unknown>;
+				return HttpResponse.json({
+					variety_id: "variety-1",
+					variety_name: "Updated Tomato",
+					feed_id: null,
+					feed_week_start_id: null,
+					feed_frequency_id: null,
+					sow_week_start_id: "week-10",
+				});
+			}),
+		);
+
+		// Call updateVariety with feed trio cleared but other fields present
+		const updateData = {
+			variety_name: "Updated Tomato",
+			feed_id: undefined,
+			feed_week_start_id: undefined,
+			feed_frequency_id: undefined,
+			sow_week_start_id: "week-10",
+		};
+
+		await growGuideService.updateVariety("variety-1", updateData);
+
+		// Assert: Non-feed fields should be preserved
+		expect(capturedPayload).toBeTruthy();
+		expect(capturedPayload).toHaveProperty("variety_name", "Updated Tomato");
+		expect(capturedPayload).toHaveProperty("feed_id", null);
+		expect(capturedPayload).toHaveProperty("feed_week_start_id", null);
+		expect(capturedPayload).toHaveProperty("feed_frequency_id", null);
+		expect(capturedPayload).toHaveProperty("sow_week_start_id", "week-10");
+	});
+
+	it("does not affect partial updates without feed fields", async () => {
+		// Setup: Mock a PUT request handler to capture the payload
+		let capturedPayload: Record<string, unknown> | null = null;
+
+		server.use(
+			http.put(buildUrl("/grow-guides/:varietyId"), async ({ request }) => {
+				capturedPayload = (await request.json()) as Record<string, unknown>;
+				return HttpResponse.json({
+					variety_id: "variety-1",
+					is_public: true,
+				});
+			}),
+		);
+
+		// Call updateVariety with only is_public (like toggleVarietyPublic does)
+		const updateData = {
+			is_public: true,
+		};
+
+		await growGuideService.updateVariety("variety-1", updateData);
+
+		// Assert: Payload should only contain is_public, no feed fields nulled
+		expect(capturedPayload).toBeTruthy();
+		expect(capturedPayload).toHaveProperty("is_public", true);
+		expect(capturedPayload).not.toHaveProperty("feed_id");
+		expect(capturedPayload).not.toHaveProperty("feed_week_start_id");
+		expect(capturedPayload).not.toHaveProperty("feed_frequency_id");
+	});
+});
