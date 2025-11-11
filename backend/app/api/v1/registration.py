@@ -100,7 +100,10 @@ async def create_user(
             async with GrowGuideUnitOfWork(db) as grow_guide_uow:
                 feeds = await grow_guide_uow.get_all_feeds()
                 days = await grow_guide_uow.get_all_days()
-            default_day = days[0] if days else None
+            # Default to Sunday (day_number 7) for new users
+            default_day = next(
+                (d for d in days if d.day_number == 7), days[0] if days else None
+            )
             async with UserUnitOfWork(db) as uow:
                 await uow.ensure_user_feed_days(
                     str(new_user.user_id), feeds, default_day
