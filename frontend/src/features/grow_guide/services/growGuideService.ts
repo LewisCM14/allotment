@@ -268,9 +268,7 @@ const updateVariety = async (
 		// Helper: if the given keys all exist on the input object and are all undefined,
 		// send them explicitly as null to clear in the backend update (which treats None as "set to null").
 		const nullOutIfAllUndefined = (keys: (keyof GrowGuideFormData)[]) => {
-			const allPresent = keys.every((k) =>
-				Object.prototype.hasOwnProperty.call(data, k),
-			);
+			const allPresent = keys.every((k) => Object.hasOwn(data, k));
 			if (!allPresent) return;
 			const allUndef = keys.every(
 				(k) => (data as Record<string, unknown>)[k] === undefined,
@@ -300,7 +298,7 @@ const updateVariety = async (
 		];
 		for (const key of optionalSingles) {
 			if (
-				Object.prototype.hasOwnProperty.call(data, key) &&
+				Object.hasOwn(data, key) &&
 				(data as Record<string, unknown>)[key] === undefined
 			) {
 				body[key] = null;
