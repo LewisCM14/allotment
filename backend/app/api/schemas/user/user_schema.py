@@ -76,6 +76,14 @@ class UserCreate(SecureBaseModel):
     user_first_name: str = get_first_name_field()
     user_country_code: str = get_country_code_field()
 
+    @field_validator("user_email", mode="before")
+    @classmethod
+    def normalize_email_create(cls, v: Any) -> Any:
+        """Normalize email by trimming and lowercasing at input boundary."""
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -93,6 +101,13 @@ class UserLogin(SecureBaseModel):
 
     user_email: EmailStr = get_email_field()
     user_password: str = get_password_field("User's password")
+
+    @field_validator("user_email", mode="before")
+    @classmethod
+    def normalize_email_login(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -217,6 +232,13 @@ class PasswordResetRequest(SecureBaseModel):
 
     user_email: EmailStr = get_email_field()
 
+    @field_validator("user_email", mode="before")
+    @classmethod
+    def normalize_email_reset_request(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -230,6 +252,13 @@ class EmailRequest(SecureBaseModel):
     """Schema for requests requiring only user email."""
 
     user_email: EmailStr = get_email_field()
+
+    @field_validator("user_email", mode="before")
+    @classmethod
+    def normalize_email_request(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.strip().lower()
+        return v
 
     model_config = ConfigDict(
         json_schema_extra={

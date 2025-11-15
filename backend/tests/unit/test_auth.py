@@ -86,6 +86,21 @@ class TestAuthUtilsCoverage:
         assert result == user
 
     @pytest.mark.asyncio
+    async def test_authenticate_user_uppercase_email_success(self, mocker):
+        db = MagicMock()
+        user = MagicMock()
+        user.user_password_hash = bcrypt.hashpw(b"pw", bcrypt.gensalt()).decode()
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: user)
+        )
+        mocker.patch("app.api.core.auth_utils.verify_password", return_value=True)
+        db.commit = mocker.AsyncMock()
+        db.refresh = mocker.AsyncMock()
+        # Pass uppercase email and ensure authentication still succeeds
+        result = await auth_utils.authenticate_user(db, "TEST@EXAMPLE.COM", "pw")
+        assert result == user
+
+    @pytest.mark.asyncio
     async def test_authenticate_user_not_found(self, mocker):
         db = MagicMock()
         db.execute = mocker.AsyncMock(

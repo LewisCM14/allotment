@@ -105,4 +105,32 @@ describe("LoginForm", () => {
 		await userEvent.click(toggleBtn);
 		expect(passwordInput).toHaveAttribute("type", "password");
 	});
+
+	it("normalizes email to lowercase before submit", async () => {
+		const loginMock = vi.fn();
+		(AuthContext.useAuth as unknown as Mock).mockReturnValue({
+			login: loginMock,
+		});
+		(AuthService.loginUser as unknown as Mock).mockResolvedValue({
+			tokens: { access_token: "token", refresh_token: "refresh" },
+			firstName: "Test",
+			userData: {
+				user_id: "id",
+				user_email: "test@example.com",
+				is_email_verified: true,
+			},
+		});
+		renderForm();
+		await userEvent.type(screen.getByLabelText(/email/i), "TEST@EXAMPLE.COM");
+		await userEvent.type(
+			screen.getByLabelText(/password/i, { selector: "input" }),
+			"password123",
+		);
+		await userEvent.click(screen.getByRole("button", { name: /login/i }));
+		expect(AuthService.loginUser).toHaveBeenCalledWith(
+			"test@example.com",
+			"password123",
+		);
+		expect(loginMock).toHaveBeenCalled();
+	});
 });

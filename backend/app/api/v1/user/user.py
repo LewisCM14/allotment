@@ -94,9 +94,12 @@ async def check_verification_status(
         "operation": "check_verification_status",
     }
     logger.debug("Checking email verification status", **log_context)
+    normalized_email = str(user_email).strip().lower()
 
     async with UserUnitOfWork(db) as uow:
-        verification_status = await uow.get_verification_status_service(user_email)
+        verification_status = await uow.get_verification_status_service(
+            normalized_email
+        )
 
     logger.info("Verification status checked", **log_context)
     return verification_status

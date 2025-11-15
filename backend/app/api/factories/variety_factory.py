@@ -161,12 +161,12 @@ class VarietyFactory:
             with log_timing("variety_update", request_id=safe_context["request_id"]):
                 logger.info("Starting variety update", **safe_context)
 
-                # Determine which fields were explicitly provided by the client
-                raw_fields_any: Any = getattr(
-                    variety_data,
-                    "model_fields_set",
-                    getattr(variety_data, "__fields_set__", set()),
-                )
+                if hasattr(variety_data, "model_fields_set"):
+                    raw_fields_any: Any = getattr(variety_data, "model_fields_set")
+                elif hasattr(variety_data, "__fields_set__"):
+                    raw_fields_any = getattr(variety_data, "__fields_set__")
+                else:
+                    raw_fields_any = set()
                 provided_fields: AbstractSet[str] = cast(
                     AbstractSet[str], raw_fields_any
                 )
@@ -385,11 +385,13 @@ class VarietyFactory:
             ("is_public", "is_public"),
         ]
 
-        raw_fields_any: Any = getattr(
-            variety_data,
-            "model_fields_set",
-            getattr(variety_data, "__fields_set__", set()),
-        )
+        # Avoid evaluating deprecated attributes eagerly to prevent warnings
+        if hasattr(variety_data, "model_fields_set"):
+            raw_fields_any: Any = getattr(variety_data, "model_fields_set")
+        elif hasattr(variety_data, "__fields_set__"):
+            raw_fields_any = getattr(variety_data, "__fields_set__")
+        else:
+            raw_fields_any = set()
         # Explicitly annotate after casting for mypy; treat unknown contents as AbstractSet[str]
         raw_fields: AbstractSet[str] = cast(AbstractSet[str], raw_fields_any)
         provided_fields: Set[str] = set(raw_fields)

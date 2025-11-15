@@ -59,6 +59,21 @@ class TestUserEndpointsUnit:
         assert result == resp_obj
         uow.get_verification_status_service.assert_called_once_with("test@example.com")
 
+    async def test_check_verification_status_normalizes_email(self, mocker):
+        resp_obj = VerificationStatusResponse(
+            is_email_verified=True, user_id="test-user-id"
+        )
+        uow = mock_user_uow(
+            mocker,
+            path="app.api.v1.user.user.UserUnitOfWork",
+            methods={"get_verification_status_service": resp_obj},
+        )
+        mock_db = mocker.MagicMock(spec=AsyncSession)
+        mixed = "TeSt@ExAmPlE.CoM"
+        result = await user.check_verification_status(mixed, mock_db)
+        assert result == resp_obj
+        uow.get_verification_status_service.assert_called_once_with("test@example.com")
+
     async def test_get_user_profile_success(self, mocker):
         mock_current = build_user_stub(
             mocker, user_id="test-user-id", first_name="Test", verified=True
