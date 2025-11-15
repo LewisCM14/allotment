@@ -13,7 +13,7 @@ import bcrypt
 import structlog
 from authlib.jose import JoseError, jwt
 from fastapi import Depends, Header, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.config import settings
@@ -140,7 +140,10 @@ async def authenticate_user(
     """Authenticate user by verifying their credentials."""
     try:
         logger.info("User authentication attempt")
-        result = await db.execute(select(User).filter(User.user_email == email))
+        normalized_email = email.strip().lower()
+        result = await db.execute(
+            select(User).filter(func.lower(User.user_email) == normalized_email)
+        )
         user = result.scalar_one_or_none()
 
         if not user:
