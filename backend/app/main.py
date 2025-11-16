@@ -5,16 +5,15 @@ Application Entrypoint
 import atexit
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Optional
+from typing import AsyncGenerator, Dict
 
 import structlog
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import EmailStr
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
-from app.api.core.logging import configure_logging, log_timing
+from app.api.core.logging import configure_logging
 from app.api.middleware.exception_handler import register_exception_handlers
 from app.api.middleware.logging_middleware import (
     AsyncLoggingMiddleware,
@@ -22,7 +21,10 @@ from app.api.middleware.logging_middleware import (
     sanitize_error_message,
 )
 from app.api.schemas.client_error_schema import ClientErrorLog
-from app.api.services.email_service import send_test_email
+from app.api.schemas.inbound_email_schema import InboundEmailPayload
+from app.api.services.email_service import (
+    forward_inbound_email,
+)
 from app.api.v1 import router as api_router
 
 configure_logging()
@@ -70,6 +72,9 @@ app = FastAPI(
     version=settings.APP_VERSION,
     description="API for managing allotments",
     lifespan=lifespan,
+    docs_url=None if settings.ENVIRONMENT == "production" else "/docs",
+    redoc_url=None if settings.ENVIRONMENT == "production" else "/redoc",
+    openapi_url=None if settings.ENVIRONMENT == "production" else "/openapi.json",
 )
 
 
@@ -131,50 +136,6 @@ async def root() -> Dict[str, str]:
     }
 
 
-@app.post(
-    "/test-email",
-    tags=["Utility"],
-    status_code=status.HTTP_200_OK,
-    summary="Test email configuration",
-    description="Send a test email to verify SMTP configuration is working",
-    response_model=Dict[str, str],
-)
-async def test_email_config(email: Optional[EmailStr] = None) -> Dict[str, str]:
-    """
-    Send a test email to verify email configuration.
-
-    Args:
-        email: Optional recipient email (defaults to configured MAIL_FROM address)
-
-    Returns:
-        dict: Success message
-    """
-    recipient_email = email or settings.MAIL_FROM
-
-    log_context = {
-        "request_id": request_id_ctx_var.get(),
-        "operation": "test_email",
-        "recipient": recipient_email,
-    }
-
-    logger.info("Test email requested", **log_context)
-
-    try:
-        with log_timing("send_email", request_id=log_context["request_id"]):
-            await send_test_email(recipient_email)
-            logger.info("Test email sent successfully", **log_context)
-
-        return {"message": "Test email sent successfully"}
-    except Exception as exc:
-        logger.error(
-            "Error sending test email",
-            error=str(exc),
-            error_type=type(exc).__name__,
-            **log_context,
-        )
-        raise
-
-
 @app.post("/api/v1/log-client-error", tags=["Utility"])
 async def handle_log_client_error(
     error_log: ClientErrorLog, request: Request
@@ -186,6 +147,50 @@ async def handle_log_client_error(
         client_error_details=error_log.details,
     )
     return {"message": "Client error logged successfully"}
+
+
+@app.post(
+    "/webhooks/inbound-email",
+    tags=["Webhooks"],
+    status_code=status.HTTP_200_OK,
+    summary="Resend inbound email webhook",
+    description="Receives inbound emails from Resend and forwards them to CONTACT_TO",
+)
+async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
+    """
+    Webhook endpoint for Resend inbound emails.
+
+    Receives emails sent to contact@mail.allotment.wiki and forwards them
+    to the configured CONTACT_TO inbox.
+    """
+    log_context = {
+        "request_id": request_id_ctx_var.get(),
+        "operation": "inbound_email_webhook",
+        "from": payload.from_,
+        "to": payload.to,
+        "subject": payload.subject,
+    }
+
+    logger.info("Inbound email received", **log_context)
+
+    try:
+        body = payload.text or payload.html or "(No content)"
+        await forward_inbound_email(
+            from_email=payload.from_,
+            subject=payload.subject,
+            body=body,
+            reply_to=payload.reply_to,
+        )
+        logger.info("Inbound email processed successfully", **log_context)
+        return {"message": "Email forwarded"}
+    except Exception as exc:
+        logger.error(
+            "Failed to process inbound email",
+            error=sanitize_error_message(str(exc)),
+            error_type=type(exc).__name__,
+            **log_context,
+        )
+        raise
 
 
 def flush_logs() -> None:

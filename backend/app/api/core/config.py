@@ -79,6 +79,8 @@ class Settings(BaseSettings):
 
     RESEND_API_KEY: SecretStr
     MAIL_FROM: str
+    CONTACT_FROM: str
+    CONTACT_TO: str
 
     LOG_LEVEL: str
     LOG_TO_FILE: bool

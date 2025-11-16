@@ -13,34 +13,6 @@ async def test_root_endpoint_success(client: AsyncClient):
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "params",
-    [
-        {"email": "test@example.com"},
-    ],
-)
-async def test_test_email_endpoint(client: AsyncClient, params):
-    response = await client.post("/test-email", params=params)
-    # Endpoint may return 200 or 500 depending on email backend; just ensure structure
-    assert response.status_code in (200, 500)
-    data = response.json()
-    assert "message" in data
-
-
-@pytest.mark.asyncio
-async def test_test_email_endpoint_missing_email(client: AsyncClient):
-    """Test that email defaults to MAIL_FROM when not provided."""
-    response = await client.post("/test-email", params={})
-    # Should succeed with default email from MAIL_FROM setting
-    assert response.status_code in (
-        200,
-        500,
-    )  # 200 if successful, 500 if email backend fails
-    data = response.json()
-    assert "message" in data
-
-
-@pytest.mark.asyncio
 async def test_log_client_error(client: AsyncClient):
     error_data = {
         "error": "Client side error occurred",

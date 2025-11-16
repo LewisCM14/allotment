@@ -5,8 +5,7 @@ Email Service
 - Centralizes email configuration
 """
 
-from datetime import datetime
-from typing import cast
+from datetime import datetime, timezone
 
 import resend
 import structlog
@@ -28,6 +27,9 @@ logger = structlog.get_logger()
 resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 
 current_year = datetime.now().year
+
+# Shared constants
+EMAIL_SERVICE_UNAVAILABLE_MSG = "Email service is temporarily unavailable"
 
 
 async def send_verification_email(
@@ -118,7 +120,7 @@ This is an automated message. Please do not reply directly to this email.
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email service is temporarily unavailable",
+            detail=EMAIL_SERVICE_UNAVAILABLE_MSG,
         )
     except Exception as e:
         sanitized_error = sanitize_error_message(str(e))
@@ -131,77 +133,6 @@ This is an automated message. Please do not reply directly to this email.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send verification email",
-        )
-
-
-async def send_test_email(recipient_email: EmailStr) -> dict[str, str]:
-    """
-    Send a test email to verify Resend configuration.
-
-    Args:
-        recipient_email: The recipient's email address
-
-    Returns:
-        dict: Success message
-
-    Raises:
-        HTTPException: If email sending fails
-    """
-    log_context = {
-        "recipient": recipient_email,
-        "request_id": request_id_ctx_var.get(),
-        "operation": "send_test_email",
-    }
-
-    try:
-        with log_timing("email_test", request_id=log_context["request_id"]):
-            email_body = f"""Hello,
-
-This is a test email from your Allotment Service application.
-If you received this email, your Resend email configuration is working correctly!
-
-Configuration details:
-- Email Provider: Resend
-- From Address: {settings.MAIL_FROM}
-- Environment: {settings.ENVIRONMENT}
-
-Best regards,
-The Allotment Team
-
-------------------------------
-© {current_year} Allotment Service. All rights reserved."""
-
-            params: Emails.SendParams = {
-                "from": settings.MAIL_FROM,
-                "to": recipient_email,
-                "subject": "Test Email - Allotment Service",
-                "text": email_body,
-            }
-
-            response = resend.Emails.send(params)
-
-            logger.info(
-                "Test email sent successfully",
-                email_id=response.get("id"),
-                **log_context,
-            )
-            email_id = response.get("id")
-            return {
-                "message": f"Test email sent successfully to {recipient_email}",
-                "email_id": email_id if email_id else "unknown",
-            }
-
-    except Exception as e:
-        sanitized_error = sanitize_error_message(str(e))
-        logger.exception(
-            "Failed to send test email",
-            error=sanitized_error,
-            error_type=type(e).__name__,
-            **log_context,
-        )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to send test email: {sanitized_error}",
         )
 
 
@@ -271,7 +202,7 @@ This is an automated message. Please do not reply directly to this email.
         )
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Email service is temporarily unavailable",
+            detail=EMAIL_SERVICE_UNAVAILABLE_MSG,
         )
     except Exception as e:
         sanitized_error = sanitize_error_message(str(e))
@@ -284,4 +215,82 @@ This is an automated message. Please do not reply directly to this email.
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to send password reset email",
+        )
+
+
+async def forward_inbound_email(
+    from_email: str, subject: str, body: str, reply_to: str | None = None
+) -> dict[str, str]:
+    """
+    Forward an inbound email received via Resend webhook to CONTACT_TO.
+
+    Args:
+        from_email: Original sender's email address.
+        subject: Email subject line.
+        body: Email body (text or HTML).
+        reply_to: Optional reply-to address.
+
+    Returns:
+        dict: Success message.
+
+    Raises:
+        HTTPException: If forwarding fails.
+    """
+    log_context = {
+        "from_email": from_email,
+        "subject": subject,
+        "operation": "forward_inbound_email",
+        "request_id": request_id_ctx_var.get(),
+    }
+
+    try:
+        with log_timing("email_forward_inbound", request_id=log_context["request_id"]):
+            forwarded_body = f"""Forwarded message from: {from_email}
+Subject: {subject}
+Received: {datetime.now(timezone.utc).isoformat()}
+
+--- Original Message ---
+
+{body}
+"""
+
+            params: Emails.SendParams = {
+                "from": settings.CONTACT_FROM,
+                "to": settings.CONTACT_TO,
+                "reply_to": reply_to or from_email,
+                "subject": f"[Fwd] {subject}",
+                "text": forwarded_body,
+            }
+
+            response = resend.Emails.send(params)
+            logger.info(
+                "Inbound email forwarded successfully",
+                email_id=response.get("id"),
+                **log_context,
+            )
+            return {"message": "Inbound email forwarded successfully"}
+
+    except resend.exceptions.ResendError as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.error(
+            "Resend API error (forward inbound)",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+            **log_context,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=EMAIL_SERVICE_UNAVAILABLE_MSG,
+        )
+    except Exception as e:
+        sanitized_error = sanitize_error_message(str(e))
+        logger.exception(
+            "Unhandled exception during inbound email forwarding",
+            error=sanitized_error,
+            error_type=type(e).__name__,
+            **log_context,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to forward inbound email",
         )
