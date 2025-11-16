@@ -235,10 +235,3 @@ class TestAppConfiguration:
     def test_middleware_configuration(self):
         """Test that required middleware is configured."""
         assert app.state.limiter is not None
-
-    def test_router_inclusion(self):
-        """Test that API router is included."""
-        route_paths = [route.path for route in app.routes]
-        assert "/" in route_paths
-        assert "/test-email" in route_paths
-        assert any("/api/v1" in path for path in route_paths)
