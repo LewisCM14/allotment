@@ -32,7 +32,7 @@
 | Server | Pytest X-Dist | 3.6.1 | Pytest plugin for distributing tests across multiple CPUs. | MIT |
 | Server | Pytest-cov | 6.0.0 | Pytest plugin for measuring code coverage. | MIT |
 | Server | Coverage | 7.9.1 | Tool for measuring code coverage of Python programs. | Apache 2.0 |
-| Server | HTTPX | 0.28.1 | Asynchronous HTTP client for Python, used for testing APIs. | BSD |
+| Server | HTTPX | 0.28.1 | Asynchronous HTTP client for Resend inbound fetches and API testing. | BSD |
 | Server | AIOSQLite | 0.21.0 | Asynchronous SQLite driver, for in-memory testing. | MIT |
 | Server | Ruff | 0.9.10 | Extremely fast Python linter and code formatter. | MIT |
 | Server | MyPy | 1.15.0 | Static type checker for Python. | MIT |

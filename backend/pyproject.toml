@@ -5,6 +5,7 @@ requires-python = "==3.13.*"
 dependencies = [
     "fastapi",
     "resend",
+    "httpx",
     "SQLAlchemy", 
     "pydantic", 
     "pydantic-settings", 
@@ -37,7 +38,6 @@ dev = [
     "types-python-jose",
     "pytest-asyncio",
     "pytest-mock",
-    "httpx",
     "aiosqlite"
 ]
 
