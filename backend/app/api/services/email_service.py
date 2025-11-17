@@ -6,7 +6,9 @@ Email Service
 """
 
 from datetime import datetime, timezone
+from textwrap import dedent
 
+import httpx
 import resend
 import structlog
 from fastapi import HTTPException, status
@@ -23,12 +25,12 @@ from app.api.middleware.logging_middleware import (
 
 logger = structlog.get_logger()
 
-# Configure Resend with API key
+# Resend config
 resend.api_key = settings.RESEND_API_KEY.get_secret_value()
+RESEND_API_BASE_URL = "https://api.resend.com"
 
 current_year = datetime.now().year
 
-# Shared constants
 EMAIL_SERVICE_UNAVAILABLE_MSG = "Email service is temporarily unavailable"
 
 
@@ -218,8 +220,59 @@ This is an automated message. Please do not reply directly to this email.
         )
 
 
+async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str | None]:
+    """Retrieve inbound email content from Resend when webhook payload lacks body."""
+
+    if not email_id:
+        return None, None
+
+    url = f"{RESEND_API_BASE_URL}/inbound/emails/{email_id}"
+    headers = {
+        "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
+        "Accept": "application/json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        logger.warning(
+            "Failed to fetch inbound email content",
+            email_id=email_id,
+            status_code=exc.response.status_code,
+            reason=exc.response.text,
+            operation="fetch_inbound_email_content",
+        )
+        return None, None
+    except httpx.HTTPError as exc:
+        logger.warning(
+            "HTTP error while fetching inbound email content",
+            email_id=email_id,
+            error=sanitize_error_message(str(exc)),
+            operation="fetch_inbound_email_content",
+        )
+        return None, None
+
+    payload = response.json()
+    text_body = payload.get("text")
+    html_body = payload.get("html")
+
+    # Some providers nest bodies under "text" -> {"body": "..."}
+    if isinstance(text_body, dict):
+        text_body = text_body.get("body")
+    if isinstance(html_body, dict):
+        html_body = html_body.get("body")
+
+    return text_body, html_body
+
+
 async def forward_inbound_email(
-    from_email: str, subject: str, body: str, reply_to: str | None = None
+    from_email: str,
+    subject: str,
+    body: str,
+    reply_to: str | None = None,
+    email_id: str | None = None,
 ) -> dict[str, str]:
     """
     Forward an inbound email received via Resend webhook to CONTACT_TO.
@@ -241,18 +294,29 @@ async def forward_inbound_email(
         "subject": subject,
         "operation": "forward_inbound_email",
         "request_id": request_id_ctx_var.get(),
+        "email_id": email_id,
     }
 
     try:
         with log_timing("email_forward_inbound", request_id=log_context["request_id"]):
-            forwarded_body = f"""Forwarded message from: {from_email}
-Subject: {subject}
-Received: {datetime.now(timezone.utc).isoformat()}
+            resolved_body = body
+            if (not resolved_body or not resolved_body.strip()) and email_id:
+                fetched_text, fetched_html = await _fetch_inbound_email_content(
+                    email_id
+                )
+                resolved_body = fetched_text or fetched_html or "(No content)"
 
---- Original Message ---
+            forwarded_body = dedent(
+                f"""
+                Forwarded message from: {from_email}
+                Subject: {subject}
+                Received: {datetime.now(timezone.utc).isoformat()}
 
-{body}
-"""
+                --- Original Message ---
+
+                {resolved_body}
+                """
+            ).strip()
 
             params: Emails.SendParams = {
                 "from": settings.CONTACT_FROM,
