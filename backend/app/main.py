@@ -184,6 +184,7 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
             subject=data.subject or "(No subject)",
             body=body,
             reply_to=data.reply_to,
+            email_id=data.email_id,
         )
         logger.info("Inbound email processed successfully", **log_context)
         return {"message": "Email forwarded"}
