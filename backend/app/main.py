@@ -178,7 +178,7 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
     logger.info("Inbound email received", **log_context)
 
     try:
-        body = data.text or data.html or "(No content)"
+        body = data.text or data.html or ""
         logger.debug(
             "Webhook body content",
             has_text=bool(data.text),
