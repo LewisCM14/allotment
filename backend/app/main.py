@@ -163,23 +163,27 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
     Receives emails sent to contact@mail.allotment.wiki and forwards them
     to the configured CONTACT_TO inbox.
     """
+    data = payload.data
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "inbound_email_webhook",
-        "from": payload.from_,
-        "to": payload.to,
-        "subject": payload.subject,
+        "event_type": payload.type,
+        "from": data.from_,
+        "to": ",".join([str(addr) for addr in data.to])
+        if isinstance(data.to, list)
+        else str(data.to),
+        "subject": data.subject,
     }
 
     logger.info("Inbound email received", **log_context)
 
     try:
-        body = payload.text or payload.html or "(No content)"
+        body = data.text or data.html or "(No content)"
         await forward_inbound_email(
-            from_email=payload.from_,
-            subject=payload.subject,
+            from_email=str(data.from_),
+            subject=data.subject or "(No subject)",
             body=body,
-            reply_to=payload.reply_to,
+            reply_to=data.reply_to,
         )
         logger.info("Inbound email processed successfully", **log_context)
         return {"message": "Email forwarded"}
