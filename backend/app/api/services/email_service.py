@@ -226,7 +226,7 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
     if not email_id:
         return None, None
 
-    url = f"{RESEND_API_BASE_URL}/inbound/emails/{email_id}"
+    url = f"{RESEND_API_BASE_URL}/emails/{email_id}"
     headers = {
         "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
         "Accept": "application/json",
@@ -255,14 +255,38 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
         return None, None
 
     payload = response.json()
+
+    logger.debug(
+        "Fetched inbound email content from API",
+        email_id=email_id,
+        payload_keys=list(payload.keys()),
+        operation="fetch_inbound_email_content",
+    )
+
+    # Resend API returns text/html directly at top level or nested
     text_body = payload.get("text")
     html_body = payload.get("html")
+
+    # Check if nested under "data"
+    if not text_body and not html_body and "data" in payload:
+        data = payload["data"]
+        text_body = data.get("text")
+        html_body = data.get("html")
 
     # Some providers nest bodies under "text" -> {"body": "..."}
     if isinstance(text_body, dict):
         text_body = text_body.get("body")
     if isinstance(html_body, dict):
         html_body = html_body.get("body")
+
+    logger.debug(
+        "Parsed email body content",
+        email_id=email_id,
+        has_text=bool(text_body),
+        has_html=bool(html_body),
+        text_preview=text_body[:100] if text_body else None,
+        operation="fetch_inbound_email_content",
+    )
 
     return text_body, html_body
 

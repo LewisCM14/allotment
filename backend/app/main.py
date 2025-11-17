@@ -179,6 +179,14 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
 
     try:
         body = data.text or data.html or "(No content)"
+        logger.debug(
+            "Webhook body content",
+            has_text=bool(data.text),
+            has_html=bool(data.html),
+            text_length=len(data.text) if data.text else 0,
+            html_length=len(data.html) if data.html else 0,
+            **log_context,
+        )
         await forward_inbound_email(
             from_email=str(data.from_),
             subject=data.subject or "(No subject)",
