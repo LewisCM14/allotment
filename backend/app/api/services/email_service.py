@@ -329,7 +329,7 @@ async def forward_inbound_email(
             response = resend.Emails.send(params)
             logger.info(
                 "Inbound email forwarded successfully",
-                email_id=response.get("id"),
+                forwarded_email_id=response.get("id"),
                 **log_context,
             )
             return {"message": "Inbound email forwarded successfully"}
