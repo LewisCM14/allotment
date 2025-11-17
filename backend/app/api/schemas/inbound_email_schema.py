@@ -6,7 +6,7 @@ Inbound Email Schema
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class InboundEmailAttachment(BaseModel):
@@ -21,28 +21,30 @@ class InboundEmailAttachment(BaseModel):
 class InboundEmailData(BaseModel):
     """Inner data object for Resend inbound events."""
 
-    from_: EmailStr  # aliased from 'from'
+    # Enable alias population for fields like `from`
+    model_config = ConfigDict(populate_by_name=True)
+
+    from_: EmailStr = Field(alias="from")
     to: list[EmailStr]
     subject: Optional[str] = None
     text: Optional[str] = None
     html: Optional[str] = None
-    cc: list[EmailStr] = []
-    bcc: list[EmailStr] = []
-    attachments: list[InboundEmailAttachment] = []
+    cc: list[EmailStr] = Field(default_factory=list)
+    bcc: list[EmailStr] = Field(default_factory=list)
+    attachments: list[InboundEmailAttachment] = Field(default_factory=list)
     message_id: Optional[str] = None
     email_id: Optional[str] = None
     reply_to: Optional[str] = None
     created_at: Optional[datetime] = None
-
-    class Config:
-        populate_by_name = True
-        fields = {"from_": {"alias": "from"}}
 
 
 class InboundEmailPayload(BaseModel):
     """
     Resend inbound webhook payload envelope.
     """
+
+    # Also allow name/alias population at the envelope level (future-proofing)
+    model_config = ConfigDict(populate_by_name=True)
 
     type: str  # e.g. "email.received"
     created_at: Optional[datetime] = None
