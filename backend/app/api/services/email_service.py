@@ -232,6 +232,13 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
         "Accept": "application/json",
     }
 
+    logger.info(
+        "Attempting to fetch inbound email content",
+        email_id=email_id,
+        url=url,
+        operation="fetch_inbound_email_content",
+    )
+
     try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             response = await client.get(url, headers=headers)
