@@ -1,12 +1,17 @@
 """
 Email Service
-- Handles sending emails through Resend API
-- Provides standard email templates
-- Centralizes email configuration
+- Outbound transactional & inbound forwarding utilities.
+- Resilient send with retry/backoff for transient Resend API failures.
+- Centralized subject normalization for forwarded emails.
 """
 
+import asyncio
+import re
+import time
+from collections import deque
 from datetime import datetime, timezone
 from textwrap import dedent
+from typing import Any, Deque, Dict, cast
 
 import httpx
 import resend
@@ -24,14 +29,135 @@ from app.api.middleware.logging_middleware import (
 )
 
 logger = structlog.get_logger()
+current_year = datetime.now().year
 
 # Resend config
 resend.api_key = settings.RESEND_API_KEY.get_secret_value()
 RESEND_API_BASE_URL = "https://api.resend.com"
 
-current_year = datetime.now().year
-
 EMAIL_SERVICE_UNAVAILABLE_MSG = "Email service is temporarily unavailable"
+
+_EMAIL_SEND_TIMESTAMPS: Deque[float] = deque()
+_EMAIL_SEND_LOCK = asyncio.Lock()
+
+JSON_MIME = "application/json"
+
+
+def _compute_delay(attempt: int, base_delay: float) -> float:
+    """Compute exponential backoff delay.
+
+    attempt: 1-based attempt counter
+    base_delay: initial delay in seconds
+    Returns float seconds to sleep
+    """
+    factor: float = 2.0 ** (attempt - 1)
+    delay: float = base_delay * factor
+    return delay
+
+
+def _is_retryable(status_code: int) -> bool:
+    return status_code == 429 or status_code >= 500
+
+
+async def _rate_limit_window(max_per_sec: int = 2) -> None:
+    async with _EMAIL_SEND_LOCK:
+        now = time.monotonic()
+        while _EMAIL_SEND_TIMESTAMPS and now - _EMAIL_SEND_TIMESTAMPS[0] > 1.0:
+            _EMAIL_SEND_TIMESTAMPS.popleft()
+        if len(_EMAIL_SEND_TIMESTAMPS) >= max_per_sec:
+            sleep_for = 1.0 - (now - _EMAIL_SEND_TIMESTAMPS[0])
+            if sleep_for > 0:
+                logger.debug(
+                    "Rate limiter sleeping before send",
+                    sleep_for=round(sleep_for, 3),
+                    operation="send_email_retry",
+                )
+                await asyncio.sleep(sleep_for)
+            now = time.monotonic()
+            while _EMAIL_SEND_TIMESTAMPS and now - _EMAIL_SEND_TIMESTAMPS[0] > 1.0:
+                _EMAIL_SEND_TIMESTAMPS.popleft()
+        _EMAIL_SEND_TIMESTAMPS.append(time.monotonic())
+
+
+def _parse_success_response(response: httpx.Response) -> Dict[str, Any]:
+    try:
+        raw_json = response.json()
+    except ValueError:
+        return {"raw": response.text}
+    if isinstance(raw_json, dict):
+        return cast(Dict[str, Any], raw_json)
+    return {"raw": raw_json}
+
+
+async def _send_email_with_retry(
+    params: Emails.SendParams,
+    max_attempts: int = 5,
+    base_delay: float = 0.5,
+) -> Dict[str, Any]:
+    """Send email via Resend with exponential backoff and simple rate limiting."""
+    await _rate_limit_window()
+
+    headers = {
+        "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
+        "Content-Type": JSON_MIME,
+        "Accept": JSON_MIME,
+    }
+    url = f"{RESEND_API_BASE_URL}/emails"
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.post(url, json=params, headers=headers)
+        except httpx.HTTPError as exc:
+            if attempt == max_attempts:
+                raise RuntimeError(f"Network error sending email: {exc}") from exc
+            delay = _compute_delay(attempt, base_delay)
+            logger.warning(
+                "Transient network error when sending email; backing off",
+                error=sanitize_error_message(str(exc)),
+                attempt=attempt,
+                next_delay=delay,
+                operation="send_email_retry",
+            )
+            await asyncio.sleep(delay)
+            continue
+
+        status_code = response.status_code
+        if status_code < 400:
+            payload = _parse_success_response(response)
+            logger.debug(
+                "Email send succeeded",
+                status_code=status_code,
+                attempt=attempt,
+                operation="send_email_retry",
+            )
+            return payload
+
+        body_preview = response.text[:300]
+        if not _is_retryable(status_code) or attempt == max_attempts:
+            logger.error(
+                "Email send failed",
+                status_code=status_code,
+                attempt=attempt,
+                body_preview=body_preview,
+                operation="send_email_retry",
+            )
+            raise RuntimeError(
+                f"Failed to send email after {attempt} attempts (status {status_code})"
+            )
+
+        delay = _compute_delay(attempt, base_delay)
+        logger.warning(
+            "Retryable email send failure",
+            status_code=status_code,
+            attempt=attempt,
+            next_delay=delay,
+            body_preview=body_preview,
+            operation="send_email_retry",
+        )
+        await asyncio.sleep(delay)
+
+    raise RuntimeError("Failed to send email (exhausted attempts)")
 
 
 async def send_verification_email(
@@ -102,8 +228,7 @@ This is an automated message. Please do not reply directly to this email.
                 "text": email_body,
             }
 
-            # Resend SDK handles async operations internally
-            response = resend.Emails.send(params)
+            response = await _send_email_with_retry(params)
 
             logger.info(
                 "Verification email sent successfully",
@@ -112,7 +237,7 @@ This is an automated message. Please do not reply directly to this email.
             )
             return {"message": "Verification email sent successfully"}
 
-    except resend.exceptions.ResendError as e:
+    except (httpx.HTTPError, RuntimeError) as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
             "Resend API error",
@@ -185,7 +310,7 @@ This is an automated message. Please do not reply directly to this email.
                 "text": email_body,
             }
 
-            response = resend.Emails.send(params)
+            response = await _send_email_with_retry(params)
 
             logger.info(
                 "Password reset email sent successfully",
@@ -194,7 +319,7 @@ This is an automated message. Please do not reply directly to this email.
             )
             return {"message": "Password reset email sent successfully"}
 
-    except resend.exceptions.ResendError as e:
+    except (httpx.HTTPError, RuntimeError) as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
             "Resend API error",
@@ -330,17 +455,22 @@ async def forward_inbound_email(
 
     try:
         with log_timing("email_forward_inbound", request_id=log_context["request_id"]):
-            resolved_body = body
-            if (not resolved_body or not resolved_body.strip()) and email_id:
-                fetched_text, fetched_html = await _fetch_inbound_email_content(
-                    email_id
-                )
-                resolved_body = fetched_text or fetched_html or "(No content)"
+            base_subject = subject or "(No subject)"
+            cleaned_subject = re.sub(r"^(?:\[Fwd\]\s*)+", "", base_subject).strip()
+            final_subject = (
+                f"[Fwd] {cleaned_subject}" if cleaned_subject else "[Fwd] (No subject)"
+            )
+
+            resolved_body = (
+                body.strip()
+                if body and body.strip()
+                else "(Email body not included in webhook - please check original message)"
+            )
 
             forwarded_body = dedent(
                 f"""
                 Forwarded message from: {from_email}
-                Subject: {subject}
+                Subject: {cleaned_subject or "(No subject)"}
                 Received: {datetime.now(timezone.utc).isoformat()}
 
                 --- Original Message ---
@@ -353,11 +483,11 @@ async def forward_inbound_email(
                 "from": settings.CONTACT_FROM,
                 "to": settings.CONTACT_TO,
                 "reply_to": reply_to or from_email,
-                "subject": f"[Fwd] {subject}",
+                "subject": final_subject,
                 "text": forwarded_body,
             }
 
-            response = resend.Emails.send(params)
+            response = await _send_email_with_retry(params)
             logger.info(
                 "Inbound email forwarded successfully",
                 forwarded_email_id=response.get("id"),
@@ -365,7 +495,7 @@ async def forward_inbound_email(
             )
             return {"message": "Inbound email forwarded successfully"}
 
-    except resend.exceptions.ResendError as e:
+    except (httpx.HTTPError, RuntimeError) as e:
         sanitized_error = sanitize_error_message(str(e))
         logger.error(
             "Resend API error (forward inbound)",

@@ -128,7 +128,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
 
 1. Create a copy of the the `.env.template` found in the `backend/app` folder and rename to `.env`
     
-    - _Update the environment variables to point at your local Postgres database as well as a GMAIL SMTP solution._
+    - _Update the environment variables to point at your local Postgres database as well as a Resend Email solution._
 
     > You can update the `APP_NAME`, `APP_VERSION` and `LOG_FILE` as desired.
 
@@ -173,9 +173,7 @@ _The project uses Postgres as its database and recommends pgAdmin4 as a manageme
 
 1. Copy the `.env.template` to the root of the `frontend` folder.
     
-    - _Rename this file to `.env.local` and reconfigure port 8000 if desired._
-
-        > In production this file is renamed to `.env`.
+    - _Rename this file to `.env` and reconfigure port 8000 if desired._
 
 1. Ensure `CORS` configuration
     
@@ -234,6 +232,7 @@ pytest -n auto --cov=app --cov-report=xml --cov-report=html --cov-report=term-mi
 --- 
 
 ## Frontend
+> The CI workflow runs Biome without the `--write` flag to detect issues without automatically fixing them.
 
 Dev Build
 
