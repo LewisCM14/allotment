@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str
 
     RESEND_API_KEY: SecretStr
+    RESEND_WEBHOOK_SECRET: SecretStr
     MAIL_FROM: str
     CONTACT_FROM: str
     CONTACT_TO: str

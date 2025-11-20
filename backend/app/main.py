@@ -3,12 +3,15 @@ Application Entrypoint
 """
 
 import atexit
+import hashlib
+import hmac
 import logging
+import secrets
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict
+from typing import AsyncGenerator, Dict, Mapping
 
 import structlog
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.core.config import settings
@@ -149,6 +152,50 @@ async def handle_log_client_error(
     return {"message": "Client error logged successfully"}
 
 
+def _extract_signature(headers: Mapping[str, str]) -> str | None:
+    return (
+        headers.get("X-Resend-Signature")
+        or headers.get("Resend-Signature")
+        or headers.get("x-resend-signature")
+    )
+
+
+async def verify_resend_signature(request: Request) -> InboundEmailPayload:
+    """Verify webhook signature (HMAC SHA256) if secret configured.
+
+    Returns parsed payload or raises HTTPException if invalid.
+    Signature format assumed: hex digest of HMAC(secret, raw_body).
+    Adjust if Resend adds timestamp or different concatenation.
+    """
+    raw_body = await request.body()
+    secret_value = (
+        settings.RESEND_WEBHOOK_SECRET.get_secret_value()
+        if settings.RESEND_WEBHOOK_SECRET
+        else None
+    )
+
+    signature = _extract_signature(request.headers)
+
+    if secret_value:
+        if not signature:
+            raise HTTPException(status_code=401, detail="Missing webhook signature")
+        computed = hmac.new(secret_value.encode(), raw_body, hashlib.sha256).hexdigest()
+        if not secrets.compare_digest(computed, signature):
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
+        logger.debug("Webhook signature verified", operation="inbound_email_webhook")
+    else:
+        logger.debug(
+            "Webhook secret not configured; skipping signature verification",
+            operation="inbound_email_webhook",
+        )
+
+    try:
+        payload = InboundEmailPayload.model_validate_json(raw_body)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}") from exc
+    return payload
+
+
 @app.post(
     "/webhooks/inbound-email",
     tags=["Webhooks"],
@@ -156,7 +203,9 @@ async def handle_log_client_error(
     summary="Resend inbound email webhook",
     description="Receives inbound emails from Resend and forwards them to CONTACT_TO",
 )
-async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
+async def handle_inbound_email(
+    payload: InboundEmailPayload = Depends(verify_resend_signature),
+) -> Dict[str, str]:
     """
     Webhook endpoint for Resend inbound emails.
 
@@ -175,6 +224,13 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
         "subject": data.subject,
     }
 
+    if payload.type != "email.received":
+        logger.info(
+            "Ignoring non-inbound email event",
+            **log_context,
+        )
+        return {"message": "Event ignored"}
+
     logger.info("Inbound email received", **log_context)
 
     try:
@@ -187,9 +243,10 @@ async def handle_inbound_email(payload: InboundEmailPayload) -> Dict[str, str]:
             html_length=len(data.html) if data.html else 0,
             **log_context,
         )
+        subject = data.subject or "(No subject)"
         await forward_inbound_email(
             from_email=str(data.from_),
-            subject=data.subject or "(No subject)",
+            subject=subject,
             body=body,
             reply_to=data.reply_to,
             email_id=data.email_id,
