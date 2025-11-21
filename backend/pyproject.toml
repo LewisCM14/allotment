@@ -20,7 +20,8 @@ dependencies = [
     "opentelemetry-api",
     "opentelemetry-sdk",
     "alembic",
-    "uvicorn"
+    "uvicorn",
+    "svix"
 ]
 
 [dependency-groups]

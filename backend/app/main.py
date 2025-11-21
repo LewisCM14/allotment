@@ -3,16 +3,14 @@ Application Entrypoint
 """
 
 import atexit
-import hashlib
-import hmac
 import logging
-import secrets
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict, Mapping
+from typing import AsyncGenerator, Dict
 
 import structlog
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from svix.webhooks import Webhook, WebhookVerificationError
 
 from app.api.core.config import settings
 from app.api.core.limiter import limiter
@@ -152,42 +150,40 @@ async def handle_log_client_error(
     return {"message": "Client error logged successfully"}
 
 
-def _extract_signature(headers: Mapping[str, str]) -> str | None:
-    return (
-        headers.get("X-Resend-Signature")
-        or headers.get("Resend-Signature")
-        or headers.get("x-resend-signature")
-    )
-
-
 async def verify_resend_signature(request: Request) -> InboundEmailPayload:
-    """Verify webhook signature (HMAC SHA256) if secret configured.
+    """Verify Resend (Svix-backed) webhook signature.
 
-    Returns parsed payload or raises HTTPException if invalid.
-    Signature format assumed: hex digest of HMAC(secret, raw_body).
-    Adjust if Resend adds timestamp or different concatenation.
+    Always requires `RESEND_WEBHOOK_SECRET` to be configured. Raises 500 if missing,
+    401 if signature absent/invalid, 400 if payload invalid.
     """
     raw_body = await request.body()
-    secret_value = (
-        settings.RESEND_WEBHOOK_SECRET.get_secret_value()
-        if settings.RESEND_WEBHOOK_SECRET
-        else None
-    )
 
-    signature = _extract_signature(request.headers)
-
-    if secret_value:
-        if not signature:
-            raise HTTPException(status_code=401, detail="Missing webhook signature")
-        computed = hmac.new(secret_value.encode(), raw_body, hashlib.sha256).hexdigest()
-        if not secrets.compare_digest(computed, signature):
-            raise HTTPException(status_code=401, detail="Invalid webhook signature")
-        logger.debug("Webhook signature verified", operation="inbound_email_webhook")
-    else:
-        logger.debug(
-            "Webhook secret not configured; skipping signature verification",
-            operation="inbound_email_webhook",
+    if not settings.RESEND_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=500,
+            detail="Webhook secret not configured; cannot verify inbound email",
         )
+    secret_value = settings.RESEND_WEBHOOK_SECRET.get_secret_value()
+
+    svix_headers = {
+        "svix-id": request.headers.get("svix-id", ""),
+        "svix-timestamp": request.headers.get("svix-timestamp", ""),
+        "svix-signature": request.headers.get("svix-signature", ""),
+    }
+
+    if not svix_headers["svix-signature"]:
+        raise HTTPException(status_code=401, detail="Missing webhook signature")
+
+    try:
+        wh = Webhook(secret_value)
+        wh.verify(raw_body, svix_headers)
+        logger.debug(
+            "Svix webhook signature verified",
+            operation="inbound_email_webhook",
+            svix_id=svix_headers.get("svix-id"),
+        )
+    except WebhookVerificationError:
+        raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     try:
         payload = InboundEmailPayload.model_validate_json(raw_body)

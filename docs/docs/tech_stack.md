@@ -24,6 +24,7 @@
 | Server | email-validator | 2.2.0 | Library for validating email addresses. | BSD | 
 | Server | slowapi | 0.1.9 | Rate limiting extension for Starlette and FastAPI. | MIT |
 | Server | uvicorn | 0.34.0 | ASGI server for running Python web applications. | BSD |
+| Server | Svix | 1.81.0 | Webhook delivery and signature verification (used by Resend) | MIT |
 | Server | opentelemetry-api | 1.32.0 | API for OpenTelemetry, enabling application observability. | Apache 2.0 |
 | Server | opentelemetry-sdk | 1.32.0 | SDK for OpenTelemetry, providing instrumentation capabilities. | Apache 2.0 |
 | Server | Pytest | 8.3.5 | Testing framework for Python. | MIT |
