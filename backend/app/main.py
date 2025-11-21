@@ -24,6 +24,7 @@ from app.api.middleware.logging_middleware import (
 from app.api.schemas.client_error_schema import ClientErrorLog
 from app.api.schemas.inbound_email_schema import InboundEmailPayload
 from app.api.services.email_service import (
+    _fetch_inbound_email_content,
     forward_inbound_email,
 )
 from app.api.v1 import router as api_router
@@ -230,11 +231,22 @@ async def handle_inbound_email(
     logger.info("Inbound email received", **log_context)
 
     try:
-        body = data.text or data.html or ""
+        if not data.text and not data.html and data.email_id:
+            logger.debug(
+                "Body missing from webhook; fetching via API",
+                email_id=data.email_id,
+                **log_context,
+            )
+            text_body, html_body = await _fetch_inbound_email_content(data.email_id)
+            body = text_body or html_body or ""
+        else:
+            body = data.text or data.html or ""
+
         logger.debug(
             "Webhook body content",
             has_text=bool(data.text),
             has_html=bool(data.html),
+            body_length=len(body),
             text_length=len(data.text) if data.text else 0,
             html_length=len(data.html) if data.html else 0,
             **log_context,
