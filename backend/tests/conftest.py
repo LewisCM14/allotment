@@ -122,7 +122,7 @@ async def client_fixture():
 def prevent_real_emails(monkeypatch):
     """Prevent real emails from being sent during tests."""
     # Override mail settings
-    monkeypatch.setenv("RESEND_API_KEY", "re_test_key_1234567890")
+    monkeypatch.setenv("RESEND_API_KEY_SEND", "re_test_key_1234567890")
     monkeypatch.setenv("MAIL_FROM", "test@resend.dev")
 
     # Mock Resend API

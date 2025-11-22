@@ -32,7 +32,7 @@ logger = structlog.get_logger()
 current_year = datetime.now().year
 
 # Resend config
-resend.api_key = settings.RESEND_API_KEY.get_secret_value()
+resend.api_key = settings.RESEND_API_KEY_SEND.get_secret_value()
 RESEND_API_BASE_URL = "https://api.resend.com"
 
 EMAIL_SERVICE_UNAVAILABLE_MSG = "Email service is temporarily unavailable"
@@ -98,7 +98,7 @@ async def _send_email_with_retry(
     await _rate_limit_window()
 
     headers = {
-        "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
+        "Authorization": f"Bearer {settings.RESEND_API_KEY_SEND.get_secret_value()}",
         "Content-Type": JSON_MIME,
         "Accept": JSON_MIME,
     }
@@ -353,7 +353,7 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
 
     url = f"{RESEND_API_BASE_URL}/emails/receiving/{email_id}"
     headers = {
-        "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
+        "Authorization": f"Bearer {settings.RESEND_API_KEY_READ.get_secret_value()}",
         "Accept": "application/json",
     }
 
