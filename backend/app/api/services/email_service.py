@@ -388,10 +388,10 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
 
     payload = response.json()
 
-    logger.debug(
+    logger.info(
         "Fetched inbound email content from API",
         email_id=email_id,
-        payload_keys=list(payload.keys()),
+        payload=payload,
         operation="fetch_inbound_email_content",
     )
 
@@ -402,14 +402,19 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
     # Check if nested under "data"
     if not text_body and not html_body and "data" in payload:
         data = payload["data"]
-        text_body = data.get("text")
-        html_body = data.get("html")
+        if isinstance(data, dict):
+            text_body = data.get("text")
+            html_body = data.get("html")
 
     # Some providers nest bodies under "text" -> {"body": "..."}
     if isinstance(text_body, dict):
         text_body = text_body.get("body")
     if isinstance(html_body, dict):
         html_body = html_body.get("body")
+
+    if not text_body and not html_body:
+        # Fallback: check for 'body' or 'raw' fields
+        text_body = payload.get("body") or payload.get("raw")
 
     logger.debug(
         "Parsed email body content",
