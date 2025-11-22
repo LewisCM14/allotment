@@ -269,13 +269,14 @@ export default function UserAllotmentPresenter({
 					{error && <FormError message={error} className="mb-4" />}
 				</div>
 			</CardContent>
-			<CardFooter className="flex justify-between">
-				<div />
+			<CardFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-2">
+				<div className="hidden sm:block" />
 				{isEditing && (
-					<div className="flex items-center gap-2">
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
 						<Button
 							variant="outline"
 							size="sm"
+							className="w-full sm:w-auto"
 							onClick={onCancel}
 							disabled={isSaving}
 						>
@@ -284,9 +285,9 @@ export default function UserAllotmentPresenter({
 						</Button>
 						<Button
 							size="sm"
+							className="w-full sm:w-auto text-white"
 							onClick={onSave}
 							disabled={isSaving}
-							className="text-white"
 						>
 							{isSaving ? (
 								<>

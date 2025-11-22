@@ -146,11 +146,11 @@ export default function UserProfilePresenter({
 					)}
 				</div>
 			</CardContent>
-			<CardFooter className="flex justify-between">
+			<CardFooter className="flex flex-col sm:flex-row sm:justify-between gap-3 sm:gap-2">
 				<Button
 					variant="outline"
 					size="sm"
-					className="flex items-center gap-2"
+					className="flex items-center gap-2 w-full sm:w-auto"
 					onClick={onRefreshStatus}
 					disabled={isRefreshing}
 				>
@@ -166,17 +166,23 @@ export default function UserProfilePresenter({
 				</Button>
 
 				{isEditing && (
-					<div className="flex items-center gap-2">
+					<div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
 						<Button
 							variant="outline"
 							size="sm"
+							className="w-full sm:w-auto"
 							onClick={onCancel}
 							disabled={isSaving}
 						>
 							<X className="h-4 w-4 mr-1" />
 							Cancel
 						</Button>
-						<Button size="sm" onClick={onSave} disabled={isSaving}>
+						<Button
+							size="sm"
+							className="w-full sm:w-auto text-white"
+							onClick={onSave}
+							disabled={isSaving}
+						>
 							{isSaving ? (
 								<>
 									<Loader2 className="h-4 w-4 animate-spin mr-1" />
