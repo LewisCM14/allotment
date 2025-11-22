@@ -1,14 +1,17 @@
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from fastapi import HTTPException
 from httpx import AsyncClient
+from svix.webhooks import WebhookVerificationError
 
 from app.api.middleware.exception_handler import (
     BaseApplicationError,
     BusinessLogicError,
     ResourceNotFoundError,
 )
-from app.main import app, flush_logs
+from app.api.schemas.inbound_email_schema import InboundEmailData, InboundEmailPayload
+from app.main import app, flush_logs, handle_inbound_email, verify_resend_signature
 
 
 class TestExceptionHandlers:
@@ -235,3 +238,121 @@ class TestAppConfiguration:
     def test_middleware_configuration(self):
         """Test that required middleware is configured."""
         assert app.state.limiter is not None
+
+
+@pytest.mark.asyncio
+class TestWebhookVerification:
+    async def test_verify_resend_signature_success(self):
+        mock_request = MagicMock()
+        mock_request.body = AsyncMock(
+            return_value=b'{"type": "email.received", "data": {"from": "test@example.com", "to": ["me@example.com"]}}'
+        )
+        mock_request.headers = {
+            "svix-id": "msg_123",
+            "svix-timestamp": "1234567890",
+            "svix-signature": "v1,signature",
+        }
+
+        with patch("app.main.settings") as mock_settings:
+            mock_settings.RESEND_WEBHOOK_SECRET.get_secret_value.return_value = (
+                "whsec_secret"
+            )
+
+            with patch("app.main.Webhook") as mock_webhook:
+                mock_webhook_instance = MagicMock()
+                mock_webhook.return_value = mock_webhook_instance
+
+                payload = await verify_resend_signature(mock_request)
+                assert payload.type == "email.received"
+                mock_webhook_instance.verify.assert_called_once()
+
+    async def test_verify_resend_signature_missing_secret(self):
+        mock_request = MagicMock()
+        mock_request.body = AsyncMock(return_value=b"{}")
+
+        with patch("app.main.settings") as mock_settings:
+            mock_settings.RESEND_WEBHOOK_SECRET = None
+
+            with pytest.raises(HTTPException) as exc:
+                await verify_resend_signature(mock_request)
+            assert exc.value.status_code == 500
+
+    async def test_verify_resend_signature_invalid_signature(self):
+        mock_request = MagicMock()
+        mock_request.body = AsyncMock(return_value=b"{}")
+        mock_request.headers = {
+            "svix-id": "msg_123",
+            "svix-timestamp": "1234567890",
+            "svix-signature": "v1,bad_signature",
+        }
+
+        with patch("app.main.settings") as mock_settings:
+            mock_settings.RESEND_WEBHOOK_SECRET.get_secret_value.return_value = (
+                "whsec_secret"
+            )
+
+            with patch("app.main.Webhook") as mock_webhook:
+                mock_webhook_instance = MagicMock()
+                mock_webhook_instance.verify.side_effect = WebhookVerificationError
+                mock_webhook.return_value = mock_webhook_instance
+
+                with pytest.raises(HTTPException) as exc:
+                    await verify_resend_signature(mock_request)
+                assert exc.value.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestHandleInboundEmail:
+    async def test_handle_inbound_email_success(self):
+        payload = InboundEmailPayload(
+            type="email.received",
+            data=InboundEmailData(
+                from_="sender@example.com",
+                to=["recipient@example.com"],
+                subject="Test Subject",
+                text="Test Body",
+            ),
+        )
+
+        with patch(
+            "app.main.forward_inbound_email", new_callable=AsyncMock
+        ) as mock_forward:
+            mock_forward.return_value = {"message": "Email forwarded"}
+
+            result = await handle_inbound_email(payload)
+            assert result == {"message": "Email forwarded"}
+            mock_forward.assert_called_once()
+
+    async def test_handle_inbound_email_ignored_event(self):
+        payload = InboundEmailPayload(
+            type="email.delivered",  # Not email.received
+            data=InboundEmailData(
+                from_="sender@example.com", to=["recipient@example.com"]
+            ),
+        )
+
+        result = await handle_inbound_email(payload)
+        assert result == {"message": "Event ignored"}
+
+    async def test_handle_inbound_email_fetch_body(self):
+        payload = InboundEmailPayload(
+            type="email.received",
+            data=InboundEmailData(
+                from_="sender@example.com",
+                to=["recipient@example.com"],
+                email_id="email_123",
+            ),
+        )
+
+        with patch(
+            "app.main._fetch_inbound_email_content", new_callable=AsyncMock
+        ) as mock_fetch:
+            mock_fetch.return_value = ("Fetched Body", None)
+            with patch(
+                "app.main.forward_inbound_email", new_callable=AsyncMock
+            ) as mock_forward:
+                await handle_inbound_email(payload)
+
+                mock_fetch.assert_called_with("email_123")
+                mock_forward.assert_called_once()
+                assert mock_forward.call_args[1]["body"] == "Fetched Body"
