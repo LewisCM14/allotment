@@ -351,7 +351,7 @@ async def _fetch_inbound_email_content(email_id: str) -> tuple[str | None, str |
     if not email_id:
         return None, None
 
-    url = f"{RESEND_API_BASE_URL}/emails/{email_id}"
+    url = f"{RESEND_API_BASE_URL}/emails/receiving/{email_id}"
     headers = {
         "Authorization": f"Bearer {settings.RESEND_API_KEY.get_secret_value()}",
         "Accept": "application/json",
