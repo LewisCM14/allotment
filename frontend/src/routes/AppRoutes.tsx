@@ -1,5 +1,4 @@
-import { SuspenseSpinnerFallback } from "../components/ui/LoadingSpinner";
-import React, { Suspense } from "react";
+import React from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
@@ -43,124 +42,113 @@ const PublicGrowGuidesPage = React.lazy(
 
 const AppRoutes = () => {
 	return (
-		<Suspense fallback={<SuspenseSpinnerFallback size="lg" delay={150} />}>
-			<Routes>
-				{/* Public routes - only for non-authenticated users */}
-				<Route
-					path="/login"
-					element={
-						<PublicRoute>
-							<LoginForm />
-						</PublicRoute>
-					}
-				/>
-				<Route
-					path="/register"
-					element={
-						<PublicRoute>
-							<RegisterForm />
-						</PublicRoute>
-					}
-				/>
-				<Route
-					path="/reset-password"
-					element={
-						<PublicRoute>
-							<ResetPassword />
-						</PublicRoute>
-					}
-				/>
-				<Route
-					path="/set-new-password"
-					element={
-						<PublicRoute>
-							<SetNewPassword />
-						</PublicRoute>
-					}
-				/>
+		<Routes>
+			{/* Public routes - only for non-authenticated users */}
+			<Route
+				path="/login"
+				element={
+					<PublicRoute>
+						<LoginForm />
+					</PublicRoute>
+				}
+			/>
+			<Route
+				path="/register"
+				element={
+					<PublicRoute>
+						<RegisterForm />
+					</PublicRoute>
+				}
+			/>
+			<Route
+				path="/reset-password"
+				element={
+					<PublicRoute>
+						<ResetPassword />
+					</PublicRoute>
+				}
+			/>
+			<Route
+				path="/set-new-password"
+				element={
+					<PublicRoute>
+						<SetNewPassword />
+					</PublicRoute>
+				}
+			/>
 
-				{/* Protected routes - only for authenticated users */}
-				<Route
-					path="/profile"
-					element={
-						<ProtectedRoute>
-							<UserProfile />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/"
-					element={
-						<ProtectedRoute>
-							<TodoPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/botanical_groups"
-					element={
-						<ProtectedRoute>
-							<BotanicalGroupsPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/family/:familyId"
-					element={
-						<ProtectedRoute>
-							<FamilyInfoPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/allotment"
-					element={
-						<ProtectedRoute>
-							<AllotmentPage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/preferences"
-					element={
-						<ProtectedRoute>
-							<UserPreference />
-						</ProtectedRoute>
-					}
-				/>
-				<Route path="/public/grow-guides" element={<PublicGrowGuidesPage />} />
-				<Route path="/public-guides" element={<PublicGrowGuidesPage />} />
-				<Route
-					path="/grow-guides"
-					element={
-						<ProtectedRoute>
-							<GrowGuidePage />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/grow-guides/:varietyId"
-					element={
-						<ProtectedRoute>
-							<GrowGuidePage />
-						</ProtectedRoute>
-					}
-				/>
+			{/* Protected routes - only for authenticated users */}
+			<Route
+				path="/profile"
+				element={
+					<ProtectedRoute>
+						<UserProfile />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/"
+				element={
+					<ProtectedRoute>
+						<TodoPage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/botanical_groups"
+				element={
+					<ProtectedRoute>
+						<BotanicalGroupsPage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/family/:familyId"
+				element={
+					<ProtectedRoute>
+						<FamilyInfoPage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/allotment"
+				element={
+					<ProtectedRoute>
+						<AllotmentPage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/preferences"
+				element={
+					<ProtectedRoute>
+						<UserPreference />
+					</ProtectedRoute>
+				}
+			/>
+			<Route path="/public/grow-guides" element={<PublicGrowGuidesPage />} />
+			<Route path="/public-guides" element={<PublicGrowGuidesPage />} />
+			<Route
+				path="/grow-guides"
+				element={
+					<ProtectedRoute>
+						<GrowGuidePage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route
+				path="/grow-guides/:varietyId"
+				element={
+					<ProtectedRoute>
+						<GrowGuidePage />
+					</ProtectedRoute>
+				}
+			/>
+			<Route path="/verify-email" element={<EmailVerificationPage />} />
 
-				{/* Page Not Found */}
-				<Route
-					path="*"
-					element={
-						<Suspense fallback={<div>Loading Not Found...</div>}>
-							<NotFound />
-						</Suspense>
-					}
-				/>
-
-				{/* Verify Email */}
-				<Route path="/verify-email" element={<EmailVerificationPage />} />
-			</Routes>
-		</Suspense>
+			{/* Page Not Found */}
+			<Route path="*" element={<NotFound />} />
+		</Routes>
 	);
 };
 

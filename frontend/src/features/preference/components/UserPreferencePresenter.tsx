@@ -118,7 +118,7 @@ export default function UserPreferencePresenter({
 
 					{isSaving && (
 						<div className="mt-4 text-center">
-							<Button disabled size="sm">
+							<Button disabled size="sm" className="text-white">
 								Saving...
 							</Button>
 						</div>

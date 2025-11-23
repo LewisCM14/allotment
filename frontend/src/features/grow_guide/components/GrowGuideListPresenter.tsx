@@ -1,5 +1,5 @@
 import type { VarietyList } from "../services/growGuideService";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Leaf, Eye, EyeOff, Trash2 } from "lucide-react";
 import { SearchField } from "@/components/ui/SearchField";
 import { Switch } from "@/components/ui/Switch";
@@ -139,29 +139,8 @@ export const GrowGuideListPresenter = ({
 		);
 	};
 
-	if (isLoading) {
-		return (
-			<div className="space-y-4">
-				<Skeleton className="h-8 w-1/4" />
-				<div className="space-y-2">
-					{["a", "b", "c", "d", "e", "f"].map((id) => (
-						<div
-							key={id}
-							className="flex items-center gap-4 p-3 border rounded-md bg-card"
-						>
-							<Skeleton className="h-8 w-8 rounded" />
-							<Skeleton className="h-8 w-8 rounded" />
-							<div className="flex-1 space-y-2">
-								<Skeleton className="h-4 w-1/3" />
-								<Skeleton className="h-3 w-1/4" />
-							</div>
-							<Skeleton className="h-5 w-12 rounded" />
-						</div>
-					))}
-				</div>
-			</div>
-		);
-	}
+	if (isLoading)
+		return <LoadingSpinner size="lg" label="Loading grow guides" />;
 
 	if (isError) {
 		return (

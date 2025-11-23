@@ -9,7 +9,7 @@ import {
 	AccordionTrigger,
 } from "@/components/ui/Accordion";
 // We prefer a simpler list look here to mirror the Botanical Groups presentation
-import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
 import { useMemo, useState, type ReactNode } from "react";
 import {
@@ -89,20 +89,7 @@ const PublicGrowGuides = () => {
 	// Extract nested ternary into an independent statement for readability
 	let content: ReactNode;
 	if (isLoading) {
-		content = (
-			<div className="space-y-4">
-				<Skeleton className="h-6 w-1/4" />
-				{["sk-a", "sk-b", "sk-c", "sk-d", "sk-e", "sk-f"].map((id) => (
-					<div
-						key={id}
-						className="p-3 border rounded bg-card flex items-center gap-3"
-					>
-						<Skeleton className="h-4 w-1/3" />
-						<Skeleton className="h-8 w-24 rounded" />
-					</div>
-				))}
-			</div>
-		);
+		content = <LoadingSpinner size="lg" label="Loading public grow guides" />;
 	} else if (isError) {
 		content = (
 			<div className="text-center py-10">
