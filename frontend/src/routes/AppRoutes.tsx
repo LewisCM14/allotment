@@ -151,9 +151,7 @@ const AppRoutes = () => {
 				<Route
 					path="*"
 					element={
-						<Suspense fallback={<div>Loading Not Found...</div>}>
-							<NotFound />
-						</Suspense>
+						<NotFound />
 					}
 				/>
 
