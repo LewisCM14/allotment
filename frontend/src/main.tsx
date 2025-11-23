@@ -1,5 +1,5 @@
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { StrictMode, Suspense, lazy, useEffect } from "react";
+import { Suspense, lazy, useEffect, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./global.css";
 import { ThemeProvider } from "./store/theme/ThemeProvider";
@@ -48,17 +48,15 @@ function Main() {
 		}
 	}, []);
 
-	return (
-		<StrictMode>
-			<ThemeProvider>
-				<Suspense
-					fallback={<LoadingSpinner size="lg" fullScreen delay={150} />}
-				>
-					<App />
-				</Suspense>
-			</ThemeProvider>
-		</StrictMode>
+	const appContent = (
+		<ThemeProvider>
+			<Suspense fallback={<LoadingSpinner size="lg" fullScreen />}> 
+				<App />
+			</Suspense>
+		</ThemeProvider>
 	);
+
+	return import.meta.env.DEV ? <StrictMode>{appContent}</StrictMode> : appContent;
 }
 
 const rootElement = document.getElementById("root");

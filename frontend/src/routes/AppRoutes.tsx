@@ -1,5 +1,4 @@
-import { SuspenseSpinnerFallback } from "../components/ui/LoadingSpinner";
-import React, { Suspense } from "react";
+import React from "react";
 import { Route, Routes } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import PublicRoute from "./PublicRoute";
@@ -43,8 +42,7 @@ const PublicGrowGuidesPage = React.lazy(
 
 const AppRoutes = () => {
 	return (
-		<Suspense fallback={<SuspenseSpinnerFallback size="lg" delay={150} />}>
-			<Routes>
+		<Routes>
 				{/* Public routes - only for non-authenticated users */}
 				<Route
 					path="/login"
@@ -146,6 +144,7 @@ const AppRoutes = () => {
 						</ProtectedRoute>
 					}
 				/>
+				<Route path="/verify-email" element={<EmailVerificationPage />} />
 
 				{/* Page Not Found */}
 				<Route
@@ -154,11 +153,7 @@ const AppRoutes = () => {
 						<NotFound />
 					}
 				/>
-
-				{/* Verify Email */}
-				<Route path="/verify-email" element={<EmailVerificationPage />} />
-			</Routes>
-		</Suspense>
+		</Routes>
 	);
 };
 
