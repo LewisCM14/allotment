@@ -147,7 +147,7 @@ describe("Todo Page", () => {
 		expect(screen.getByText("15/05 - 21/05")).toBeInTheDocument();
 	});
 
-	it("shows loading skeletons while fetching data", async () => {
+	it("shows loading spinner while fetching data", async () => {
 		server.use(
 			http.get(buildUrl("/todos/weekly"), async () => {
 				await new Promise((r) => setTimeout(r, 100));
@@ -156,8 +156,8 @@ describe("Todo Page", () => {
 		);
 
 		renderWithRouter(<Todo />);
-		const skeletons = document.querySelectorAll('[data-slot="skeleton"]');
-		expect(skeletons.length).toBeGreaterThan(0);
+		// Expect the loading spinner (aria-label provided in component)
+		expect(screen.getByLabelText(/loading tasks/i)).toBeInTheDocument();
 		// allow request to resolve to avoid leaking async
 		await screen.findByText("Week 20");
 	});

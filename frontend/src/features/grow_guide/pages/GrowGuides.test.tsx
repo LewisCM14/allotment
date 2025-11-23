@@ -252,7 +252,7 @@ describe("GrowGuideListPresenter", () => {
 	};
 
 	describe("Loading State", () => {
-		it("displays loading skeleton when isLoading is true", () => {
+		it("displays loading spinner when isLoading is true", () => {
 			renderWithQueryClient(
 				<GrowGuideListPresenter
 					growGuides={[]}
@@ -262,9 +262,7 @@ describe("GrowGuideListPresenter", () => {
 				/>,
 			);
 
-			expect(
-				document.querySelectorAll('[data-slot="skeleton"]').length > 0,
-			).toBe(true);
+			expect(screen.getByLabelText(/loading grow guides/i)).toBeInTheDocument();
 		});
 
 		it("does not show content when loading", () => {
@@ -1012,7 +1010,7 @@ describe("GrowGuideListContainer", () => {
 	};
 
 	describe("Data Loading", () => {
-		it("shows loading state while fetching grow guides", async () => {
+		it("shows loading spinner while fetching grow guides", async () => {
 			// Mock loading state initially
 			vi.mocked(useUserGrowGuides).mockReturnValue({
 				data: undefined,
@@ -1045,10 +1043,8 @@ describe("GrowGuideListContainer", () => {
 
 			renderWithQueryClient(<GrowGuideListContainer onSelect={mockOnSelect} />);
 
-			// Should show loading state initially
-			expect(
-				document.querySelector('[data-slot="skeleton"]'),
-			).toBeInTheDocument();
+			// Should show loading spinner initially
+			expect(screen.getByLabelText(/loading grow guides/i)).toBeInTheDocument();
 		});
 
 		it("displays grow guides when data loads successfully", async () => {
