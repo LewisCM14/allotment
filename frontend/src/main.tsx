@@ -50,13 +50,17 @@ function Main() {
 
 	const appContent = (
 		<ThemeProvider>
-			<Suspense fallback={<LoadingSpinner size="lg" fullScreen />}> 
+			<Suspense fallback={<LoadingSpinner size="lg" fullScreen />}>
 				<App />
 			</Suspense>
 		</ThemeProvider>
 	);
 
-	return import.meta.env.DEV ? <StrictMode>{appContent}</StrictMode> : appContent;
+	return import.meta.env.DEV ? (
+		<StrictMode>{appContent}</StrictMode>
+	) : (
+		appContent
+	);
 }
 
 const rootElement = document.getElementById("root");

@@ -3,7 +3,7 @@ import { WeekSelector } from "../components/WeekSelector";
 import { WeeklyTasksPresenter } from "../components/WeeklyTasksPresenter";
 import { DailyTasksPresenter } from "../components/DailyTasksPresenter";
 import { WelcomeEmptyState } from "../components/WelcomeEmptyState";
-import { Skeleton } from "@/components/ui/Skeleton";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { GrowGuideForm } from "../../grow_guide/forms/GrowGuideForm";
@@ -28,14 +28,7 @@ export default function TodoPage() {
 				if (isLoading) {
 					return (
 						<PageLayout>
-							<div className="space-y-6 min-w-0 w-full">
-								<div className="min-w-0 w-full">
-									<Skeleton className="h-10 w-40 sm:w-64 max-w-full mb-2" />
-									<Skeleton className="h-6 w-full sm:w-96 max-w-full" />
-								</div>
-								<Skeleton className="h-24 w-full" />
-								<Skeleton className="h-64 w-full" />
-							</div>
+							<LoadingSpinner size="lg" label="Loading tasks" />
 						</PageLayout>
 					);
 				}
