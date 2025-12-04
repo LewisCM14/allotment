@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Button } from "@/components/ui/Button";
 import {
 	Card,
@@ -63,7 +64,7 @@ function getAreaClassName(hasData: boolean, area: number): string {
 	return `${baseClass} ${colorClass}`;
 }
 
-function PostalCodeField({
+const PostalCodeField = memo(function PostalCodeField({
 	isEditing,
 	register,
 	errors,
@@ -125,9 +126,9 @@ function PostalCodeField({
 			)}
 		</div>
 	);
-}
+});
 
-function DimensionField({
+const DimensionField = memo(function DimensionField({
 	fieldName,
 	label,
 	placeholder,
@@ -184,9 +185,9 @@ function DimensionField({
 			)}
 		</div>
 	);
-}
+});
 
-export default function UserAllotmentPresenter({
+function UserAllotmentPresenter({
 	postalCode,
 	width,
 	length,
@@ -307,3 +308,5 @@ export default function UserAllotmentPresenter({
 		</Card>
 	);
 }
+
+export default memo(UserAllotmentPresenter);

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { growGuideService } from "../../grow_guide/services/growGuideService";
 import { growGuideQueryKey } from "../../grow_guide/hooks/useGrowGuide";
 import type { WeeklyTodoRead } from "../types/todoTypes";
+import { todoService } from "../services/todoService";
 
 export type TodoContainerRenderProps = {
 	weeklyTodo: WeeklyTodoRead | undefined;
@@ -53,6 +54,27 @@ export const TodoContainer = ({ children }: TodoContainerProps) => {
 			queryFn: growGuideService.getGrowGuideOptions,
 		});
 	}, [queryClient]);
+
+	// Prefetch adjacent weeks for smoother navigation
+	useEffect(() => {
+		if (weeklyTodo?.week_number) {
+			const currentWeek = weeklyTodo.week_number;
+			const nextWeek = currentWeek === 52 ? 1 : currentWeek + 1;
+			const prevWeek = currentWeek === 1 ? 52 : currentWeek - 1;
+
+			void queryClient.prefetchQuery({
+				queryKey: ["weeklyTodo", nextWeek],
+				queryFn: () => todoService.getWeeklyTodo(nextWeek),
+				staleTime: 24 * 60 * 60 * 1000,
+			});
+
+			void queryClient.prefetchQuery({
+				queryKey: ["weeklyTodo", prevWeek],
+				queryFn: () => todoService.getWeeklyTodo(prevWeek),
+				staleTime: 24 * 60 * 60 * 1000,
+			});
+		}
+	}, [weeklyTodo, queryClient]);
 
 	const onVarietyClick = useCallback(
 		(varietyId: string) => {

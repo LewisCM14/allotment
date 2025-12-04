@@ -8,6 +8,7 @@ import {
 	MoveHorizontal,
 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { memo } from "react";
 
 interface WeeklyTasksPresenterProps {
 	sowTasks: VarietyTaskDetail[];
@@ -85,154 +86,156 @@ const TaskList = ({
 	);
 };
 
-export const WeeklyTasksPresenter = ({
-	sowTasks,
-	transplantTasks,
-	harvestTasks,
-	pruneTasks,
-	compostTasks,
-	onVarietyClick,
-}: WeeklyTasksPresenterProps) => {
-	const hasAnyTasks =
-		sowTasks.length > 0 ||
-		transplantTasks.length > 0 ||
-		harvestTasks.length > 0 ||
-		pruneTasks.length > 0 ||
-		compostTasks.length > 0;
+export const WeeklyTasksPresenter = memo(
+	({
+		sowTasks,
+		transplantTasks,
+		harvestTasks,
+		pruneTasks,
+		compostTasks,
+		onVarietyClick,
+	}: WeeklyTasksPresenterProps) => {
+		const hasAnyTasks =
+			sowTasks.length > 0 ||
+			transplantTasks.length > 0 ||
+			harvestTasks.length > 0 ||
+			pruneTasks.length > 0 ||
+			compostTasks.length > 0;
 
-	if (!hasAnyTasks) {
+		if (!hasAnyTasks) {
+			return (
+				<Card>
+					<CardContent className="pt-6">
+						<p className="text-center text-muted-foreground">
+							No weekly tasks scheduled for this week.
+						</p>
+					</CardContent>
+				</Card>
+			);
+		}
+
 		return (
-			<Card>
-				<CardContent className="pt-6">
-					<p className="text-center text-muted-foreground">
-						No weekly tasks scheduled for this week.
-					</p>
-				</CardContent>
-			</Card>
+			<div className="space-y-4">
+				{sowTasks.length > 0 && (
+					<Card>
+						<CardHeader className="flex flex-row items-center space-x-2 pb-3">
+							<Sprout className="h-5 w-5 text-primary" />
+							<CardTitle className="text-lg">Sow</CardTitle>
+							<Badge
+								variant="outline"
+								className="ml-auto bg-primary/20 text-foreground border-primary/40"
+							>
+								<Sprout className="h-3 w-3 mr-1" />
+								{sowTasks.length} Sow
+							</Badge>
+						</CardHeader>
+						<CardContent>
+							<TaskList
+								tasks={sowTasks}
+								emptyMessage="No sowing tasks"
+								tone="primary"
+								onVarietyClick={onVarietyClick}
+							/>
+						</CardContent>
+					</Card>
+				)}
+
+				{transplantTasks.length > 0 && (
+					<Card>
+						<CardHeader className="flex flex-row items-center space-x-2 pb-3">
+							<MoveHorizontal className="h-5 w-5 text-muted" />
+							<CardTitle className="text-lg">Transplant</CardTitle>
+							<Badge
+								variant="outline"
+								className="ml-auto bg-muted/20 text-foreground border-muted/40"
+							>
+								<MoveHorizontal className="h-3 w-3 mr-1" />
+								{transplantTasks.length} Transplant
+							</Badge>
+						</CardHeader>
+						<CardContent>
+							<TaskList
+								tasks={transplantTasks}
+								emptyMessage="No transplant tasks"
+								tone="muted"
+								onVarietyClick={onVarietyClick}
+							/>
+						</CardContent>
+					</Card>
+				)}
+
+				{harvestTasks.length > 0 && (
+					<Card>
+						<CardHeader className="flex flex-row items-center space-x-2 pb-3">
+							<ShoppingBasket className="h-5 w-5 text-accent" />
+							<CardTitle className="text-lg">Harvest</CardTitle>
+							<Badge
+								variant="outline"
+								className="ml-auto bg-accent/25 text-foreground border-accent/40"
+							>
+								<ShoppingBasket className="h-3 w-3 mr-1" />
+								{harvestTasks.length} Harvest
+							</Badge>
+						</CardHeader>
+						<CardContent>
+							<TaskList
+								tasks={harvestTasks}
+								emptyMessage="No harvest tasks"
+								tone="accent"
+								onVarietyClick={onVarietyClick}
+							/>
+						</CardContent>
+					</Card>
+				)}
+
+				{pruneTasks.length > 0 && (
+					<Card>
+						<CardHeader className="flex flex-row items-center space-x-2 pb-3">
+							<Scissors className="h-5 w-5 text-accent" />
+							<CardTitle className="text-lg">Prune</CardTitle>
+							<Badge
+								variant="outline"
+								className="ml-auto bg-accent/25 text-foreground border-accent/40"
+							>
+								<Scissors className="h-3 w-3 mr-1" />
+								{pruneTasks.length} Prune
+							</Badge>
+						</CardHeader>
+						<CardContent>
+							<TaskList
+								tasks={pruneTasks}
+								emptyMessage="No pruning tasks"
+								tone="accent"
+								onVarietyClick={onVarietyClick}
+							/>
+						</CardContent>
+					</Card>
+				)}
+
+				{compostTasks.length > 0 && (
+					<Card>
+						<CardHeader className="flex flex-row items-center space-x-2 pb-3">
+							<Trash2 className="h-5 w-5 text-destructive" />
+							<CardTitle className="text-lg">Compost</CardTitle>
+							<Badge
+								variant="outline"
+								className="ml-auto bg-destructive/20 text-foreground border-destructive/40"
+							>
+								<Trash2 className="h-3 w-3 mr-1" />
+								{compostTasks.length} Compost
+							</Badge>
+						</CardHeader>
+						<CardContent>
+							<TaskList
+								tasks={compostTasks}
+								emptyMessage="No compost tasks"
+								tone="destructive"
+								onVarietyClick={onVarietyClick}
+							/>
+						</CardContent>
+					</Card>
+				)}
+			</div>
 		);
-	}
-
-	return (
-		<div className="space-y-4">
-			{sowTasks.length > 0 && (
-				<Card>
-					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Sprout className="h-5 w-5 text-primary" />
-						<CardTitle className="text-lg">Sow</CardTitle>
-						<Badge
-							variant="outline"
-							className="ml-auto bg-primary/20 text-foreground border-primary/40"
-						>
-							<Sprout className="h-3 w-3 mr-1" />
-							{sowTasks.length} Sow
-						</Badge>
-					</CardHeader>
-					<CardContent>
-						<TaskList
-							tasks={sowTasks}
-							emptyMessage="No sowing tasks"
-							tone="primary"
-							onVarietyClick={onVarietyClick}
-						/>
-					</CardContent>
-				</Card>
-			)}
-
-			{transplantTasks.length > 0 && (
-				<Card>
-					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<MoveHorizontal className="h-5 w-5 text-muted" />
-						<CardTitle className="text-lg">Transplant</CardTitle>
-						<Badge
-							variant="outline"
-							className="ml-auto bg-muted/20 text-foreground border-muted/40"
-						>
-							<MoveHorizontal className="h-3 w-3 mr-1" />
-							{transplantTasks.length} Transplant
-						</Badge>
-					</CardHeader>
-					<CardContent>
-						<TaskList
-							tasks={transplantTasks}
-							emptyMessage="No transplant tasks"
-							tone="muted"
-							onVarietyClick={onVarietyClick}
-						/>
-					</CardContent>
-				</Card>
-			)}
-
-			{harvestTasks.length > 0 && (
-				<Card>
-					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<ShoppingBasket className="h-5 w-5 text-accent" />
-						<CardTitle className="text-lg">Harvest</CardTitle>
-						<Badge
-							variant="outline"
-							className="ml-auto bg-accent/25 text-foreground border-accent/40"
-						>
-							<ShoppingBasket className="h-3 w-3 mr-1" />
-							{harvestTasks.length} Harvest
-						</Badge>
-					</CardHeader>
-					<CardContent>
-						<TaskList
-							tasks={harvestTasks}
-							emptyMessage="No harvest tasks"
-							tone="accent"
-							onVarietyClick={onVarietyClick}
-						/>
-					</CardContent>
-				</Card>
-			)}
-
-			{pruneTasks.length > 0 && (
-				<Card>
-					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Scissors className="h-5 w-5 text-accent" />
-						<CardTitle className="text-lg">Prune</CardTitle>
-						<Badge
-							variant="outline"
-							className="ml-auto bg-accent/25 text-foreground border-accent/40"
-						>
-							<Scissors className="h-3 w-3 mr-1" />
-							{pruneTasks.length} Prune
-						</Badge>
-					</CardHeader>
-					<CardContent>
-						<TaskList
-							tasks={pruneTasks}
-							emptyMessage="No pruning tasks"
-							tone="accent"
-							onVarietyClick={onVarietyClick}
-						/>
-					</CardContent>
-				</Card>
-			)}
-
-			{compostTasks.length > 0 && (
-				<Card>
-					<CardHeader className="flex flex-row items-center space-x-2 pb-3">
-						<Trash2 className="h-5 w-5 text-destructive" />
-						<CardTitle className="text-lg">Compost</CardTitle>
-						<Badge
-							variant="outline"
-							className="ml-auto bg-destructive/20 text-foreground border-destructive/40"
-						>
-							<Trash2 className="h-3 w-3 mr-1" />
-							{compostTasks.length} Compost
-						</Badge>
-					</CardHeader>
-					<CardContent>
-						<TaskList
-							tasks={compostTasks}
-							emptyMessage="No compost tasks"
-							tone="destructive"
-							onVarietyClick={onVarietyClick}
-						/>
-					</CardContent>
-				</Card>
-			)}
-		</div>
-	);
-};
+	},
+);

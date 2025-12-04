@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import type { DailyTasks } from "../types/todoTypes";
 import { Droplets, Leaf } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
+import { memo } from "react";
 
 interface DailyTasksPresenterProps {
 	readonly dailyTasks: Record<number, DailyTasks>;
@@ -150,89 +151,88 @@ function getTotalFeedVarieties(feedTasks: DailyTasks["feed_tasks"]) {
 	return feedTasks.reduce((sum, feed) => sum + feed.varieties.length, 0);
 }
 
-export const DailyTasksPresenter = ({
-	dailyTasks,
-	onVarietyClick,
-}: DailyTasksPresenterProps) => {
-	// Convert dailyTasks object to sorted array
-	const sortedDays = Object.values(dailyTasks).sort(
-		(a, b) => a.day_number - b.day_number,
-	);
-
-	if (sortedDays.length === 0) {
-		return (
-			<Card>
-				<CardContent className="pt-6">
-					<p className="text-center text-muted-foreground">
-						No daily tasks scheduled for this week.
-					</p>
-				</CardContent>
-			</Card>
+export const DailyTasksPresenter = memo(
+	({ dailyTasks, onVarietyClick }: DailyTasksPresenterProps) => {
+		// Convert dailyTasks object to sorted array
+		const sortedDays = Object.values(dailyTasks).sort(
+			(a, b) => a.day_number - b.day_number,
 		);
-	}
 
-	return (
-		<div className="space-y-4">
-			{sortedDays.map((day) => {
-				const hasFeedTasks = day.feed_tasks.length > 0;
-				const hasWaterTasks = day.water_tasks.length > 0;
+		if (sortedDays.length === 0) {
+			return (
+				<Card>
+					<CardContent className="pt-6">
+						<p className="text-center text-muted-foreground">
+							No daily tasks scheduled for this week.
+						</p>
+					</CardContent>
+				</Card>
+			);
+		}
 
-				if (!hasFeedTasks && !hasWaterTasks) {
-					return null;
-				}
+		return (
+			<div className="space-y-4">
+				{sortedDays.map((day) => {
+					const hasFeedTasks = day.feed_tasks.length > 0;
+					const hasWaterTasks = day.water_tasks.length > 0;
 
-				return (
-					<Card key={day.day_id}>
-						<CardHeader className="pb-3">
-							<div className="flex items-center justify-between">
-								<CardTitle className="text-lg">{day.day_name}</CardTitle>
-								<div className="flex gap-2">
-									{hasFeedTasks && (
-										<Badge
-											variant="outline"
-											className="bg-primary/20 text-foreground border-primary/40"
-										>
-											<Leaf className="h-3 w-3 mr-1" />
-											{getTotalFeedVarieties(day.feed_tasks)} Feed
-										</Badge>
-									)}
-									{hasWaterTasks && (
-										<Badge
-											variant="outline"
-											className="bg-accent/20 text-foreground border-accent/40"
-										>
-											<Droplets className="h-3 w-3 mr-1" />
-											{day.water_tasks.length} Water
-										</Badge>
-									)}
+					if (!hasFeedTasks && !hasWaterTasks) {
+						return null;
+					}
+
+					return (
+						<Card key={day.day_id}>
+							<CardHeader className="pb-3">
+								<div className="flex items-center justify-between">
+									<CardTitle className="text-lg">{day.day_name}</CardTitle>
+									<div className="flex gap-2">
+										{hasFeedTasks && (
+											<Badge
+												variant="outline"
+												className="bg-primary/20 text-foreground border-primary/40"
+											>
+												<Leaf className="h-3 w-3 mr-1" />
+												{getTotalFeedVarieties(day.feed_tasks)} Feed
+											</Badge>
+										)}
+										{hasWaterTasks && (
+											<Badge
+												variant="outline"
+												className="bg-accent/20 text-foreground border-accent/40"
+											>
+												<Droplets className="h-3 w-3 mr-1" />
+												{day.water_tasks.length} Water
+											</Badge>
+										)}
+									</div>
 								</div>
-							</div>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							{/* Feed Tasks */}
-							{hasFeedTasks && (
-								<FeedSection
-									feedTasks={day.feed_tasks}
-									onVarietyClick={onVarietyClick}
-								/>
-							)}
+							</CardHeader>
+							<CardContent className="space-y-4">
+								{/* Feed Tasks */}
+								{hasFeedTasks && (
+									<FeedSection
+										feedTasks={day.feed_tasks}
+										onVarietyClick={onVarietyClick}
+									/>
+								)}
 
-							{/* Separator if both tasks exist */}
-							{hasFeedTasks && hasWaterTasks && (
-								<div className="border-t border-gray-200 dark:border-gray-800" />
-							)}
+								{/* Separator if both tasks exist */}
+								{hasFeedTasks && hasWaterTasks && (
+									<div className="border-t border-gray-200 dark:border-gray-800" />
+								)}
 
-							{/* Water Tasks */}
-							{hasWaterTasks && (
-								<WaterSection
-									waterTasks={day.water_tasks}
-									onVarietyClick={onVarietyClick}
-								/>
-							)}
-						</CardContent>
-					</Card>
-				);
-			})}
-		</div>
-	);
-};
+								{/* Water Tasks */}
+								{hasWaterTasks && (
+									<WaterSection
+										waterTasks={day.water_tasks}
+										onVarietyClick={onVarietyClick}
+									/>
+								)}
+							</CardContent>
+						</Card>
+					);
+				})}
+			</div>
+		);
+	},
+);

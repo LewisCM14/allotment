@@ -36,6 +36,16 @@ export default function RegisterFormContainer() {
 		window.addEventListener("online", handleOnline);
 		window.addEventListener("offline", handleOffline);
 
+		const prefetchDashboard = () => {
+			import("../../todo/pages/Todo");
+		};
+
+		if (window.requestIdleCallback) {
+			window.requestIdleCallback(prefetchDashboard);
+		} else {
+			setTimeout(prefetchDashboard, 2000);
+		}
+
 		return () => {
 			window.removeEventListener("online", handleOnline);
 			window.removeEventListener("offline", handleOffline);

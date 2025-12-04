@@ -3,7 +3,10 @@ import {
 	getUserFeedPreferences,
 	updateUserFeedPreference,
 } from "../services/PreferenceService";
-import type { IFeedPreferenceUpdateRequest } from "../forms/PreferenceSchema";
+import type {
+	IFeedPreferenceUpdateRequest,
+	UserPreferencesRead,
+} from "../forms/PreferenceSchema";
 
 // Query keys
 export const PREFERENCE_QUERY_KEYS = {
@@ -15,8 +18,8 @@ export const useUserPreferencesAggregate = () => {
 	return useQuery({
 		queryKey: PREFERENCE_QUERY_KEYS.preferences,
 		queryFn: getUserFeedPreferences,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 1000 * 60 * 60, // 1 hour
+		gcTime: 1000 * 60 * 60 * 24, // 24 hours
 	});
 };
 
@@ -32,11 +35,39 @@ export const useUpdateUserFeedPreference = () => {
 			feedId: string;
 			data: IFeedPreferenceUpdateRequest;
 		}) => updateUserFeedPreference(feedId, data),
-		onSuccess: () => {
-			// Invalidate and refetch preferences
-			queryClient.invalidateQueries({
-				queryKey: PREFERENCE_QUERY_KEYS.preferences,
-			});
+		onSuccess: (data, variables) => {
+			// Optimistically update the cache with the new preference
+			queryClient.setQueryData<UserPreferencesRead>(
+				PREFERENCE_QUERY_KEYS.preferences,
+				(oldData) => {
+					if (!oldData) return oldData;
+
+					// Find if the preference already exists
+					const existingPrefIndex = oldData.user_feed_days.findIndex(
+						(p) => p.feed_id === variables.feedId,
+					);
+
+					const newFeedDays = [...oldData.user_feed_days];
+
+					if (existingPrefIndex >= 0) {
+						// Update existing preference
+						newFeedDays[existingPrefIndex] = {
+							...newFeedDays[existingPrefIndex],
+							day_id: variables.data.day_id,
+						};
+					} else {
+						queryClient.invalidateQueries({
+							queryKey: PREFERENCE_QUERY_KEYS.preferences,
+						});
+						return oldData;
+					}
+
+					return {
+						...oldData,
+						user_feed_days: newFeedDays,
+					};
+				},
+			);
 		},
 	});
 };

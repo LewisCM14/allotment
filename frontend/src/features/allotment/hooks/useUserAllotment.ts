@@ -20,8 +20,8 @@ export const useUserAllotment = () => {
 	return useQuery<IAllotmentResponse, Error>({
 		queryKey: userAllotmentKeys.detail(),
 		queryFn: getUserAllotment,
-		staleTime: 5 * 60 * 1000, // 5 minutes - allotment data doesn't change often
-		gcTime: 10 * 60 * 1000, // 10 minutes cache time
+		staleTime: 1000 * 60 * 60, // 1 hour
+		gcTime: 1000 * 60 * 60 * 24, // 24 hours
 		retry: (failureCount, error) => {
 			// Don't retry on 404 (no allotment exists) or auth errors
 			if (error instanceof NoAllotmentFoundError) return false;
@@ -46,9 +46,6 @@ export const useCreateUserAllotment = () => {
 		onSuccess: (data: IAllotmentResponse) => {
 			// Update the cache with the new allotment
 			queryClient.setQueryData(userAllotmentKeys.detail(), data);
-
-			// Invalidate to ensure fresh data
-			queryClient.invalidateQueries({ queryKey: userAllotmentKeys.all });
 		},
 		onError: (error) => {
 			// Error handling is managed by the calling component
@@ -94,9 +91,9 @@ export const useUpdateUserAllotment = () => {
 			}
 			// Error handling is managed by the calling component
 		},
-		onSettled: () => {
-			// Always refetch after error or success to ensure we have the latest data
-			queryClient.invalidateQueries({ queryKey: userAllotmentKeys.all });
+		onSuccess: (data) => {
+			// Update the cache with the final response from the server
+			queryClient.setQueryData(userAllotmentKeys.detail(), data);
 		},
 	});
 };

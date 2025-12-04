@@ -170,40 +170,43 @@ describe("GrowGuides", () => {
 		expect(screen.getByText("Bell Pepper")).toBeInTheDocument();
 	});
 
-	it("opens form in create mode when Add New Guide is clicked", () => {
+	it("opens form in create mode when Add New Guide is clicked", async () => {
+		const user = userEvent.setup();
 		renderWithQueryClient(<GrowGuides />);
 
 		const addButton = screen.getByText("Add New Guide");
-		fireEvent.click(addButton);
+		await user.click(addButton);
 
-		expect(screen.getByText("Form is open")).toBeInTheDocument();
+		expect(await screen.findByText("Form is open")).toBeInTheDocument();
 		expect(screen.getByText("Mode: create")).toBeInTheDocument();
 		expect(screen.getByText("Variety ID: none")).toBeInTheDocument();
 	});
 
-	it("opens form in edit mode when a guide is selected", () => {
+	it("opens form in edit mode when a guide is selected", async () => {
+		const user = userEvent.setup();
 		renderWithQueryClient(<GrowGuides />);
 
 		const guideElement = screen.getByText("Cherry Tomato");
-		fireEvent.click(guideElement);
+		await user.click(guideElement);
 
-		expect(screen.getByText("Form is open")).toBeInTheDocument();
+		expect(await screen.findByText("Form is open")).toBeInTheDocument();
 		expect(screen.getByText("Mode: edit")).toBeInTheDocument();
 		expect(screen.getByText("Variety ID: variety-1")).toBeInTheDocument();
 	});
 
-	it("closes the form when close button is clicked", () => {
+	it("closes the form when close button is clicked", async () => {
+		const user = userEvent.setup();
 		renderWithQueryClient(<GrowGuides />);
 
 		// Open the form
 		const addButton = screen.getByText("Add New Guide");
-		fireEvent.click(addButton);
+		await user.click(addButton);
 
-		expect(screen.getByText("Form is open")).toBeInTheDocument();
+		expect(await screen.findByText("Form is open")).toBeInTheDocument();
 
 		// Close the form
 		const closeButton = screen.getByText("Close Form");
-		fireEvent.click(closeButton);
+		await user.click(closeButton);
 
 		expect(screen.queryByText("Form is open")).not.toBeInTheDocument();
 	});

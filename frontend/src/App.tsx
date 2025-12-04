@@ -3,19 +3,32 @@ import Header from "@/components/layouts/header/HeaderContainer";
 import { Toaster } from "@/components/ui/Sonner";
 import { cleanupViewportHeight, initViewportHeight } from "@/utils/viewport";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import { AuthProvider } from "./store/auth/AuthProvider";
+import {
+	toasterConfig,
+	getScreenSize,
+} from "@/components/layouts/layoutConfig";
 
 const queryClient = new QueryClient();
 
 function App() {
+	const [screenSize, setScreenSize] = useState(
+		getScreenSize(window.innerWidth),
+	);
+
 	useEffect(() => {
 		initViewportHeight();
 
+		const handleResize = () => setScreenSize(getScreenSize(window.innerWidth));
+		window.addEventListener("resize", handleResize);
+
 		return () => {
 			cleanupViewportHeight();
+			window.removeEventListener("resize", handleResize);
 		};
 	}, []);
 
@@ -37,8 +50,14 @@ function App() {
 						</main>
 						<Footer />
 					</div>
-					<Toaster />
+					<Toaster
+						position={toasterConfig[screenSize].position}
+						offset={toasterConfig[screenSize].offset}
+						toastOptions={{ duration: 3000 }}
+						style={{ width: toasterConfig[screenSize].width }}
+					/>
 				</AuthProvider>
+				{import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
 			</QueryClientProvider>
 		</BrowserRouter>
 	);

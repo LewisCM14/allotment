@@ -7,10 +7,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/Card";
-import CountrySelector from "@/components/ui/CountrySelector";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { Eye, EyeOff } from "lucide-react";
+import { Suspense, lazy } from "react";
 import type {
 	Control,
 	FieldErrors,
@@ -19,6 +19,8 @@ import type {
 } from "react-hook-form";
 import { Link } from "react-router-dom";
 import type { RegisterFormData } from "../forms/RegisterSchema";
+
+const CountrySelector = lazy(() => import("@/components/ui/CountrySelector"));
 
 interface RegisterFormPresenterProps {
 	readonly register: UseFormRegister<RegisterFormData>;
@@ -61,7 +63,9 @@ export default function RegisterFormPresenter({
 			</CardHeader>
 			<CardContent>
 				<form onSubmit={handleSubmit(onSubmit)}>
-					{error && <FormError message={error} className="mb-4" />}
+					<div aria-live="polite" aria-atomic="true">
+						{error && <FormError message={error} className="mb-4" />}
+					</div>
 
 					{isOffline && (
 						<div className="p-3 mb-4 text-amber-800 bg-amber-50 rounded border border-amber-200">
@@ -157,7 +161,12 @@ export default function RegisterFormPresenter({
 						{/* First Name Field */}
 						<div className="grid gap-3">
 							<Label htmlFor="first_name">First Name</Label>
-							<Input {...register("first_name")} id="first_name" type="text" />
+							<Input
+								{...register("first_name")}
+								id="first_name"
+								type="text"
+								autoComplete="given-name"
+							/>
 							{errors.first_name && (
 								<p className="text-sm text-red-500">
 									{errors.first_name.message}
@@ -167,13 +176,23 @@ export default function RegisterFormPresenter({
 
 						{/* Country Code Field */}
 						<div className="grid gap-3">
-							<CountrySelector control={control} error={errors.country_code} />
+							<Suspense
+								fallback={
+									<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+								}
+							>
+								<CountrySelector
+									control={control}
+									error={errors.country_code}
+								/>
+							</Suspense>
 						</div>
 
 						<div className="flex flex-col gap-3">
 							<Button
 								type="submit"
 								disabled={isSubmitting || isMutating || isOffline}
+								aria-disabled={isSubmitting || isMutating || isOffline}
 								className="w-full text-white"
 							>
 								{buttonText}

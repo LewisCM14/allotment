@@ -56,6 +56,7 @@ export default defineConfig({
                 "src/main.tsx",
                 "src/ServiceWorker.ts",
                 "src/App.tsx",
+                "src/wdyr.ts",
                 "coverage/**",
                 "dist/**",
                 "config/**", // All config files (vitest.setup.ts, vitest.config.ts, etc.)

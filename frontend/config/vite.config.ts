@@ -152,6 +152,21 @@ export default defineConfig(() => {
                             return 'workbox';
                         }
 
+                        // React core libraries
+                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+                            return 'react-vendor';
+                        }
+
+                        // Form handling
+                        if (id.includes('node_modules/react-hook-form/')) {
+                            return 'react-hook-form';
+                        }
+
+                        // Data fetching
+                        if (id.includes('node_modules/@tanstack/react-query/')) {
+                            return 'react-query';
+                        }
+
                         // Other node_modules - group remaining smaller libraries into vendor-misc.
                         if (id.includes('node_modules/')) {
                             const pkg = id.split('node_modules/')[1].split('/')[0];

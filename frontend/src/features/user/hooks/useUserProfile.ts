@@ -23,8 +23,8 @@ export const useUserProfile = () => {
 	return useQuery({
 		queryKey: userProfileKeys.profile(),
 		queryFn: getUserProfile,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes cache time
+		staleTime: 1000 * 60 * 60, // 1 hour
+		gcTime: 1000 * 60 * 60 * 24, // 24 hours
 		retry: (failureCount, error) => {
 			// Don't retry on auth errors
 			if (
@@ -85,10 +85,6 @@ export const useUpdateUserProfile = () => {
 		onSuccess: (data) => {
 			// Update the cache with the server response
 			queryClient.setQueryData(userProfileKeys.profile(), data);
-		},
-		onSettled: () => {
-			// Invalidate and refetch profile query
-			queryClient.invalidateQueries({ queryKey: userProfileKeys.profile() });
 		},
 	});
 };

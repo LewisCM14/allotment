@@ -4,6 +4,10 @@ import { createRoot } from "react-dom/client";
 import "./global.css";
 import { ThemeProvider } from "./store/theme/ThemeProvider";
 
+if (import.meta.env.DEV) {
+	await import("./wdyr");
+}
+
 const App = lazy(() => import("./App"));
 
 const onOfflineReady = () => {

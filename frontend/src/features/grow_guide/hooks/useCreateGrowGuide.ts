@@ -12,6 +12,7 @@ export const useCreateGrowGuide = () => {
 		onSuccess: () => {
 			// Invalidate the grow guides query to refetch the data
 			queryClient.invalidateQueries({ queryKey: ["userGrowGuides"] });
+			queryClient.invalidateQueries({ queryKey: ["weeklyTodo"] });
 		},
 	});
 };

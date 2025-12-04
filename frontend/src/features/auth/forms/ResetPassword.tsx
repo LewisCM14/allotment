@@ -87,12 +87,14 @@ export default function ResetPassword() {
 				</CardHeader>
 				<CardContent>
 					<form onSubmit={handleSubmit(onSubmit)}>
-						{error && <FormError message={error} className="mb-4" />}
-						{success && (
-							<div className="p-3 mb-4 text-green-800 bg-green-50 rounded border border-green-200">
-								<p>{success}</p>
-							</div>
-						)}
+						<div aria-live="polite" aria-atomic="true">
+							{error && <FormError message={error} className="mb-4" />}
+							{success && (
+								<output className="p-3 mb-4 text-green-800 bg-green-50 rounded border border-green-200 block">
+									<p>{success}</p>
+								</output>
+							)}
+						</div>
 
 						{isOffline && (
 							<div className="p-3 mb-4 text-amber-800 bg-amber-50 rounded border border-amber-200">
@@ -122,6 +124,7 @@ export default function ResetPassword() {
 								<Button
 									type="submit"
 									disabled={isSubmitting || isOffline}
+									aria-disabled={isSubmitting || isOffline}
 									className="w-full text-white"
 								>
 									{isSubmitting ? "Sending..." : "Send Reset Link"}

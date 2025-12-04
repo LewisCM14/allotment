@@ -2,6 +2,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import type { IFamilyInfo } from "../services/FamilyService";
 import { Link } from "react-router-dom";
+import { memo } from "react";
 
 // Types matching backend schema
 type Symptom = { symptom_id: string; symptom_name: string };
@@ -129,7 +130,7 @@ function PestList({ pests }: { pests: Pest[] }) {
 	);
 }
 
-export function FamilyInfoPresenter({
+export const FamilyInfoPresenter = memo(function FamilyInfoPresenter({
 	data,
 	isLoading,
 	error,
@@ -229,4 +230,4 @@ export function FamilyInfoPresenter({
 			</div>
 		</div>
 	);
-}
+});

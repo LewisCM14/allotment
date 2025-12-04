@@ -238,7 +238,9 @@ describe("Todo Page", () => {
 		const sowCard = sowTitle.closest('[data-slot="card"]') as HTMLElement;
 		const { findByRole: sowFind } = within(sowCard);
 		const btn = await sowFind("button", { name: /Cherry Tomato/i });
-		expect(screen.getByTestId("grow-guide-form")).toHaveTextContent("CLOSED");
+		expect(await screen.findByTestId("grow-guide-form")).toHaveTextContent(
+			"CLOSED",
+		);
 		await user.click(btn);
 		// The mocked form should now render OPEN
 		await waitFor(() => {

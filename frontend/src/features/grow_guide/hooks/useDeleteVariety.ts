@@ -51,6 +51,8 @@ export const useDeleteVariety = () => {
 			// Invalidate so list refetches and stays in sync with server
 			queryClient.invalidateQueries({ queryKey: USER_GUIDES_KEY });
 			queryClient.refetchQueries({ queryKey: USER_GUIDES_KEY });
+			// Invalidate weekly todo as a variety (potentially active) was deleted
+			queryClient.invalidateQueries({ queryKey: ["weeklyTodo"] });
 		},
 	});
 };

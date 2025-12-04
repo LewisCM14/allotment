@@ -1,4 +1,9 @@
-import { screen, waitFor, fireEvent } from "@testing-library/react";
+import {
+	screen,
+	waitFor,
+	fireEvent,
+	waitForElementToBeRemoved,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import UserPreference from "./UserPreference";
 import { useAuth } from "@/store/auth/AuthContext";
@@ -114,10 +119,11 @@ describe("UserPreferencePage", () => {
 		);
 
 		renderPage();
-		expect(screen.getByText("Feed Preferences")).toBeInTheDocument();
 
-		// Should show loading message
-		expect(screen.getByText("Loading feed preferences...")).toBeInTheDocument();
+		// Should show loading spinner
+		expect(screen.getByLabelText("Loading")).toBeInTheDocument();
+		// Should not show content yet
+		expect(screen.queryByText("Feed Preferences")).not.toBeInTheDocument();
 	});
 
 	it("renders preference form with data", async () => {
@@ -334,7 +340,7 @@ describe("UserPreferencePage", () => {
 	});
 
 	it("shows error when API call fails", async () => {
-		// Set up MSW handlers to return errors for all endpoints to trigger error state
+		// Set up MSW handlers to return error
 		server.use(
 			http.get(buildUrl("/users/preferences"), () => {
 				return HttpResponse.json(
@@ -357,24 +363,15 @@ describe("UserPreferencePage", () => {
 		);
 
 		const { container } = renderPage();
-		await waitFor(
-			() => expect(screen.getByText("Feed Preferences")).toBeInTheDocument(),
-			{ container },
-		);
 
-		// Should show error message after retries complete
-		await waitFor(
-			() => {
-				expect(
-					screen.queryByText("Loading feed preferences..."),
-				).not.toBeInTheDocument();
-			},
-			{ container, timeout: 10000 },
-		);
+		// Wait for loading spinner to disappear (after retries)
+		await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading"), {
+			timeout: 10000,
+		});
 
+		expect(screen.getByText("Feed Preferences")).toBeInTheDocument();
 		expect(screen.getByText(/failed to load data/i)).toBeInTheDocument();
 	});
-
 	it("redirects to login if not authenticated", async () => {
 		(useAuth as unknown as Mock).mockReturnValue({ isAuthenticated: false });
 		const { container } = renderPage();

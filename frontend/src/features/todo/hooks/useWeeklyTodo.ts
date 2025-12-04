@@ -10,8 +10,8 @@ export const useWeeklyTodo = (weekNumber?: number) => {
 	return useQuery({
 		queryKey: ["weeklyTodo", weekNumber],
 		queryFn: () => todoService.getWeeklyTodo(weekNumber),
-		// Keep todo data fresh for 5 minutes
-		staleTime: 5 * 60 * 1000,
+		staleTime: 24 * 60 * 60 * 1000, // 24 hours
+		gcTime: 24 * 60 * 60 * 1000, // 24 hours
 		// Refetch when window regains focus
 		refetchOnWindowFocus: true,
 	});

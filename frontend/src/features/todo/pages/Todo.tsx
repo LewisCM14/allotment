@@ -6,9 +6,15 @@ import { WelcomeEmptyState } from "../components/WelcomeEmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { GrowGuideForm } from "../../grow_guide/forms/GrowGuideForm";
 import { AppError } from "@/services/api";
 import { TodoContainer } from "../components/TodoContainer";
+import { lazy, Suspense } from "react";
+
+const GrowGuideForm = lazy(() =>
+	import("../../grow_guide/forms/GrowGuideForm").then((module) => ({
+		default: module.GrowGuideForm,
+	})),
+);
 
 export default function TodoPage() {
 	return (
@@ -158,12 +164,14 @@ export default function TodoPage() {
 							)}
 						</div>
 
-						<GrowGuideForm
-							isOpen={isGuideOpen}
-							onClose={closeGuide}
-							varietyId={selectedVarietyId ?? undefined}
-							mode={mode}
-						/>
+						<Suspense fallback={<LoadingSpinner />}>
+							<GrowGuideForm
+								isOpen={isGuideOpen}
+								onClose={closeGuide}
+								varietyId={selectedVarietyId ?? undefined}
+								mode={mode}
+							/>
+						</Suspense>
 					</PageLayout>
 				);
 			}}

@@ -53,9 +53,11 @@ const useCountryOptions = () => {
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
+		let isMounted = true;
 		const loadOptions = async () => {
 			setIsLoading(true);
 			const { getCountryOptions } = await import("@/utils/countries");
+			if (!isMounted) return;
 			const result = getCountryOptions();
 			setOptions(
 				result.map((c) => ({
@@ -68,6 +70,9 @@ const useCountryOptions = () => {
 		};
 
 		loadOptions();
+		return () => {
+			isMounted = false;
+		};
 	}, []);
 
 	return { options, isLoading };

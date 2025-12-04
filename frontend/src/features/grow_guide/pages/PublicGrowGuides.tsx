@@ -11,7 +11,7 @@ import {
 // We prefer a simpler list look here to mirror the Botanical Groups presentation
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { toast } from "sonner";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode, lazy, Suspense } from "react";
 import {
 	growGuideService,
 	type VarietyList,
@@ -19,7 +19,12 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { usePublicGrowGuides } from "../hooks/usePublicGrowGuides";
 import { useAuth } from "@/store/auth/AuthContext";
-import { GrowGuideForm } from "../forms/GrowGuideForm";
+
+const GrowGuideForm = lazy(() =>
+	import("../forms/GrowGuideForm").then((module) => ({
+		default: module.GrowGuideForm,
+	})),
+);
 
 const groupGuidesByFamily = (guides: VarietyList[]) => {
 	const groups: Record<string, VarietyList[]> = {};
@@ -171,12 +176,14 @@ const PublicGrowGuides = () => {
 				</Accordion>
 
 				{/* View-only form modal */}
-				<GrowGuideForm
-					isOpen={viewOpen}
-					onClose={() => setViewOpen(false)}
-					mode="view"
-					varietyId={viewVarietyId}
-				/>
+				<Suspense fallback={<LoadingSpinner />}>
+					<GrowGuideForm
+						isOpen={viewOpen}
+						onClose={() => setViewOpen(false)}
+						mode="view"
+						varietyId={viewVarietyId}
+					/>
+				</Suspense>
 				{data && data.length === 0 && (
 					<p className="text-muted-foreground">
 						No public guides available yet.
