@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vite -c config/vite.config.ts",
     "build": "tsc -b && vite build -c config/vite.config.ts",
-    "build:analyze": "npm run build && npx vite-bundle-analyzer dist --config config/vite.config.ts",
+    "build:analyze": "npm run build && node scripts/analyze-bundle.js",
     "lint": "npx @biomejs/biome lint --write ./src",
     "lint:unsafe": "npx @biomejs/biome lint --write --unsafe ./src",
     "format": "npx @biomejs/biome format --write ./src",
