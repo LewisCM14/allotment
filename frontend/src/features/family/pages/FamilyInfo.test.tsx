@@ -89,8 +89,29 @@ describe("FamilyInfoPage", () => {
 					{ family_id: "c2", family_name: "Pea" },
 				],
 				antagonises: [{ family_id: "a1", family_name: "Onion" }],
-				pests: ["Aphid", "Slug"],
-				diseases: ["Blight"],
+				pests: [
+					{
+						pest_id: "p1",
+						pest_name: "Aphid",
+						treatments: [],
+						preventions: [],
+					},
+					{
+						pest_id: "p2",
+						pest_name: "Slug",
+						treatments: [],
+						preventions: [],
+					},
+				],
+				diseases: [
+					{
+						disease_id: "d1",
+						disease_name: "Blight",
+						symptoms: [],
+						treatments: [],
+						preventions: [],
+					},
+				],
 			},
 			isLoading: false,
 			error: null,

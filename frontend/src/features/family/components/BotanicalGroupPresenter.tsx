@@ -1,7 +1,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { Accordion } from "@/components/ui/Accordion";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import type * as React from "react";
+import { memo } from "react";
 import { BotanicalGroupItemContainer } from "./BotanicalGroupItemContainer";
 import type { IBotanicalGroup } from "../services/FamilyService";
 
@@ -13,7 +13,7 @@ interface BotanicalGroupPresenterProps {
 	readonly onFamilyClick: (familyId: string) => void;
 }
 
-export function BotanicalGroupPresenter({
+export const BotanicalGroupPresenter = memo(function BotanicalGroupPresenter({
 	botanicalGroups,
 	isLoading,
 	error,
@@ -63,4 +63,4 @@ export function BotanicalGroupPresenter({
 			</Accordion>
 		</div>
 	);
-}
+});

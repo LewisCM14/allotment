@@ -2,14 +2,20 @@ import { PageLayout } from "../../../components/layouts/PageLayout";
 import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { Button } from "../../../components/ui/Button";
 import { Plus } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
-import { GrowGuideForm } from "../forms/GrowGuideForm";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { growGuideService } from "../services/growGuideService";
 import { growGuideQueryKey } from "../hooks/useGrowGuide";
 import { useUserGrowGuides } from "../hooks/useUserGrowGuides";
+import { LoadingSpinner } from "../../../components/ui/LoadingSpinner";
+
+const GrowGuideForm = lazy(() =>
+	import("../forms/GrowGuideForm").then((module) => ({
+		default: module.GrowGuideForm,
+	})),
+);
 
 // Keys reused across list + options
 const USER_GUIDES_KEY = ["userGrowGuides"]; // must match useUserGrowGuides hook key
@@ -114,12 +120,14 @@ const GrowGuides = () => {
 			/>
 
 			{/* Grow guide form handles create, view, edit based on props */}
-			<GrowGuideForm
-				isOpen={isFormOpen}
-				onClose={() => setIsFormOpen(false)}
-				varietyId={selectedVarietyId ?? undefined}
-				mode={mode}
-			/>
+			<Suspense fallback={<LoadingSpinner />}>
+				<GrowGuideForm
+					isOpen={isFormOpen}
+					onClose={() => setIsFormOpen(false)}
+					varietyId={selectedVarietyId ?? undefined}
+					mode={mode}
+				/>
+			</Suspense>
 		</PageLayout>
 	);
 };

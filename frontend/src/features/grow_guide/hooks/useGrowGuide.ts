@@ -13,8 +13,8 @@ export const useGrowGuide = (varietyId: string | undefined) => {
 			return growGuideService.getGrowGuide(varietyId);
 		},
 		enabled: !!varietyId,
-		// Keep cache relatively fresh to avoid stale data issues
-		staleTime: 30 * 1000, // 30 seconds
+		staleTime: 1000 * 60 * 60, // 1 hour
+		gcTime: 1000 * 60 * 60 * 24, // 24 hours
 	});
 };
 

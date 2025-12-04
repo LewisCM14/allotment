@@ -34,14 +34,14 @@ describe("SetNewPassword", () => {
 		expect(screen.getByLabelText("New Password")).toBeInTheDocument();
 		expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
 		expect(
-			screen.getByRole("button", { name: /set new password/i }),
+			screen.getByRole("button", { name: /reset password/i }),
 		).toBeInTheDocument();
 	});
 
 	it("shows validation errors for empty fields", async () => {
 		renderForm();
 		await userEvent.click(
-			screen.getByRole("button", { name: /set new password/i }),
+			screen.getByRole("button", { name: /reset password/i }),
 		);
 		// Check for the actual validation messages that appear
 		expect(
@@ -73,7 +73,7 @@ describe("SetNewPassword", () => {
 			"Password1!",
 		);
 		await userEvent.click(
-			screen.getByRole("button", { name: /set new password/i }),
+			screen.getByRole("button", { name: /reset password/i }),
 		);
 
 		expect(AuthService.resetPassword).toHaveBeenCalledWith(
@@ -93,7 +93,7 @@ describe("SetNewPassword", () => {
 			"Password1!",
 		);
 		await userEvent.click(
-			screen.getByRole("button", { name: /set new password/i }),
+			screen.getByRole("button", { name: /reset password/i }),
 		);
 
 		// Verify the service was called (proving the error occurred)

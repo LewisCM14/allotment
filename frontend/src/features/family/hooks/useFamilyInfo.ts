@@ -10,7 +10,8 @@ export function useFamilyInfo(familyId?: string) {
 			return getFamilyInfo(familyId, signal);
 		},
 		enabled: !!familyId,
-		staleTime: 1000 * 60 * 10, // 10 minutes
+		staleTime: 1000 * 60 * 60 * 24, // 24 hours
+		gcTime: 1000 * 60 * 60 * 24, // 24 hours
 		refetchOnWindowFocus: false,
 		retry: 1,
 		placeholderData: (prevData) => prevData,

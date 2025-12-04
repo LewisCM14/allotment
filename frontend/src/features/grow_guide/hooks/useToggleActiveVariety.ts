@@ -39,6 +39,9 @@ export const useToggleActiveVariety = () => {
 				}
 				return old;
 			});
+
+			// Invalidate weekly todo as active varieties have changed
+			queryClient.invalidateQueries({ queryKey: ["weeklyTodo"] });
 		},
 	});
 };

@@ -395,7 +395,7 @@ describe("UserProfile", () => {
 			});
 
 			// The country selector should be available in edit mode
-			const countrySelect = screen.getByRole("button", {
+			const countrySelect = await screen.findByRole("button", {
 				name: "Select country",
 			});
 			expect(countrySelect).toBeInTheDocument();

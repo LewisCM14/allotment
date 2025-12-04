@@ -3,6 +3,7 @@ import {
 	growGuideService,
 	type VarietyList,
 } from "../services/growGuideService";
+import { growGuideQueryKey } from "./useGrowGuide";
 
 // Keep key consistent with list fetching
 const USER_GUIDES_KEY = ["userGrowGuides"] as const;
@@ -40,9 +41,10 @@ export const useToggleVarietyPublic = () => {
 				queryClient.setQueryData(USER_GUIDES_KEY, context.previous);
 			}
 		},
-		onSuccess: () => {
+		onSuccess: (_data, { varietyId }) => {
 			// Ensure server truth wins eventually
 			queryClient.invalidateQueries({ queryKey: USER_GUIDES_KEY });
+			queryClient.invalidateQueries({ queryKey: growGuideQueryKey(varietyId) });
 		},
 	});
 };

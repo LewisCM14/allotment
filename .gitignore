@@ -20,6 +20,10 @@ app.log*
 
 # Frontend
 
+## Profiling
+frontend/scripts
+frontend/baselines
+
 ## Coverage Reports
 coverage/
 
@@ -63,5 +67,5 @@ dev/*
 .scannerwork/report-task.txt
 
 # LLM Files
-prompt.md
+prompts/*
 TODO.md

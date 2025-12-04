@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { errorMonitor } from "@/services/errorMonitoring";
 import { useAuth } from "@/store/auth/AuthContext";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
@@ -41,6 +40,16 @@ function LoginForm() {
 
 		window.addEventListener("online", handleOnline);
 		window.addEventListener("offline", handleOffline);
+
+		const prefetchDashboard = () => {
+			import("../../todo/pages/Todo");
+		};
+
+		if (window.requestIdleCallback) {
+			window.requestIdleCallback(prefetchDashboard);
+		} else {
+			setTimeout(prefetchDashboard, 2000);
+		}
 
 		return () => {
 			window.removeEventListener("online", handleOnline);
@@ -77,9 +86,6 @@ function LoginForm() {
 				setError(err.message);
 			} else {
 				setError("An unexpected error occurred. Please try again.");
-				errorMonitor.captureMessage("Login caught a non-Error throwable", {
-					errorDetails: String(err),
-				});
 			}
 		}
 	};

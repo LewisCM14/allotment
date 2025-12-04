@@ -19,7 +19,7 @@ import { Label } from "../../../components/ui/Label";
 import { Switch } from "../../../components/ui/Switch";
 import { Textarea } from "../../../components/ui/Textarea";
 import { useCreateGrowGuide } from "../hooks/useCreateGrowGuide";
-import { useGrowGuide } from "../hooks/useGrowGuide";
+import { growGuideQueryKey, useGrowGuide } from "../hooks/useGrowGuide";
 import { useGrowGuideOptions } from "../hooks/useGrowGuideOptions";
 import { growGuideService } from "../services/growGuideService";
 import {
@@ -215,7 +215,10 @@ export const GrowGuideForm = ({
 					await growGuideService.updateVariety(varietyId, formData);
 					// Invalidate list + individual detail cache
 					queryClient.invalidateQueries({ queryKey: ["userGrowGuides"] });
-					queryClient.invalidateQueries({ queryKey: ["growGuide", varietyId] });
+					queryClient.invalidateQueries({
+						queryKey: growGuideQueryKey(varietyId),
+					});
+					queryClient.invalidateQueries({ queryKey: ["weeklyTodo"] });
 					toast.success("Grow guide updated");
 				}
 

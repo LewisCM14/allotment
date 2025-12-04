@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import BotanicalGroupsPage from "./BotanicalGroups";
 import * as BotanicalGroupsHook from "../hooks/useBotanicalGroups";
 import React from "react";
@@ -71,7 +71,7 @@ describe("BotanicalGroupsPage", () => {
 		expect(screen.getByText(/group 1/i)).toBeInTheDocument();
 		// Open the accordion to reveal content
 		const trigger = screen.getByRole("button", { name: /group 1/i });
-		await trigger.click();
+		fireEvent.click(trigger);
 		expect(
 			await screen.findByText(/no families listed for this group/i),
 		).toBeInTheDocument();

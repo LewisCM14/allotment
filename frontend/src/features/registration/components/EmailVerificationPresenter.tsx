@@ -33,13 +33,20 @@ export default function EmailVerificationPresenter({
 			<CardHeader>
 				<CardTitle className="text-2xl">Email Verification</CardTitle>
 			</CardHeader>
-			<CardContent className="flex flex-col items-center text-center">
+			<CardContent
+				className="flex flex-col items-center text-center"
+				aria-live="polite"
+				aria-atomic="true"
+			>
 				{/* Verifying State */}
 				{isVerifying && (
-					<div className="flex flex-col items-center py-8 gap-4">
+					<output
+						className="flex flex-col items-center py-8 gap-4"
+						aria-label="Verifying email"
+					>
 						<Loader2 className="h-12 w-12 text-primary animate-spin" />
 						<p className="text-foreground">Verifying your email address...</p>
-					</div>
+					</output>
 				)}
 
 				{/* Success State */}
