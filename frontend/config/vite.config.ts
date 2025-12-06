@@ -41,6 +41,7 @@ export default defineConfig(() => {
                     skipWaiting: true,
                     clientsClaim: true,
                     navigateFallback: '/index.html',
+                    // JS/CSS assets are content-hashed and precached; avoid separate runtime caching
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                     runtimeCaching: [
                         {
@@ -63,13 +64,6 @@ export default defineConfig(() => {
                                     maxEntries: 60,
                                     maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
                                 },
-                            },
-                        },
-                        {
-                            urlPattern: /\.(js|css)$/,
-                            handler: 'StaleWhileRevalidate',
-                            options: {
-                                cacheName: 'static-resources',
                             },
                         },
                         {
@@ -100,18 +94,9 @@ export default defineConfig(() => {
         build: {
             sourcemap: false,
             cssCodeSplit: false,
-            minify: 'terser' as const,
-            terserOptions: {
-                compress: {
-                    drop_console: true,
-                    drop_debugger: true,
-                    pure_funcs: ['console.log', 'console.debug', 'console.info'], // Remove specific console methods
-                    passes: 2, // Multiple passes for better compression
-                },
-                mangle: {
-                    safari10: true, // Better Safari compatibility
-                },
-            },
+            // Use Vite's default esbuild minifier to avoid edge-case CJS/UMD mangling
+            minify: 'esbuild',
+            target: 'es2019',
             chunkSizeWarningLimit: 800, // Reduced from 1000 to encourage smaller chunks
             assetsInlineLimit: 4096, // Inline smaller assets as base64
             rollupOptions: {
@@ -153,7 +138,7 @@ export default defineConfig(() => {
                         }
 
                         // React core libraries
-                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/') || id.includes('node_modules/scheduler/')) {
                             return 'react-vendor';
                         }
 

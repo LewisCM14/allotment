@@ -85,12 +85,9 @@ registerRoute(
 	}),
 );
 
-// Static assets - can be cached aggressively
+// Static assets (images, styles) - allow caching; JS is precached via manifest and should not be runtime-cached
 registerRoute(
-	({ request }) =>
-		request.destination === "image" ||
-		request.destination === "style" ||
-		request.destination === "script",
+	({ request }) => request.destination === "image" || request.destination === "style",
 	new CacheFirst({
 		cacheName: "static-assets-cache",
 		plugins: [
