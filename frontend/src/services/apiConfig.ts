@@ -20,11 +20,18 @@ const getEnvVariable = (
 };
 
 // --- API URL Configuration ---
-let configuredUrl = getEnvVariable("VITE_API_URL", "http://localhost:8000"); // Default for local dev if nothing is set
+const getDefaultApiUrl = (): string => {
+	// In production, default to the production API; in development, default to localhost
+	return import.meta.env.PROD
+		? "https://api.allotment.wiki"
+		: "http://localhost:8000";
+};
+
+let configuredUrl = getEnvVariable("VITE_API_URL", getDefaultApiUrl());
 
 if (!configuredUrl) {
-	const msg =
-		"VITE_API_URL is not defined. Defaulting to 'http://localhost:8000'. Check your .env files or runtime environment configuration.";
+	const defaultUrl = getDefaultApiUrl();
+	const msg = `VITE_API_URL is not defined. Defaulting to '${defaultUrl}'. Check your .env files or runtime environment configuration.`;
 	if (import.meta.env.PROD) {
 		// Lazy import to avoid circular dependency
 		const { errorMonitor } = require("@/services/errorMonitoring");
@@ -32,7 +39,7 @@ if (!configuredUrl) {
 	} else {
 		console.warn(msg);
 	}
-	configuredUrl = "http://localhost:8000"; // Failsafe default
+	configuredUrl = defaultUrl;
 }
 
 // Automatically upgrade to HTTPS if the site is served over HTTPS but API URL is HTTP
