@@ -23,17 +23,12 @@
 </head>
 
 <body>
+  <!-- Load env-config.js synchronously before the app -->
+  <script src="/env-config.js"></script>
   <script>
-    (function () {
-      var script = document.createElement('script');
-      script.src = '/env-config.js';
-      script.onload = function () {
-        if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
-          document.title = window.envConfig.VITE_APP_TITLE;
-        }
-      };
-      document.head.appendChild(script);
-    })();
+    if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
+      document.title = window.envConfig.VITE_APP_TITLE;
+    }
   </script>
   <div id="root"></div>
   <script type="module" src="/src/main.tsx" defer></script>
