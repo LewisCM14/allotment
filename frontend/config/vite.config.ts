@@ -1,5 +1,4 @@
 import tailwindcss from '@tailwindcss/vite';
-import legacy from "@vitejs/plugin-legacy";
 import react from '@vitejs/plugin-react-swc';
 import path from 'path';
 import { defineConfig } from 'vite';
@@ -11,9 +10,7 @@ export default defineConfig(() => {
     return {
         base: './', // Ensures assets load correctly in production
         plugins: [
-            legacy({
-                targets: ['defaults', 'not IE 11'],
-            }),
+            // Removed legacy build to avoid dual bundles and runtime polyfill issues
             imagetools(),
             react(),
             tailwindcss(),
@@ -40,6 +37,9 @@ export default defineConfig(() => {
                     theme_color: "#007333",
                 },
                 workbox: {
+                    cleanupOutdatedCaches: true,
+                    skipWaiting: true,
+                    clientsClaim: true,
                     navigateFallback: '/index.html',
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                     runtimeCaching: [
