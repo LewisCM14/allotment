@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/Accordion";
 // We prefer a simpler list look here to mirror the Botanical Groups presentation
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { useMemo, useState, type ReactNode, lazy, Suspense } from "react";
 import {
 	growGuideService,
@@ -67,24 +67,24 @@ const PublicGrowGuides = () => {
 	const handleCopy = async (varietyId: string) => {
 		try {
 			if (!isAuthenticated) {
-				toast.info("Please log in to copy a guide to your account.");
+				lazyToast.info("Please log in to copy a guide to your account.");
 				return;
 			}
 			const created = await growGuideService.copyPublicVariety(varietyId);
-			toast.success(`Copied "${created.variety_name}" to your guides.`);
+			lazyToast.success(`Copied "${created.variety_name}" to your guides.`);
 			// Invalidate user guides so it appears in their list on next visit
 			await queryClient.invalidateQueries({ queryKey: ["userGrowGuides"] });
 			return created;
 		} catch (e) {
 			const message = e instanceof Error ? e.message : "Failed to copy guide.";
-			toast.error(message);
+			lazyToast.error(message);
 		}
 	};
 
 	const handleOpenFromPublic = (publicVarietyId: string) => {
 		// Open the form in read-only mode for viewing a public guide
 		if (!isAuthenticated) {
-			toast.info("Please log in to view grow guide details.");
+			lazyToast.info("Please log in to view grow guide details.");
 			return;
 		}
 		setViewVarietyId(publicVarietyId);

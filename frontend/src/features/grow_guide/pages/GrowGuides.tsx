@@ -5,7 +5,7 @@ import { Plus } from "lucide-react";
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { growGuideService } from "../services/growGuideService";
 import { growGuideQueryKey } from "../hooks/useGrowGuide";
 import { useUserGrowGuides } from "../hooks/useUserGrowGuides";
@@ -82,7 +82,7 @@ const GrowGuides = () => {
 						error instanceof Error
 							? error.message
 							: "Failed to load grow guide";
-					toast.error(message);
+					lazyToast.error(message);
 				});
 		},
 		[queryClient],

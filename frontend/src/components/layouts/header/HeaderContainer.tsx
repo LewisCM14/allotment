@@ -1,5 +1,6 @@
 import { useAuth } from "@/store/auth/AuthContext";
 import type { INavLink } from "@/types/NavigationTypes";
+import { prefetchByPath } from "@/utils/routePrefetch";
 import { useCallback, useEffect, useState } from "react";
 import { HeaderPresenter } from "./HeaderPresenter";
 
@@ -19,6 +20,10 @@ export default function Header() {
 
 	const closeMenu = useCallback(() => {
 		setIsOpen(false);
+	}, []);
+
+	const handleLinkHover = useCallback((href: string) => {
+		prefetchByPath(href);
 	}, []);
 
 	const handleClickOutside = useCallback(
@@ -50,6 +55,7 @@ export default function Header() {
 			onMenuClick={handleMenuClick}
 			closeMenu={closeMenu}
 			isAuthenticated={isAuthenticated}
+			onLinkHover={handleLinkHover}
 		/>
 	);
 }

@@ -20,8 +20,9 @@ COPY index.html ./
 # Build the application
 RUN npm run build
 
-# Production stage
-FROM nginx:stable-alpine
+# Production stage - use nginx with Brotli support for serving pre-compressed .br files
+# hadolint ignore=DL3007
+FROM fholzer/nginx-brotli:v1.26.2
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
@@ -35,6 +36,9 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 # Copy and set entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh && chown nginx:nginx /docker-entrypoint.sh
+
+# Switch to non-root user for security
+USER nginx
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWeeklyTodo } from "../hooks/useWeeklyTodo";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { growGuideService } from "../../grow_guide/services/growGuideService";
 import { growGuideQueryKey } from "../../grow_guide/hooks/useGrowGuide";
 import type { WeeklyTodoRead } from "../types/todoTypes";
@@ -89,7 +89,7 @@ export const TodoContainer = ({ children }: TodoContainerProps) => {
 				.catch((err) => {
 					const message =
 						err instanceof Error ? err.message : "Failed to load grow guide";
-					toast.error(message);
+					lazyToast.error(message);
 				});
 		},
 		[queryClient],

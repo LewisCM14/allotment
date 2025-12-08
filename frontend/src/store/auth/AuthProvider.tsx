@@ -9,7 +9,7 @@ import {
 	useState,
 } from "react";
 import { errorMonitor } from "@/services/errorMonitoring";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
 import {
 	clearAuthFromIndexedDB,
@@ -138,7 +138,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 					isAuthenticated: true,
 				});
 
-				toast.success(`Welcome, ${userFirstName}!`, {
+				lazyToast.success(`Welcome, ${userFirstName}!`, {
 					description: "You've successfully logged in",
 					duration: 3000,
 				});
@@ -156,7 +156,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 		const currentFirstName = firstName;
 
 		if (currentFirstName) {
-			toast.success(`Goodbye, ${currentFirstName}`, {
+			lazyToast.success(`Goodbye, ${currentFirstName}`, {
 				description: "You've been successfully logged out",
 				duration: 3000,
 			});
@@ -210,12 +210,12 @@ export function AuthProvider({ children }: IAuthProvider) {
 			if (error && typeof error === "object" && "response" in error) {
 				const apiError = error as { response?: { status?: number } };
 				if (apiError.response?.status === 401) {
-					toast.error("Your session has expired, please log in again");
+					lazyToast.error("Your session has expired, please log in again");
 				} else {
-					toast.error("Failed to refresh authentication");
+					lazyToast.error("Failed to refresh authentication");
 				}
 			} else {
-				toast.error("Network error while refreshing authentication");
+				lazyToast.error("Network error while refreshing authentication");
 			}
 
 			logout();

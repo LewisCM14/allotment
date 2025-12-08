@@ -10,6 +10,7 @@ interface IHeaderPresenter {
 	readonly onMenuClick: () => void;
 	readonly closeMenu: () => void;
 	readonly isAuthenticated: boolean;
+	readonly onLinkHover?: (href: string) => void;
 }
 
 export function HeaderPresenter({
@@ -18,6 +19,7 @@ export function HeaderPresenter({
 	onMenuClick,
 	closeMenu,
 	isAuthenticated,
+	onLinkHover,
 }: IHeaderPresenter) {
 	const appTitle =
 		window.envConfig?.VITE_APP_TITLE ??
@@ -54,6 +56,8 @@ export function HeaderPresenter({
 							<a
 								key={link.label}
 								href={link.href}
+								onMouseEnter={() => onLinkHover?.(link.href)}
+								onFocus={() => onLinkHover?.(link.href)}
 								className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 							>
 								{link.label}
@@ -62,6 +66,8 @@ export function HeaderPresenter({
 					) : (
 						<a
 							href="/login"
+							onMouseEnter={() => onLinkHover?.("/login")}
+							onFocus={() => onLinkHover?.("/login")}
 							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 						>
 							Login
@@ -95,6 +101,7 @@ export function HeaderPresenter({
 							key={link.label}
 							href={link.href}
 							onClick={closeMenu}
+							onFocus={() => onLinkHover?.(link.href)}
 							className="text-muted-foreground hover:text-card-foreground p-2 rounded-md transition-transform duration-200 hover:translate-x-1"
 						>
 							{link.label}

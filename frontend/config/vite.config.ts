@@ -11,7 +11,19 @@ export default defineConfig(() => {
         base: './', // Ensures assets load correctly in production
         plugins: [
             // Removed legacy build to avoid dual bundles and runtime polyfill issues
-            imagetools(),
+            imagetools({
+                // Default directives for image optimization
+                defaultDirectives: (url) => {
+                    // Apply aggressive optimization to imported images
+                    if (url.pathname.endsWith('.png') || url.pathname.endsWith('.jpg') || url.pathname.endsWith('.jpeg')) {
+                        return new URLSearchParams({
+                            format: 'webp',
+                            quality: '80',
+                        });
+                    }
+                    return new URLSearchParams();
+                },
+            }),
             react(),
             tailwindcss(),
             compression({
@@ -102,34 +114,48 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // UI Library chunks
+                        // React core - isolated for stable caching (changes rarely)
+                        if (
+                            id.includes('node_modules/react/') ||
+                            id.includes('node_modules/react-dom/') ||
+                            id.includes('node_modules/scheduler/')
+                        ) {
+                            return 'react-vendor';
+                        }
+
+                        // React Router - separate from react core for independent updates
+                        if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
+                            return 'react-router';
+                        }
+
+                        // Radix UI - isolated for independent caching
                         if (id.includes('node_modules/@radix-ui/')) {
-                            return '@radix-ui';
+                            return 'radix';
                         }
 
-                        // Utility libraries
-                        if (id.includes('node_modules/zod') || id.includes('node_modules/tailwind-merge') || id.includes('node_modules/class-variance-authority')) {
-                            return 'utils';
-                        }
-
-                        // Icons - keep as separate chunk for caching
-                        if (id.includes('node_modules/lucide-react')) {
-                            return 'vendor_lucide';
-                        }
-
-                        // Large data libraries
-                        if (id.includes('node_modules/countries-list')) {
-                            return 'countries-list';
-                        }
-
-                        // HTTP client
+                        // Network layer - axios isolated for independent caching
                         if (id.includes('node_modules/axios')) {
-                            return 'axios';
+                            return 'net';
                         }
 
-                        // Notifications and UI effects
-                        if (id.includes('node_modules/sonner') || id.includes('node_modules/cmdk')) {
-                            return 'ui-effects';
+                        // Icons - keep separate for tree-shaking and independent caching
+                        if (id.includes('node_modules/lucide-react')) {
+                            return 'icons';
+                        }
+
+                        // Data fetching - TanStack Query
+                        if (id.includes('node_modules/@tanstack/react-query')) {
+                            return 'react-query';
+                        }
+
+                        // Form handling
+                        if (id.includes('node_modules/react-hook-form') || id.includes('node_modules/@hookform/')) {
+                            return 'forms';
+                        }
+
+                        // Validation
+                        if (id.includes('node_modules/zod')) {
+                            return 'validation';
                         }
 
                         // PWA and service workers
@@ -137,26 +163,51 @@ export default defineConfig(() => {
                             return 'workbox';
                         }
 
-                        // React core libraries
-                        if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/') || id.includes('node_modules/scheduler/')) {
-                            return 'react-vendor';
+                        // UI utilities (small, frequently used)
+                        if (
+                            id.includes('node_modules/tailwind-merge') ||
+                            id.includes('node_modules/class-variance-authority') ||
+                            id.includes('node_modules/clsx')
+                        ) {
+                            return 'ui-utils';
                         }
 
-                        // Form handling
-                        if (id.includes('node_modules/react-hook-form/')) {
-                            return 'react-hook-form';
+                        // Toast notifications - lazy-loaded, separate for on-demand loading
+                        if (id.includes('node_modules/sonner')) {
+                            return 'sonner';
                         }
 
-                        // Data fetching
-                        if (id.includes('node_modules/@tanstack/react-query/')) {
-                            return 'react-query';
+                        // Command palette
+                        if (id.includes('node_modules/cmdk')) {
+                            return 'cmdk';
                         }
 
-                        // Other node_modules - group remaining smaller libraries into vendor-misc.
+                        // Large data libraries
+                        if (id.includes('node_modules/countries-list')) {
+                            return 'countries-data';
+                        }
+
+                        // Virtualization
+                        if (id.includes('node_modules/react-window')) {
+                            return 'virtualization';
+                        }
+
+                        // IndexedDB - for offline storage
+                        if (id.includes('node_modules/idb')) {
+                            return 'idb';
+                        }
+
+                        // Theme management
+                        if (id.includes('node_modules/next-themes')) {
+                            return 'themes';
+                        }
+
+                        // Other node_modules - group remaining smaller libraries
                         if (id.includes('node_modules/')) {
                             const pkg = id.split('node_modules/')[1].split('/')[0];
-                            const skip = ['detect-node-es', 'set-cookie-parser', 'turbo-stream'];
-                            if (skip.includes(pkg)) {
+                            // Skip tiny packages - keep in main bundle
+                            const skipTiny = ['detect-node-es', 'set-cookie-parser', 'turbo-stream'];
+                            if (skipTiny.includes(pkg)) {
                                 return; // keep in main bundle
                             }
                             return 'vendor-misc';
