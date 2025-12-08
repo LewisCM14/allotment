@@ -47,8 +47,6 @@ export function LoadingSpinner({
 		}
 	}, [delay]);
 
-	if (!show) return null;
-
 	const containerClasses = cn(
 		!inline && center && "flex items-center justify-center",
 		!inline &&
@@ -63,15 +61,21 @@ export function LoadingSpinner({
 		<output
 			/* Using semantic element instead of div+role=status to satisfy a11y lint rule */
 			aria-live="polite"
-			aria-label={label}
+			aria-label={show ? label : undefined}
+			aria-hidden={!show}
 			className={cn("block", containerClasses)}
 			{...rest}
 		>
-			<Loader2
-				className={cn(sizeMap[size], "animate-spin text-primary")}
-				aria-hidden="true"
-			/>
-			{label && !inline && <span className="sr-only">{label}</span>}
+			{show && (
+				<>
+					<Loader2
+						className={cn(sizeMap[size], "animate-spin text-primary")}
+						aria-hidden="true"
+					/>
+					{label && !inline && <span className="sr-only">{label}</span>}
+				</>
+			)}
+			{!show && !inline && <span className={cn(sizeMap[size], "invisible")} />}
 		</output>
 	);
 }

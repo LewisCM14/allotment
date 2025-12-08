@@ -3,7 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import {
 	userProfileSchema,
 	type UserProfileFormData,
@@ -101,7 +101,7 @@ export default function UserProfileContainer() {
 			);
 
 			if (verificationData.is_email_verified) {
-				toast.success("Email is verified!", {
+				lazyToast.success("Email is verified!", {
 					description: "You now have full access to all features",
 				});
 			}
@@ -165,7 +165,7 @@ export default function UserProfileContainer() {
 
 				await updateProfileMutation.mutateAsync(data);
 				setIsEditing(false);
-				toast.success("Profile updated successfully!");
+				lazyToast.success("Profile updated successfully!");
 			} catch (err: unknown) {
 				const errorMessage = formatError(err);
 				setError(errorMessage);
@@ -174,7 +174,7 @@ export default function UserProfileContainer() {
 					data: data,
 					url: window.location.href,
 				});
-				toast.error("Update failed", {
+				lazyToast.error("Update failed", {
 					description: errorMessage,
 				});
 			}
@@ -190,7 +190,7 @@ export default function UserProfileContainer() {
 			errorMonitor.captureMessage(noEmailError, {
 				context: "userProfile.requestVerification.noEmail",
 			});
-			toast.error("Request failed", {
+			lazyToast.error("Request failed", {
 				description: "User email not available",
 			});
 			return;
@@ -199,7 +199,7 @@ export default function UserProfileContainer() {
 		try {
 			setError("");
 			await requestVerificationMutation.mutateAsync(email);
-			toast.success("Verification email sent", {
+			lazyToast.success("Verification email sent", {
 				description: "Please check your inbox for the verification link",
 			});
 		} catch (err: unknown) {
@@ -210,7 +210,7 @@ export default function UserProfileContainer() {
 				email: email,
 				url: window.location.href,
 			});
-			toast.error("Request failed", {
+			lazyToast.error("Request failed", {
 				description: errorMessage,
 			});
 		}
@@ -224,7 +224,7 @@ export default function UserProfileContainer() {
 			errorMonitor.captureMessage(noEmailError, {
 				context: "userProfile.refreshStatus.noEmail",
 			});
-			toast.error("Refresh failed", {
+			lazyToast.error("Refresh failed", {
 				description: "User email not available",
 			});
 			return;
@@ -241,7 +241,7 @@ export default function UserProfileContainer() {
 				email: email,
 				url: window.location.href,
 			});
-			toast.error("Refresh failed", {
+			lazyToast.error("Refresh failed", {
 				description: errorMessage,
 			});
 		}

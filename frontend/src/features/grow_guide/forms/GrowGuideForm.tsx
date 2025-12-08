@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { FormError } from "../../../components/FormError";
 import { Button } from "../../../components/ui/Button";
 import {
@@ -209,7 +209,7 @@ export const GrowGuideForm = ({
 
 				if (mode === "create") {
 					await createGrowGuideMutation.mutateAsync(formData);
-					toast.success("Grow guide created successfully");
+					lazyToast.success("Grow guide created successfully");
 					resetToBlank();
 				} else if (mode === "edit" && varietyId) {
 					await growGuideService.updateVariety(varietyId, formData);
@@ -219,7 +219,7 @@ export const GrowGuideForm = ({
 						queryKey: growGuideQueryKey(varietyId),
 					});
 					queryClient.invalidateQueries({ queryKey: ["weeklyTodo"] });
-					toast.success("Grow guide updated");
+					lazyToast.success("Grow guide updated");
 				}
 
 				onSuccess?.();
@@ -230,7 +230,7 @@ export const GrowGuideForm = ({
 						? "Failed to create grow guide"
 						: "Failed to update grow guide";
 				const message = error instanceof Error ? error.message : defaultMessage;
-				toast.error(message);
+				lazyToast.error(message);
 			} finally {
 				setIsSubmitting(false);
 			}

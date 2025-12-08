@@ -8,7 +8,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/Alert";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
 import { AppError } from "@/services/api";
 import { TodoContainer } from "../components/TodoContainer";
-import { lazy, Suspense } from "react";
+import { prefetchDashboardRoutes } from "@/utils/routePrefetch";
+import { lazy, Suspense, useEffect } from "react";
 
 const GrowGuideForm = lazy(() =>
 	import("../../grow_guide/forms/GrowGuideForm").then((module) => ({
@@ -17,6 +18,10 @@ const GrowGuideForm = lazy(() =>
 );
 
 export default function TodoPage() {
+	useEffect(() => {
+		prefetchDashboardRoutes();
+	}, []);
+
 	return (
 		<TodoContainer>
 			{({

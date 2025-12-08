@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import { useEmailVerification } from "../hooks/useEmailVerification";
 import EmailVerificationPresenter from "./EmailVerificationPresenter";
 
@@ -28,14 +28,14 @@ export default function EmailVerificationContainer() {
 				{ token, needsPasswordReset },
 				{
 					onSuccess: () => {
-						toast.success("Email verified successfully", {
+						lazyToast.success("Email verified successfully", {
 							description: needsPasswordReset
 								? "Your email has been verified. You can now reset your password."
 								: "Your email has been verified. You can now access all features.",
 						});
 					},
 					onError: () => {
-						toast.error("Verification failed", {
+						lazyToast.error("Verification failed", {
 							description: "There was a problem verifying your email address.",
 						});
 					},

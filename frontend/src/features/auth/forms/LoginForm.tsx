@@ -11,6 +11,7 @@ import {
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useAuth } from "@/store/auth/AuthContext";
+import { prefetchPostLoginRoutes } from "@/utils/routePrefetch";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -41,15 +42,7 @@ function LoginForm() {
 		window.addEventListener("online", handleOnline);
 		window.addEventListener("offline", handleOffline);
 
-		const prefetchDashboard = () => {
-			import("../../todo/pages/Todo");
-		};
-
-		if (window.requestIdleCallback) {
-			window.requestIdleCallback(prefetchDashboard);
-		} else {
-			setTimeout(prefetchDashboard, 2000);
-		}
+		prefetchPostLoginRoutes();
 
 		return () => {
 			window.removeEventListener("online", handleOnline);

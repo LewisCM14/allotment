@@ -15,7 +15,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
+import { lazyToast } from "@/utils/lazyToast";
 import {
 	type SetNewPasswordFormData,
 	setNewPasswordSchema,
@@ -92,7 +92,7 @@ export default function SetNewPassword() {
 
 			await resetPassword(token, data.password);
 
-			toast.success("Password reset successfully", {
+			lazyToast.success("Password reset successfully", {
 				description: "You can now log in with your new password",
 			});
 
