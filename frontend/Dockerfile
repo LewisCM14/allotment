@@ -23,29 +23,37 @@ RUN npm run build
 # Production stage (non-root nginx)
 FROM nginxinc/nginx-unprivileged:stable
 
-# Copy built assets from build stage
+# Switch to root to adjust permissions during build, will drop back to non-root
+USER root
+
+# Copy built assets from build stage (initial copy without specific permissions)
 COPY --from=build /app/dist /usr/share/nginx/html
+# Set ownership and remove all write permissions: files=0444 (r--r--r--), dirs=0555 (r-xr-xr-x)
+RUN chown -R 101:101 /usr/share/nginx/html && \
+    find /usr/share/nginx/html -type f -exec chmod 0444 {} + && \
+    find /usr/share/nginx/html -type d -exec chmod 0555 {} + && \
+    mkdir -p /usr/share/nginx/html/runtime && \
+    chown 101:101 /usr/share/nginx/html/runtime && \
+    chmod 0775 /usr/share/nginx/html/runtime
 
-# Set ownership of static files to nginx user
-RUN chown -R nginx:nginx /usr/share/nginx/html
-
-# Copy nginx config as a template
+# Ensure nginx can write generated config at runtime, copy config & entrypoint, set permissions (merged)
 COPY nginx.conf /etc/nginx/conf.d/default.conf.template
-
-# Copy and set entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-
-RUN chmod +x /docker-entrypoint.sh && \
-    chown nginx:nginx /docker-entrypoint.sh
+RUN chown -R 101:101 /etc/nginx/conf.d && \
+    chmod +x /docker-entrypoint.sh && \
+    chown 101:101 /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
-# Add healthcheck
+# Add healthcheck (nginx-unprivileged listens on 8080)
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:80/health || exit 1
+    CMD wget -qO- http://localhost:8080/health || exit 1
 
-# Expose port
-EXPOSE 80
+## Expose unprivileged port
+EXPOSE 8080
 
-# Start nginx (non-root, handled by base image)
+# Drop privileges back to image default non-root user
+USER 101
+
+# Start nginx (non-root)
 CMD ["nginx", "-g", "daemon off;"]
