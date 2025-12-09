@@ -20,9 +20,8 @@ COPY index.html ./
 # Build the application
 RUN npm run build
 
-# Production stage - use nginx with Brotli support for serving pre-compressed .br files
-# hadolint ignore=DL3007
-FROM fholzer/nginx-brotli:v1.26.2
+# Production stage (non-root nginx)
+FROM nginxinc/nginx-unprivileged:stable
 
 # Copy built assets from build stage
 COPY --from=build /app/dist /usr/share/nginx/html
@@ -36,16 +35,8 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 # Copy and set entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 
-# Set permissions for entrypoint and nginx config directory (merged for fewer layers)
-# Create writable directories for nginx to run as non-root user
 RUN chmod +x /docker-entrypoint.sh && \
-    chown nginx:nginx /docker-entrypoint.sh && \
-    chown -R nginx:nginx /etc/nginx/conf.d && \
-    mkdir -p /tmp/nginx && \
-    chown -R nginx:nginx /tmp/nginx /var/cache/nginx
-
-# Switch to non-root user for security
-USER nginx
+    chown nginx:nginx /docker-entrypoint.sh
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 
@@ -56,5 +47,5 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
 # Expose port
 EXPOSE 80
 
-# Start nginx as non-root user, with PID file in writable location
-CMD ["nginx", "-g", "daemon off; pid /tmp/nginx/nginx.pid;"]
+# Start nginx (non-root, handled by base image)
+CMD ["nginx", "-g", "daemon off;"]
