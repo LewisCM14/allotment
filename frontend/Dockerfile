@@ -35,7 +35,11 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf.template
 
 # Copy and set entrypoint script
 COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh && chown nginx:nginx /docker-entrypoint.sh
+
+# Set permissions for entrypoint and nginx config directory (merged for fewer layers)
+RUN chmod +x /docker-entrypoint.sh && \
+    chown nginx:nginx /docker-entrypoint.sh && \
+    chown -R nginx:nginx /etc/nginx/conf.d
 
 # Switch to non-root user for security
 USER nginx
