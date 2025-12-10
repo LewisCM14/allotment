@@ -1,11 +1,11 @@
-import { countries } from "countries-list";
-
 export interface ICountryOption {
 	value: string;
 	label: string;
 }
 
-export const getCountryOptions = (): ICountryOption[] => {
+// Lazy load countries data to reduce initial bundle size
+export const getCountryOptions = async (): Promise<ICountryOption[]> => {
+	const { countries } = await import("countries-list");
 	return Object.entries(countries)
 		.map(([code, country]) => ({
 			value: code,

@@ -36,9 +36,9 @@ const useCountryOptions = () => {
 	const [isLoading, setIsLoading] = useState(true);
 
 	useEffect(() => {
-		const loadOptions = () => {
+		const loadOptions = async () => {
 			try {
-				const countries = getCountryOptions();
+				const countries = await getCountryOptions();
 				const formattedOptions = countries.map((country) => ({
 					value: country.value,
 					label: country.label,
