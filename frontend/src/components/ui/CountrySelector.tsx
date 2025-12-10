@@ -58,7 +58,7 @@ const useCountryOptions = () => {
 			setIsLoading(true);
 			const { getCountryOptions } = await import("@/utils/countries");
 			if (!isMounted) return;
-			const result = getCountryOptions();
+			const result = await getCountryOptions();
 			setOptions(
 				result.map((c) => ({
 					value: c.value,

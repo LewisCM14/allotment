@@ -20,6 +20,10 @@ COPY index.html ./
 # Build the application
 RUN npm run build
 
+# Remove the placeholder env-config.js from build output
+# This file will be generated at runtime by docker-entrypoint.sh with actual environment variables
+RUN rm -f /app/dist/env-config.js
+
 # Production stage (non-root nginx)
 FROM nginxinc/nginx-unprivileged:stable
 
@@ -32,9 +36,9 @@ COPY --from=build /app/dist /usr/share/nginx/html
 RUN chown -R 101:101 /usr/share/nginx/html && \
     find /usr/share/nginx/html -type f -exec chmod 0444 {} + && \
     find /usr/share/nginx/html -type d -exec chmod 0555 {} + && \
-    mkdir -p /usr/share/nginx/html/runtime && \
-    chown 101:101 /usr/share/nginx/html/runtime && \
-    chmod 0775 /usr/share/nginx/html/runtime
+    mkdir -p /var/cache/nginx/runtime && \
+    chown 101:101 /var/cache/nginx/runtime && \
+    chmod 0700 /var/cache/nginx/runtime
 
 # Ensure nginx can write generated config at runtime, copy config & entrypoint, set permissions (merged)
 COPY nginx.conf /etc/nginx/conf.d/default.conf.template

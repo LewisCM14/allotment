@@ -105,12 +105,14 @@ export default defineConfig(() => {
         },
         build: {
             sourcemap: false,
-            cssCodeSplit: false,
-            // Use Vite's default esbuild minifier to avoid edge-case CJS/UMD mangling
+            cssCodeSplit: true, // Split CSS to allow better caching per route
             minify: 'esbuild',
-            target: 'es2019',
-            chunkSizeWarningLimit: 800, // Reduced from 1000 to encourage smaller chunks
-            assetsInlineLimit: 4096, // Inline smaller assets as base64
+            target: 'es2020', // Modern target for better optimization
+            chunkSizeWarningLimit: 800,
+            assetsInlineLimit: 4096,
+            modulePreload: {
+                polyfill: false, // Modern browsers support modulepreload natively
+            },
             rollupOptions: {
                 output: {
                     manualChunks(id) {

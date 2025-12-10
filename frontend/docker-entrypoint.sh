@@ -13,10 +13,8 @@ VITE_API_VERSION="${VITE_API_VERSION:-$DEFAULT_VITE_API_VERSION}"
 VITE_CONTACT_EMAIL="${VITE_CONTACT_EMAIL}"
 VITE_FORCE_AUTH="${VITE_FORCE_AUTH:-$DEFAULT_VITE_FORCE_AUTH}"
 
-# Create the env-config.js file in a writable runtime directory
-RUNTIME_DIR="/usr/share/nginx/html/runtime"
-mkdir -p "$RUNTIME_DIR"
-CONFIG_JS_PATH="$RUNTIME_DIR/env-config.js"
+# Create the env-config.js file in a dedicated writable directory (not web root for security)
+CONFIG_JS_PATH="/var/cache/nginx/runtime/env-config.js"
 echo "Generating $CONFIG_JS_PATH with runtime environment variables..."
 cat <<EOF > "$CONFIG_JS_PATH"
 window.envConfig = {
