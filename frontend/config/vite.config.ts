@@ -114,18 +114,16 @@ export default defineConfig(() => {
             rollupOptions: {
                 output: {
                     manualChunks(id) {
-                        // React core - isolated for stable caching (changes rarely)
+                        // React core + Router - bundled together to avoid circular dependencies
+                        // React Router must be in the same chunk as React to prevent load order issues
                         if (
                             id.includes('node_modules/react/') ||
                             id.includes('node_modules/react-dom/') ||
-                            id.includes('node_modules/scheduler/')
+                            id.includes('node_modules/scheduler/') ||
+                            id.includes('node_modules/react-router-dom/') ||
+                            id.includes('node_modules/react-router/')
                         ) {
                             return 'react-vendor';
-                        }
-
-                        // React Router - separate from react core for independent updates
-                        if (id.includes('node_modules/react-router-dom/') || id.includes('node_modules/react-router/')) {
-                            return 'react-router';
                         }
 
                         // Radix UI - isolated for independent caching
