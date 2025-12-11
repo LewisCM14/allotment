@@ -178,11 +178,12 @@ export default function RegisterFormPresenter({
 						<div className="grid gap-3">
 							<Suspense
 								fallback={
-									<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+									<div className="h-10 w-full animate-pulse rounded-md bg-card border border-border" />
 								}
 							>
 								<CountrySelector
 									control={control}
+									name="country_code"
 									error={errors.country_code}
 								/>
 							</Suspense>

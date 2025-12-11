@@ -12,7 +12,6 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/Popover";
-import type { RegisterFormData } from "@/features/registration/forms/RegisterSchema";
 import { Check, ChevronsUpDown } from "lucide-react";
 import {
 	memo,
@@ -22,12 +21,8 @@ import {
 	useState,
 	useTransition,
 } from "react";
-import {
-	type Control,
-	Controller,
-	type FieldError,
-	type ControllerRenderProps,
-} from "react-hook-form";
+import type React from "react";
+import { type Control, Controller, type FieldError } from "react-hook-form";
 import { FixedSizeList as List } from "react-window";
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -79,8 +74,12 @@ const useCountryOptions = () => {
 };
 
 interface ICountrySelector {
-	control: Control<RegisterFormData>;
-	error?: FieldError;
+	// biome-ignore lint/suspicious/noExplicitAny: Required for lazy-loaded generic component compatibility
+	readonly control: Control<any>;
+	readonly name: string;
+	readonly error?: FieldError;
+	readonly label?: string;
+	readonly showLabel?: boolean;
 }
 
 const ITEM_HEIGHT = 36;
@@ -119,11 +118,7 @@ CountryItemRenderer.displayName = "CountryItemRenderer";
 interface CountryListRowRendererProps {
 	filteredOptions: Array<{ value: string; label: string }>;
 	fieldValue: string;
-	handleSelectFn: (
-		field: ControllerRenderProps<RegisterFormData, "country_code">,
-		value: string,
-	) => void;
-	field: ControllerRenderProps<RegisterFormData, "country_code">;
+	onSelectValue: (value: string) => void;
 	index: number;
 	style: React.CSSProperties;
 }
@@ -132,8 +127,7 @@ const CountryListRowRenderer = memo(
 	({
 		filteredOptions,
 		fieldValue,
-		handleSelectFn,
-		field,
+		onSelectValue,
 		index,
 		style,
 	}: CountryListRowRendererProps) => {
@@ -144,14 +138,20 @@ const CountryListRowRenderer = memo(
 				country={country}
 				style={style}
 				isSelected={fieldValue === country.value}
-				onSelect={(value) => handleSelectFn(field, value)}
+				onSelect={onSelectValue}
 			/>
 		);
 	},
 );
 CountryListRowRenderer.displayName = "CountryListRowRenderer";
 
-const CountrySelector = memo(({ control, error }: ICountrySelector) => {
+function CountrySelectorInner({
+	control,
+	name,
+	error,
+	label = "Country",
+	showLabel = true,
+}: ICountrySelector) {
 	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 	const { options: countryOptions, isLoading } = useCountryOptions();
 
@@ -165,6 +165,25 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 
 	// Store the dropdown state in a ref to avoid re-renders
 	const popoverStateRef = useRef({ isOpen: false });
+
+	// Prevent body scroll when dropdown is open (fixes mobile scroll issue)
+	useEffect(() => {
+		if (isDropdownOpen) {
+			// Store original overflow value
+			const originalOverflow = document.body.style.overflow;
+			const originalPosition = document.body.style.position;
+
+			// Prevent scrolling
+			document.body.style.overflow = "hidden";
+			document.body.style.position = "relative";
+
+			// Cleanup function to restore original styles
+			return () => {
+				document.body.style.overflow = originalOverflow;
+				document.body.style.position = originalPosition;
+			};
+		}
+	}, [isDropdownOpen]);
 
 	// filtered on debounced search
 	useEffect(() => {
@@ -186,18 +205,6 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 			});
 		}
 	}, [isDropdownOpen, countryOptions, isLoading]);
-
-	const handleSelect = useCallback(
-		(
-			field: ControllerRenderProps<RegisterFormData, "country_code">,
-			currentValue: string,
-		) => {
-			field.onChange(currentValue);
-			setIsDropdownOpen(false);
-			popoverStateRef.current.isOpen = false;
-		},
-		[],
-	);
 
 	const handleOpenChange = useCallback(
 		(isOpen: boolean) => {
@@ -223,62 +230,73 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 		[countryOptions],
 	);
 
-	const renderCommandContent = useCallback(
-		(field: ControllerRenderProps<RegisterFormData, "country_code">) => {
-			if (isLoading) {
-				return <div className="py-6 text-center">Loading countries…</div>;
-			}
-
-			if (isPending) {
-				return <div className="py-6 text-center">Searching…</div>;
-			}
-
-			if (filteredOptions.length === 0) {
-				return <CommandEmpty>No country found.</CommandEmpty>;
-			}
-
-			return (
-				<CommandGroup className="overflow-hidden p-0">
-					<List
-						height={Math.min(LIST_HEIGHT, filteredOptions.length * ITEM_HEIGHT)}
-						width="100%"
-						itemCount={filteredOptions.length}
-						itemSize={ITEM_HEIGHT}
-						overscanCount={OVERSCAN_COUNT}
-						className="scrollbar-thin"
-					>
-						{({ index, style }) => (
-							<CountryListRowRenderer
-								filteredOptions={filteredOptions}
-								fieldValue={field.value}
-								handleSelectFn={handleSelect}
-								field={field}
-								index={index}
-								style={style}
-							/>
-						)}
-					</List>
-				</CommandGroup>
-			);
-		},
-		[isLoading, isPending, filteredOptions, handleSelect],
-	);
-
 	return (
 		<>
-			<Label htmlFor="country_code">Country</Label>
+			{showLabel && <Label htmlFor={name}>{label}</Label>}
 			<Controller
 				control={control}
-				name="country_code"
+				name={name}
 				render={({ field }) => {
-					const selectedCountryLabel = getSelectedCountryLabel(field.value);
+					const selectedCountryLabel = getSelectedCountryLabel(
+						field.value as string,
+					);
+
+					const handleSelectValue = (value: string) => {
+						field.onChange(value);
+						setIsDropdownOpen(false);
+						popoverStateRef.current.isOpen = false;
+					};
+
+					const renderCommandContent = () => {
+						if (isLoading) {
+							return (
+								<div className="py-6 text-center">Loading countries…</div>
+							);
+						}
+
+						if (isPending) {
+							return <div className="py-6 text-center">Searching…</div>;
+						}
+
+						if (filteredOptions.length === 0) {
+							return <CommandEmpty>No country found.</CommandEmpty>;
+						}
+
+						return (
+							<CommandGroup className="overflow-hidden p-0">
+								<List
+									height={Math.min(
+										LIST_HEIGHT,
+										filteredOptions.length * ITEM_HEIGHT,
+									)}
+									width="100%"
+									itemCount={filteredOptions.length}
+									itemSize={ITEM_HEIGHT}
+									overscanCount={OVERSCAN_COUNT}
+									className="scrollbar-thin"
+								>
+									{({ index, style }) => (
+										<CountryListRowRenderer
+											filteredOptions={filteredOptions}
+											fieldValue={field.value as string}
+											onSelectValue={handleSelectValue}
+											index={index}
+											style={style}
+										/>
+									)}
+								</List>
+							</CommandGroup>
+						);
+					};
+
 					return (
 						<Popover open={isDropdownOpen} onOpenChange={handleOpenChange}>
 							<PopoverTrigger asChild>
 								<Button
 									variant="outline"
 									aria-expanded={isDropdownOpen}
-									className="w-full justify-between"
+									aria-label="Select country"
+									className="w-full justify-between bg-card border-border text-foreground hover:bg-accent hover:text-foreground dark:bg-card dark:border-border"
 								>
 									{selectedCountryLabel || "Select country..."}
 									<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -297,7 +315,7 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 											ref={inputRef}
 											className="border-none focus:ring-0"
 										/>
-										{renderCommandContent(field)}
+										{renderCommandContent()}
 									</Command>
 								</PopoverContent>
 							)}
@@ -308,8 +326,9 @@ const CountrySelector = memo(({ control, error }: ICountrySelector) => {
 			{error && <p className="text-sm text-red-500">{error.message}</p>}
 		</>
 	);
-});
+}
 
-CountrySelector.displayName = "CountrySelector";
-
-export default CountrySelector;
+// Export the inner function directly to preserve generics
+// memo is applied to child components (CountryItemRenderer, CountryListRowRenderer)
+// which provides the performance benefit where it matters most
+export default CountrySelectorInner;
