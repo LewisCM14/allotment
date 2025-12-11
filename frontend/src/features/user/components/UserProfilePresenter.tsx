@@ -15,9 +15,7 @@ import { lazy, Suspense, memo } from "react";
 import type { Control, FieldErrors, UseFormRegister } from "react-hook-form";
 import type { UserProfileFormData } from "../forms/UserProfileSchema";
 
-const UserProfileCountrySelector = lazy(
-	() => import("./UserProfileCountrySelector"),
-);
+const CountrySelector = lazy(() => import("@/components/ui/CountrySelector"));
 
 interface UserProfilePresenterProps {
 	readonly userName: string;
@@ -113,24 +111,28 @@ const UserProfilePresenter = memo(
 							</div>
 
 							<div className="border-b border-border pb-4">
-								<Label className="font-medium text-muted-foreground mb-2 block">
-									Country
-								</Label>
 								{isEditing ? (
 									<div className="space-y-2">
 										<Suspense
 											fallback={
-												<div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+												<div className="h-10 w-full animate-pulse rounded-md bg-card border border-border" />
 											}
 										>
-											<UserProfileCountrySelector
+											<CountrySelector
 												control={control}
+												name="user_country_code"
 												error={errors.user_country_code}
+												showLabel={false}
 											/>
 										</Suspense>
 									</div>
 								) : (
-									<p className="text-lg text-foreground">{userCountryCode}</p>
+									<>
+										<Label className="font-medium text-muted-foreground mb-2 block">
+											Country
+										</Label>
+										<p className="text-lg text-foreground">{userCountryCode}</p>
+									</>
 								)}
 							</div>
 						</div>

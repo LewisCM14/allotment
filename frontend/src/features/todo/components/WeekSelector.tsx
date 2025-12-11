@@ -70,16 +70,22 @@ export const WeekSelector = ({
 		}
 	}, [currentWeekNumber]);
 
-	const onWheelHorizontal = (e: React.WheelEvent<HTMLDivElement>) => {
+	useEffect(() => {
 		const el = scrollContainerRef.current;
 		if (!el) return;
 
-		e.preventDefault();
-		e.stopPropagation();
-		const delta =
-			Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
-		el.scrollLeft += delta;
-	};
+		const handleWheel = (e: WheelEvent) => {
+			e.preventDefault();
+			const delta =
+				Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+			el.scrollLeft += delta;
+		};
+
+		el.addEventListener("wheel", handleWheel, { passive: false });
+		return () => {
+			el.removeEventListener("wheel", handleWheel);
+		};
+	}, []);
 
 	// Keyboard navigation for each week pill
 	const onPillKeyDown = (
@@ -166,7 +172,6 @@ export const WeekSelector = ({
 				aria-label="Select week number"
 				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin touch-pan-x snap-x"
 				ref={scrollContainerRef}
-				onWheelCapture={onWheelHorizontal}
 				style={{ overscrollBehavior: "contain" }}
 			>
 				{weeks.map((week) => {
