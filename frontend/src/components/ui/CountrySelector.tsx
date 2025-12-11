@@ -249,9 +249,7 @@ function CountrySelectorInner({
 
 					const renderCommandContent = () => {
 						if (isLoading) {
-							return (
-								<div className="py-6 text-center">Loading countries…</div>
-							);
+							return <div className="py-6 text-center">Loading countries…</div>;
 						}
 
 						if (isPending) {
