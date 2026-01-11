@@ -1,7 +1,6 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import FamilyInfoPage from "./FamilyInfo";
 import * as useFamilyInfoHook from "../hooks/useFamilyInfo";
-import React from "react";
 import { describe, it, beforeEach, vi, expect, type Mock } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 

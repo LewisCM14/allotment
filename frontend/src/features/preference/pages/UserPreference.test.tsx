@@ -7,7 +7,6 @@ import {
 import userEvent from "@testing-library/user-event";
 import UserPreference from "./UserPreference";
 import { useAuth } from "@/store/auth/AuthContext";
-import React from "react";
 import { renderWithReactQuery } from "@/test-utils";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
@@ -31,13 +30,6 @@ vi.mock("react-router-dom", async () => {
 		useNavigate: () => mockNavigate,
 	};
 });
-
-import {
-	feedPreferenceSchema,
-	type FeedPreferenceFormData,
-	type IFeedPreferenceRequest,
-	type IFeedPreferenceUpdateRequest,
-} from "../forms/PreferenceSchema";
 
 function renderPage() {
 	const result = renderWithReactQuery(<UserPreference />);
@@ -362,7 +354,7 @@ describe("UserPreferencePage", () => {
 			}),
 		);
 
-		const { container } = renderPage();
+		renderPage();
 
 		// Wait for loading spinner to disappear (after retries)
 		await waitForElementToBeRemoved(() => screen.queryByLabelText("Loading"), {

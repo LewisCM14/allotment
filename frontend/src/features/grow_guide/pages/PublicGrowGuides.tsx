@@ -105,7 +105,7 @@ const PublicGrowGuides = () => {
 		);
 	} else {
 		content = (
-			<div
+			<section
 				className="space-y-6"
 				aria-label="Public grow guides grouped by family"
 			>
@@ -189,7 +189,7 @@ const PublicGrowGuides = () => {
 						No public guides available yet.
 					</p>
 				)}
-			</div>
+			</section>
 		);
 	}
 

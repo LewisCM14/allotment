@@ -3,7 +3,7 @@
  * This reduces initial bundle size by ~45KB for routes that don't immediately show toasts.
  */
 
-type ToastType = "success" | "error" | "info" | "warning" | "message";
+export type ToastType = "success" | "error" | "info" | "warning" | "message";
 
 interface ToastOptions {
 	description?: string;

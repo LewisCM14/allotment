@@ -1,10 +1,10 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EmailVerificationPage from "./EmailVerification";
 import * as RegistrationService from "../services/RegistrationService";
 import { renderWithRouter } from "@/test-utils";
 import { describe, it, beforeEach, vi, expect, type Mock } from "vitest";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 // Mock useNavigate
 const mockNavigate = vi.fn();

@@ -1,8 +1,7 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
-import React from "react";
 import PublicGrowGuides from "./PublicGrowGuides";
 import * as AuthContext from "@/store/auth/AuthContext";
 import { vi, type Mock } from "vitest";
@@ -51,7 +50,7 @@ describe("PublicGrowGuides Page", () => {
 	});
 
 	it("asks user to log in when copying while unauthenticated", async () => {
-		const { container } = renderPage(false);
+		renderPage(false);
 		const user = userEvent.setup();
 
 		// Expand all families
@@ -74,7 +73,7 @@ describe("PublicGrowGuides Page", () => {
 	});
 
 	it("copies guide for authenticated user and shows success toast", async () => {
-		const { container } = renderPage(true);
+		renderPage(true);
 		const user = userEvent.setup();
 
 		// Expand all families then click a "Use this guide" button to trigger copy

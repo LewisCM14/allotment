@@ -35,7 +35,7 @@ export const useUpdateUserFeedPreference = () => {
 			feedId: string;
 			data: IFeedPreferenceUpdateRequest;
 		}) => updateUserFeedPreference(feedId, data),
-		onSuccess: (data, variables) => {
+		onSuccess: (_data, variables) => {
 			// Optimistically update the cache with the new preference
 			queryClient.setQueryData<UserPreferencesRead>(
 				PREFERENCE_QUERY_KEYS.preferences,

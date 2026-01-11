@@ -1,8 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import RegisterForm from "./RegisterForm";
 import * as AuthContext from "@/store/auth/AuthContext";
-import * as RegistrationService from "../services/RegistrationService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,7 +12,7 @@ vi.mock("@/store/auth/AuthContext");
 vi.mock("../services/RegistrationService");
 
 // Helper to select the first non-empty country option
-async function selectFirstCountry() {
+async function _selectFirstCountry() {
 	const countrySelect = screen.queryByLabelText(/country/i);
 	if (countrySelect && countrySelect.querySelectorAll("option").length > 1) {
 		// Find the first non-empty value option
@@ -26,7 +25,7 @@ async function selectFirstCountry() {
 }
 
 // Custom matcher for split text nodes
-async function findTextContentMatch(
+async function _findTextContentMatch(
 	matcher: (text: string) => boolean,
 	{ timeout = 1000 }: { timeout?: number } = {},
 ) {

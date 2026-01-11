@@ -17,8 +17,10 @@ export const useEmailVerification = () => {
 		mutationFn: ({
 			token,
 			needsPasswordReset,
-		}: { token: string; needsPasswordReset: boolean }) =>
-			verifyEmail(token, needsPasswordReset),
+		}: {
+			token: string;
+			needsPasswordReset: boolean;
+		}) => verifyEmail(token, needsPasswordReset),
 		onSuccess: () => {
 			// Update local storage to indicate email is verified
 			localStorage.setItem("is_email_verified", "true");

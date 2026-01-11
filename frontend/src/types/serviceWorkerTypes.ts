@@ -1,4 +1,4 @@
-interface IServiceWorkerGlobalScope {
+export interface IServiceWorkerGlobalScope {
 	readonly registration: ServiceWorkerRegistration;
 	readonly caches: CacheStorage;
 	skipWaiting(): Promise<void>;
