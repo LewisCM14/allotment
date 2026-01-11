@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from types import TracebackType
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any, Dict, List, Optional, Type
 
 import structlog
 from sqlalchemy import select
@@ -332,7 +332,7 @@ class WeeklyTodoUnitOfWork:
             user_feed_days = result.scalars().all()
             return {ufd.feed_id: ufd.day_id for ufd in user_feed_days}
 
-    def _get_lifecycle_name(self, variety: Variety) -> Union[LifecycleType, str]:
+    def _get_lifecycle_name(self, variety: Variety) -> LifecycleType | str:
         """Extract lifecycle name or default to ANNUAL."""
         return (
             variety.lifecycle.lifecycle_name
@@ -518,7 +518,7 @@ class WeeklyTodoUnitOfWork:
         feed_week_start_id: uuid.UUID,
         feed_frequency_id: uuid.UUID,
         harvest_week_end_id: uuid.UUID,
-        lifecycle_name: Union[LifecycleType, str],
+        lifecycle_name: LifecycleType | str,
     ) -> bool:
         """
             Check if the given week is within the feeding period.
@@ -697,7 +697,7 @@ class WeeklyTodoUnitOfWork:
         iso_calendar = today.isocalendar()
         return iso_calendar[1]  # Week number
 
-    def _to_lifecycle_type(self, value: Union[LifecycleType, str]) -> LifecycleType:
+    def _to_lifecycle_type(self, value: LifecycleType | str) -> LifecycleType:
         """Coerce a string or enum to LifecycleType safely.
 
         Accepts lowercase/uppercase strings; defaults to ANNUAL if unknown.
