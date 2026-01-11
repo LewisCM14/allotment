@@ -172,7 +172,9 @@ console.error = (...args) => {
         typeof arg === 'string' &&
         (arg.includes('Warning: ReactDOM.render') ||
             arg.includes('Warning: An update to') ||
-            arg.includes('Warning: Can\'t perform a React state update'))
+            arg.includes('Warning: Can\'t perform a React state update') ||
+            // Suppress Radix UI asChild prop warning (known issue with React 19)
+            arg.includes('React does not recognize the `asChild` prop'))
     );
 
     if (!isTestingLibraryWarning) {
