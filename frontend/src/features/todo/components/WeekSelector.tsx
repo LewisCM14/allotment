@@ -168,7 +168,7 @@ export const WeekSelector = ({
 			</div>
 
 			{/* Carousel */}
-			<div
+			<section
 				aria-label="Select week number"
 				className="flex items-center gap-2 overflow-x-auto rounded-2xl border px-3 py-2 bg-background/50 scrollbar-thin touch-pan-x snap-x"
 				ref={scrollContainerRef}
@@ -210,7 +210,7 @@ export const WeekSelector = ({
 						</button>
 					);
 				})}
-			</div>
+			</section>
 		</div>
 	);
 };

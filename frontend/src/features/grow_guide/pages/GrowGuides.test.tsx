@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, beforeEach, expect, afterEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -11,7 +11,6 @@ import { GrowGuideListPresenter } from "../components/GrowGuideListPresenter";
 import { GrowGuideListContainer } from "../components/GrowGuideListContainer";
 import { useUserGrowGuides } from "../hooks/useUserGrowGuides";
 import type { VarietyList } from "../services/growGuideService";
-import type { VarietyListRead } from "../types/growGuideTypes";
 
 // Mock the dependencies
 vi.mock("sonner", () => ({
@@ -230,7 +229,7 @@ describe("GrowGuides", () => {
 
 describe("GrowGuideListPresenter", () => {
 	let queryClient: QueryClient;
-	let mockOnSelect: ReturnType<typeof vi.fn>;
+	let mockOnSelect: (id: string) => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {
@@ -870,7 +869,7 @@ describe("GrowGuideListPresenter", () => {
 		test("deactivating a guide does not affect other guides' toggle states", async () => {
 			// Regression test: ensure that when deactivating a guide,
 			// other guides maintain their current state (don't all appear to change)
-			const guidesWithOneActive = mockGrowGuides.map((g, idx) => ({
+			const guidesWithOneActive = mockGrowGuides.map((g, _idx) => ({
 				...g,
 				is_active: g.variety_name === "Cherry Tomato", // Make Cherry Tomato active
 			}));
@@ -989,7 +988,7 @@ describe("GrowGuideListPresenter", () => {
 
 describe("GrowGuideListContainer", () => {
 	let queryClient: QueryClient;
-	let mockOnSelect: ReturnType<typeof vi.fn>;
+	let mockOnSelect: (id: string) => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {

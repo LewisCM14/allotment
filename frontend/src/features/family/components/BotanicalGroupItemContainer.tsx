@@ -1,4 +1,3 @@
-import type * as React from "react";
 import { BotanicalGroupItemPresenter } from "./BotanicalGroupItemPresenter";
 import type { IBotanicalGroup } from "../services/FamilyService";
 

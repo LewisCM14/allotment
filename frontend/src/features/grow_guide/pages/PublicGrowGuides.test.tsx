@@ -1,17 +1,22 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
-import React from "react";
 import PublicGrowGuides from "./PublicGrowGuides";
 import * as AuthContext from "@/store/auth/AuthContext";
 import { vi, type Mock } from "vitest";
 
-vi.mock("sonner", () => ({
-	toast: {
-		success: vi.fn(),
-		error: vi.fn(),
-		info: vi.fn(),
+const mockToast = {
+	success: vi.fn(),
+	error: vi.fn(),
+	info: vi.fn(),
+};
+
+vi.mock("@/utils/lazyToast", () => ({
+	lazyToast: {
+		success: (...args: unknown[]) => mockToast.success(...args),
+		error: (...args: unknown[]) => mockToast.error(...args),
+		info: (...args: unknown[]) => mockToast.info(...args),
 	},
 }));
 
@@ -51,7 +56,7 @@ describe("PublicGrowGuides Page", () => {
 	});
 
 	it("asks user to log in when copying while unauthenticated", async () => {
-		const { container } = renderPage(false);
+		renderPage(false);
 		const user = userEvent.setup();
 
 		// Expand all families
@@ -69,12 +74,11 @@ describe("PublicGrowGuides Page", () => {
 		});
 		await user.click(buttons[0]);
 
-		const sonner = await import("sonner");
-		expect(sonner.toast.info).toHaveBeenCalled();
+		expect(mockToast.info).toHaveBeenCalled();
 	});
 
 	it("copies guide for authenticated user and shows success toast", async () => {
-		const { container } = renderPage(true);
+		renderPage(true);
 		const user = userEvent.setup();
 
 		// Expand all families then click a "Use this guide" button to trigger copy
@@ -90,9 +94,8 @@ describe("PublicGrowGuides Page", () => {
 		});
 		await user.click(buttons[0]);
 
-		const sonner = await import("sonner");
 		await waitFor(() => {
-			expect(sonner.toast.success).toHaveBeenCalled();
+			expect(mockToast.success).toHaveBeenCalled();
 		});
 	});
 

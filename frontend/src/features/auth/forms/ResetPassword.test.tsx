@@ -1,7 +1,6 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import ResetPassword from "./ResetPassword";
-import SetNewPassword from "./SetNewPassword";
 import * as AuthService from "../services/AuthService";
 import { vi, describe, it, beforeEach, expect, type Mock } from "vitest";
 import { MemoryRouter } from "react-router-dom";

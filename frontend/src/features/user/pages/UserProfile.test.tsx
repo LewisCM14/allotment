@@ -2,7 +2,6 @@ import { screen, waitFor, fireEvent, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import UserProfile from "./UserProfile";
 import { useAuth } from "@/store/auth/AuthContext";
-import React from "react";
 import { renderWithReactQuery } from "@/test-utils";
 import { describe, it, beforeEach, vi, expect, type Mock } from "vitest";
 import { server } from "@/mocks/server";
@@ -11,7 +10,7 @@ import { MemoryRouter } from "react-router-dom";
 
 // Mock additional dependencies that the page uses
 vi.mock("@/utils/errorUtils", () => ({
-	formatError: vi.fn((error) => "Formatted error message"),
+	formatError: vi.fn((_error) => "Formatted error message"),
 }));
 
 vi.mock("@/services/errorMonitoring", () => ({

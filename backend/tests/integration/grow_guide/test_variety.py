@@ -333,7 +333,7 @@ class TestVarietyEndpointsIntegration:
             json=variety_data,
         )
 
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert (
             "transplant week start and end must be provided together"
             in response.text.lower()

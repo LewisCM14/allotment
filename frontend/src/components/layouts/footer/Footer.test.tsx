@@ -17,7 +17,10 @@ vi.mock("@/components/ui/ToggleSwitch", () => ({
 	ToggleSwitch: ({
 		checked,
 		onCheckedChange,
-	}: { checked: boolean; onCheckedChange: () => void }) => (
+	}: {
+		checked: boolean;
+		onCheckedChange: () => void;
+	}) => (
 		<input
 			type="checkbox"
 			role="switch"

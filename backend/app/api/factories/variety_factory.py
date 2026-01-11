@@ -6,7 +6,7 @@ Variety Factory
 """
 
 import uuid
-from typing import AbstractSet, Any, Dict, List, Optional, Set, TypeVar, cast
+from typing import AbstractSet, Any, Dict, List, Optional, Set, cast
 from uuid import UUID
 
 import structlog
@@ -23,8 +23,6 @@ from app.api.middleware.logging_middleware import (
 )
 from app.api.models.grow_guide.variety_model import Variety, VarietyWaterDay
 from app.api.schemas.grow_guide.variety_schema import VarietyCreate, VarietyUpdate
-
-T = TypeVar("T")
 
 logger = structlog.get_logger()
 
@@ -257,7 +255,7 @@ class VarietyFactory:
     ) -> VarietyCreate:
         """Create a temporary VarietyCreate object for validation purposes."""
 
-        def effective(field: str, new_value: Optional[T], fallback_value: T) -> T:
+        def effective[T](field: str, new_value: Optional[T], fallback_value: T) -> T:
             """Return new_value if the field was provided (even if None), else fallback."""
             if field in provided_fields:
                 return cast(T, new_value)  # may be None for Optional[T]

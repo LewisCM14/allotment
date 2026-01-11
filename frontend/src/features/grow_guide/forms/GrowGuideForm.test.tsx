@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi, describe, it, beforeEach, expect, afterEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -70,8 +70,8 @@ const mockExistingGuide: VarietyRead = {
 
 describe("GrowGuideForm", () => {
 	let queryClient: QueryClient;
-	let mockOnClose: ReturnType<typeof vi.fn>;
-	let mockOnSuccess: ReturnType<typeof vi.fn>;
+	let mockOnClose: () => void;
+	let mockOnSuccess: () => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {
@@ -174,10 +174,10 @@ describe("GrowGuideForm", () => {
 
 			// Since Radix UI selects are difficult to test, we'll programmatically set the form values
 			// by triggering the form submission with mock data
-			const form = document.querySelector("form") as HTMLFormElement;
+			const _form = document.querySelector("form") as HTMLFormElement;
 
 			// Create a mock submit event with all required form data
-			const mockFormData = {
+			const _mockFormData = {
 				variety_name: "Test Tomato",
 				family_id: "solanaceae",
 				lifecycle_id: "annual",

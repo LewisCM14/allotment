@@ -47,7 +47,7 @@ export const useCreateUserAllotment = () => {
 			// Update the cache with the new allotment
 			queryClient.setQueryData(userAllotmentKeys.detail(), data);
 		},
-		onError: (error) => {
+		onError: (_error) => {
 			// Error handling is managed by the calling component
 		},
 	});
@@ -81,7 +81,7 @@ export const useUpdateUserAllotment = () => {
 			// Return a context object with the snapshotted value
 			return { previousAllotment };
 		},
-		onError: (error, newAllotment, context) => {
+		onError: (_error, _newAllotment, context) => {
 			// If the mutation fails, use the context returned from onMutate to roll back
 			if (context?.previousAllotment) {
 				queryClient.setQueryData(

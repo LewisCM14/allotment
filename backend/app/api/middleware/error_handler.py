@@ -14,7 +14,6 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    TypeVar,
 )
 
 import structlog
@@ -45,11 +44,8 @@ from app.api.middleware.logging_middleware import sanitize_error_message
 
 logger = structlog.get_logger()
 
-T = TypeVar("T")
-R = TypeVar("R")
 
-
-def translate_token_exceptions(
+def translate_token_exceptions[T](
     func: Callable[..., Awaitable[T]],
 ) -> Callable[..., Awaitable[T]]:
     """Decorator to translate JWT exceptions into application-specific exceptions"""
@@ -73,7 +69,7 @@ def translate_token_exceptions(
     return wrapper
 
 
-def translate_db_exceptions(
+def translate_db_exceptions[T](
     db_func: Callable[..., Awaitable[T]],
 ) -> Callable[..., Awaitable[T]]:
     """

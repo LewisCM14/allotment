@@ -54,13 +54,6 @@ const GrowGuides = () => {
 		});
 	}, [queryClient]);
 
-	// If the route was hit with a varietyId, open that guide in edit mode
-	useEffect(() => {
-		if (varietyIdParam) {
-			handleSelectGuide(varietyIdParam);
-		}
-	}, [varietyIdParam]);
-
 	const handleAddNew = () => {
 		setSelectedVarietyId(null);
 		setMode("create");
@@ -87,6 +80,13 @@ const GrowGuides = () => {
 		},
 		[queryClient],
 	);
+
+	// If the route was hit with a varietyId, open that guide in edit mode
+	useEffect(() => {
+		if (varietyIdParam) {
+			handleSelectGuide(varietyIdParam);
+		}
+	}, [varietyIdParam, handleSelectGuide]);
 
 	return (
 		<PageLayout>

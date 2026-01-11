@@ -359,19 +359,19 @@
 
 	header[class*="fixed"],
 	footer[class*="fixed"] {
-		position: fixed !important;
-		left: 0 !important;
-		right: 0 !important;
-		width: 100% !important;
+		position: fixed;
+		left: 0;
+		right: 0;
+		width: 100%;
 		will-change: transform;
-		z-index: 50 !important;
+		z-index: 50;
 	}
 
 	header[class*="fixed"] {
-		top: 0 !important;
+		top: 0;
 	}
 
 	footer[class*="fixed"] {
-		bottom: 0 !important;
+		bottom: 0;
 	}
 }

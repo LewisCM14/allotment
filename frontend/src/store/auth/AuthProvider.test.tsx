@@ -1,5 +1,5 @@
 /// <reference types="vitest/globals" />
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AuthProvider } from "./AuthProvider";
 import { AuthContext } from "./AuthContext";

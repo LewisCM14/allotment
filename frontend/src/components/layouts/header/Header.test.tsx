@@ -1,11 +1,4 @@
-import {
-	render,
-	screen,
-	waitFor,
-	queryByAttribute,
-	waitForElementToBeRemoved,
-	act,
-} from "@testing-library/react";
+import { render, screen, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import Header from "./HeaderContainer";
 import * as AuthContext from "@/store/auth/AuthContext";

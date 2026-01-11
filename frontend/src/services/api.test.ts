@@ -1,18 +1,8 @@
 import { http, HttpResponse } from "msw";
-import {
-	afterEach,
-	beforeEach,
-	describe,
-	expect,
-	it,
-	vi,
-	type Mock,
-	type MockInstance,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import { server } from "../mocks/server";
 import api, { handleApiError } from "./api";
-import { errorMonitor } from "./errorMonitoring";
 import { API_URL, API_VERSION } from "./apiConfig";
 
 describe("API Service", () => {
@@ -153,7 +143,7 @@ describe("API Service", () => {
 			);
 
 			// Mock window.location.href
-			const originalLocation = window.location;
+			const _originalLocation = window.location;
 			Object.defineProperty(window, "location", {
 				value: { href: "" },
 				writable: true,
@@ -301,7 +291,7 @@ describe("API Service", () => {
 
 		it("should handle absolute URLs without modification", async () => {
 			server.use(
-				http.get("https://external-api.com/data", ({ request }) => {
+				http.get("https://external-api.com/data", () => {
 					return HttpResponse.json({ external: true });
 				}),
 			);
@@ -313,12 +303,12 @@ describe("API Service", () => {
 
 	describe("Request cancellation", () => {
 		it("should cancel duplicate search requests", async () => {
-			let completedRequests = 0;
+			let _completedRequests = 0;
 
 			server.use(
 				http.get("*/search", async () => {
 					await new Promise((resolve) => setTimeout(resolve, 100));
-					completedRequests++;
+					_completedRequests++;
 					return HttpResponse.json({ results: [] });
 				}),
 			);
@@ -423,7 +413,7 @@ describe("API Service", () => {
 					writable: true,
 				});
 
-				const consoleWarnSpy = vi
+				const _consoleWarnSpy = vi
 					.spyOn(console, "warn")
 					.mockImplementation(() => {});
 

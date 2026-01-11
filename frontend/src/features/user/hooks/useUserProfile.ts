@@ -122,7 +122,7 @@ export const useEmailVerificationStatus = (email?: string) => {
 export const useRequestEmailVerification = () => {
 	return useMutation({
 		mutationFn: requestVerificationEmail,
-		onSuccess: (data, email) => {
+		onSuccess: (_data, _email) => {
 			// Don't optimistically update verification status since email needs to be clicked
 			// Just show success message to user
 		},

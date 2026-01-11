@@ -18,16 +18,12 @@ export default defineConfig({
 
         // Enable parallel test execution with threads
         pool: 'threads',
-        poolOptions: {
-            threads: {
-                minThreads: 2,
-                maxThreads: Math.max(2, Math.floor(os.cpus().length * 0.75)),
-            }
-        },
-        isolate: true, // Isolate each test file in its own thread
+        minWorkers: 2,
+        maxWorkers: Math.max(2, Math.floor(os.cpus().length * 0.75)),
+        isolate: true, // Isolate each test file in its own worker
 
-    // Additional performance settings: keep some parallelism but avoid oversubscription
-    maxConcurrency: 5, // Maximum concurrent tests per worker
+        // Additional performance settings: keep some parallelism but avoid oversubscription
+        maxConcurrency: 5, // Maximum concurrent tests per worker
         sequence: {
             shuffle: true, // Randomize test order to identify interference issues
         },
@@ -73,7 +69,6 @@ export default defineConfig({
             include: [
                 "src/**/*.{ts,tsx}"
             ],
-            all: true,
             thresholds: {
                 global: {
                     branches: 80,
