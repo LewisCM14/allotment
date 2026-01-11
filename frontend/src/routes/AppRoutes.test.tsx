@@ -175,61 +175,63 @@ describe("Application Routes", () => {
 	describe("Public Routes (unauthenticated)", () => {
 		it("renders login form at /login", async () => {
 			await renderWithRouter(["/login"], false);
-			expect(screen.getByTestId("login-form")).toBeInTheDocument();
+			expect(await screen.findByTestId("login-form")).toBeInTheDocument();
 		});
 
 		it("renders register form at /register", async () => {
 			await renderWithRouter(["/register"], false);
-			expect(screen.getByTestId("register-form")).toBeInTheDocument();
+			expect(await screen.findByTestId("register-form")).toBeInTheDocument();
 		});
 
 		it("renders reset password at /reset-password", async () => {
 			await renderWithRouter(["/reset-password"], false);
-			expect(screen.getByTestId("reset-password")).toBeInTheDocument();
+			expect(await screen.findByTestId("reset-password")).toBeInTheDocument();
 		});
 
 		it("redirects to login when accessing protected routes", async () => {
 			await renderWithRouter(["/profile"], false);
-			expect(screen.getByTestId("login-form")).toBeInTheDocument();
+			expect(await screen.findByTestId("login-form")).toBeInTheDocument();
 		});
 	});
 
 	describe("Protected Routes (authenticated)", () => {
 		it("renders home page at /", async () => {
 			await renderWithRouter(["/"], true);
-			expect(screen.getByText("Home Page")).toBeInTheDocument();
+			expect(await screen.findByText("Home Page")).toBeInTheDocument();
 		});
 
 		it("renders user profile at /profile", async () => {
 			await renderWithRouter(["/profile"], true);
-			expect(screen.getByTestId("user-profile")).toBeInTheDocument();
+			expect(await screen.findByTestId("user-profile")).toBeInTheDocument();
 		});
 
 		it("renders botanical groups at /botanical_groups", async () => {
 			await renderWithRouter(["/botanical_groups"], true);
-			expect(screen.getByTestId("botanical-groups")).toBeInTheDocument();
+			expect(await screen.findByTestId("botanical-groups")).toBeInTheDocument();
 		});
 
 		it("renders family info at /family/:familyId", async () => {
 			await renderWithRouter(["/family/123"], true);
-			expect(screen.getByTestId("family-info")).toBeInTheDocument();
+			expect(await screen.findByTestId("family-info")).toBeInTheDocument();
 		});
 
 		it("redirects to home when accessing public routes", async () => {
 			await renderWithRouter(["/login"], true);
-			expect(screen.getByText("Home Page")).toBeInTheDocument();
+			expect(await screen.findByText("Home Page")).toBeInTheDocument();
 		});
 	});
 
 	describe("Special Routes", () => {
 		it("renders email verification page", async () => {
 			await renderWithRouter(["/verify-email"], false);
-			expect(screen.getByTestId("email-verification")).toBeInTheDocument();
+			expect(
+				await screen.findByTestId("email-verification"),
+			).toBeInTheDocument();
 		});
 
 		it("renders not found page for unknown routes", async () => {
 			await renderWithRouter(["/unknown-route"], false);
-			expect(screen.getByTestId("not-found")).toBeInTheDocument();
+			expect(await screen.findByTestId("not-found")).toBeInTheDocument();
 		});
 	});
 

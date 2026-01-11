@@ -70,8 +70,8 @@ const mockExistingGuide: VarietyRead = {
 
 describe("GrowGuideForm", () => {
 	let queryClient: QueryClient;
-	let mockOnClose: ReturnType<typeof vi.fn>;
-	let mockOnSuccess: ReturnType<typeof vi.fn>;
+	let mockOnClose: () => void;
+	let mockOnSuccess: () => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {

@@ -229,7 +229,7 @@ describe("GrowGuides", () => {
 
 describe("GrowGuideListPresenter", () => {
 	let queryClient: QueryClient;
-	let mockOnSelect: ReturnType<typeof vi.fn>;
+	let mockOnSelect: (id: string) => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {
@@ -988,7 +988,7 @@ describe("GrowGuideListPresenter", () => {
 
 describe("GrowGuideListContainer", () => {
 	let queryClient: QueryClient;
-	let mockOnSelect: ReturnType<typeof vi.fn>;
+	let mockOnSelect: (id: string) => void;
 	let user: ReturnType<typeof userEvent.setup>;
 
 	beforeEach(() => {
