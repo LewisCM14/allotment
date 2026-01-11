@@ -77,7 +77,7 @@ class TestUserAllotment:
                     "allotment_width_meters": 10.0,
                     "allotment_length_meters": 20.0,
                 },
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             ),
             (
                 {
@@ -85,7 +85,7 @@ class TestUserAllotment:
                     "allotment_width_meters": 10.0,
                     "allotment_length_meters": 20.0,
                 },
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             ),
             (
                 {
@@ -93,7 +93,7 @@ class TestUserAllotment:
                     "allotment_width_meters": 0.5,
                     "allotment_length_meters": 10.0,
                 },
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             ),
             (
                 {
@@ -101,7 +101,7 @@ class TestUserAllotment:
                     "allotment_width_meters": 10.0,
                     "allotment_length_meters": 150.0,
                 },
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             ),
             (
                 {
@@ -109,7 +109,7 @@ class TestUserAllotment:
                     "allotment_width_meters": 10.0,
                     "allotment_length_meters": 20.0,
                 },
-                status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
             ),
         ],
     )

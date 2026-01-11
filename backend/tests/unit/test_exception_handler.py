@@ -126,7 +126,7 @@ class TestValidationExceptionHandler:
         resp = await validation_exception_handler(validation_request, exc)
         body = json.loads(resp.body.decode("utf-8"))
 
-        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         assert body["detail"][0]["msg"] == "Field missing"
         assert body["detail"][0]["code"] == GENERAL_VALIDATION_ERROR
 
