@@ -120,12 +120,24 @@ async def client_fixture():
 
 @pytest.fixture(autouse=True)
 def prevent_real_emails(monkeypatch):
-    """Prevent real emails from being sent during tests."""
+    """Prevent real emails from being sent during tests.
+
+    Mocks the internal _send_email_with_retry function which uses httpx
+    directly to call the Resend API.
+    """
     # Override mail settings
     monkeypatch.setenv("RESEND_API_KEY_SEND", "re_test_key_1234567890")
     monkeypatch.setenv("MAIL_FROM", "test@resend.dev")
 
-    # Mock Resend API
+    # Mock _send_email_with_retry which is the actual function that sends emails via httpx
+    async def mock_send_email_with_retry(params, max_attempts=5, base_delay=0.5):
+        return {"id": "test-email-id-12345"}
+
+    monkeypatch.setattr(
+        email_service, "_send_email_with_retry", mock_send_email_with_retry
+    )
+
+    # Also mock resend.Emails.send for any code that might use it directly
     class MockResendEmails:
         @staticmethod
         def send(params):
