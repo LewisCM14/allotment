@@ -3,7 +3,8 @@ import userEvent from "@testing-library/user-event";
 import UserProfile from "./UserProfile";
 import { useAuth } from "@/store/auth/AuthContext";
 import { renderWithReactQuery } from "@/test-utils";
-import { describe, it, beforeEach, vi, expect, type Mock } from "vitest";
+import { describe, it, beforeEach, afterEach, vi, expect, type Mock } from "vitest";
+import type { QueryClient } from "@tanstack/react-query";
 import { server } from "@/mocks/server";
 import { http, HttpResponse } from "msw";
 import { MemoryRouter } from "react-router-dom";
@@ -42,12 +43,16 @@ vi.mock("@/store/auth/AuthContext", () => ({
 	useAuth: vi.fn(),
 }));
 
+let activeQueryClient: QueryClient | null = null;
+
 function renderPage() {
-	return renderWithReactQuery(
+	const result = renderWithReactQuery(
 		<MemoryRouter>
 			<UserProfile />
 		</MemoryRouter>,
 	);
+	activeQueryClient = result.queryClient;
+	return result;
 }
 
 describe("UserProfile", () => {
@@ -114,6 +119,14 @@ describe("UserProfile", () => {
 				},
 			),
 		);
+	});
+
+	afterEach(() => {
+		if (activeQueryClient) {
+			activeQueryClient.cancelQueries();
+			activeQueryClient.clear();
+			activeQueryClient = null;
+		}
 	});
 
 	describe("Basic Page Functionality", () => {

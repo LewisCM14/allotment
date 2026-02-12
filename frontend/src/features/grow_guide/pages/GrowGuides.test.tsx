@@ -244,6 +244,8 @@ describe("GrowGuideListPresenter", () => {
 	});
 
 	afterEach(() => {
+		queryClient.cancelQueries();
+		queryClient.clear();
 		vi.clearAllMocks();
 	});
 
