@@ -40,8 +40,10 @@ export function renderWithReactQuery(
 ) {
 	const testQueryClient = createTestQueryClient();
 
-	return render(
+	const renderResult = render(
 		<QueryClientProvider client={testQueryClient}>{ui}</QueryClientProvider>,
 		options,
 	);
+
+	return { ...renderResult, queryClient: testQueryClient };
 }
