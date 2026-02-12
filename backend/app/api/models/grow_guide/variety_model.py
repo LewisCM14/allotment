@@ -25,6 +25,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.api.core.database import Base
 
+WEEK_FK = "week.week_id"
+FREQUENCY_FK = "frequency.frequency_id"
+
 if TYPE_CHECKING:
     from app.api.models.family.family_model import Family
     from app.api.models.grow_guide.calendar_model import Day
@@ -80,13 +83,13 @@ class Variety(Base):
     # Sowing details
     sow_week_start_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=False,
         index=True,
     )
     sow_week_end_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=False,
         index=True,
     )
@@ -94,13 +97,13 @@ class Variety(Base):
     # Transplant details
     transplant_week_start_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=True,
         index=True,
     )
     transplant_week_end_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=True,
         index=True,
     )
@@ -132,13 +135,13 @@ class Variety(Base):
     feed: Mapped[Optional["Feed"]] = relationship("Feed")
     feed_week_start_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=True,
         index=True,
     )
     feed_frequency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("frequency.frequency_id"),
+        ForeignKey(FREQUENCY_FK),
         nullable=True,
         index=True,
     )
@@ -149,7 +152,7 @@ class Variety(Base):
     # Watering details
     water_frequency_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("frequency.frequency_id"),
+        ForeignKey(FREQUENCY_FK),
         nullable=False,
         index=True,
     )
@@ -161,7 +164,7 @@ class Variety(Base):
     high_temp_degrees: Mapped[int] = mapped_column(Integer, nullable=False)
     high_temp_water_frequency_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("frequency.frequency_id"),
+        ForeignKey(FREQUENCY_FK),
         nullable=False,
         index=True,
     )
@@ -172,13 +175,13 @@ class Variety(Base):
     # Harvest details
     harvest_week_start_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=False,
         index=True,
     )
     harvest_week_end_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=False,
         index=True,
     )
@@ -186,13 +189,13 @@ class Variety(Base):
     # Prune details
     prune_week_start_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=True,
         index=True,
     )
     prune_week_end_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("week.week_id"),
+        ForeignKey(WEEK_FK),
         nullable=True,
         index=True,
     )

@@ -123,7 +123,7 @@ class TestValidationExceptionHandler:
     ):
         """Test validation exception returns proper error format."""
         exc = RequestValidationError(validation_errors)
-        resp = await validation_exception_handler(validation_request, exc)
+        resp = validation_exception_handler(validation_request, exc)
         body = json.loads(resp.body.decode("utf-8"))
 
         assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
@@ -142,7 +142,7 @@ class TestHTTPExceptionHandler:
     async def test_http_exception_handler(self, http_request):
         """Test HTTP exception returns proper error format."""
         exc = HTTPException(status_code=404, detail="Not found")
-        resp = await http_exception_handler(http_request, exc)
+        resp = http_exception_handler(http_request, exc)
         body = json.loads(resp.body.decode("utf-8"))
 
         assert resp.status_code == 404
@@ -161,7 +161,7 @@ class TestApplicationExceptionHandler:
     async def test_application_exception_handler(self, app_request):
         """Test application exception returns proper error format."""
         error = BusinessLogicError(message="Business failure")
-        resp = await application_exception_handler(app_request, error)
+        resp = application_exception_handler(app_request, error)
         body = json.loads(resp.body.decode("utf-8"))
 
         assert resp.status_code == status.HTTP_400_BAD_REQUEST
@@ -180,7 +180,7 @@ class TestGeneralExceptionHandler:
     async def test_general_exception_handler(self, general_request):
         """Test general exception returns sanitized error."""
         error = Exception("Unexpected error")
-        resp = await general_exception_handler(general_request, error)
+        resp = general_exception_handler(general_request, error)
         body = json.loads(resp.body.decode("utf-8"))
 
         assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR

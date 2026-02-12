@@ -26,7 +26,7 @@ class TestExceptionHandlers:
         from app.api.middleware.exception_handler import application_exception_handler
 
         mock_request = MagicMock(spec=Request)
-        response = await application_exception_handler(mock_request, error)
+        response = application_exception_handler(mock_request, error)
 
         assert response.status_code == error.status_code
         content = response.body.decode()
@@ -41,7 +41,7 @@ class TestExceptionHandlers:
         from app.api.middleware.exception_handler import application_exception_handler
 
         mock_request = MagicMock(spec=Request)
-        response = await application_exception_handler(mock_request, error)
+        response = application_exception_handler(mock_request, error)
 
         assert response.status_code == error.status_code
         content = response.body.decode()
@@ -56,7 +56,7 @@ class TestExceptionHandlers:
         from app.api.middleware.exception_handler import application_exception_handler
 
         mock_request = MagicMock(spec=Request)
-        response = await application_exception_handler(mock_request, error)
+        response = application_exception_handler(mock_request, error)
 
         assert response.status_code == error.status_code
         content = response.body.decode()

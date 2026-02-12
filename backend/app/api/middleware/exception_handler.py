@@ -225,9 +225,7 @@ def _format_validation_error(error: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-async def validation_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle FastAPI validation errors with proper formatting and logging."""
     if not isinstance(exc, RequestValidationError):
         raise exc  # safety check, should not occur with proper registration
@@ -251,7 +249,7 @@ async def validation_exception_handler(
     )
 
 
-async def pydantic_validation_exception_handler(
+def pydantic_validation_exception_handler(
     request: Request, exc: Exception
 ) -> JSONResponse:
     """Handle direct Pydantic validation errors."""
@@ -292,7 +290,7 @@ async def pydantic_validation_exception_handler(
     )
 
 
-async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle FastAPI HTTP exceptions with consistent formatting."""
     if not isinstance(exc, HTTPException):
         raise exc
@@ -322,9 +320,7 @@ async def http_exception_handler(request: Request, exc: Exception) -> JSONRespon
     )
 
 
-async def application_exception_handler(
-    request: Request, exc: Exception
-) -> JSONResponse:
+def application_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle custom application exceptions."""
     if not isinstance(exc, BaseApplicationError):
         raise exc
@@ -350,7 +346,7 @@ async def application_exception_handler(
     )
 
 
-async def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+def general_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unexpected exceptions."""
     request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
 
@@ -527,7 +523,7 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                     exception_type=type(e).__name__,
                     exception_message=str(e),
                 )
-                response = await general_exception_handler(request, e)
+                response = general_exception_handler(request, e)
             except Exception as e:
                 logger.error(
                     "Exception intercepted in ExceptionHandlingMiddleware.dispatch",
@@ -535,9 +531,9 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                     exception_message=str(e),
                 )
                 if isinstance(e, BaseApplicationError):
-                    response = await application_exception_handler(request, e)
+                    response = application_exception_handler(request, e)
                 else:
-                    response = await general_exception_handler(request, e)
+                    response = general_exception_handler(request, e)
         except Exception as e:
             # Catch any exception not caught above (e.g., in route handler before response)
             logger.error(
@@ -545,7 +541,7 @@ class ExceptionHandlingMiddleware(BaseHTTPMiddleware):
                 exception_type=type(e).__name__,
                 exception_message=str(e),
             )
-            response = await general_exception_handler(request, e)
+            response = general_exception_handler(request, e)
 
         logger.debug(
             "Response created by ExceptionHandlingMiddleware.dispatch",
