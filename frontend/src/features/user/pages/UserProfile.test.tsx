@@ -3,7 +3,15 @@ import userEvent from "@testing-library/user-event";
 import UserProfile from "./UserProfile";
 import { useAuth } from "@/store/auth/AuthContext";
 import { renderWithReactQuery } from "@/test-utils";
-import { describe, it, beforeEach, afterEach, vi, expect, type Mock } from "vitest";
+import {
+	describe,
+	it,
+	beforeEach,
+	afterEach,
+	vi,
+	expect,
+	type Mock,
+} from "vitest";
 import type { QueryClient } from "@tanstack/react-query";
 import { server } from "@/mocks/server";
 import { http, HttpResponse } from "msw";
