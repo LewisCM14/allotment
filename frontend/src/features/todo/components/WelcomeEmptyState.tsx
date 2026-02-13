@@ -37,7 +37,7 @@ export const WelcomeEmptyState = () => {
 							</h3>
 							<div className="space-y-3">
 								<div className="flex items-start gap-3">
-									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 										1
 									</div>
 									<div>
@@ -48,7 +48,7 @@ export const WelcomeEmptyState = () => {
 									</div>
 								</div>
 								<div className="flex items-start gap-3">
-									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 										2
 									</div>
 									<div>
@@ -59,7 +59,7 @@ export const WelcomeEmptyState = () => {
 									</div>
 								</div>
 								<div className="flex items-start gap-3">
-									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+									<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 										3
 									</div>
 									<div>

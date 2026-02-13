@@ -40,10 +40,18 @@ vi.stubGlobal("import.meta", {
     },
 });
 
-// Mock window.envConfig for runtime configuration in tests
+// Mock globalThis.envConfig for runtime configuration in tests
+globalThis.envConfig = {
+    VITE_API_URL: "http://localhost:8000",
+    VITE_API_VERSION: "/api/v1",
+    VITE_APP_TITLE: "Allotment Test",
+    VITE_CONTACT_EMAIL: "test@example.com",
+    VITE_FORCE_AUTH: "false",
+};
+
 vi.stubGlobal("window", {
-    ...global.window, // preserve jsdom's document and all other properties
-    document: global.window.document, // ensure document is present
+    ...globalThis.window, // preserve jsdom's document and all other properties
+    document: globalThis.window.document, // ensure document is present
     location: {
         href: "http://localhost:3000",
         origin: "http://localhost:3000",
@@ -57,13 +65,6 @@ vi.stubGlobal("window", {
         reload: vi.fn(),
         replace: vi.fn(),
         assign: vi.fn(),
-    },
-    envConfig: {
-        VITE_API_URL: "http://localhost:8000",
-        VITE_API_VERSION: "/api/v1",
-        VITE_APP_TITLE: "Allotment Test",
-        VITE_CONTACT_EMAIL: "test@example.com",
-        VITE_FORCE_AUTH: "false",
     },
     localStorage: localStorageMock,
     navigator: {
@@ -82,7 +83,7 @@ vi.stubGlobal("window", {
         boxSizing: 'border-box',
     })),
     matchMedia:
-        global.window?.matchMedia ||
+        globalThis.window?.matchMedia ||
         vi.fn().mockImplementation((query) => ({
             matches: false,
             media: query,
@@ -96,10 +97,10 @@ vi.stubGlobal("window", {
 });
 
 // Set up global mocks for browser APIs
-Object.defineProperty(global, "localStorage", { value: localStorageMock });
+Object.defineProperty(globalThis, "localStorage", { value: localStorageMock });
 
-if (global.window && !global.window.matchMedia) {
-    global.window.matchMedia = vi.fn().mockImplementation((query) => ({
+if (globalThis.window && !globalThis.window.matchMedia) {
+    globalThis.window.matchMedia = vi.fn().mockImplementation((query) => ({
         matches: false,
         media: query,
         onchange: null,
@@ -112,8 +113,8 @@ if (global.window && !global.window.matchMedia) {
 }
 
 // Mock getComputedStyle for components that need it (like react-remove-scroll-bar)
-if (global.window && !global.window.getComputedStyle) {
-    global.window.getComputedStyle = vi.fn().mockImplementation(() => ({
+if (globalThis.window && !globalThis.window.getComputedStyle) {
+    globalThis.window.getComputedStyle = vi.fn().mockImplementation(() => ({
         marginLeft: '0px',
         marginRight: '0px',
         paddingLeft: '0px',
@@ -155,7 +156,7 @@ afterEach(() => {
     });
 
     // Reset document body
-    if (global.document) {
+    if (globalThis.document) {
         document.body.innerHTML = '';
     }
 });

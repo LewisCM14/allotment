@@ -1,7 +1,7 @@
 import { widthClasses } from "@/components/layouts/layoutConfig";
 import { cn } from "@/utils/utils";
 
-interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
+interface IPageLayout extends Readonly<React.HTMLAttributes<HTMLDivElement>> {
 	readonly children: React.ReactNode;
 	readonly variant?: "default";
 	readonly centered?: boolean;

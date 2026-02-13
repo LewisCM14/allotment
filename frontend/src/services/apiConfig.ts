@@ -1,6 +1,6 @@
 /**
  * Retrieves an environment variable.
- * Prioritizes runtime configuration from `window.envConfig` (loaded from env-config.js),
+ * Prioritizes runtime configuration from `globalThis.envConfig` (loaded from env-config.js),
  * then falls back to build-time environment variables from `import.meta.env`.
  *
  * @param key The environment variable key (e.g., "VITE_API_URL").
@@ -11,8 +11,7 @@ const getEnvVariable = (
 	key: string,
 	defaultValue?: string,
 ): string | undefined => {
-	const runtimeVar =
-		typeof window !== "undefined" ? window.envConfig?.[key] : undefined;
+	const runtimeVar = globalThis.envConfig?.[key];
 	const buildTimeVar =
 		import.meta.env?.[key] != null ? String(import.meta.env[key]) : undefined;
 

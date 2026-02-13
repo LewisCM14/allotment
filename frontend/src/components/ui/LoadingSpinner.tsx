@@ -3,7 +3,7 @@ import { cn } from "@/utils/utils";
 import React from "react";
 
 export interface LoadingSpinnerProps
-	extends React.HTMLAttributes<HTMLOutputElement> {
+	extends Readonly<React.HTMLAttributes<HTMLOutputElement>> {
 	/** visual size */
 	readonly size?: "sm" | "md" | "lg" | "xl";
 	/** optional accessible label; defaults to "Loading" */

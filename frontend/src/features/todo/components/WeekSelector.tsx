@@ -110,7 +110,7 @@ export const WeekSelector = ({
 	return (
 		<div className="space-y-3 bg-card border rounded-lg p-4 shadow-sm">
 			<div className="flex items-center gap-2">
-				<div className="flex-shrink-0">
+				<div className="shrink-0">
 					<Button
 						variant="outline"
 						size="icon"
@@ -143,7 +143,7 @@ export const WeekSelector = ({
 					</div>
 				</div>
 
-				<div className="flex-shrink-0">
+				<div className="shrink-0">
 					<Button
 						variant="outline"
 						size="icon"

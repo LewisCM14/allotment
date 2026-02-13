@@ -12,9 +12,8 @@ interface EnvConfig {
 }
 
 declare global {
-	interface Window {
-		envConfig?: EnvConfig;
-	}
+	// eslint-disable-next-line no-var
+	var envConfig: EnvConfig | undefined;
 }
 
 declare module "*.png*" {
