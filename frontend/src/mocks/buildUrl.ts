@@ -5,7 +5,7 @@ export const buildUrl = (path: string) => {
 		? API_VERSION
 		: `/${API_VERSION}`;
 	const pathSegment = path.startsWith("/") ? path : `/${path}`;
-	return `${API_URL}${apiVersionSegment}${pathSegment}`.replace(
+	return `${API_URL}${apiVersionSegment}${pathSegment}`.replaceAll(
 		/([^:]\/)\/+/g,
 		"$1",
 	);
