@@ -534,8 +534,11 @@ describe("UserProfile", () => {
 		});
 
 		it("handles online/offline events", () => {
-			const addEventListenerSpy = vi.spyOn(window, "addEventListener");
-			const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
+			const addEventListenerSpy = vi.spyOn(globalThis, "addEventListener");
+			const removeEventListenerSpy = vi.spyOn(
+				globalThis,
+				"removeEventListener",
+			);
 
 			const { unmount } = renderPage();
 

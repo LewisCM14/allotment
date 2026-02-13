@@ -42,7 +42,7 @@ class ErrorMonitoringService {
 	captureException(error: unknown, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
 			// For easier test migration, match legacy signature if context is present
-			if (context && context.context === "loadAuthFromIndexedDB") {
+			if (context?.context === "loadAuthFromIndexedDB") {
 				console.error("Error loading auth from IndexedDB:", error);
 			} else {
 				console.error("[ErrorMonitor]", error, context);
@@ -57,7 +57,7 @@ class ErrorMonitoringService {
 					stack: error instanceof Error ? error.stack : undefined,
 					context,
 					timestamp: new Date().toISOString(),
-					url: window.location.href,
+					url: globalThis.location.href,
 					userAgent: navigator.userAgent,
 				},
 			};
@@ -96,7 +96,7 @@ class ErrorMonitoringService {
 	captureMessage(message: string, context?: IErrorContext): void {
 		if (!import.meta.env.PROD) {
 			// For easier test migration, match legacy signature if context is present
-			if (context && context.context === "loadAuthFromIndexedDB") {
+			if (context?.context === "loadAuthFromIndexedDB") {
 				console.info("Error loading auth from IndexedDB:", message);
 			} else {
 				console.info("[ErrorMonitor]", message, context);
@@ -111,7 +111,7 @@ class ErrorMonitoringService {
 					level: "info",
 					context,
 					timestamp: new Date().toISOString(),
-					url: window.location.href,
+					url: globalThis.location.href,
 					userAgent: navigator.userAgent,
 				},
 			};

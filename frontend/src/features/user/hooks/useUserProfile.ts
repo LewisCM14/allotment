@@ -79,7 +79,7 @@ export const useUpdateUserProfile = () => {
 			errorMonitor.captureException(error, {
 				context: "useUpdateUserProfile.mutation",
 				variables: variables,
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 		},
 		onSuccess: (data) => {
@@ -130,7 +130,7 @@ export const useRequestEmailVerification = () => {
 			// Log the error for monitoring
 			errorMonitor.captureException(error, {
 				context: "useRequestEmailVerification.mutation",
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 		},
 	});
@@ -159,7 +159,7 @@ export const useRefreshVerificationStatus = () => {
 			// Log the error for monitoring
 			errorMonitor.captureException(error, {
 				context: "useRefreshVerificationStatus.mutation",
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 		},
 	});

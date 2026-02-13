@@ -13,7 +13,7 @@ const getEnvVariable = (
 ): string | undefined => {
 	const runtimeVar = globalThis.envConfig?.[key];
 	const buildTimeVar =
-		import.meta.env?.[key] != null ? String(import.meta.env[key]) : undefined;
+		import.meta.env?.[key] == null ? undefined : String(import.meta.env[key]);
 
 	return runtimeVar ?? buildTimeVar ?? defaultValue;
 };
@@ -46,9 +46,9 @@ if (!configuredUrl) {
 const getApiUrl = (): string => {
 	let url = configuredUrl;
 	if (
-		typeof window !== "undefined" &&
+		globalThis.window !== undefined &&
 		url.startsWith("http:") &&
-		window.location.protocol === "https:"
+		globalThis.location.protocol === "https:"
 	) {
 		url = url.replace("http:", "https:");
 	}

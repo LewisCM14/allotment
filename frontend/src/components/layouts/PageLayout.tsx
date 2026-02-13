@@ -1,10 +1,10 @@
 import { widthClasses } from "@/components/layouts/layoutConfig";
 import { cn } from "@/utils/utils";
 
-interface IPageLayout extends Readonly<React.HTMLAttributes<HTMLDivElement>> {
-	readonly children: React.ReactNode;
-	readonly variant?: "default";
-	readonly centered?: boolean;
+interface IPageLayout extends React.HTMLAttributes<HTMLDivElement> {
+	children: React.ReactNode;
+	variant?: "default";
+	centered?: boolean;
 }
 
 export function PageLayout({
@@ -13,7 +13,7 @@ export function PageLayout({
 	centered = true,
 	className,
 	...props
-}: IPageLayout) {
+}: Readonly<IPageLayout>) {
 	return (
 		<main className="w-full">
 			<div

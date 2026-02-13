@@ -332,12 +332,14 @@ describe("API Service", () => {
 
 	describe("API Configuration", () => {
 		let originalWindow: Window & typeof globalThis;
+		let originalLocation: Location;
 		let originalImportMeta: ImportMeta;
 		let originalEnvConfig: typeof globalThis.envConfig;
 
 		beforeEach(() => {
 			// Store original values
 			originalWindow = global.window;
+			originalLocation = globalThis.location;
 			originalImportMeta = import.meta;
 			originalEnvConfig = globalThis.envConfig;
 
@@ -348,6 +350,11 @@ describe("API Service", () => {
 		afterEach(() => {
 			// Restore original values
 			global.window = originalWindow;
+			Object.defineProperty(globalThis, "location", {
+				value: originalLocation,
+				writable: true,
+				configurable: true,
+			});
 			globalThis.envConfig = originalEnvConfig;
 			Object.defineProperty(globalThis, "import", {
 				value: { meta: originalImportMeta },
@@ -364,11 +371,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "/runtime/v2",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				// Mock build-time env
@@ -403,11 +409,10 @@ describe("API Service", () => {
 				globalThis.envConfig = undefined;
 
 				// Mock window without envConfig
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "http:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "http:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				// Mock empty import.meta.env
@@ -439,11 +444,10 @@ describe("API Service", () => {
 					VITE_API_URL: "http://api.example.com",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -465,11 +469,10 @@ describe("API Service", () => {
 					VITE_API_URL: "https://api.example.com",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -491,11 +494,10 @@ describe("API Service", () => {
 					VITE_API_URL: "http://api.example.com",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "http:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "http:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -519,11 +521,10 @@ describe("API Service", () => {
 					VITE_API_URL: "https://api.example.com/",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -545,11 +546,10 @@ describe("API Service", () => {
 					VITE_API_URL: "https://api.example.com",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -573,11 +573,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "api/v2",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -599,11 +598,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "/api/v2/",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -625,11 +623,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "api/v3/",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -651,11 +648,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "/api/v1",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -707,11 +703,10 @@ describe("API Service", () => {
 					VITE_API_VERSION: "/api/v1",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -739,11 +734,10 @@ describe("API Service", () => {
 					VITE_API_URL: "https://api.allotment.wiki",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -771,11 +765,10 @@ describe("API Service", () => {
 					VITE_API_URL: "https://api.allotment.wiki",
 				};
 
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "https:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {

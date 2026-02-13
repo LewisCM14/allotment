@@ -35,8 +35,8 @@ const handlePwaRegistration = () => {
 function Main() {
 	useEffect(() => {
 		const loadWs = () => import("./utils/wsTracker");
-		if (window.requestIdleCallback) {
-			window.requestIdleCallback(loadWs);
+		if (globalThis.requestIdleCallback) {
+			globalThis.requestIdleCallback(loadWs);
 		} else {
 			setTimeout(loadWs, 0);
 		}
@@ -44,8 +44,8 @@ function Main() {
 
 	useEffect(() => {
 		if (import.meta.env.PROD) {
-			if (window.requestIdleCallback) {
-				window.requestIdleCallback(handlePwaRegistration);
+			if (globalThis.requestIdleCallback) {
+				globalThis.requestIdleCallback(handlePwaRegistration);
 			} else {
 				setTimeout(handlePwaRegistration, 0);
 			}

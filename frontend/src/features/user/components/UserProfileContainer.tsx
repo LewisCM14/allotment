@@ -64,14 +64,14 @@ export default function UserProfileContainer() {
 		const handleOnline = () => setIsOffline(false);
 		const handleOffline = () => setIsOffline(true);
 
-		if (typeof window !== "undefined" && window.addEventListener) {
-			window.addEventListener("online", handleOnline);
-			window.addEventListener("offline", handleOffline);
+		if (globalThis.window !== undefined && globalThis.addEventListener) {
+			globalThis.addEventListener("online", handleOnline);
+			globalThis.addEventListener("offline", handleOffline);
 
 			return () => {
-				if (window.removeEventListener) {
-					window.removeEventListener("online", handleOnline);
-					window.removeEventListener("offline", handleOffline);
+				if (globalThis.removeEventListener) {
+					globalThis.removeEventListener("online", handleOnline);
+					globalThis.removeEventListener("offline", handleOffline);
 				}
 			};
 		}
@@ -115,7 +115,7 @@ export default function UserProfileContainer() {
 			setError(`Failed to load profile data: ${errorMessage}`);
 			errorMonitor.captureException(profileError, {
 				context: "userProfile.loadData",
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 		} else {
 			setError("");
@@ -172,7 +172,7 @@ export default function UserProfileContainer() {
 				errorMonitor.captureException(err, {
 					context: "userProfile.save",
 					data: data,
-					url: window.location.href,
+					url: globalThis.location.href,
 				});
 				lazyToast.error("Update failed", {
 					description: errorMessage,
@@ -208,7 +208,7 @@ export default function UserProfileContainer() {
 			errorMonitor.captureException(err, {
 				context: "userProfile.requestVerification",
 				email: email,
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 			lazyToast.error("Request failed", {
 				description: errorMessage,
@@ -239,7 +239,7 @@ export default function UserProfileContainer() {
 			errorMonitor.captureException(err, {
 				context: "userProfile.refreshStatus",
 				email: email,
-				url: window.location.href,
+				url: globalThis.location.href,
 			});
 			lazyToast.error("Refresh failed", {
 				description: errorMessage,

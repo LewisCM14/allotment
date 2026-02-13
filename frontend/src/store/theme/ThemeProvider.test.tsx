@@ -34,8 +34,12 @@ describe("ThemeProvider", () => {
 		getItemMock.mockImplementation(() => null);
 		setItemMock.mockImplementation(() => {});
 
-		// Mock matchMedia
-		matchMediaMock = vi.spyOn(window, "matchMedia");
+		// Mock matchMedia – jsdom exposes it on `window` but not on `globalThis`,
+		// so we assign a base implementation first, then spy on it.
+		globalThis.matchMedia =
+			globalThis.matchMedia ??
+			((() => ({})) as unknown as typeof globalThis.matchMedia);
+		matchMediaMock = vi.spyOn(globalThis, "matchMedia");
 		matchMediaMock.mockImplementation(
 			(query: string) =>
 				({

@@ -9,7 +9,7 @@
  */
 export function setViewportHeight(): void {
 	// Get the actual viewport height
-	const vh = window.innerHeight * 0.01;
+	const vh = globalThis.innerHeight * 0.01;
 
 	// Set CSS custom property for accurate vh calculation
 	document.documentElement.style.setProperty("--vh", `${vh}px`);
@@ -24,17 +24,17 @@ export function initViewportHeight(): void {
 	setViewportHeight();
 
 	// Update on resize (handles orientation changes and URL bar show/hide)
-	window.addEventListener("resize", setViewportHeight);
+	globalThis.addEventListener("resize", setViewportHeight);
 
 	// Also listen for orientationchange for better mobile support
-	window.addEventListener("orientationchange", () => {
+	globalThis.addEventListener("orientationchange", () => {
 		// Small delay to ensure the browser has finished the orientation change
 		setTimeout(setViewportHeight, 100);
 	});
 
 	// Handle visual viewport API if available (for better Safari support)
-	if (window.visualViewport) {
-		window.visualViewport.addEventListener("resize", setViewportHeight);
+	if (globalThis.visualViewport) {
+		globalThis.visualViewport.addEventListener("resize", setViewportHeight);
 	}
 }
 
@@ -43,10 +43,10 @@ export function initViewportHeight(): void {
  * Call this when unmounting the app.
  */
 export function cleanupViewportHeight(): void {
-	window.removeEventListener("resize", setViewportHeight);
-	window.removeEventListener("orientationchange", setViewportHeight);
+	globalThis.removeEventListener("resize", setViewportHeight);
+	globalThis.removeEventListener("orientationchange", setViewportHeight);
 
-	if (window.visualViewport) {
-		window.visualViewport.removeEventListener("resize", setViewportHeight);
+	if (globalThis.visualViewport) {
+		globalThis.visualViewport.removeEventListener("resize", setViewportHeight);
 	}
 }
