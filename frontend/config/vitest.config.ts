@@ -15,10 +15,10 @@ export default defineConfig({
         // UI-heavy tests (Radix Select interactions, React Query, etc.) can be slow under load
         // Bump global timeout to reduce flakiness in parallel runs
         testTimeout: 30000,
+        hookTimeout: 30000,
 
         // Enable parallel test execution with threads
         pool: 'threads',
-        minWorkers: 2,
         maxWorkers: Math.max(2, Math.floor(os.cpus().length * 0.75)),
         isolate: true, // Isolate each test file in its own worker
 
