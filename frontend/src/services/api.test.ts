@@ -827,5 +827,40 @@ describe("API Service", () => {
 				expect(typeof mockEnvConfig.VITE_FORCE_AUTH).toBe("string");
 			});
 		});
+
+		describe("apiConfig fallback warnings", () => {
+			const savedEnvConfig = globalThis.envConfig;
+
+			afterEach(() => {
+				vi.resetModules();
+				globalThis.envConfig = savedEnvConfig;
+			});
+
+			it("warns when VITE_API_URL is empty string and falls back to default", async () => {
+				vi.resetModules();
+				const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+				globalThis.envConfig = { VITE_API_URL: "" };
+
+				const mod = await import("./apiConfig");
+
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("VITE_API_URL is not defined"),
+				);
+				expect(mod.API_URL).toBeTruthy();
+			});
+
+			it("warns when VITE_API_VERSION is empty string and falls back to /api/v1", async () => {
+				vi.resetModules();
+				const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+				globalThis.envConfig = { VITE_API_VERSION: "" };
+
+				const mod = await import("./apiConfig");
+
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("VITE_API_VERSION is not defined"),
+				);
+				expect(mod.API_VERSION).toBe("/api/v1");
+			});
+		});
 	});
 });

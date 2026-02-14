@@ -986,6 +986,67 @@ describe("GrowGuideListPresenter", () => {
 			expect(screen.queryByText("Bell Pepper")).not.toBeInTheDocument();
 		});
 	});
+
+	describe("Empty State and Edge Cases", () => {
+		it("renders empty state with onAddNew callback when no guides exist", async () => {
+			const onAddNew = vi.fn();
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={[]}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+					onAddNew={onAddNew}
+				/>,
+			);
+
+			// GrowGuideEmptyState should be displayed
+			expect(
+				screen.getByText(/you don't have any grow guides/i),
+			).toBeInTheDocument();
+			// Click the create button
+			const createBtn = screen.getByRole("button", {
+				name: /create your first guide/i,
+			});
+			await user.click(createBtn);
+			expect(onAddNew).toHaveBeenCalled();
+		});
+
+		it("shows no results message when search has no matches", async () => {
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={mockGrowGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+			const searchInput =
+				screen.getByPlaceholderText(/search/i) ||
+				screen.getByLabelText(/search/i);
+			await user.type(searchInput, "zzznomatch");
+			await waitFor(() => {
+				expect(screen.getByText(/no grow guides found/i)).toBeInTheDocument();
+			});
+		});
+
+		it("shows Active badge for active guides", () => {
+			const activeGuides = mockGrowGuides.map((g) => ({
+				...g,
+				is_active: g.variety_id === "variety-1",
+			}));
+			renderWithQueryClient(
+				<GrowGuideListPresenter
+					growGuides={activeGuides}
+					isLoading={false}
+					isError={false}
+					onSelect={mockOnSelect}
+				/>,
+			);
+			const activeBadges = screen.getAllByText("Active");
+			expect(activeBadges.length).toBeGreaterThan(0);
+		});
+	});
 });
 
 describe("GrowGuideListContainer", () => {

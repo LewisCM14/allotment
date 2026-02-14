@@ -6,6 +6,9 @@ import { AuthContext } from "./AuthContext";
 import { vi } from "vitest";
 import type { MockInstance } from "vitest";
 import * as authDB from "./authDB";
+import { http, HttpResponse } from "msw";
+import { server } from "@/mocks/server";
+import { errorMonitor } from "@/services/errorMonitoring";
 
 // Helper to consume the context
 function AuthConsumer() {
@@ -67,6 +70,66 @@ vi.mock("sonner", () => ({
 		error: vi.fn(),
 	},
 }));
+
+// Mock error monitoring
+vi.mock("@/services/errorMonitoring", () => ({
+	errorMonitor: {
+		captureException: vi.fn(),
+		captureMessage: vi.fn(),
+	},
+}));
+
+// Extended consumer for login-with-userData tests
+function AuthConsumerWithUserData() {
+	const context = useContext(AuthContext);
+	if (!context) return null;
+	const {
+		accessToken,
+		refreshToken,
+		isAuthenticated,
+		firstName,
+		user,
+		login,
+		logout,
+		refreshAccessToken,
+	} = context;
+
+	return (
+		<>
+			<span data-testid="access-token">{accessToken || "null"}</span>
+			<span data-testid="refresh-token">{refreshToken || "null"}</span>
+			<span data-testid="authenticated">{isAuthenticated.toString()}</span>
+			<span data-testid="first-name">{firstName || "null"}</span>
+			<span data-testid="user-id">{user?.user_id || "null"}</span>
+			<span data-testid="user-email">{user?.user_email || "null"}</span>
+			<button
+				type="button"
+				onClick={() =>
+					login(
+						{
+							access_token: "test-access",
+							refresh_token: "test-refresh",
+						},
+						"Test User",
+						{
+							user_id: "user-123",
+							user_email: "test@example.com",
+							is_email_verified: true,
+						},
+					)
+				}
+			>
+				Login With Data
+			</button>
+			<button type="button" onClick={logout}>
+				Logout
+			</button>
+			<button type="button" onClick={() => refreshAccessToken()}>
+				Refresh Token
+			</button>
+		</>
+	);
+}
 
 describe("AuthProvider", () => {
 	let getItemMock: MockInstance;
@@ -310,5 +373,254 @@ describe("AuthProvider", () => {
 		}).toThrow("useAuth must be used within an AuthProvider");
 
 		consoleSpy.mockRestore();
+	});
+
+	it("handles login with userData, storing user object and extra localStorage items", async () => {
+		render(
+			<AuthProvider>
+				<AuthConsumerWithUserData />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+		});
+
+		fireEvent.click(screen.getByText("Login With Data"));
+
+		await waitFor(() => {
+			expect(screen.getByTestId("access-token").textContent).toBe(
+				"test-access",
+			);
+			expect(screen.getByTestId("first-name").textContent).toBe("Test User");
+			expect(screen.getByTestId("user-id").textContent).toBe("user-123");
+			expect(screen.getByTestId("user-email").textContent).toBe(
+				"test@example.com",
+			);
+		});
+
+		// Should save user-specific data in localStorage
+		expect(setItemMock).toHaveBeenCalledWith("user_email", "test@example.com");
+		expect(setItemMock).toHaveBeenCalledWith("user_id", "user-123");
+		expect(setItemMock).toHaveBeenCalledWith("is_email_verified", "true");
+	});
+
+	it("loads from localStorage with firstName but no email, skipping user creation", async () => {
+		getItemMock.mockImplementation((key) => {
+			switch (key) {
+				case "access_token":
+					return "stored-access";
+				case "refresh_token":
+					return "stored-refresh";
+				case "first_name":
+					return "NoEmail User";
+				case "user_email":
+					return null;
+				default:
+					return null;
+			}
+		});
+
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+			expect(screen.getByTestId("first-name").textContent).toBe("NoEmail User");
+			// user should remain null since no email was available
+			expect(screen.getByTestId("user-id").textContent).toBe("null");
+		});
+	});
+
+	it("refreshAccessToken succeeds and updates tokens", async () => {
+		// Start with tokens from localStorage
+		getItemMock.mockImplementation((key) => {
+			switch (key) {
+				case "access_token":
+					return "old-access";
+				case "refresh_token":
+					return "old-refresh";
+				case "first_name":
+					return "Refresh User";
+				default:
+					return null;
+			}
+		});
+
+		server.use(
+			http.post("*/user/auth/refresh", () => {
+				return HttpResponse.json({
+					access_token: "new-access",
+					refresh_token: "new-refresh",
+				});
+			}),
+		);
+
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+		});
+
+		fireEvent.click(screen.getByText("Refresh Token"));
+
+		await waitFor(() => {
+			expect(screen.getByTestId("access-token").textContent).toBe("new-access");
+			expect(screen.getByTestId("refresh-token").textContent).toBe(
+				"new-refresh",
+			);
+		});
+
+		expect(setItemMock).toHaveBeenCalledWith("access_token", "new-access");
+		expect(setItemMock).toHaveBeenCalledWith("refresh_token", "new-refresh");
+		expect(saveAuthToIndexedDBMock).toHaveBeenCalledWith(
+			expect.objectContaining({
+				access_token: "new-access",
+				refresh_token: "new-refresh",
+				isAuthenticated: true,
+			}),
+		);
+	});
+
+	it("refreshAccessToken returns false when no refresh token exists", async () => {
+		// No tokens in localStorage - default mock is null
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+		});
+
+		fireEvent.click(screen.getByText("Refresh Token"));
+
+		// Should remain unauthenticated - refreshToken is null so it returns false
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+		});
+	});
+
+	it("refreshAccessToken handles 401 error and logs out", async () => {
+		getItemMock.mockImplementation((key) => {
+			switch (key) {
+				case "access_token":
+					return "old-access";
+				case "refresh_token":
+					return "old-refresh";
+				default:
+					return null;
+			}
+		});
+
+		server.use(
+			http.post("*/user/auth/refresh", () => {
+				return HttpResponse.json({ detail: "Token expired" }, { status: 401 });
+			}),
+		);
+
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+		});
+
+		fireEvent.click(screen.getByText("Refresh Token"));
+
+		// Should logout after 401
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+		});
+		expect(errorMonitor.captureException).toHaveBeenCalled();
+	});
+
+	it("refreshAccessToken handles non-401 API error and logs out", async () => {
+		getItemMock.mockImplementation((key) => {
+			switch (key) {
+				case "access_token":
+					return "old-access";
+				case "refresh_token":
+					return "old-refresh";
+				default:
+					return null;
+			}
+		});
+
+		server.use(
+			http.post("*/user/auth/refresh", () => {
+				return HttpResponse.json({ detail: "Forbidden" }, { status: 403 });
+			}),
+		);
+
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+		});
+
+		fireEvent.click(screen.getByText("Refresh Token"));
+
+		await waitFor(
+			() => {
+				expect(screen.getByTestId("authenticated").textContent).toBe("false");
+			},
+			{ timeout: 10000 },
+		);
+		expect(errorMonitor.captureException).toHaveBeenCalled();
+	});
+
+	it("refreshAccessToken handles network error and logs out", async () => {
+		getItemMock.mockImplementation((key) => {
+			switch (key) {
+				case "access_token":
+					return "old-access";
+				case "refresh_token":
+					return "old-refresh";
+				default:
+					return null;
+			}
+		});
+
+		server.use(
+			http.post("*/user/auth/refresh", () => {
+				return HttpResponse.json({ detail: "Bad request" }, { status: 400 });
+			}),
+		);
+
+		render(
+			<AuthProvider>
+				<AuthConsumer />
+			</AuthProvider>,
+		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+		});
+
+		fireEvent.click(screen.getByText("Refresh Token"));
+
+		await waitFor(
+			() => {
+				expect(screen.getByTestId("authenticated").textContent).toBe("false");
+			},
+			{ timeout: 10000 },
+		);
+		expect(errorMonitor.captureException).toHaveBeenCalled();
 	});
 });

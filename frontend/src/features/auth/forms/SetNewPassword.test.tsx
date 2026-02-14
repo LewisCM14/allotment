@@ -102,4 +102,68 @@ describe("SetNewPassword", () => {
 			"Password1!",
 		);
 	});
+
+	it("toggles new password visibility", async () => {
+		renderForm();
+		const passwordInput = screen.getByLabelText("New Password");
+		expect(passwordInput).toHaveAttribute("type", "password");
+		const toggleBtns = screen.getAllByRole("button", {
+			name: /show password/i,
+		});
+		await userEvent.click(toggleBtns[0]);
+		expect(passwordInput).toHaveAttribute("type", "text");
+		await userEvent.click(toggleBtns[0]);
+		expect(passwordInput).toHaveAttribute("type", "password");
+	});
+
+	it("toggles confirm password visibility", async () => {
+		renderForm();
+		const confirmInput = screen.getByLabelText("Confirm New Password");
+		expect(confirmInput).toHaveAttribute("type", "password");
+		const toggleBtns = screen.getAllByRole("button", {
+			name: /show password/i,
+		});
+		await userEvent.click(toggleBtns[1]);
+		expect(confirmInput).toHaveAttribute("type", "text");
+		await userEvent.click(toggleBtns[1]);
+		expect(confirmInput).toHaveAttribute("type", "password");
+	});
+
+	it("shows offline banner when navigator is offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(screen.getByText(/you are currently offline/i)).toBeInTheDocument();
+	});
+
+	it("disables submit button when offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(
+			screen.getByRole("button", { name: /reset password/i }),
+		).toBeDisabled();
+	});
+
+	it("shows generic error message for non-Error exceptions", async () => {
+		(AuthService.resetPassword as unknown as Mock).mockRejectedValue(
+			"string error",
+		);
+		renderForm();
+		await userEvent.type(screen.getByLabelText("New Password"), "Password1!");
+		await userEvent.type(
+			screen.getByLabelText("Confirm New Password"),
+			"Password1!",
+		);
+		await userEvent.click(
+			screen.getByRole("button", { name: /reset password/i }),
+		);
+		expect(
+			await screen.findByText(/password reset failed/i),
+		).toBeInTheDocument();
+	});
 });

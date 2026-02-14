@@ -966,6 +966,47 @@ describe("UserProfile", () => {
 			// Should handle missing email gracefully
 			expect(verificationButton).toBeInTheDocument();
 		});
+
+		it("handles missing email for refresh status operation", async () => {
+			(useAuth as unknown as Mock).mockReturnValue({
+				user: {
+					user_email: "",
+					user_first_name: "Testy",
+					isEmailVerified: false,
+				},
+				firstName: "Testy",
+				isAuthenticated: true,
+			});
+
+			server.use(
+				http.get("http://localhost:8000/api/v1/users/profile", () => {
+					return HttpResponse.json({
+						user_id: "test-user-id",
+						user_email: "",
+						user_first_name: "Testy",
+						user_country_code: "GB",
+						is_email_verified: false,
+					});
+				}),
+			);
+
+			renderPage();
+
+			await waitFor(() => {
+				const refreshButton = screen.getByRole("button", {
+					name: /refresh status/i,
+				});
+				expect(refreshButton).toBeEnabled();
+			});
+
+			const refreshButton = screen.getByRole("button", {
+				name: /refresh status/i,
+			});
+			await userEvent.click(refreshButton);
+
+			// Should remain on page - no email error handled gracefully
+			expect(refreshButton).toBeInTheDocument();
+		});
 	});
 
 	// Legacy test kept for compatibility
