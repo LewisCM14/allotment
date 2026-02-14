@@ -40,11 +40,11 @@ export const useDeleteVariety = () => {
 			}
 			// Force a full reload so the list is definitely up-to-date post-delete.
 			if (
-				typeof window !== "undefined" &&
-				typeof window.location?.reload === "function" &&
+				globalThis.window !== undefined &&
+				typeof globalThis.window.location?.reload === "function" &&
 				import.meta.env.MODE !== "test"
 			) {
-				window.location.reload();
+				globalThis.window.location.reload();
 			}
 		},
 		onSettled: () => {

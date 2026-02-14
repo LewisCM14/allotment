@@ -332,12 +332,16 @@ describe("API Service", () => {
 
 	describe("API Configuration", () => {
 		let originalWindow: Window & typeof globalThis;
+		let originalLocation: Location;
 		let originalImportMeta: ImportMeta;
+		let originalEnvConfig: typeof globalThis.envConfig;
 
 		beforeEach(() => {
 			// Store original values
 			originalWindow = global.window;
+			originalLocation = globalThis.location;
 			originalImportMeta = import.meta;
+			originalEnvConfig = globalThis.envConfig;
 
 			// Clear module cache to force re-evaluation of apiConfig
 			vi.resetModules();
@@ -346,6 +350,12 @@ describe("API Service", () => {
 		afterEach(() => {
 			// Restore original values
 			global.window = originalWindow;
+			Object.defineProperty(globalThis, "location", {
+				value: originalLocation,
+				writable: true,
+				configurable: true,
+			});
+			globalThis.envConfig = originalEnvConfig;
 			Object.defineProperty(globalThis, "import", {
 				value: { meta: originalImportMeta },
 				writable: true,
@@ -355,16 +365,16 @@ describe("API Service", () => {
 
 		describe("Environment variable handling", () => {
 			it("should prioritize runtime config over build-time env", async () => {
-				// Mock window with runtime config
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://runtime.example.com",
-							VITE_API_VERSION: "/runtime/v2",
-						},
-						location: { protocol: "https:" },
-					},
+				// Mock globalThis.envConfig with runtime config
+				globalThis.envConfig = {
+					VITE_API_URL: "https://runtime.example.com",
+					VITE_API_VERSION: "/runtime/v2",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				// Mock build-time env
@@ -395,12 +405,14 @@ describe("API Service", () => {
 				expect(API_VERSION.startsWith("/")).toBe(true);
 			});
 			it("should use default values when no env vars are set", async () => {
+				// Clear runtime config
+				globalThis.envConfig = undefined;
+
 				// Mock window without envConfig
-				Object.defineProperty(global, "window", {
-					value: {
-						location: { protocol: "http:" },
-					},
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "http:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				// Mock empty import.meta.env
@@ -428,14 +440,14 @@ describe("API Service", () => {
 
 		describe("HTTPS upgrade logic", () => {
 			it("should upgrade HTTP API URL to HTTPS when site is served over HTTPS", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "http://api.example.com",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "http://api.example.com",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -453,14 +465,14 @@ describe("API Service", () => {
 			});
 
 			it("should not modify HTTPS API URL when site is served over HTTPS", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.example.com",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.example.com",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -478,14 +490,14 @@ describe("API Service", () => {
 			});
 
 			it("should not modify HTTP API URL when site is served over HTTP", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "http://api.example.com",
-						},
-						location: { protocol: "http:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "http://api.example.com",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "http:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -505,14 +517,14 @@ describe("API Service", () => {
 
 		describe("URL formatting", () => {
 			it("should remove trailing slash from API URL", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.example.com/",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.example.com/",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -530,14 +542,14 @@ describe("API Service", () => {
 			});
 
 			it("should not modify API URL without trailing slash", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.example.com",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.example.com",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -557,14 +569,14 @@ describe("API Service", () => {
 
 		describe("API version formatting", () => {
 			it("should add leading slash to API version", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_VERSION: "api/v2",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_VERSION: "api/v2",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -582,14 +594,14 @@ describe("API Service", () => {
 			});
 
 			it("should remove trailing slash from API version", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_VERSION: "/api/v2/",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_VERSION: "/api/v2/",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -607,14 +619,14 @@ describe("API Service", () => {
 			});
 
 			it("should format API version with both leading and trailing slash issues", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_VERSION: "api/v3/",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_VERSION: "api/v3/",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -632,14 +644,14 @@ describe("API Service", () => {
 			});
 
 			it("should handle properly formatted API version", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_VERSION: "/api/v1",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_VERSION: "/api/v1",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -684,17 +696,17 @@ describe("API Service", () => {
 		});
 
 		describe("Production environment regression tests", () => {
-			it("should use production API when window.envConfig.VITE_API_URL is set to production URL", async () => {
+			it("should use production API when globalThis.envConfig.VITE_API_URL is set to production URL", async () => {
 				// This test prevents regression where localhost was used in production
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.allotment.wiki",
-							VITE_API_VERSION: "/api/v1",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.allotment.wiki",
+					VITE_API_VERSION: "/api/v1",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -718,14 +730,14 @@ describe("API Service", () => {
 
 			it("should never use localhost in production when runtime config is properly set", async () => {
 				// Simulate production environment with runtime config
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.allotment.wiki",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.allotment.wiki",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -749,14 +761,14 @@ describe("API Service", () => {
 			});
 
 			it("should use HTTPS in production environment", async () => {
-				Object.defineProperty(global, "window", {
-					value: {
-						envConfig: {
-							VITE_API_URL: "https://api.allotment.wiki",
-						},
-						location: { protocol: "https:" },
-					},
+				globalThis.envConfig = {
+					VITE_API_URL: "https://api.allotment.wiki",
+				};
+
+				Object.defineProperty(globalThis, "location", {
+					value: { protocol: "https:", href: "" },
 					writable: true,
+					configurable: true,
 				});
 
 				Object.defineProperty(globalThis, "import", {
@@ -791,7 +803,7 @@ describe("API Service", () => {
 			});
 
 			it("should validate that env-config.js structure matches expected format", () => {
-				// This ensures window.envConfig has the required structure
+				// This ensures globalThis.envConfig has the required structure
 				const mockEnvConfig = {
 					VITE_APP_TITLE: "Allotment",
 					VITE_API_URL: "https://api.allotment.wiki",
@@ -813,6 +825,41 @@ describe("API Service", () => {
 				expect(typeof mockEnvConfig.VITE_API_VERSION).toBe("string");
 				expect(typeof mockEnvConfig.VITE_CONTACT_EMAIL).toBe("string");
 				expect(typeof mockEnvConfig.VITE_FORCE_AUTH).toBe("string");
+			});
+		});
+
+		describe("apiConfig fallback warnings", () => {
+			const savedEnvConfig = globalThis.envConfig;
+
+			afterEach(() => {
+				vi.resetModules();
+				globalThis.envConfig = savedEnvConfig;
+			});
+
+			it("warns when VITE_API_URL is empty string and falls back to default", async () => {
+				vi.resetModules();
+				const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+				globalThis.envConfig = { VITE_API_URL: "" };
+
+				const mod = await import("./apiConfig");
+
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("VITE_API_URL is not defined"),
+				);
+				expect(mod.API_URL).toBeTruthy();
+			});
+
+			it("warns when VITE_API_VERSION is empty string and falls back to /api/v1", async () => {
+				vi.resetModules();
+				const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+				globalThis.envConfig = { VITE_API_VERSION: "" };
+
+				const mod = await import("./apiConfig");
+
+				expect(warnSpy).toHaveBeenCalledWith(
+					expect.stringContaining("VITE_API_VERSION is not defined"),
+				);
+				expect(mod.API_VERSION).toBe("/api/v1");
 			});
 		});
 	});

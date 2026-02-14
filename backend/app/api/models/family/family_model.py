@@ -28,19 +28,21 @@ if TYPE_CHECKING:
 
     from .botanical_group_model import BotanicalGroup
 
+FAMILY_FK = "family.family_id"
+
 family_antagonists_assoc = Table(
     "family_antagonist",
     Base.metadata,
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.family_id", ondelete="CASCADE"),
+        ForeignKey(FAMILY_FK, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "antagonist_family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.family_id", ondelete="CASCADE"),
+        ForeignKey(FAMILY_FK, ondelete="CASCADE"),
         primary_key=True,
     ),
 )
@@ -51,13 +53,13 @@ family_companions_assoc = Table(
     Column(
         "family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.family_id", ondelete="CASCADE"),
+        ForeignKey(FAMILY_FK, ondelete="CASCADE"),
         primary_key=True,
     ),
     Column(
         "companion_family_id",
         UUID(as_uuid=True),
-        ForeignKey("family.family_id", ondelete="CASCADE"),
+        ForeignKey(FAMILY_FK, ondelete="CASCADE"),
         primary_key=True,
     ),
 )

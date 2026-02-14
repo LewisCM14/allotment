@@ -44,7 +44,7 @@ export const GrowGuideEmptyState = memo(
 								</h3>
 								<div className="space-y-3">
 									<div className="flex items-start gap-3">
-										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 											📅
 										</div>
 										<div>
@@ -55,7 +55,7 @@ export const GrowGuideEmptyState = memo(
 										</div>
 									</div>
 									<div className="flex items-start gap-3">
-										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 											💧
 										</div>
 										<div>
@@ -66,7 +66,7 @@ export const GrowGuideEmptyState = memo(
 										</div>
 									</div>
 									<div className="flex items-start gap-3">
-										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium flex-shrink-0 mt-0.5">
+										<div className="rounded-full bg-primary text-primary-foreground w-6 h-6 flex items-center justify-center text-sm font-medium shrink-0 mt-0.5">
 											🌱
 										</div>
 										<div>

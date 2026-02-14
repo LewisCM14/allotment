@@ -5,17 +5,17 @@ import React from "react";
 export interface LoadingSpinnerProps
 	extends React.HTMLAttributes<HTMLOutputElement> {
 	/** visual size */
-	readonly size?: "sm" | "md" | "lg" | "xl";
+	size?: "sm" | "md" | "lg" | "xl";
 	/** optional accessible label; defaults to "Loading" */
-	readonly label?: string;
+	label?: string;
 	/** center contents with flex */
-	readonly center?: boolean;
+	center?: boolean;
 	/** take full viewport (used for app shell) */
-	readonly fullScreen?: boolean;
+	fullScreen?: boolean;
 	/** delay (ms) before showing spinner to avoid flashes */
-	readonly delay?: number;
+	delay?: number;
 	/** show inline (no default min height / centering) */
-	readonly inline?: boolean;
+	inline?: boolean;
 }
 
 const sizeMap: Record<NonNullable<LoadingSpinnerProps["size"]>, string> = {
@@ -38,7 +38,7 @@ export function LoadingSpinner({
 	inline = false,
 	className,
 	...rest
-}: LoadingSpinnerProps) {
+}: Readonly<LoadingSpinnerProps>) {
 	const [show, setShow] = React.useState(delay === 0);
 	React.useEffect(() => {
 		if (delay > 0) {

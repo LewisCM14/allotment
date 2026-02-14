@@ -40,7 +40,7 @@ class SecureBaseModel(BaseModel):
         for field in SENSITIVE_FIELDS:
             if field in data:
                 data[field] = REDACTED_VALUE
-            for key in list(data.keys()):
+            for key in data.keys():
                 if any(sensitive in key.lower() for sensitive in SENSITIVE_FIELDS):
                     data[key] = REDACTED_VALUE
         return data

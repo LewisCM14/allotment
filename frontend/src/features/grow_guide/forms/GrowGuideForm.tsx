@@ -307,7 +307,7 @@ export const GrowGuideForm = ({
 	// Key used to force full form subtree re-render after programmatic population
 	const formKey = useMemo(
 		() =>
-			mode !== "create" ? `detail-${varietyId}-${populateTick}` : "create",
+			mode === "create" ? "create" : `detail-${varietyId}-${populateTick}`,
 		[mode, varietyId, populateTick],
 	);
 
@@ -1083,7 +1083,7 @@ export const GrowGuideForm = ({
 
 	return (
 		<Dialog open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-			<DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+			<DialogContent className="sm:max-w-150 max-h-[90vh] overflow-y-auto">
 				<DialogHeader>
 					<DialogTitle className="text-2xl font-bold">{title}</DialogTitle>
 					<DialogDescription>

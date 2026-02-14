@@ -46,12 +46,12 @@ export default function SetNewPassword() {
 		const handleOnline = () => setIsOffline(false);
 		const handleOffline = () => setIsOffline(true);
 
-		window.addEventListener("online", handleOnline);
-		window.addEventListener("offline", handleOffline);
+		globalThis.addEventListener("online", handleOnline);
+		globalThis.addEventListener("offline", handleOffline);
 
 		return () => {
-			window.removeEventListener("online", handleOnline);
-			window.removeEventListener("offline", handleOffline);
+			globalThis.removeEventListener("online", handleOnline);
+			globalThis.removeEventListener("offline", handleOffline);
 		};
 	}, []);
 

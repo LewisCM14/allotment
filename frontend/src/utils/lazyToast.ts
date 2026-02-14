@@ -84,8 +84,8 @@ export function preloadToast(): void {
 		}
 	};
 
-	if (window.requestIdleCallback) {
-		window.requestIdleCallback(preload, { timeout: 2000 });
+	if (globalThis.requestIdleCallback) {
+		globalThis.requestIdleCallback(preload, { timeout: 2000 });
 	} else {
 		setTimeout(preload, 100);
 	}

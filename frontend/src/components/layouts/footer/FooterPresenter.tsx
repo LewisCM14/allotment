@@ -21,7 +21,8 @@ export function FooterPresenter({
 }: IFooterPresenter) {
 	const currentYear = new Date().getFullYear();
 	const contactEmail =
-		window.envConfig?.VITE_CONTACT_EMAIL ?? import.meta.env.VITE_CONTACT_EMAIL;
+		globalThis.envConfig?.VITE_CONTACT_EMAIL ??
+		import.meta.env.VITE_CONTACT_EMAIL;
 	const { theme, toggleTheme } = useTheme();
 
 	return (

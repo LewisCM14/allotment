@@ -22,7 +22,7 @@ export function HeaderPresenter({
 	onLinkHover,
 }: IHeaderPresenter) {
 	const appTitle =
-		window.envConfig?.VITE_APP_TITLE ??
+		globalThis.envConfig?.VITE_APP_TITLE ??
 		import.meta.env.VITE_APP_TITLE ??
 		"Allotment";
 

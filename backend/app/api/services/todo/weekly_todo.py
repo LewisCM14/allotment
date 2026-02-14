@@ -217,7 +217,7 @@ class WeeklyTodoUnitOfWork:
 
         current_week_number = current_week.week_number
 
-        async def add_task_if_in_range(
+        def add_task_if_in_range(
             task_key: str,
             start_id: Optional[uuid.UUID],
             end_id: Optional[uuid.UUID],
@@ -233,7 +233,7 @@ class WeeklyTodoUnitOfWork:
             # Narrow types for mypy
             sid, eid = start_id, end_id
             assert sid is not None and eid is not None
-            if await self._is_week_in_range_by_number(
+            if self._is_week_in_range_by_number(
                 current_week_number, sid, eid, week_id_to_number
             ):
                 tasks[task_key].append(info)
@@ -246,25 +246,25 @@ class WeeklyTodoUnitOfWork:
             }
 
             # Weekly windows
-            await add_task_if_in_range(
+            add_task_if_in_range(
                 "sow_tasks",
                 variety.sow_week_start_id,
                 variety.sow_week_end_id,
                 variety_info,
             )
-            await add_task_if_in_range(
+            add_task_if_in_range(
                 "transplant_tasks",
                 variety.transplant_week_start_id,
                 variety.transplant_week_end_id,
                 variety_info,
             )
-            await add_task_if_in_range(
+            add_task_if_in_range(
                 "harvest_tasks",
                 variety.harvest_week_start_id,
                 variety.harvest_week_end_id,
                 variety_info,
             )
-            await add_task_if_in_range(
+            add_task_if_in_range(
                 "prune_tasks",
                 variety.prune_week_start_id,
                 variety.prune_week_end_id,
@@ -272,7 +272,7 @@ class WeeklyTodoUnitOfWork:
             )
 
             # Check if variety should be composted based on lifecycle
-            if await self._should_compost_variety(
+            if self._should_compost_variety(
                 variety, current_week.week_number, week_id_to_number
             ):
                 tasks["compost_tasks"].append(variety_info)
@@ -610,9 +610,9 @@ class WeeklyTodoUnitOfWork:
                 Week.week_id.in_(week_ids)
             )
             result = await self.db.execute(stmt)
-            return {week_id: week_number for week_id, week_number in result.all()}
+            return {row[0]: row[1] for row in result.all()}
 
-    async def _is_week_in_range_by_number(
+    def _is_week_in_range_by_number(
         self,
         current_week_number: int,
         start_week_id: uuid.UUID,
@@ -640,7 +640,7 @@ class WeeklyTodoUnitOfWork:
             or current_week_number <= end_week_number
         )
 
-    async def _should_compost_variety(
+    def _should_compost_variety(
         self,
         variety: Variety,
         current_week_number: int,

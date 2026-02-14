@@ -33,22 +33,22 @@ export default function RegisterFormContainer() {
 		const handleOnline = () => setIsOffline(false);
 		const handleOffline = () => setIsOffline(true);
 
-		window.addEventListener("online", handleOnline);
-		window.addEventListener("offline", handleOffline);
+		globalThis.addEventListener("online", handleOnline);
+		globalThis.addEventListener("offline", handleOffline);
 
 		const prefetchDashboard = () => {
 			import("../../todo/pages/Todo");
 		};
 
-		if (window.requestIdleCallback) {
-			window.requestIdleCallback(prefetchDashboard);
+		if (globalThis.requestIdleCallback) {
+			globalThis.requestIdleCallback(prefetchDashboard);
 		} else {
 			setTimeout(prefetchDashboard, 2000);
 		}
 
 		return () => {
-			window.removeEventListener("online", handleOnline);
-			window.removeEventListener("offline", handleOffline);
+			globalThis.removeEventListener("online", handleOnline);
+			globalThis.removeEventListener("offline", handleOffline);
 		};
 	}, []);
 

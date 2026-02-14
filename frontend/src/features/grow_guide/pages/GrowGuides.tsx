@@ -103,7 +103,7 @@ const GrowGuides = () => {
 								aria-live="polite"
 							>
 								{activeGuidesCount} active guide
-								{activeGuidesCount !== 1 ? "s" : ""}
+								{activeGuidesCount === 1 ? "" : "s"}
 							</output>
 						)}
 					</div>

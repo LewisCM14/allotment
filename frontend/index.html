@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Allotment</title>
   <!-- SVG favicon for modern browsers (smaller, scalable), ICO fallback for legacy -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -28,8 +28,8 @@
   <!-- Load env-config.js synchronously before the app -->
   <script src="/env-config.js"></script>
   <script>
-    if (window.envConfig && window.envConfig.VITE_APP_TITLE) {
-      document.title = window.envConfig.VITE_APP_TITLE;
+    if (globalThis.envConfig && globalThis.envConfig.VITE_APP_TITLE) {
+      document.title = globalThis.envConfig.VITE_APP_TITLE;
     }
   </script>
   <div id="root"></div>

@@ -47,8 +47,8 @@ export function prefetchRoute(route: RouteName): void {
 		});
 	};
 
-	if (window.requestIdleCallback) {
-		window.requestIdleCallback(doPrefetch, { timeout: 3000 });
+	if (globalThis.requestIdleCallback) {
+		globalThis.requestIdleCallback(doPrefetch, { timeout: 3000 });
 	} else {
 		setTimeout(doPrefetch, 100);
 	}

@@ -1,7 +1,6 @@
 import api, { handleApiError } from "../../../services/api";
 import type {
 	IUserFeedPreference,
-	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
 	UserPreferencesRead,
 } from "../forms/PreferenceSchema";
@@ -11,7 +10,7 @@ export type {
 	IUserFeedPreference,
 	IFeedPreferenceRequest,
 	IFeedPreferenceUpdateRequest,
-};
+} from "../forms/PreferenceSchema";
 
 export class NoPreferencesFoundError extends Error {
 	constructor(message = "No feed preferences found") {
@@ -60,9 +59,9 @@ export const getUserFeedPreferences =
 						return {
 							id: day.id ?? day.day_id ?? "",
 							name: day.name ?? day.day_name ?? "",
-							...(day.day_number !== undefined
-								? { day_number: day.day_number }
-								: {}),
+							...(day.day_number === undefined
+								? {}
+								: { day_number: day.day_number }),
 						};
 					})
 				: [];

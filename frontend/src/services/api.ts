@@ -313,13 +313,13 @@ const shouldRetryRequest = (error: AxiosError): boolean => {
 
 const handleRequestRetry = async (error: AxiosError) => {
 	if (!error.config) {
-		return Promise.reject(error);
+		throw error;
 	}
 	const originalRequest = error.config;
 	originalRequest._retryCount = (originalRequest._retryCount ?? 0) + 1;
 
 	if (originalRequest._retryCount > MAX_RETRIES) {
-		return Promise.reject(error);
+		throw error;
 	}
 
 	const delay = RETRY_DELAY_MS * 2 ** (originalRequest._retryCount - 1);
@@ -339,9 +339,7 @@ const handleRequestRetry = async (error: AxiosError) => {
 
 const handleTokenRefresh = async (error: AxiosError) => {
 	if (!error.config) {
-		return Promise.reject(
-			error instanceof Error ? error : new Error(String(error)),
-		);
+		throw error instanceof Error ? error : new Error(String(error));
 	}
 	const originalRequest = error.config;
 	if (isRefreshing) {
@@ -363,9 +361,7 @@ const handleTokenRefresh = async (error: AxiosError) => {
 			return api(originalRequest);
 		}
 		processQueue(error, null);
-		return Promise.reject(
-			error instanceof Error ? error : new Error(String(error)),
-		);
+		throw error instanceof Error ? error : new Error(String(error));
 	} catch (refreshError) {
 		isRefreshing = false;
 		processQueue(error, null);
@@ -375,12 +371,10 @@ const handleTokenRefresh = async (error: AxiosError) => {
 			originalUrl: originalRequest.url,
 		});
 
-		window.location.href = "/login";
-		return Promise.reject(
-			refreshError instanceof Error
-				? refreshError
-				: new Error(String(refreshError)),
-		);
+		globalThis.location.href = "/login";
+		throw refreshError instanceof Error
+			? refreshError
+			: new Error(String(refreshError));
 	}
 };
 
@@ -431,7 +425,7 @@ api.interceptors.response.use(
 					? JSON.stringify(error)
 					: String(error);
 			const cancelError = error instanceof Error ? error : new Error(message);
-			return Promise.reject(cancelError);
+			throw cancelError;
 		}
 
 		if (shouldRetryRequest(error)) {
@@ -451,9 +445,7 @@ api.interceptors.response.use(
 			});
 		}
 
-		return Promise.reject(
-			error instanceof Error ? error : new Error(String(error)),
-		);
+		throw error instanceof Error ? error : new Error(String(error));
 	},
 );
 

@@ -47,7 +47,7 @@ function getDisplayText(
 }
 
 function getDisplayClassName(hasData: boolean): string {
-	return `text-lg ${!hasData ? "text-muted-foreground italic" : "text-foreground"}`;
+	return `text-lg ${hasData ? "text-foreground" : "text-muted-foreground italic"}`;
 }
 
 function getAreaDisplayText(area: number, hasData: boolean): string {

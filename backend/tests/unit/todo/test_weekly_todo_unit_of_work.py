@@ -298,8 +298,8 @@ class TestWeeklyTodoUnitOfWork:
         annual.lifecycle.lifecycle_name = "annual"
         annual.sow_week_start_id = sow_id
         annual.harvest_week_end_id = harvest_id
-        assert await uow._should_compost_variety(annual, 31, week_map) is True
-        assert await uow._should_compost_variety(annual, 5, week_map) is False
+        assert uow._should_compost_variety(annual, 31, week_map) is True
+        assert uow._should_compost_variety(annual, 5, week_map) is False
 
         # Wrap-around season (e.g., sow 50 .. harvest 10) -> compost between harvest_end and next sow_start
         sow2, harvest2 = uuid.uuid4(), uuid.uuid4()
@@ -308,8 +308,8 @@ class TestWeeklyTodoUnitOfWork:
         annual2.lifecycle.lifecycle_name = "annual"
         annual2.sow_week_start_id = sow2
         annual2.harvest_week_end_id = harvest2
-        assert await uow._should_compost_variety(annual2, 11, week_map2) is True
-        assert await uow._should_compost_variety(annual2, 9, week_map2) is False
+        assert uow._should_compost_variety(annual2, 11, week_map2) is True
+        assert uow._should_compost_variety(annual2, 9, week_map2) is False
 
     @pytest.mark.asyncio
     async def test_is_week_in_range_by_number(self, uow):
@@ -322,36 +322,26 @@ class TestWeeklyTodoUnitOfWork:
         week_map = {week_id_1: 10, week_id_2: 20, week_id_3: 15}
 
         # Test within range
-        result = await uow._is_week_in_range_by_number(
-            15, week_id_1, week_id_2, week_map
-        )
+        result = uow._is_week_in_range_by_number(15, week_id_1, week_id_2, week_map)
         assert result is True
 
         # Test at start
-        result = await uow._is_week_in_range_by_number(
-            10, week_id_1, week_id_2, week_map
-        )
+        result = uow._is_week_in_range_by_number(10, week_id_1, week_id_2, week_map)
         assert result is True
 
         # Test at end
-        result = await uow._is_week_in_range_by_number(
-            20, week_id_1, week_id_2, week_map
-        )
+        result = uow._is_week_in_range_by_number(20, week_id_1, week_id_2, week_map)
         assert result is True
 
         # Test outside range
-        result = await uow._is_week_in_range_by_number(
-            5, week_id_1, week_id_2, week_map
-        )
+        result = uow._is_week_in_range_by_number(5, week_id_1, week_id_2, week_map)
         assert result is False
 
     @pytest.mark.asyncio
     async def test_is_week_in_range_missing_numbers_returns_false(self, uow):
         """If either start or end week number missing in map, result is False."""
         week_map = {}
-        res = await uow._is_week_in_range_by_number(
-            10, uuid.uuid4(), uuid.uuid4(), week_map
-        )
+        res = uow._is_week_in_range_by_number(10, uuid.uuid4(), uuid.uuid4(), week_map)
         assert res is False
 
     @pytest.mark.asyncio
@@ -381,7 +371,7 @@ class TestWeeklyTodoUnitOfWork:
         )
 
         # Shortcut range checks to True for specific calls
-        async def range_true(*args, **kwargs):
+        def range_true(*args, **kwargs):
             return True
 
         mocker.patch.object(uow, "_is_week_in_range_by_number", side_effect=range_true)
@@ -595,21 +585,15 @@ class TestWeeklyTodoUnitOfWork:
         wrap_map = {week_id_4: 50, week_id_5: 5}
 
         # Test week 52 (in range)
-        result = await uow._is_week_in_range_by_number(
-            52, week_id_4, week_id_5, wrap_map
-        )
+        result = uow._is_week_in_range_by_number(52, week_id_4, week_id_5, wrap_map)
         assert result is True
 
         # Test week 3 (in range)
-        result = await uow._is_week_in_range_by_number(
-            3, week_id_4, week_id_5, wrap_map
-        )
+        result = uow._is_week_in_range_by_number(3, week_id_4, week_id_5, wrap_map)
         assert result is True
 
         # Test week 25 (out of range)
-        result = await uow._is_week_in_range_by_number(
-            25, week_id_4, week_id_5, wrap_map
-        )
+        result = uow._is_week_in_range_by_number(25, week_id_4, week_id_5, wrap_map)
         assert result is False
 
 

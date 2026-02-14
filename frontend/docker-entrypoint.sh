@@ -17,7 +17,7 @@ VITE_FORCE_AUTH="${VITE_FORCE_AUTH:-$DEFAULT_VITE_FORCE_AUTH}"
 CONFIG_JS_PATH="/var/cache/nginx/runtime/env-config.js"
 echo "Generating $CONFIG_JS_PATH with runtime environment variables..."
 cat <<EOF > "$CONFIG_JS_PATH"
-window.envConfig = {
+globalThis.envConfig = {
   VITE_APP_TITLE: "${VITE_APP_TITLE}",
   VITE_API_URL: "${VITE_API_URL}",
   VITE_API_VERSION: "${VITE_API_VERSION}",

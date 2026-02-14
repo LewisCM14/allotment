@@ -184,7 +184,7 @@ const PublicGrowGuides = () => {
 						varietyId={viewVarietyId}
 					/>
 				</Suspense>
-				{data && data.length === 0 && (
+				{data?.length === 0 && (
 					<p className="text-muted-foreground">
 						No public guides available yet.
 					</p>

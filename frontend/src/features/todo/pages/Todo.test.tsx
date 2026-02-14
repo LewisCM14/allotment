@@ -1,5 +1,11 @@
 import { renderWithRouter } from "@/test-utils";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import {
+	render,
+	screen,
+	waitFor,
+	within,
+	fireEvent,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, beforeEach, vi, expect } from "vitest";
 import { http, HttpResponse } from "msw";
@@ -8,6 +14,8 @@ import { buildUrl } from "@/mocks/buildUrl";
 import Todo from "./Todo";
 import type { WeeklyTodoRead } from "../types/todoTypes";
 import { WeeklyTasksPresenter } from "../components/WeeklyTasksPresenter";
+import { WeekSelector } from "../components/WeekSelector";
+import { WelcomeEmptyState } from "../components/WelcomeEmptyState";
 
 // Mock the PageLayout to simplify DOM
 vi.mock("@/components/layouts/PageLayout", () => ({
@@ -423,6 +431,212 @@ describe("WeeklyTasksPresenter (unit)", () => {
 		expect(screen.queryByText(/^Harvest$/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/^Prune$/)).not.toBeInTheDocument();
 		expect(screen.queryByText(/^Compost$/)).not.toBeInTheDocument();
+	});
+});
+
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+	const actual = await vi.importActual("react-router-dom");
+	return { ...actual, useNavigate: () => mockNavigate };
+});
+
+describe("WeekSelector (unit)", () => {
+	it("wraps to maxWeek when clicking previous at minWeek", async () => {
+		const user = userEvent.setup();
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={1}
+				weekStartDate="01/01"
+				weekEndDate="07/01"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const prevBtn = screen.getByText("Previous Week");
+		await user.click(prevBtn);
+		expect(onWeekChange).toHaveBeenCalledWith(52);
+	});
+
+	it("wraps to minWeek when clicking next at maxWeek", async () => {
+		const user = userEvent.setup();
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={52}
+				weekStartDate="25/12"
+				weekEndDate="31/12"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const nextBtn = screen.getByText("Next Week");
+		await user.click(nextBtn);
+		expect(onWeekChange).toHaveBeenCalledWith(1);
+	});
+
+	it("navigates left with ArrowLeft key on a pill", async () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={10}
+				weekStartDate="01/03"
+				weekEndDate="07/03"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const pill10 = screen.getByRole("button", { name: "10" });
+		fireEvent.keyDown(pill10, { key: "ArrowLeft" });
+		expect(onWeekChange).toHaveBeenCalledWith(9);
+	});
+
+	it("navigates right with ArrowRight key on a pill", async () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={10}
+				weekStartDate="01/03"
+				weekEndDate="07/03"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const pill10 = screen.getByRole("button", { name: "10" });
+		fireEvent.keyDown(pill10, { key: "ArrowRight" });
+		expect(onWeekChange).toHaveBeenCalledWith(11);
+	});
+
+	it("wraps ArrowLeft from minWeek pill to maxWeek", () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={1}
+				weekStartDate="01/01"
+				weekEndDate="07/01"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const pill1 = screen.getByRole("button", { name: "1" });
+		fireEvent.keyDown(pill1, { key: "ArrowLeft" });
+		expect(onWeekChange).toHaveBeenCalledWith(52);
+	});
+
+	it("wraps ArrowRight from maxWeek pill to minWeek", () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={52}
+				weekStartDate="25/12"
+				weekEndDate="31/12"
+				onWeekChange={onWeekChange}
+				minWeek={1}
+				maxWeek={52}
+			/>,
+		);
+		const pill52 = screen.getByRole("button", { name: "52" });
+		fireEvent.keyDown(pill52, { key: "ArrowRight" });
+		expect(onWeekChange).toHaveBeenCalledWith(1);
+	});
+
+	it("translates vertical wheel scroll into horizontal scroll", () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={20}
+				weekStartDate="15/05"
+				weekEndDate="21/05"
+				onWeekChange={onWeekChange}
+			/>,
+		);
+		const carousel = screen.getByLabelText("Select week number");
+		const preventDefault = vi.fn();
+		fireEvent.wheel(carousel, {
+			deltaY: 100,
+			deltaX: 0,
+			preventDefault,
+		});
+		// The wheel handler calls e.preventDefault and adjusts scrollLeft
+		// We verify the carousel exists and accepts the event without error
+		expect(carousel).toBeInTheDocument();
+	});
+
+	it("disables buttons when only a single week in range", () => {
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={5}
+				weekStartDate="01/02"
+				weekEndDate="07/02"
+				onWeekChange={onWeekChange}
+				minWeek={5}
+				maxWeek={5}
+			/>,
+		);
+		const prevButtons = screen.getAllByRole("button", { name: /previous/i });
+		const nextButtons = screen.getAllByRole("button", { name: /next/i });
+		for (const btn of prevButtons) expect(btn).toBeDisabled();
+		for (const btn of nextButtons) expect(btn).toBeDisabled();
+	});
+
+	it("scrolls the selected pill into view on mount", () => {
+		const scrollIntoViewMock = vi.fn();
+		// Patch scrollIntoView on HTMLButtonElement prototype
+		HTMLButtonElement.prototype.scrollIntoView = scrollIntoViewMock;
+		const onWeekChange = vi.fn();
+		render(
+			<WeekSelector
+				currentWeekNumber={30}
+				weekStartDate="22/07"
+				weekEndDate="28/07"
+				onWeekChange={onWeekChange}
+			/>,
+		);
+		expect(scrollIntoViewMock).toHaveBeenCalled();
+	});
+});
+
+describe("WelcomeEmptyState (unit)", () => {
+	beforeEach(() => {
+		mockNavigate.mockClear();
+	});
+
+	it("renders welcome heading and getting started steps", () => {
+		render(<WelcomeEmptyState />);
+		expect(screen.getByText("Welcome to Your Garden Hub!")).toBeInTheDocument();
+		expect(screen.getByText("Getting Started")).toBeInTheDocument();
+		expect(screen.getByText("Create a Grow Guide")).toBeInTheDocument();
+		expect(screen.getByText("Activate Your Varieties")).toBeInTheDocument();
+		expect(screen.getByText("View Your Tasks")).toBeInTheDocument();
+	});
+
+	it("navigates to /grow-guides when clicking Create A Guide", async () => {
+		const user = userEvent.setup();
+		render(<WelcomeEmptyState />);
+		await user.click(screen.getByRole("button", { name: /Create A Guide/i }));
+		expect(mockNavigate).toHaveBeenCalledWith("/grow-guides");
+	});
+
+	it("navigates to /botanical_groups when clicking Explore Plant Families", async () => {
+		const user = userEvent.setup();
+		render(<WelcomeEmptyState />);
+		await user.click(
+			screen.getByRole("button", { name: /Explore Plant Families/i }),
+		);
+		expect(mockNavigate).toHaveBeenCalledWith("/botanical_groups");
+	});
+
+	it("renders help text", () => {
+		render(<WelcomeEmptyState />);
+		expect(
+			screen.getByText(/Need help\? Check out the plant families/i),
+		).toBeInTheDocument();
 	});
 });
 

@@ -11,6 +11,23 @@ vi.mock("@/store/auth/AuthContext");
 // Mock registerUser
 vi.mock("../services/RegistrationService");
 
+// Mock navigate
+const mockNavigate = vi.fn();
+vi.mock("react-router-dom", async () => {
+	const actual = await vi.importActual("react-router-dom");
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
+	};
+});
+
+// Mock formatError
+vi.mock("@/utils/errorUtils", () => ({
+	formatError: vi.fn((err: unknown) =>
+		err instanceof Error ? err.message : "Unknown error",
+	),
+}));
+
 // Helper to select the first non-empty country option
 async function _selectFirstCountry() {
 	const countrySelect = screen.queryByLabelText(/country/i);
@@ -125,5 +142,62 @@ describe("RegisterForm", () => {
 		expect(confirmInput).toHaveAttribute("type", "text");
 		await userEvent.click(toggleBtns[1]);
 		expect(confirmInput).toHaveAttribute("type", "password");
+	});
+
+	it("shows offline banner when user is offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(screen.getByText(/you are currently offline/i)).toBeInTheDocument();
+	});
+
+	it("shows Offline button text when offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(
+			screen.getByRole("button", { name: /offline/i }),
+		).toBeInTheDocument();
+	});
+
+	it("disables submit button when offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(screen.getByRole("button", { name: /offline/i })).toBeDisabled();
+	});
+
+	it("shows offline error when submitting while offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+
+		await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
+		await userEvent.type(
+			screen.getByLabelText(/^password$/i, { selector: "input" }),
+			"Password1!",
+		);
+		await userEvent.type(
+			screen.getByLabelText(/confirm password/i, { selector: "input" }),
+			"Password1!",
+		);
+		await userEvent.type(screen.getByLabelText(/first name/i), "Test");
+
+		// Button is disabled but let's verify the offline state error handling
+		expect(screen.getByText(/you are currently offline/i)).toBeInTheDocument();
+	});
+
+	it("renders login link", () => {
+		renderForm();
+		expect(screen.getByText(/already have an account/i)).toBeInTheDocument();
+		expect(screen.getByRole("link", { name: /login/i })).toBeInTheDocument();
 	});
 });

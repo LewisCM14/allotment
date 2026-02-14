@@ -71,4 +71,50 @@ describe("ResetPassword", () => {
 		);
 		expect(await screen.findByText(/not verified/i)).toBeInTheDocument();
 	});
+
+	it("shows generic error for non-Error exceptions", async () => {
+		(AuthService.requestPasswordReset as unknown as Mock).mockRejectedValue(
+			"string error",
+		);
+		renderForm();
+		await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
+		await userEvent.click(
+			screen.getByRole("button", { name: /send reset link/i }),
+		);
+		expect(await screen.findByText(/unexpected error/i)).toBeInTheDocument();
+	});
+
+	it("shows generic error for non-verification Error messages", async () => {
+		(AuthService.requestPasswordReset as unknown as Mock).mockRejectedValue(
+			new Error("Some other error"),
+		);
+		renderForm();
+		await userEvent.type(screen.getByLabelText(/email/i), "test@example.com");
+		await userEvent.click(
+			screen.getByRole("button", { name: /send reset link/i }),
+		);
+		expect(
+			await screen.findByText(/password reset failed/i),
+		).toBeInTheDocument();
+	});
+
+	it("shows offline banner text when navigator is offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(screen.getByText(/you are currently offline/i)).toBeInTheDocument();
+	});
+
+	it("disables submit button when offline", async () => {
+		const { act } = await import("@testing-library/react");
+		renderForm();
+		act(() => {
+			globalThis.dispatchEvent(new Event("offline"));
+		});
+		expect(
+			screen.getByRole("button", { name: /send reset link/i }),
+		).toBeDisabled();
+	});
 });

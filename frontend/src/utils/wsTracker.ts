@@ -1,6 +1,6 @@
 (() => {
 	// track all open sockets
-	const OriginalWebSocket = window.WebSocket;
+	const OriginalWebSocket = globalThis.WebSocket;
 	const __trackedSockets = new Set<WebSocket>();
 
 	// override constructor with subclass
@@ -12,10 +12,10 @@
 			this.addEventListener("close", () => __trackedSockets.delete(this));
 		}
 	}
-	window.WebSocket = TrackedWebSocket;
+	globalThis.WebSocket = TrackedWebSocket;
 
 	// close sockets on pagehide
-	window.addEventListener("pagehide", () => {
+	globalThis.addEventListener("pagehide", () => {
 		for (const ws of __trackedSockets) ws.close();
 	});
 })();
