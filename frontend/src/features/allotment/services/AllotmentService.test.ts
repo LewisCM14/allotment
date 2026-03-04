@@ -1,5 +1,6 @@
 import { http, HttpResponse } from "msw";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import api from "../../../services/api";
 import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import {
@@ -96,18 +97,19 @@ describe("UserAllotmentService", () => {
 				allotment_length_meters: 20,
 			};
 
-			server.use(
-				http.post(buildUrl("/users/allotment"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
+			const postSpy = vi.spyOn(api, "post");
+			const serverError = new Error("Server error");
+			Object.defineProperty(serverError, "isAxiosError", { value: true });
+			Object.defineProperty(serverError, "response", {
+				value: { status: 500, data: { detail: "Internal server error" } },
+			});
+			postSpy.mockRejectedValueOnce(serverError);
 
 			await expect(createUserAllotment(mockRequest)).rejects.toThrow(
 				"Server error. Please try again later.",
 			);
+
+			postSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
@@ -185,18 +187,19 @@ describe("UserAllotmentService", () => {
 		});
 
 		it("should handle server errors (500)", async () => {
-			server.use(
-				http.get(buildUrl("/users/allotment"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
+			const getSpy = vi.spyOn(api, "get");
+			const serverError = new Error("Server error");
+			Object.defineProperty(serverError, "isAxiosError", { value: true });
+			Object.defineProperty(serverError, "response", {
+				value: { status: 500, data: { detail: "Internal server error" } },
+			});
+			getSpy.mockRejectedValueOnce(serverError);
 
 			await expect(getUserAllotment()).rejects.toThrow(
 				"Server error. Please try again later.",
 			);
+
+			getSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
@@ -338,18 +341,19 @@ describe("UserAllotmentService", () => {
 				allotment_postal_zip_code: "D4D 4D4",
 			};
 
-			server.use(
-				http.put(buildUrl("/users/allotment"), () => {
-					return HttpResponse.json(
-						{ detail: "Internal server error" },
-						{ status: 500 },
-					);
-				}),
-			);
+			const putSpy = vi.spyOn(api, "put");
+			const serverError = new Error("Server error");
+			Object.defineProperty(serverError, "isAxiosError", { value: true });
+			Object.defineProperty(serverError, "response", {
+				value: { status: 500, data: { detail: "Internal server error" } },
+			});
+			putSpy.mockRejectedValueOnce(serverError);
 
 			await expect(updateUserAllotment(mockRequest)).rejects.toThrow(
 				"Server error. Please try again later.",
 			);
+
+			putSpy.mockRestore();
 		});
 
 		it("should handle network errors", async () => {
