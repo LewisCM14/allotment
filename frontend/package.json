@@ -87,7 +87,9 @@
   "overrides": {
     "glob": "^9.0.0",
     "inflight": "npm:lru-cache@latest",
-    "serialize-javascript": ">=7.0.3",
-    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@latest"
+    "serialize-javascript": ">=7.0.5",
+    "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@latest",
+    "flatted": ">=3.4.2",
+    "picomatch": ">=4.0.4"
   }
 }
