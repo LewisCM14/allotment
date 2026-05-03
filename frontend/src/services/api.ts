@@ -393,10 +393,14 @@ api.interceptors.response.use(
 		}
 
 		// For malformed JSON
-		if (
-			response.headers["content-type"]?.includes("application/json") &&
-			typeof response.data === "string"
-		) {
+		const contentTypeHeader = response.headers["content-type"];
+		const isJsonResponse =
+			(typeof contentTypeHeader === "string" &&
+				contentTypeHeader.includes("application/json")) ||
+			(Array.isArray(contentTypeHeader) &&
+				contentTypeHeader.some((value) => value.includes("application/json")));
+
+		if (isJsonResponse && typeof response.data === "string") {
 			try {
 				JSON.parse(response.data);
 			} catch (error) {
