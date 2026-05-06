@@ -498,9 +498,19 @@ class UserUnitOfWork:
 
         user = await self.user_repo.get_user_by_email(user_email)
         if not user:
-            from app.api.middleware.exception_handler import UserNotFoundError
+            # Silent no-op: do not reveal whether the email exists (anti-enumeration)
+            logger.info(
+                "Verification email requested for unknown address",
+                request_id=self.request_id,
+            )
+            return
 
-            raise UserNotFoundError(f"User with email {user_email} not found")
+        if user.is_email_verified:
+            logger.info(
+                "Verification email skipped — address already verified",
+                request_id=self.request_id,
+            )
+            return
 
         log_context["user_id"] = str(user.user_id)
 
@@ -537,5 +547,4 @@ class UserUnitOfWork:
 
         return VerificationStatusResponse(
             is_email_verified=user.is_email_verified,
-            user_id=str(user.user_id),
         )

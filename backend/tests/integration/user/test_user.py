@@ -36,27 +36,26 @@ class TestVerificationStatus:
 
     @pytest.mark.asyncio
     async def test_check_verification_status_success(self, client, mocker):
-        from app.api.schemas.user.user_schema import VerificationStatusResponse
+        from unittest.mock import MagicMock
 
-        verification = VerificationStatusResponse(
-            is_email_verified=True, user_id="verif-123"
-        )
-        mock_ctx = AsyncMock()
-        mock_ctx.get_verification_status_service.return_value = verification
+        from app.api.core.auth_utils import create_token
+
+        mock_user = MagicMock()
+        mock_user.is_email_verified = True
+        mock_user.user_id = "verif-123"
         mocker.patch(
-            "app.api.v1.user.user.UserUnitOfWork",
-            return_value=AsyncMock(
-                __aenter__=AsyncMock(return_value=mock_ctx),
-                __aexit__=AsyncMock(return_value=None),
-            ),
+            "app.api.core.auth_utils.validate_user_exists",
+            return_value=mock_user,
         )
+        token = create_token(user_id="verif-123", token_type="access")
         resp = await client.get(
             f"{USER_PREFIX}/verification-status",
-            params={"user_email": "any@example.com"},
+            headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 200
         data = resp.json()
-        assert data["is_email_verified"] is True and data["user_id"] == "verif-123"
+        assert data["is_email_verified"] is True
+        assert "user_id" not in data
 
 
 class TestPasswordReset:

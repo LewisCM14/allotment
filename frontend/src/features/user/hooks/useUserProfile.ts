@@ -12,8 +12,7 @@ import {
 export const userProfileKeys = {
 	all: ["user-profile"] as const,
 	profile: () => [...userProfileKeys.all, "profile"] as const,
-	verification: (email: string) =>
-		[...userProfileKeys.all, "verification", email] as const,
+	verification: () => [...userProfileKeys.all, "verification"] as const,
 };
 
 /**
@@ -92,14 +91,10 @@ export const useUpdateUserProfile = () => {
 /**
  * Hook to check email verification status
  */
-export const useEmailVerificationStatus = (email?: string) => {
+export const useEmailVerificationStatus = () => {
 	return useQuery({
-		queryKey: userProfileKeys.verification(email ?? ""),
-		queryFn: () => {
-			if (!email) throw new Error("Email is required");
-			return checkEmailVerificationStatus(email);
-		},
-		enabled: !!email,
+		queryKey: userProfileKeys.verification(),
+		queryFn: () => checkEmailVerificationStatus(),
 		staleTime: 2 * 60 * 1000, // 2 minutes - verification status can change quickly
 		gcTime: 5 * 60 * 1000, // 5 minutes cache time
 		retry: (failureCount, error) => {
@@ -143,10 +138,10 @@ export const useRefreshVerificationStatus = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: (email: string) => checkEmailVerificationStatus(email),
-		onSuccess: (data, email) => {
+		mutationFn: () => checkEmailVerificationStatus(),
+		onSuccess: (data) => {
 			// Update the cache with fresh verification status
-			queryClient.setQueryData(userProfileKeys.verification(email), data);
+			queryClient.setQueryData(userProfileKeys.verification(), data);
 
 			// If verified, invalidate to ensure fresh data
 			if (data.is_email_verified) {

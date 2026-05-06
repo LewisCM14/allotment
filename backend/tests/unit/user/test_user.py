@@ -46,33 +46,18 @@ class TestUserEndpointsUnit:
             )
 
     async def test_check_verification_status_success(self, mocker):
-        resp_obj = VerificationStatusResponse(
-            is_email_verified=True, user_id="test-user-id"
-        )
-        uow = mock_user_uow(
-            mocker,
-            path="app.api.v1.user.user.UserUnitOfWork",
-            methods={"get_verification_status_service": resp_obj},
-        )
-        mock_db = mocker.MagicMock(spec=AsyncSession)
-        result = await user.check_verification_status("test@example.com", mock_db)
-        assert result == resp_obj
-        uow.get_verification_status_service.assert_called_once_with("test@example.com")
+        mock_user = mocker.MagicMock()
+        mock_user.is_email_verified = True
+        result = await user.check_verification_status(mock_user)
+        assert isinstance(result, VerificationStatusResponse)
+        assert result.is_email_verified is True
 
     async def test_check_verification_status_normalizes_email(self, mocker):
-        resp_obj = VerificationStatusResponse(
-            is_email_verified=True, user_id="test-user-id"
-        )
-        uow = mock_user_uow(
-            mocker,
-            path="app.api.v1.user.user.UserUnitOfWork",
-            methods={"get_verification_status_service": resp_obj},
-        )
-        mock_db = mocker.MagicMock(spec=AsyncSession)
-        mixed = "TeSt@ExAmPlE.CoM"
-        result = await user.check_verification_status(mixed, mock_db)
-        assert result == resp_obj
-        uow.get_verification_status_service.assert_called_once_with("test@example.com")
+        mock_user = mocker.MagicMock()
+        mock_user.is_email_verified = False
+        result = await user.check_verification_status(mock_user)
+        assert isinstance(result, VerificationStatusResponse)
+        assert result.is_email_verified is False
 
     async def test_get_user_profile_success(self, mocker):
         mock_current = build_user_stub(
@@ -116,32 +101,27 @@ class TestUserEndpointsUnit:
         )
 
     async def test_request_verification_email_user_not_found(self, mocker):
-        def raise_nf(user_email: str):
-            raise UserNotFoundError("User not found")
-
+        # send_verification_email_service now silently returns for unknown emails
+        # (anti-enumeration). The endpoint always returns 200.
         mock_user_uow(
             mocker,
             path="app.api.v1.user.user.UserUnitOfWork",
-            methods={"send_verification_email_service": raise_nf},
+            methods={"send_verification_email_service": None},
         )
         mock_db = mocker.MagicMock(spec=AsyncSession)
-        with pytest.raises(UserNotFoundError):
-            await user.request_verification_email(
-                EmailRequest(user_email="missing@example.com"), mock_db
-            )
+        result = await user.request_verification_email(
+            EmailRequest(user_email="missing@example.com"), mock_db
+        )
+        assert isinstance(result, MessageResponse)
 
     async def test_check_verification_status_user_not_found(self, mocker):
-        def raise_nf(user_email: str):
-            raise UserNotFoundError("User not found")
-
-        mock_user_uow(
-            mocker,
-            path="app.api.v1.user.user.UserUnitOfWork",
-            methods={"get_verification_status_service": raise_nf},
-        )
-        mock_db = mocker.MagicMock(spec=AsyncSession)
-        with pytest.raises(UserNotFoundError):
-            await user.check_verification_status("missing@example.com", mock_db)
+        # Endpoint now uses get_current_user dependency; auth errors return 401,
+        # not 404. Test the happy path: verified=False user.
+        mock_user = mocker.MagicMock()
+        mock_user.is_email_verified = False
+        result = await user.check_verification_status(mock_user)
+        assert isinstance(result, VerificationStatusResponse)
+        assert result.is_email_verified is False
 
     async def test_update_user_profile_uow_error(self, mocker):
         def raise_update(

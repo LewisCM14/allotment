@@ -45,15 +45,12 @@ describe("UserService", () => {
 			const mockResponse = { is_email_verified: true };
 
 			server.use(
-				http.get(buildUrl("/users/verification-status"), ({ request }) => {
-					const url = new URL(request.url);
-					const userEmail = url.searchParams.get("user_email");
-					expect(userEmail).toBe("test@example.com");
+				http.get(buildUrl("/users/verification-status"), () => {
 					return HttpResponse.json(mockResponse);
 				}),
 			);
 
-			const result = await checkEmailVerificationStatus("test@example.com");
+			const result = await checkEmailVerificationStatus();
 
 			expect(result).toEqual(mockResponse);
 		});
@@ -62,30 +59,25 @@ describe("UserService", () => {
 			const mockResponse = { is_email_verified: false };
 
 			server.use(
-				http.get(buildUrl("/users/verification-status"), ({ request }) => {
-					const url = new URL(request.url);
-					const userEmail = url.searchParams.get("user_email");
-					expect(userEmail).toBe("unverified@example.com");
+				http.get(buildUrl("/users/verification-status"), () => {
 					return HttpResponse.json(mockResponse);
 				}),
 			);
 
-			const result = await checkEmailVerificationStatus(
-				"unverified@example.com",
-			);
+			const result = await checkEmailVerificationStatus();
 
 			expect(result).toEqual(mockResponse);
 		});
 
-		it("should handle user not found errors", async () => {
+		it("should handle auth errors", async () => {
 			server.use(
 				http.get(buildUrl("/users/verification-status"), () => {
 					return new HttpResponse(
 						JSON.stringify({
-							detail: "User not found",
+							detail: "Not authenticated",
 						}),
 						{
-							status: 404,
+							status: 401,
 							headers: {
 								"content-type": "application/json",
 							},
@@ -94,17 +86,13 @@ describe("UserService", () => {
 				}),
 			);
 
-			await expect(
-				checkEmailVerificationStatus("notfound@example.com"),
-			).rejects.toThrow("User not found");
+			await expect(checkEmailVerificationStatus()).rejects.toThrow();
 		});
 
 		it("should handle network errors appropriately", async () => {
 			vi.spyOn(api, "get").mockRejectedValueOnce(new Error("Network Error"));
 
-			await expect(
-				checkEmailVerificationStatus("any@example.com"),
-			).rejects.toThrow(
+			await expect(checkEmailVerificationStatus()).rejects.toThrow(
 				"Failed to fetch verification status. Please try again.",
 			);
 
@@ -115,7 +103,6 @@ describe("UserService", () => {
 					context: "checkEmailVerificationStatus",
 					url: "/users/verification-status",
 					method: "GET",
-					email: "any@example.com",
 				}),
 			);
 		});

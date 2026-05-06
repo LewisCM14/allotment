@@ -211,17 +211,11 @@ class VerificationStatusResponse(SecureBaseModel):
         description=EMAIL_VERIFIED_DESC,
         examples=[True, False],
     )
-    user_id: str = Field(
-        ...,
-        description=USER_ID_DESC,
-        examples=[USER_ID_EXAMPLE],
-    )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "is_email_verified": True,
-                "user_id": USER_ID_EXAMPLE,
             }
         }
     )

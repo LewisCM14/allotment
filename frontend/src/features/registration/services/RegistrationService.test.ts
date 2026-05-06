@@ -152,27 +152,24 @@ describe("RegistrationService", () => {
 
 		it("should handle invalid token errors", async () => {
 			server.use(
-				http.post(
-					buildUrl("/registration/email-verifications/confirm"),
-					() => {
-						return new HttpResponse(
-							JSON.stringify({
-								detail: [
-									{
-										msg: "Invalid or expired verification token",
-										type: "invalid_token_error",
-									},
-								],
-							}),
-							{
-								status: 400,
-								headers: {
-									"content-type": "application/json",
+				http.post(buildUrl("/registration/email-verifications/confirm"), () => {
+					return new HttpResponse(
+						JSON.stringify({
+							detail: [
+								{
+									msg: "Invalid or expired verification token",
+									type: "invalid_token_error",
 								},
+							],
+						}),
+						{
+							status: 400,
+							headers: {
+								"content-type": "application/json",
 							},
-						);
-					},
-				),
+						},
+					);
+				}),
 			);
 
 			await expect(verifyEmail("invalid-token")).rejects.toThrow(

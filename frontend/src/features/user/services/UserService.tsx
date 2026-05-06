@@ -64,15 +64,12 @@ export const updateUserProfile = async (
 	}
 };
 
-export const checkEmailVerificationStatus = async (
-	email: string,
-): Promise<{ is_email_verified: boolean }> => {
+export const checkEmailVerificationStatus = async (): Promise<{
+	is_email_verified: boolean;
+}> => {
 	try {
 		const response = await api.get<{ is_email_verified: boolean }>(
 			"/users/verification-status",
-			{
-				params: { user_email: email },
-			},
 		);
 		return response.data;
 	} catch (error: unknown) {
@@ -80,7 +77,6 @@ export const checkEmailVerificationStatus = async (
 			context: "checkEmailVerificationStatus",
 			url: "/users/verification-status",
 			method: "GET",
-			email: email,
 		});
 		return handleApiError(
 			error,
