@@ -117,10 +117,10 @@ describe("RegistrationService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/registration/email-verifications/valid-token"),
-					({ request }) => {
-						const url = new URL(request.url);
-						expect(url.searchParams.get("fromReset")).toBe("false");
+					buildUrl("/registration/email-verifications/confirm"),
+					async ({ request }) => {
+						const body = await request.json();
+						expect(body).toEqual({ token: "valid-token", from_reset: false });
 						return HttpResponse.json(mockResponse);
 					},
 				),
@@ -136,10 +136,10 @@ describe("RegistrationService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/registration/email-verifications/reset-token"),
-					({ request }) => {
-						const url = new URL(request.url);
-						expect(url.searchParams.get("fromReset")).toBe("true");
+					buildUrl("/registration/email-verifications/confirm"),
+					async ({ request }) => {
+						const body = await request.json();
+						expect(body).toEqual({ token: "reset-token", from_reset: true });
 						return HttpResponse.json(mockResponse);
 					},
 				),
@@ -153,7 +153,7 @@ describe("RegistrationService", () => {
 		it("should handle invalid token errors", async () => {
 			server.use(
 				http.post(
-					buildUrl("/registration/email-verifications/invalid-token"),
+					buildUrl("/registration/email-verifications/confirm"),
 					() => {
 						return new HttpResponse(
 							JSON.stringify({

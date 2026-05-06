@@ -37,6 +37,29 @@ SENSITIVE_HEADERS = {
 # Query parameters that should be redacted
 SENSITIVE_PARAMS = {"token", "password", "secret", "key", "api_key", "auth"}
 
+# Regex that matches a JWT-like token in a URL path segment (header.payload.signature)
+_JWT_PATH_RE = re.compile(
+    r"(?<=/)[A-Za-z0-9\-_]{10,}\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+"
+)
+# Path segments that are immediately followed by a token value
+_TOKEN_PATH_PREFIXES: frozenset[str] = frozenset(
+    {"password-resets", "email-verifications"}
+)
+
+
+def redact_url_tokens(url: str) -> str:
+    """Redact JWT tokens that appear in URL path segments after known token-bearing prefixes."""
+    parts = url.split("/")
+    result: list[str] = []
+    for i, part in enumerate(parts):
+        if i > 0 and parts[i - 1] in _TOKEN_PATH_PREFIXES:
+            result.append(REDACTED)
+        else:
+            result.append(part)
+    reconstructed = "/".join(result)
+    return _JWT_PATH_RE.sub(REDACTED, reconstructed)
+
+
 # List of fields that should never be logged in any context
 SENSITIVE_FIELDS = {
     "password",
@@ -180,7 +203,7 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
                 "Incoming request",
                 request_id=request_id,
                 method=request.method,
-                url=str(request.url),
+                url=redact_url_tokens(str(request.url)),
                 client_ip=client_ip,
                 headers=sanitize_headers(dict(request.headers)),
                 query_params=sanitize_params(dict(request.query_params)),

@@ -87,10 +87,10 @@ export const authHandlers = [
 
 	// Mock password reset action endpoint
 	http.post(
-		buildUrl("/auth/password-resets/:token"),
-		async ({ params, request }) => {
+		buildUrl("/auth/password-resets/confirm"),
+		async ({ request }) => {
 			const body = (await request.json()) as IPasswordResetAction;
-			const token = params.token;
+			const token = body.token;
 
 			if (token === "invalid-token") {
 				return jsonError("Invalid or expired reset token", 401);
@@ -116,7 +116,7 @@ export const authHandlers = [
 			return jsonError("Token not handled for reset", 400);
 		},
 	),
-	http.options(buildUrl("/auth/password-resets/:token"), () => {
+	http.options(buildUrl("/auth/password-resets/confirm"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 ];

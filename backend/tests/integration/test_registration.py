@@ -269,7 +269,8 @@ class TestEmailVerification:
         token = create_token(user_id=user_id)
 
         verify_response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{token}"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": token},
         )
 
         assert verify_response.status_code == status.HTTP_200_OK
@@ -299,7 +300,8 @@ class TestEmailVerification:
         token = create_token(user_id=user_id, token_type="email_verification")
 
         verify_response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{token}?fromReset=true"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": token, "from_reset": True},
         )
 
         assert verify_response.status_code == status.HTTP_200_OK
@@ -313,7 +315,8 @@ class TestEmailVerification:
         invalid_token = "invalid.token"
 
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{invalid_token}"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": invalid_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -328,7 +331,8 @@ class TestEmailVerification:
         expired_token = "expired.jwt.token"
 
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{expired_token}"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": expired_token},
         )
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -346,7 +350,8 @@ class TestEmailVerification:
         invalid_token = create_token(user_id=invalid_user_id)
 
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{invalid_token}"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": invalid_token},
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
         mock_send_email.assert_not_called()
@@ -364,7 +369,8 @@ class TestEmailVerification:
 
         mock_uow_instance.verify_email.side_effect = UserNotFoundError("User not found")
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/validtoken"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": "validtoken"},
         )
         assert response.status_code == 404
         assert "user not found" in str(response.json()).lower()
@@ -376,7 +382,8 @@ class TestEmailVerification:
             "app.api.v1.registration.jwt.decode", side_effect=Exception("decode error")
         )
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/invalidtoken"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": "invalidtoken"},
         )
         assert response.status_code == 400
         assert "verification token" in str(response.json()).lower()
@@ -394,14 +401,15 @@ class TestEmailVerification:
 
         mock_uow_instance.verify_email.side_effect = UserNotFoundError("User not found")
         response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/validtoken"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": "validtoken"},
         )
         assert response.status_code == 404
         assert "user not found" in str(response.json()).lower()
 
     @pytest.mark.asyncio
     async def test_verify_email_from_password_reset_query_param(self, client, mocker):
-        """Test email verification with fromReset query parameter."""
+        """Test email verification with fromReset in request body."""
         mock_send_email = mock_email_service(
             mocker, "app.api.v1.registration.send_password_reset_email"
         )
@@ -419,7 +427,8 @@ class TestEmailVerification:
         token = create_token(user_id=user_id, token_type="email_verification")
 
         verify_response = await client.post(
-            f"{REGISTRATION_PREFIX}/email-verifications/{token}?fromReset=true"
+            f"{REGISTRATION_PREFIX}/email-verifications/confirm",
+            json={"token": token, "from_reset": True},
         )
 
         assert verify_response.status_code == status.HTTP_200_OK

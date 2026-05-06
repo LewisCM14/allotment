@@ -315,6 +315,30 @@ class PasswordResetAction(SecureBaseModel):
     )
 
 
+class EmailVerificationConfirm(SecureBaseModel):
+    """Schema for email verification where token is submitted in the request body."""
+
+    token: str = Field(
+        ...,
+        description="JWT email verification token",
+        examples=[JWT_EXAMPLE],
+    )
+    from_reset: bool = Field(
+        default=False,
+        description="Whether this verification is part of a password reset flow",
+        examples=[False, True],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "token": JWT_EXAMPLE,
+                "from_reset": False,
+            }
+        }
+    )
+
+
 class UserProfileResponse(SecureBaseModel):
     """Schema for user profile response."""
 

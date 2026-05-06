@@ -116,6 +116,31 @@ def test_no_file_handler_when_log_to_file_false():
     assert _has_rotating_filehandler_for(settings.LOG_FILE) is False
 
 
+def test_logging_middleware_redacts_token_in_password_reset_url() -> None:
+    from app.api.middleware.logging_middleware import redact_url_tokens
+
+    url = "http://api.example.com/api/v1/auth/password-resets/eyJhbGciOiJSUzI1NiJ9.payload.sig"
+    redacted = redact_url_tokens(url)
+    assert "eyJhbGciOiJSUzI1NiJ9" not in redacted
+    assert "[REDACTED]" in redacted
+
+
+def test_logging_middleware_redacts_token_in_email_verification_url() -> None:
+    from app.api.middleware.logging_middleware import redact_url_tokens
+
+    url = "http://api.example.com/api/v1/registration/email-verifications/eyJhbGc.payload.sig"
+    redacted = redact_url_tokens(url)
+    assert "eyJhbGc" not in redacted
+    assert "[REDACTED]" in redacted
+
+
+def test_logging_middleware_does_not_redact_normal_url() -> None:
+    from app.api.middleware.logging_middleware import redact_url_tokens
+
+    url = "http://api.example.com/api/v1/users/profile"
+    assert redact_url_tokens(url) == url
+
+
 def test_configure_logging_idempotent(tmp_path, monkeypatch):
     # Temporarily enable file logging and set a temporary path
     monkeypatch.setattr(settings, "LOG_TO_FILE", True)

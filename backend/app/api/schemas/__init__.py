@@ -10,6 +10,7 @@ from app.api.schemas.family.family_schema import (
 )
 from app.api.schemas.user.user_schema import (
     EmailRequest,
+    EmailVerificationConfirm,
     MessageResponse,
     PasswordResetAction,
     PasswordResetRequest,
@@ -32,6 +33,7 @@ __all__ = [
     "PasswordResetAction",
     "MessageResponse",
     "VerificationStatusResponse",
+    "EmailVerificationConfirm",
     "BotanicalGroupInfoSchema",
     "BotanicalGroupSchema",
     "FamilyBaseSchema",

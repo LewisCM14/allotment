@@ -192,6 +192,28 @@ class TestTokenRefresh:
         assert resp.status_code == 401
 
 
+class TestPasswordResetRouteShape:
+    """Verifies that the password-reset endpoint uses token-in-body, not token-in-path."""
+
+    @pytest.mark.asyncio
+    async def test_old_token_in_path_url_returns_404(self, client):
+        """After HIGH-2 the old path-based URL must not be routed."""
+        response = await client.post(
+            f"{PREFIX}/auth/password-resets/someoldtoken",
+            json={"new_password": "TestPass1!"},
+        )
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    @pytest.mark.asyncio
+    async def test_token_in_body_route_exists(self, client):
+        """The new /confirm route must exist (any non-404 response is acceptable)."""
+        response = await client.post(
+            f"{PREFIX}/auth/password-resets/confirm",
+            json={"token": "sometoken", "new_password": "TestPass1!"},
+        )
+        assert response.status_code != status.HTTP_404_NOT_FOUND
+
+
 class TestAuthErrorHandling:
     @pytest.mark.asyncio
     async def test_authenticate_none(self, login_helper, mocker):

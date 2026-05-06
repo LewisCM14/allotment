@@ -193,6 +193,19 @@ async def get_current_user(
         )
 
     payload = decode_token(token)
+
+    # Only access tokens are valid for endpoint authentication
+    if payload.get("type") != "access":
+        logger.warning(
+            "Non-access token presented to protected endpoint",
+            token_type=payload.get("type"),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token type",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     user_id = payload.get("sub")
 
     if not user_id:

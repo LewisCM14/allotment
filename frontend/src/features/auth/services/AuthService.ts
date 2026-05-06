@@ -122,8 +122,8 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`/auth/password-resets/${token}`,
-			{ new_password: newPassword },
+			"/auth/password-resets/confirm",
+			{ token, new_password: newPassword },
 		);
 		return response.data;
 	} catch (error: unknown) {

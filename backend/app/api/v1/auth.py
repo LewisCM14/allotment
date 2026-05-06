@@ -34,8 +34,8 @@ from app.api.models import User
 from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import (
     MessageResponse,
+    PasswordResetAction,
     PasswordResetRequest,
-    PasswordUpdate,
     RefreshRequest,
     UserLogin,
 )
@@ -286,17 +286,16 @@ async def request_password_reset(
 
 
 @router.post(
-    "/password-resets/{token}",
+    "/password-resets/confirm",
     tags=["Auth"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Reset password with token from path",
-    description="Resets a user's password using a valid reset token from the URL path and new password from the request body.",
+    summary="Reset password with token from request body",
+    description="Resets a user's password using a valid reset token and new password supplied in the request body.",
 )
 @limiter.limit("5/minute")
 async def reset_password(
-    token: str,
-    password_data: PasswordUpdate,
+    password_data: PasswordResetAction,
     request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
@@ -304,8 +303,7 @@ async def reset_password(
     Reset user's password using a reset token.
 
     Args:
-        token: The reset token from the URL path
-        password_data: Contains the new password
+        password_data: Contains the reset token and new password
         request: The incoming request
         db: Database session
 
@@ -326,7 +324,7 @@ async def reset_password(
 
     try:
         try:
-            decode_token(token)
+            decode_token(password_data.token)
         except Exception as exc:
             logger.error(
                 "General exception during token decode",
@@ -339,7 +337,7 @@ async def reset_password(
             )
 
         async with UserUnitOfWork(db) as uow:
-            await uow.reset_password(token, password_data.new_password)
+            await uow.reset_password(password_data.token, password_data.new_password)
 
         logger.info("Password reset successful", **log_context)
         return MessageResponse(message="Password has been reset successfully")

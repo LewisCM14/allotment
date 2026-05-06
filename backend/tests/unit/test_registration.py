@@ -306,8 +306,12 @@ class TestVerifyEmailTokenEndpointUnit:
         mock_ctx.get.return_value = "test-request-id"
         mocker.patch("app.api.v1.registration.request_id_ctx_var", mock_ctx)
         mocker.patch("app.api.v1.registration.logger")
+        from app.api.schemas.user.user_schema import EmailVerificationConfirm
+
         result = await registration.verify_email_token(
-            verification_token, from_reset=False, db=mock_request_and_db["db"]
+            EmailVerificationConfirm(token=verification_token, from_reset=False),
+            request=mock_request_and_db["request"],
+            db=mock_request_and_db["db"],
         )
         assert isinstance(result, MessageResponse)
         assert result.message == "Email verified successfully"
@@ -333,8 +337,12 @@ class TestVerifyEmailTokenEndpointUnit:
         mock_ctx.get.return_value = "test-request-id"
         mocker.patch("app.api.v1.registration.request_id_ctx_var", mock_ctx)
         mocker.patch("app.api.v1.registration.logger")
+        from app.api.schemas.user.user_schema import EmailVerificationConfirm
+
         result = await registration.verify_email_token(
-            verification_token, from_reset=True, db=mock_request_and_db["db"]
+            EmailVerificationConfirm(token=verification_token, from_reset=True),
+            request=mock_request_and_db["request"],
+            db=mock_request_and_db["db"],
         )
         assert isinstance(result, MessageResponse)
         assert "You can now reset your password" in result.message
@@ -349,9 +357,13 @@ class TestVerifyEmailTokenEndpointUnit:
         mock_ctx.get.return_value = "test-request-id"
         mocker.patch("app.api.v1.registration.request_id_ctx_var", mock_ctx)
         mocker.patch("app.api.v1.registration.logger")
+        from app.api.schemas.user.user_schema import EmailVerificationConfirm
+
         with pytest.raises(EmailVerificationError):
             await registration.verify_email_token(
-                invalid_token, from_reset=False, db=mock_request_and_db["db"]
+                EmailVerificationConfirm(token=invalid_token, from_reset=False),
+                request=mock_request_and_db["request"],
+                db=mock_request_and_db["db"],
             )
 
     async def test_verify_email_translate_token_exceptions(
@@ -367,7 +379,11 @@ class TestVerifyEmailTokenEndpointUnit:
         mock_ctx.get.return_value = "test-request-id"
         mocker.patch("app.api.v1.registration.request_id_ctx_var", mock_ctx)
         mocker.patch("app.api.v1.registration.logger")
+        from app.api.schemas.user.user_schema import EmailVerificationConfirm
+
         with pytest.raises(EmailVerificationError):
             await registration.verify_email_token(
-                invalid_token, from_reset=False, db=mock_request_and_db["db"]
+                EmailVerificationConfirm(token=invalid_token, from_reset=False),
+                request=mock_request_and_db["request"],
+                db=mock_request_and_db["db"],
             )

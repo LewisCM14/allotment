@@ -167,8 +167,8 @@ class TestPasswordReset:
     @pytest.mark.asyncio
     async def test_reset_password_malformed_token(self, client):
         resp = await client.post(
-            f"{AUTH_PREFIX}/password-resets/malformed-token",
-            json={"new_password": "NewPassword123!"},
+            f"{AUTH_PREFIX}/password-resets/confirm",
+            json={"token": "malformed-token", "new_password": "NewPassword123!"},
         )
         assert resp.status_code == 401
         assert "Internal server error" in resp.json()["detail"][0]["msg"]
@@ -183,8 +183,8 @@ class TestPasswordReset:
             )
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
             resp = await client.post(
-                f"{AUTH_PREFIX}/password-resets/{token}",
-                json={"new_password": "NewPassword123!"},
+                f"{AUTH_PREFIX}/password-resets/confirm",
+                json={"token": token, "new_password": "NewPassword123!"},
             )
             assert resp.status_code == 400
 
@@ -200,8 +200,8 @@ class TestPasswordReset:
             )
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
             resp = await client.post(
-                f"{AUTH_PREFIX}/password-resets/{token}",
-                json={"new_password": "weak"},
+                f"{AUTH_PREFIX}/password-resets/confirm",
+                json={"token": token, "new_password": "weak"},
             )
             assert resp.status_code == 422
 
@@ -215,8 +215,8 @@ class TestPasswordReset:
             ctx.reset_password.side_effect = InvalidTokenError("Invalid token")
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
             resp = await client.post(
-                f"{AUTH_PREFIX}/password-resets/{token}",
-                json={"new_password": "NewPassword123!"},
+                f"{AUTH_PREFIX}/password-resets/confirm",
+                json={"token": token, "new_password": "NewPassword123!"},
             )
             assert resp.status_code == 401
 
@@ -228,8 +228,8 @@ class TestPasswordReset:
             ctx.reset_password.side_effect = Exception("Unexpected error")
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
             resp = await client.post(
-                f"{AUTH_PREFIX}/password-resets/{token}",
-                json={"new_password": "NewPassword123!"},
+                f"{AUTH_PREFIX}/password-resets/confirm",
+                json={"token": token, "new_password": "NewPassword123!"},
             )
             assert resp.status_code == 500
             assert "Internal server error" in resp.json()["detail"][0]["msg"]
@@ -242,8 +242,8 @@ class TestPasswordReset:
             ctx.reset_password.return_value = None
             token = create_token(user_id=str(uuid.uuid4()), token_type="reset")
             resp = await client.post(
-                f"{AUTH_PREFIX}/password-resets/{token}",
-                json={"new_password": "NewPassword123!"},
+                f"{AUTH_PREFIX}/password-resets/confirm",
+                json={"token": token, "new_password": "NewPassword123!"},
             )
             assert resp.status_code == 200
             assert "Password has been reset successfully" in resp.json()["message"]
@@ -254,8 +254,8 @@ class TestPasswordReset:
             "app.api.core.auth_utils.decode_token", side_effect=Exception("boom")
         )
         resp = await client.post(
-            f"{AUTH_PREFIX}/password-resets/sometoken",
-            json={"new_password": "NewPassword123!"},
+            f"{AUTH_PREFIX}/password-resets/confirm",
+            json={"token": "sometoken", "new_password": "NewPassword123!"},
         )
         assert resp.status_code == 401
         assert "Internal server error" in resp.json()["detail"][0]["msg"]

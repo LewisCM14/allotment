@@ -5,7 +5,7 @@ Registration Endpoints
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +33,7 @@ from app.api.middleware.logging_middleware import (
 from app.api.models import User
 from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import (
+    EmailVerificationConfirm,
     MessageResponse,
     UserCreate,
 )
@@ -170,29 +171,32 @@ async def create_user(
 
 
 @router.post(
-    "/email-verifications/{token}",
+    "/email-verifications/confirm",
     tags=["Registration"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Verify email using token from path",
-    description="Verifies the user's email using the provided token in the URL path. This is a POST request as it changes server state.",
+    summary="Verify email using token from request body",
+    description="Verifies the user's email using the provided token in the request body. This is a POST request as it changes server state.",
 )
+@limiter.limit("10/minute")
 async def verify_email_token(
-    token: str,
-    from_reset: bool = Query(False, alias="fromReset"),
+    verification_data: EmailVerificationConfirm,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """
     Verify the user's email using the token.
 
     Args:
-        token: The JWT token from the verification link
-        from_reset: Whether this verification is part of password reset flow
+        verification_data: Contains the JWT token and optional from_reset flag
+        request: The incoming request
         db: Database session
 
     Returns:
         MessageResponse: Success message
     """
+    token = verification_data.token
+    from_reset = verification_data.from_reset
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "verify_email",
