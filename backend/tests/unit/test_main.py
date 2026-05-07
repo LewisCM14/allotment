@@ -239,6 +239,89 @@ class TestAppConfiguration:
         """Test that required middleware is configured."""
         assert app.state.limiter is not None
 
+    @pytest.mark.asyncio
+    async def test_log_client_error_rate_limited(self, client: AsyncClient):
+        """POST /api/v1/log-client-error must be rate limited."""
+        from app.api.core.limiter import limiter
+
+        original_enabled = limiter.enabled
+        try:
+            limiter.enabled = True
+            limiter._storage.reset()
+            responses = [
+                await client.post(
+                    "/api/v1/log-client-error",
+                    json={"error": "client error", "details": {}},
+                )
+                for _ in range(21)
+            ]
+        finally:
+            limiter._storage.reset()
+            limiter.enabled = original_enabled
+
+        assert all(response.status_code == 200 for response in responses[:20])
+        assert responses[-1].status_code == 429
+
+    @pytest.mark.asyncio
+    async def test_security_headers_present_on_all_responses(self, client: AsyncClient):
+        """Every response must include the mandatory security headers."""
+        response = await client.get("/")
+
+        assert response.headers["x-content-type-options"] == "nosniff"
+        assert response.headers["x-frame-options"] == "DENY"
+        assert (
+            response.headers["strict-transport-security"]
+            == "max-age=31536000; includeSubDomains"
+        )
+        assert response.headers["referrer-policy"] == "strict-origin-when-cross-origin"
+        assert response.headers["content-security-policy"] == "default-src 'none'"
+
+
+@pytest.mark.asyncio
+class TestClientErrorLogging:
+    async def test_log_client_error_rejects_oversized_message(
+        self, client: AsyncClient
+    ):
+        response = await client.post(
+            "/api/v1/log-client-error",
+            json={"error": "x" * 10_001, "details": {}},
+        )
+
+        assert response.status_code == 422
+
+    async def test_log_client_error_rejects_deeply_nested_details(
+        self, client: AsyncClient
+    ):
+        nested: dict = {}
+        current = nested
+        for _ in range(20):
+            current["child"] = {}
+            current = current["child"]
+
+        response = await client.post(
+            "/api/v1/log-client-error",
+            json={"error": "test", "details": nested},
+        )
+
+        assert response.status_code == 422
+
+    async def test_log_client_error_sanitizes_newlines_before_logging(
+        self, client: AsyncClient
+    ):
+        with patch("app.main.logger.error") as mock_logger_error:
+            response = await client.post(
+                "/api/v1/log-client-error",
+                json={"error": "line one\nline two\rline three", "details": {}},
+            )
+
+        assert response.status_code == 200
+        mock_logger_error.assert_called_once_with(
+            "Client-side error reported",
+            operation="log_client_error",
+            client_error_message="line one line two line three",
+            client_error_details={},
+        )
+
 
 @pytest.mark.asyncio
 class TestWebhookVerification:
@@ -303,6 +386,45 @@ class TestWebhookVerification:
 
 @pytest.mark.asyncio
 class TestHandleInboundEmail:
+    async def test_handle_inbound_email_rate_limited(self, client: AsyncClient):
+        from app.api.core.limiter import limiter
+
+        payload = InboundEmailPayload(
+            type="email.received",
+            data=InboundEmailData(
+                from_="sender@example.com",
+                to=["recipient@example.com"],
+                subject="Test Subject",
+                text="Test Body",
+            ),
+        )
+
+        async def override_verify_resend_signature():
+            return payload
+
+        original_enabled = limiter.enabled
+        app.dependency_overrides[verify_resend_signature] = (
+            override_verify_resend_signature
+        )
+
+        try:
+            limiter.enabled = True
+            limiter._storage.reset()
+            with patch(
+                "app.main.forward_inbound_email", new_callable=AsyncMock
+            ) as mock_forward:
+                mock_forward.return_value = {"message": "Email forwarded"}
+                responses = [
+                    await client.post("/webhooks/inbound-email") for _ in range(31)
+                ]
+        finally:
+            app.dependency_overrides.pop(verify_resend_signature, None)
+            limiter._storage.reset()
+            limiter.enabled = original_enabled
+
+        assert all(response.status_code == 200 for response in responses[:30])
+        assert responses[-1].status_code == 429
+
     async def test_handle_inbound_email_success(self):
         payload = InboundEmailPayload(
             type="email.received",
@@ -319,7 +441,7 @@ class TestHandleInboundEmail:
         ) as mock_forward:
             mock_forward.return_value = {"message": "Email forwarded"}
 
-            result = await handle_inbound_email(payload)
+            result = await handle_inbound_email(MagicMock(), payload)
             assert result == {"message": "Email forwarded"}
             mock_forward.assert_called_once()
 
@@ -331,7 +453,7 @@ class TestHandleInboundEmail:
             ),
         )
 
-        result = await handle_inbound_email(payload)
+        result = await handle_inbound_email(MagicMock(), payload)
         assert result == {"message": "Event ignored"}
 
     async def test_handle_inbound_email_fetch_body(self):
@@ -351,7 +473,7 @@ class TestHandleInboundEmail:
             with patch(
                 "app.main.forward_inbound_email", new_callable=AsyncMock
             ) as mock_forward:
-                await handle_inbound_email(payload)
+                await handle_inbound_email(MagicMock(), payload)
 
                 mock_fetch.assert_called_with("email_123")
                 mock_forward.assert_called_once()

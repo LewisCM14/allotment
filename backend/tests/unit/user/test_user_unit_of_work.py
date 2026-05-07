@@ -360,7 +360,7 @@ class TestUserUnitOfWork:
             async with uow:
                 pass
 
-        mock_db.rollback.assert_not_called()  # rollback not called in this case
+        mock_db.rollback.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_context_manager_exception_with_no_value(self, mock_db):

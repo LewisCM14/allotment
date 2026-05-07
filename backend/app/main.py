@@ -21,6 +21,9 @@ from app.api.middleware.logging_middleware import (
     request_id_ctx_var,
     sanitize_error_message,
 )
+from app.api.middleware.security_headers_middleware import (
+    SecurityHeadersMiddleware,
+)
 from app.api.schemas.client_error_schema import ClientErrorLog
 from app.api.schemas.inbound_email_schema import InboundEmailPayload
 from app.api.services.email_service import (
@@ -86,6 +89,7 @@ register_exception_handlers(app)
 
 # Logging Middleware
 logger.debug("Adding logging middleware")
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AsyncLoggingMiddleware)
 
 
@@ -139,13 +143,15 @@ async def root() -> Dict[str, str]:
 
 
 @app.post("/api/v1/log-client-error", tags=["Utility"])
+@limiter.limit("20/minute")
 async def handle_log_client_error(
     error_log: ClientErrorLog, request: Request
 ) -> Dict[str, str]:
+    safe_message = error_log.error.replace("\n", " ").replace("\r", " ")
     logger.error(
         "Client-side error reported",
         operation="log_client_error",
-        client_error_message=error_log.error,
+        client_error_message=safe_message,
         client_error_details=error_log.details,
     )
     return {"message": "Client error logged successfully"}
@@ -200,7 +206,9 @@ async def verify_resend_signature(request: Request) -> InboundEmailPayload:
     summary="Resend inbound email webhook",
     description="Receives inbound emails from Resend and forwards them to CONTACT_TO",
 )
+@limiter.limit("30/minute")
 async def handle_inbound_email(
+    request: Request,
     payload: InboundEmailPayload = Depends(verify_resend_signature),
 ) -> Dict[str, str]:
     """

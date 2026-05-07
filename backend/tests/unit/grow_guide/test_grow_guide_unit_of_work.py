@@ -90,6 +90,7 @@ class TestGrowGuideUnitOfWorkContextManager:
         with pytest.raises(DatabaseIntegrityError):
             await uow.__aexit__(None, None, None)
 
+        uow.db.rollback.assert_called_once()
         mock_logger.error.assert_called_once()
 
     async def test_aexit_with_exception_value_none(self, uow, mocker):

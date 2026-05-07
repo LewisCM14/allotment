@@ -314,6 +314,38 @@ class TestCreateUserEndpointUnit:
 
 @pytest.mark.asyncio
 class TestVerifyEmailTokenEndpointUnit:
+    async def test_verify_email_endpoint_rate_limited(self, client, mock_user, mocker):
+        """POST /email-verifications/confirm must remain rate limited."""
+        from app.api.core.limiter import limiter
+
+        mocker.patch(
+            "app.api.v1.registration.jwt.decode",
+            return_value={"sub": str(mock_user.user_id)},
+        )
+        mock_uow = mocker.AsyncMock()
+        mock_uow.verify_email.return_value = mock_user
+        mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
+        mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
+        mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
+
+        original_enabled = limiter.enabled
+        try:
+            limiter.enabled = True
+            limiter._storage.reset()
+            responses = [
+                await client.post(
+                    "/api/v1/registration/email-verifications/confirm",
+                    json={"token": "test-token", "from_reset": False},
+                )
+                for _ in range(11)
+            ]
+        finally:
+            limiter._storage.reset()
+            limiter.enabled = original_enabled
+
+        assert all(response.status_code == 200 for response in responses[:10])
+        assert responses[-1].status_code == 429
+
     async def test_verify_email_success(
         self,
         mock_user,

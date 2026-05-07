@@ -276,9 +276,7 @@ class TestUserRegistration:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
         async with TestingSessionLocal() as session:
-            result = await session.execute(
-                select(User).where(User.user_email == email)
-            )
+            result = await session.execute(select(User).where(User.user_email == email))
             assert result.scalar_one_or_none() is None
 
     @pytest.mark.asyncio
@@ -302,9 +300,7 @@ class TestUserRegistration:
         assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
         async with TestingSessionLocal() as session:
-            result = await session.execute(
-                select(User).where(User.user_email == email)
-            )
+            result = await session.execute(select(User).where(User.user_email == email))
             assert result.scalar_one_or_none() is None
 
 

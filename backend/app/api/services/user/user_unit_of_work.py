@@ -119,6 +119,7 @@ class UserUnitOfWork:
                     error_type="IntegrityError",
                     exc_info=True,
                 )
+                await self.db.rollback()
                 raise DatabaseIntegrityError(message="User already has an allotment")
 
     @translate_db_exceptions
