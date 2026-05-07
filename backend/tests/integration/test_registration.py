@@ -2,11 +2,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from fastapi import status
+from sqlalchemy import select
 
 from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
 from app.api.middleware.exception_handler import BaseApplicationError
+from app.api.models import User
 from tests.test_helpers import mock_email_service, mock_user_uow
+from tests.testing_db import TestingSessionLocal
 
 REGISTRATION_PREFIX = f"{settings.API_PREFIX}/registration"
 
@@ -246,6 +249,63 @@ class TestUserRegistration:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Email already registered" in response.json()["detail"][0]["msg"]
+
+    @pytest.mark.asyncio
+    async def test_register_user_rolls_back_if_feed_day_setup_raises(
+        self, client, mocker
+    ):
+        """If feed-day creation fails inside the UoW, no user row should persist."""
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
+        email = "rollback-feed-day@example.com"
+
+        mocker.patch(
+            "app.api.repositories.user.user_repository.UserRepository.ensure_user_feed_days",
+            side_effect=Exception("feed day failure"),
+        )
+
+        response = await client.post(
+            f"{REGISTRATION_PREFIX}",
+            json={
+                "user_email": email,
+                "user_password": "TestPass123!@",
+                "user_first_name": "Rollback",
+                "user_country_code": "GB",
+            },
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        async with TestingSessionLocal() as session:
+            result = await session.execute(
+                select(User).where(User.user_email == email)
+            )
+            assert result.scalar_one_or_none() is None
+
+    @pytest.mark.asyncio
+    async def test_register_user_fails_if_feed_defaults_are_unavailable(
+        self, client, seed_feed_data, mocker
+    ):
+        """Registration must fail closed if feeds exist but no default day is available."""
+        mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
+        email = "missing-default-day@example.com"
+
+        response = await client.post(
+            f"{REGISTRATION_PREFIX}",
+            json={
+                "user_email": email,
+                "user_password": "TestPass123!@",
+                "user_first_name": "NoDefault",
+                "user_country_code": "GB",
+            },
+        )
+
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        async with TestingSessionLocal() as session:
+            result = await session.execute(
+                select(User).where(User.user_email == email)
+            )
+            assert result.scalar_one_or_none() is None
 
 
 class TestEmailVerification:

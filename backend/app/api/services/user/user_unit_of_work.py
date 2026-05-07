@@ -172,6 +172,11 @@ class UserUnitOfWork:
             request_id=safe_context["request_id"],
         ):
             try:
+                if feeds and default_day is None:
+                    raise ValueError(
+                        "Feed-day defaults are unavailable for registration"
+                    )
+
                 user = UserFactory.create_user(user_data)
                 self.db.add(user)
                 # Flush to assign user_id before creating dependent UserFeedDay rows.
