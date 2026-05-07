@@ -6,8 +6,7 @@ from fastapi import status
 from app.api.core.auth_utils import create_token
 from app.api.core.config import settings
 from app.api.middleware.exception_handler import BaseApplicationError
-from tests.conftest import mock_email_service
-from tests.test_helpers import mock_user_uow
+from tests.test_helpers import mock_email_service, mock_user_uow
 
 REGISTRATION_PREFIX = f"{settings.API_PREFIX}/registration"
 
@@ -74,7 +73,9 @@ class TestUserRegistration:
             (
                 "creation_returns_none",
                 "creation-none@example.com",
-                lambda mocker: mock_user_uow(mocker, methods={"create_user": None}),
+                lambda mocker: mock_user_uow(
+                    mocker, methods={"create_user_with_feed_days": None}
+                ),
             ),
         ],
     )
@@ -177,7 +178,9 @@ class TestUserRegistration:
         mocker.patch("app.api.v1.registration.send_verification_email")
         with patch("app.api.v1.registration.UserUnitOfWork") as mock_uow:
             mock_uow_instance = AsyncMock()
-            mock_uow_instance.create_user.side_effect = Exception("Database is on fire")
+            mock_uow_instance.create_user_with_feed_days.side_effect = Exception(
+                "Database is on fire"
+            )
             mock_uow.return_value.__aenter__.return_value = mock_uow_instance
 
             response = await client.post(
@@ -200,9 +203,11 @@ class TestUserRegistration:
         mock_email_service(mocker, "app.api.v1.registration.send_verification_email")
         with patch("app.api.v1.registration.UserUnitOfWork") as mock_uow:
             mock_uow_instance = AsyncMock()
-            mock_uow_instance.create_user.side_effect = BaseApplicationError(
-                message="A specific business logic error occurred",
-                error_code="TEST_ERROR",
+            mock_uow_instance.create_user_with_feed_days.side_effect = (
+                BaseApplicationError(
+                    message="A specific business logic error occurred",
+                    error_code="TEST_ERROR",
+                )
             )
             mock_uow.return_value.__aenter__.return_value = mock_uow_instance
 

@@ -4,7 +4,7 @@ import pytest
 from fastapi import Request
 
 from app.api.v1.grow_guide.day import get_days
-from tests.conftest import TestingSessionLocal
+from tests.testing_db import TestingSessionLocal
 
 
 def _assert_day_objects(days):

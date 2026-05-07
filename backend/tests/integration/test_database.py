@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy import text
 
 from app.api.core import database
-from tests.conftest import TestingSessionLocal
+from tests.testing_db import TestingSessionLocal
 
 
 @pytest.fixture

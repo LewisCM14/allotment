@@ -28,7 +28,7 @@ class TestCreateUserEndpointUnit:
         """Test successful user registration using standardized fixtures."""
         # Mock UserUnitOfWork to return our mock user
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.return_value = mock_user
+        mock_uow.create_user_with_feed_days.return_value = mock_user
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
@@ -101,7 +101,7 @@ class TestCreateUserEndpointUnit:
         """Test user registration when UserUnitOfWork returns None."""
         # Mock UserUnitOfWork to return None
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.return_value = None
+        mock_uow.create_user_with_feed_days.return_value = None
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
@@ -140,7 +140,7 @@ class TestCreateUserEndpointUnit:
 
         # Mock UserUnitOfWork to return user without ID
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.return_value = mock_user
+        mock_uow.create_user_with_feed_days.return_value = mock_user
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
@@ -174,7 +174,7 @@ class TestCreateUserEndpointUnit:
         # Mock UserUnitOfWork to raise BaseApplicationError
         error = BaseApplicationError("User creation failed", "USER_CREATE_ERROR")
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.side_effect = error
+        mock_uow.create_user_with_feed_days.side_effect = error
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
@@ -205,7 +205,9 @@ class TestCreateUserEndpointUnit:
         """Test user registration with general exception."""
         # Mock UserUnitOfWork to raise general exception
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.side_effect = Exception("Database connection failed")
+        mock_uow.create_user_with_feed_days.side_effect = Exception(
+            "Database connection failed"
+        )
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
@@ -232,13 +234,44 @@ class TestCreateUserEndpointUnit:
 
         assert "An unexpected error occurred during registration" in str(exc_info.value)
 
+    async def test_registration_rolls_back_if_feed_day_setup_fails(
+        self, sample_user_data, mock_request_and_db, mocker
+    ):
+        """MEDIUM-1: If feed-day setup raises inside create_user_with_feed_days,
+        the handler must surface a BusinessLogicError (the UoW rollback is handled
+        by __aexit__, which is exercised in the UoW unit tests)."""
+        mock_uow = mocker.AsyncMock()
+        mock_uow.create_user_with_feed_days.side_effect = Exception(
+            "feed day constraint failure"
+        )
+
+        mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
+        mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)
+        mock_uow_class.return_value.__aexit__ = mocker.AsyncMock(return_value=None)
+
+        mock_ctx = MagicMock()
+        mock_ctx.get.return_value = "test-request-id"
+        mocker.patch("app.api.v1.registration.request_id_ctx_var", mock_ctx)
+        mocker.patch("app.api.v1.registration.log_timing")
+        mocker.patch("app.api.v1.registration.logger")
+
+        user = UserCreate(**sample_user_data)
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = None
+        mock_request_and_db["db"].execute.return_value = mock_result
+
+        with pytest.raises(BusinessLogicError):
+            await registration.create_user(
+                mock_request_and_db["request"], user, mock_request_and_db["db"]
+            )
+
     async def test_create_user_email_service_failure(
         self, mock_user, sample_user_data, mock_request_and_db, mocker
     ):
         """Test user registration when email service fails."""
         # Mock UserUnitOfWork to succeed
         mock_uow = mocker.AsyncMock()
-        mock_uow.create_user.return_value = mock_user
+        mock_uow.create_user_with_feed_days.return_value = mock_user
 
         mock_uow_class = mocker.patch("app.api.v1.registration.UserUnitOfWork")
         mock_uow_class.return_value.__aenter__ = mocker.AsyncMock(return_value=mock_uow)

@@ -33,7 +33,8 @@ async def fail_unexpected():
 @pytest.fixture()
 def client():
     # Disable re-raising server exceptions so we can assert on standardized error responses
-    return TestClient(app, raise_server_exceptions=False)
+    with TestClient(app, raise_server_exceptions=False) as test_client:
+        yield test_client
 
 
 @pytest.mark.parametrize(

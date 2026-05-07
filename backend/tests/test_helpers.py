@@ -50,6 +50,16 @@ def assert_http_error_response(
             assert expected_message_contains.lower() in str(response_data).lower()
 
 
+def mock_email_service(mocker, email_service_path: str, success: bool = True):
+    """Patch an email-sending function used by a test."""
+    mock_send = mocker.patch(email_service_path)
+    if success:
+        mock_send.return_value = {"message": "Verification email sent successfully"}
+    else:
+        mock_send.side_effect = Exception("SMTP connection failed")
+    return mock_send
+
+
 def build_user_stub(
     mocker,
     user_id: Optional[str] = None,

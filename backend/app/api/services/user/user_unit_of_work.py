@@ -150,6 +150,53 @@ class UserUnitOfWork:
             return user
 
     @translate_db_exceptions
+    async def create_user_with_feed_days(
+        self,
+        user_data: UserCreate,
+        feeds: list[Any],
+        default_day: Any | None,
+    ) -> User:
+        """Create a user and initialize feed-day preferences in one transaction."""
+        safe_context = {
+            "email": user_data.user_email,
+            "request_id": self.request_id,
+            "operation": "create_user_with_feed_days_uow",
+        }
+
+        logger.info(
+            "Creating user with feed-day preferences via unit of work", **safe_context
+        )
+
+        with log_timing(
+            "create_user_with_feed_days_transaction",
+            request_id=safe_context["request_id"],
+        ):
+            try:
+                user = UserFactory.create_user(user_data)
+                self.db.add(user)
+                # Flush to assign user_id before creating dependent UserFeedDay rows.
+                await self.db.flush()
+                await self.user_repo.ensure_user_feed_days(
+                    str(user.user_id), feeds, default_day
+                )
+            except ValidationError:
+                raise
+            except Exception as exc:
+                logger.error(
+                    "Error creating user with feed-day preferences",
+                    error=str(exc),
+                    **safe_context,
+                )
+                raise
+
+        safe_context["user_id"] = str(user.user_id)
+        logger.info(
+            "User and feed-day preferences created in unit of work", **safe_context
+        )
+
+        return user
+
+    @translate_db_exceptions
     async def verify_email(self, user_id: str) -> User:
         """Verify a user's email."""
         log_context = {

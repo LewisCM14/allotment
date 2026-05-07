@@ -7,8 +7,6 @@ import pytest
 from fastapi import status
 from httpx import ASGITransport, AsyncClient
 from resend import exceptions as resend_exceptions
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.pool import StaticPool
 
 from app.api.core.config import settings
 from app.api.core.database import Base, get_db
@@ -25,25 +23,11 @@ from tests.test_helpers import (
     make_user_create_schema,
     make_user_feed_day,
     make_user_model,
+    mock_email_service,
 )
+from tests.testing_db import TestingSessionLocal, engine
 
 os.environ.setdefault("LOG_TO_FILE", "false")
-
-# Use a shared in-memory database with a named URI
-TEST_DATABASE_URL = "sqlite+aiosqlite:///file:memdb1?mode=memory&cache=shared&uri=true"
-
-engine = create_async_engine(
-    TEST_DATABASE_URL,
-    connect_args={"check_same_thread": False},
-    poolclass=StaticPool,
-)
-
-TestingSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autoflush=False,
-)
 
 
 # Create a fresh session for each test
@@ -96,6 +80,13 @@ async def setup_test_db():
     # Clean up after all tests
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+
+    await engine.dispose()
+
+    # Also dispose of the main application engine to prevent hanging threads.
+    from app.api.core.database import engine as app_engine
+
+    await app_engine.dispose()
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -161,26 +152,6 @@ def disable_rate_limits():
     yield
 
     limiter.enabled = original_enabled
-
-
-def mock_email_service(mocker, email_service_path: str, success: bool = True):
-    """
-    Helper function to mock email-sending services.
-
-    Args:
-        mocker: The pytest-mock mocker object.
-        email_service_path: The import path of the email service to mock.
-        success: Whether the mock should simulate a successful email send.
-
-    Returns:
-        The mocked email service.
-    """
-    mock_send = mocker.patch(email_service_path)
-    if success:
-        mock_send.return_value = {"message": "Verification email sent successfully"}
-    else:
-        mock_send.side_effect = Exception("SMTP connection failed")
-    return mock_send
 
 
 @pytest.fixture
@@ -718,6 +689,8 @@ def reset_health_state():
 @pytest.fixture
 def mock_db():
     """Provide an AsyncSession mock for repository/unit tests that don't hit the DB."""
+    from sqlalchemy.ext.asyncio import AsyncSession
+
     return AsyncMock(spec=AsyncSession)
 
 
