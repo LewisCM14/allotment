@@ -1,4 +1,5 @@
 import type { ITokenPair } from "@/store/auth/AuthContext";
+import { tokenStore } from "@/services/tokenStore";
 import api, { handleApiError } from "../../../services/api";
 
 export interface ILoginRequest {
@@ -41,8 +42,7 @@ export const loginUser = async (
 			user_id,
 		} = response.data;
 
-		localStorage.setItem("access_token", access_token);
-		localStorage.setItem("refresh_token", refresh_token);
+		tokenStore.setTokens({ access_token, refresh_token });
 
 		let firstName = user_first_name;
 		if (!firstName) {
@@ -76,7 +76,7 @@ export interface IRefreshTokenRequest {
 
 export const refreshAccessToken = async (): Promise<ITokenPair> => {
 	try {
-		const refreshToken = localStorage.getItem("refresh_token");
+		const refreshToken = tokenStore.getRefreshToken();
 		if (!refreshToken) {
 			throw new Error("No refresh token available");
 		}
@@ -85,15 +85,12 @@ export const refreshAccessToken = async (): Promise<ITokenPair> => {
 			refresh_token: refreshToken,
 		});
 
-		// Update stored tokens
-		localStorage.setItem("access_token", response.data.access_token);
-		localStorage.setItem("refresh_token", response.data.refresh_token);
+		tokenStore.setTokens(response.data);
 
 		return response.data;
 	} catch (error: unknown) {
 		// Clear tokens on refresh failure
-		localStorage.removeItem("access_token");
-		localStorage.removeItem("refresh_token");
+		tokenStore.clearTokens();
 
 		return handleApiError(error, "Failed to refresh authentication token");
 	}
@@ -122,8 +119,8 @@ export const resetPassword = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`/auth/password-resets/${token}`,
-			{ new_password: newPassword },
+			"/auth/password-resets/confirm",
+			{ token, new_password: newPassword },
 		);
 		return response.data;
 	} catch (error: unknown) {

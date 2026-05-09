@@ -108,6 +108,7 @@ class GrowGuideUnitOfWork:
                     error_type="IntegrityError",
                     exc_info=True,
                 )
+                await self.db.rollback()
                 raise DatabaseIntegrityError(
                     message="Database integrity constraint violated"
                 )

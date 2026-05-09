@@ -35,9 +35,8 @@ export const verifyEmail = async (
 ): Promise<{ message: string }> => {
 	try {
 		const response = await api.post<{ message: string }>(
-			`/registration/email-verifications/${token}`,
-			null,
-			{ params: { fromReset } },
+			"/registration/email-verifications/confirm",
+			{ token, from_reset: fromReset },
 		);
 		return response.data;
 	} catch (error: unknown) {

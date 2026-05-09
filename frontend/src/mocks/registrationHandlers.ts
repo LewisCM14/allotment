@@ -39,11 +39,14 @@ export const registrationHandlers = [
 
 	// Mock the email verification endpoint (during registration flow)
 	http.post(
-		buildUrl("/registration/email-verifications/:token"),
-		async ({ params, request }) => {
-			const token = params.token;
-			const url = new URL(request.url);
-			const fromReset = url.searchParams.get("fromReset") === "true";
+		buildUrl("/registration/email-verifications/confirm"),
+		async ({ request }) => {
+			const body = (await request.json()) as {
+				token: string;
+				from_reset?: boolean;
+			};
+			const token = body.token;
+			const fromReset = body.from_reset === true;
 
 			if (token === "valid-token") {
 				if (fromReset) {
@@ -73,7 +76,7 @@ export const registrationHandlers = [
 			return jsonError("Token not handled", 400);
 		},
 	),
-	http.options(buildUrl("/registration/email-verifications/:token"), () => {
+	http.options(buildUrl("/registration/email-verifications/confirm"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 ];

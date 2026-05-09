@@ -5,8 +5,8 @@ Test Variety Repository
 import pytest
 
 from app.api.repositories.grow_guide.variety_repository import VarietyRepository
-from tests.conftest import TestingSessionLocal
 from tests.test_helpers import make_variety
+from tests.testing_db import TestingSessionLocal
 
 
 class TestVarietyRepository:

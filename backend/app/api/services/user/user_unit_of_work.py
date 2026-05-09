@@ -119,6 +119,7 @@ class UserUnitOfWork:
                     error_type="IntegrityError",
                     exc_info=True,
                 )
+                await self.db.rollback()
                 raise DatabaseIntegrityError(message="User already has an allotment")
 
     @translate_db_exceptions
@@ -148,6 +149,58 @@ class UserUnitOfWork:
             logger.info("User created in unit of work", **safe_context)
 
             return user
+
+    @translate_db_exceptions
+    async def create_user_with_feed_days(
+        self,
+        user_data: UserCreate,
+        feeds: list[Any],
+        default_day: Any | None,
+    ) -> User:
+        """Create a user and initialize feed-day preferences in one transaction."""
+        safe_context = {
+            "email": user_data.user_email,
+            "request_id": self.request_id,
+            "operation": "create_user_with_feed_days_uow",
+        }
+
+        logger.info(
+            "Creating user with feed-day preferences via unit of work", **safe_context
+        )
+
+        with log_timing(
+            "create_user_with_feed_days_transaction",
+            request_id=safe_context["request_id"],
+        ):
+            try:
+                if feeds and default_day is None:
+                    raise ValueError(
+                        "Feed-day defaults are unavailable for registration"
+                    )
+
+                user = UserFactory.create_user(user_data)
+                self.db.add(user)
+                # Flush to assign user_id before creating dependent UserFeedDay rows.
+                await self.db.flush()
+                await self.user_repo.ensure_user_feed_days(
+                    str(user.user_id), feeds, default_day
+                )
+            except ValidationError:
+                raise
+            except Exception as exc:
+                logger.error(
+                    "Error creating user with feed-day preferences",
+                    error=str(exc),
+                    **safe_context,
+                )
+                raise
+
+        safe_context["user_id"] = str(user.user_id)
+        logger.info(
+            "User and feed-day preferences created in unit of work", **safe_context
+        )
+
+        return user
 
     @translate_db_exceptions
     async def verify_email(self, user_id: str) -> User:
@@ -498,9 +551,19 @@ class UserUnitOfWork:
 
         user = await self.user_repo.get_user_by_email(user_email)
         if not user:
-            from app.api.middleware.exception_handler import UserNotFoundError
+            # Silent no-op: do not reveal whether the email exists (anti-enumeration)
+            logger.info(
+                "Verification email requested for unknown address",
+                request_id=self.request_id,
+            )
+            return
 
-            raise UserNotFoundError(f"User with email {user_email} not found")
+        if user.is_email_verified:
+            logger.info(
+                "Verification email skipped — address already verified",
+                request_id=self.request_id,
+            )
+            return
 
         log_context["user_id"] = str(user.user_id)
 
@@ -537,5 +600,4 @@ class UserUnitOfWork:
 
         return VerificationStatusResponse(
             is_email_verified=user.is_email_verified,
-            user_id=str(user.user_id),
         )

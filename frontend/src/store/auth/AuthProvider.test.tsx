@@ -9,6 +9,7 @@ import * as authDB from "./authDB";
 import { http, HttpResponse } from "msw";
 import { server } from "@/mocks/server";
 import { errorMonitor } from "@/services/errorMonitoring";
+import { tokenStore } from "@/services/tokenStore";
 
 // Helper to consume the context
 function AuthConsumer() {
@@ -141,6 +142,8 @@ describe("AuthProvider", () => {
 	let clearAuthFromIndexedDBMock: MockInstance;
 
 	beforeEach(() => {
+		tokenStore.clearTokens();
+
 		// Mock localStorage
 		getItemMock = vi.spyOn(window.localStorage, "getItem");
 		setItemMock = vi.spyOn(window.localStorage, "setItem");
@@ -161,8 +164,6 @@ describe("AuthProvider", () => {
 		// Reset IndexedDB mocks
 		saveAuthToIndexedDBMock.mockResolvedValue(undefined);
 		loadAuthFromIndexedDBMock.mockResolvedValue({
-			access_token: "",
-			refresh_token: "",
 			isAuthenticated: false,
 		});
 		clearAuthFromIndexedDBMock.mockResolvedValue(undefined);
@@ -200,7 +201,7 @@ describe("AuthProvider", () => {
 		);
 	});
 
-	it("loads auth from localStorage when available", async () => {
+	it("ignores persisted tokens in localStorage", async () => {
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
 				case "access_token":
@@ -227,22 +228,19 @@ describe("AuthProvider", () => {
 		);
 
 		await waitFor(() => {
-			expect(screen.getByTestId("access-token").textContent).toBe(
-				"stored-access-token",
-			);
-			expect(screen.getByTestId("refresh-token").textContent).toBe(
-				"stored-refresh-token",
-			);
-			expect(screen.getByTestId("authenticated").textContent).toBe("true");
-			expect(screen.getByTestId("first-name").textContent).toBe("Stored User");
-			expect(screen.getByTestId("user-id").textContent).toBe("stored-user-123");
+			expect(screen.getByTestId("access-token").textContent).toBe("null");
+			expect(screen.getByTestId("refresh-token").textContent).toBe("null");
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+			expect(screen.getByTestId("first-name").textContent).toBe("null");
+			expect(screen.getByTestId("user-id").textContent).toBe("null");
 		});
+
+		expect(removeItemMock).toHaveBeenCalledWith("access_token");
+		expect(removeItemMock).toHaveBeenCalledWith("refresh_token");
 	});
 
-	it("loads auth from IndexedDB when localStorage is empty", async () => {
+	it("clears legacy IndexedDB auth state on startup", async () => {
 		loadAuthFromIndexedDBMock.mockResolvedValue({
-			access_token: "indexed-access-token",
-			refresh_token: "indexed-refresh-token",
 			isAuthenticated: true,
 			firstName: "Indexed User",
 		});
@@ -254,26 +252,12 @@ describe("AuthProvider", () => {
 		);
 
 		await waitFor(() => {
-			expect(screen.getByTestId("access-token").textContent).toBe(
-				"indexed-access-token",
-			);
-			expect(screen.getByTestId("refresh-token").textContent).toBe(
-				"indexed-refresh-token",
-			);
-			expect(screen.getByTestId("authenticated").textContent).toBe("true");
-			expect(screen.getByTestId("first-name").textContent).toBe("Indexed User");
+			expect(screen.getByTestId("access-token").textContent).toBe("null");
+			expect(screen.getByTestId("refresh-token").textContent).toBe("null");
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
 		});
 
-		// Should sync to localStorage
-		expect(setItemMock).toHaveBeenCalledWith(
-			"access_token",
-			"indexed-access-token",
-		);
-		expect(setItemMock).toHaveBeenCalledWith(
-			"refresh_token",
-			"indexed-refresh-token",
-		);
-		expect(setItemMock).toHaveBeenCalledWith("first_name", "Indexed User");
+		expect(clearAuthFromIndexedDBMock).toHaveBeenCalled();
 	});
 
 	it("handles login successfully", async () => {
@@ -300,38 +284,27 @@ describe("AuthProvider", () => {
 			expect(screen.getByTestId("first-name").textContent).toBe("Test User");
 		});
 
-		// Should save to localStorage and IndexedDB
-		expect(setItemMock).toHaveBeenCalledWith("access_token", "test-access");
-		expect(setItemMock).toHaveBeenCalledWith("refresh_token", "test-refresh");
+		expect(setItemMock).not.toHaveBeenCalledWith("access_token", "test-access");
+		expect(setItemMock).not.toHaveBeenCalledWith(
+			"refresh_token",
+			"test-refresh",
+		);
 		expect(setItemMock).toHaveBeenCalledWith("first_name", "Test User");
-		expect(saveAuthToIndexedDBMock).toHaveBeenCalledWith({
-			access_token: "test-access",
-			refresh_token: "test-refresh",
-			firstName: "Test User",
-			isAuthenticated: true,
-		});
+		expect(saveAuthToIndexedDBMock).not.toHaveBeenCalled();
 	});
 
 	it("handles logout successfully", async () => {
-		// Start with authenticated state
-		getItemMock.mockImplementation((key) => {
-			switch (key) {
-				case "access_token":
-					return "stored-access-token";
-				case "refresh_token":
-					return "stored-refresh-token";
-				case "first_name":
-					return "Stored User";
-				default:
-					return null;
-			}
-		});
-
 		render(
 			<AuthProvider>
 				<AuthConsumer />
 			</AuthProvider>,
 		);
+
+		await waitFor(() => {
+			expect(screen.getByTestId("authenticated").textContent).toBe("false");
+		});
+
+		fireEvent.click(screen.getByText("Login"));
 
 		await waitFor(() => {
 			expect(screen.getByTestId("authenticated").textContent).toBe("true");
@@ -405,13 +378,14 @@ describe("AuthProvider", () => {
 		expect(setItemMock).toHaveBeenCalledWith("is_email_verified", "true");
 	});
 
-	it("loads from localStorage with firstName but no email, skipping user creation", async () => {
+	it("hydrates profile metadata for an in-memory session", async () => {
+		tokenStore.setTokens({
+			access_token: "stored-access",
+			refresh_token: "stored-refresh",
+		});
+
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
-				case "access_token":
-					return "stored-access";
-				case "refresh_token":
-					return "stored-refresh";
 				case "first_name":
 					return "NoEmail User";
 				case "user_email":
@@ -436,13 +410,13 @@ describe("AuthProvider", () => {
 	});
 
 	it("refreshAccessToken succeeds and updates tokens", async () => {
-		// Start with tokens from localStorage
+		tokenStore.setTokens({
+			access_token: "old-access",
+			refresh_token: "old-refresh",
+		});
+
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
-				case "access_token":
-					return "old-access";
-				case "refresh_token":
-					return "old-refresh";
 				case "first_name":
 					return "Refresh User";
 				default:
@@ -478,15 +452,12 @@ describe("AuthProvider", () => {
 			);
 		});
 
-		expect(setItemMock).toHaveBeenCalledWith("access_token", "new-access");
-		expect(setItemMock).toHaveBeenCalledWith("refresh_token", "new-refresh");
-		expect(saveAuthToIndexedDBMock).toHaveBeenCalledWith(
-			expect.objectContaining({
-				access_token: "new-access",
-				refresh_token: "new-refresh",
-				isAuthenticated: true,
-			}),
+		expect(setItemMock).not.toHaveBeenCalledWith("access_token", "new-access");
+		expect(setItemMock).not.toHaveBeenCalledWith(
+			"refresh_token",
+			"new-refresh",
 		);
+		expect(saveAuthToIndexedDBMock).not.toHaveBeenCalled();
 	});
 
 	it("refreshAccessToken returns false when no refresh token exists", async () => {
@@ -510,12 +481,13 @@ describe("AuthProvider", () => {
 	});
 
 	it("refreshAccessToken handles 401 error and logs out", async () => {
+		tokenStore.setTokens({
+			access_token: "old-access",
+			refresh_token: "old-refresh",
+		});
+
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
-				case "access_token":
-					return "old-access";
-				case "refresh_token":
-					return "old-refresh";
 				default:
 					return null;
 			}
@@ -547,12 +519,13 @@ describe("AuthProvider", () => {
 	});
 
 	it("refreshAccessToken handles non-401 API error and logs out", async () => {
+		tokenStore.setTokens({
+			access_token: "old-access",
+			refresh_token: "old-refresh",
+		});
+
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
-				case "access_token":
-					return "old-access";
-				case "refresh_token":
-					return "old-refresh";
 				default:
 					return null;
 			}
@@ -586,12 +559,13 @@ describe("AuthProvider", () => {
 	});
 
 	it("refreshAccessToken handles network error and logs out", async () => {
+		tokenStore.setTokens({
+			access_token: "old-access",
+			refresh_token: "old-refresh",
+		});
+
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
-				case "access_token":
-					return "old-access";
-				case "refresh_token":
-					return "old-refresh";
 				default:
 					return null;
 			}

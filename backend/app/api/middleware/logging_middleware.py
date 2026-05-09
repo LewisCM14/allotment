@@ -8,6 +8,7 @@ import time
 import uuid
 from contextvars import ContextVar
 from typing import Any, Awaitable, Callable, Dict, Optional
+from urllib.parse import urlsplit, urlunsplit
 
 import structlog
 from fastapi import Request, Response
@@ -36,6 +37,57 @@ SENSITIVE_HEADERS = {
 
 # Query parameters that should be redacted
 SENSITIVE_PARAMS = {"token", "password", "secret", "key", "api_key", "auth"}
+
+# Deterministic JWT-like path segment detection avoids regex backtracking on long inputs.
+_JWT_ALLOWED_CHARS: frozenset[str] = frozenset(
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
+)
+
+# Path segments that are immediately followed by a token value
+_TOKEN_PATH_PREFIXES: frozenset[str] = frozenset(
+    {"password-resets", "email-verifications"}
+)
+
+
+def _is_jwt_component(value: str) -> bool:
+    return bool(value) and all(char in _JWT_ALLOWED_CHARS for char in value)
+
+
+def _is_jwt_like_segment(segment: str) -> bool:
+    header, separator, remainder = segment.partition(".")
+    if not separator or len(header) < 10 or not _is_jwt_component(header):
+        return False
+
+    payload, separator, signature = remainder.partition(".")
+    if not separator:
+        return False
+
+    return _is_jwt_component(payload) and _is_jwt_component(signature)
+
+
+def redact_url_tokens(url: str) -> str:
+    """Redact JWT-like path segments without regex backtracking risk."""
+    parsed_url = urlsplit(url)
+    parts = parsed_url.path.split("/")
+    result: list[str] = []
+    for i, part in enumerate(parts):
+        if part and i > 0 and parts[i - 1] in _TOKEN_PATH_PREFIXES:
+            result.append(REDACTED)
+        elif _is_jwt_like_segment(part):
+            result.append(REDACTED)
+        else:
+            result.append(part)
+    reconstructed_path = "/".join(result)
+    return urlunsplit(
+        (
+            parsed_url.scheme,
+            parsed_url.netloc,
+            reconstructed_path,
+            parsed_url.query,
+            parsed_url.fragment,
+        )
+    )
+
 
 # List of fields that should never be logged in any context
 SENSITIVE_FIELDS = {
@@ -180,7 +232,7 @@ class AsyncLoggingMiddleware(BaseHTTPMiddleware):
                 "Incoming request",
                 request_id=request_id,
                 method=request.method,
-                url=str(request.url),
+                url=redact_url_tokens(str(request.url)),
                 client_ip=client_ip,
                 headers=sanitize_headers(dict(request.headers)),
                 query_params=sanitize_params(dict(request.query_params)),

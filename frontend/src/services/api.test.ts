@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import axios from "axios";
 import { server } from "../mocks/server";
 import api, { handleApiError } from "./api";
+import { tokenStore } from "./tokenStore";
 import { API_URL, API_VERSION } from "./apiConfig";
 
 describe("API Service", () => {
 	beforeEach(() => {
 		localStorage.clear();
+		tokenStore.clearTokens();
 		vi.spyOn(console, "error").mockImplementation(() => {});
 	});
 
@@ -86,7 +88,10 @@ describe("API Service", () => {
 
 	describe("Token refresh", () => {
 		beforeEach(() => {
-			localStorage.setItem("refresh_token", "test-refresh-token");
+			tokenStore.setTokens({
+				access_token: "",
+				refresh_token: "test-refresh-token",
+			});
 		});
 
 		it("should refresh token on 401 and retry original request", async () => {
@@ -116,14 +121,18 @@ describe("API Service", () => {
 				}),
 			);
 
-			localStorage.setItem("access_token", "invalid-token");
+			tokenStore.setTokens({
+				access_token: "invalid-token",
+				refresh_token: "test-refresh-token",
+			});
 
 			const response = await api.get("/test-endpoint");
 
 			expect(authAttempts).toBe(2); // First attempt + retry after refresh
 			expect(refreshAttempts).toBe(1);
 			expect(response.data).toEqual({ data: "success" });
-			expect(localStorage.getItem("access_token")).toBe("new-access-token");
+			expect(tokenStore.getAccessToken()).toBe("new-access-token");
+			expect(tokenStore.getRefreshToken()).toBe("new-refresh-token");
 		});
 
 		it("should handle refresh token failure", async () => {
@@ -149,13 +158,16 @@ describe("API Service", () => {
 				writable: true,
 			});
 
-			localStorage.setItem("access_token", "invalid-token");
+			tokenStore.setTokens({
+				access_token: "invalid-token",
+				refresh_token: "test-refresh-token",
+			});
 
 			await expect(api.get("/test-endpoint")).rejects.toThrow();
 
 			// Tokens should be cleared
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
+			expect(tokenStore.getAccessToken()).toBeNull();
+			expect(tokenStore.getRefreshToken()).toBeNull();
 		});
 
 		it("should queue multiple requests during token refresh", async () => {
@@ -193,7 +205,10 @@ describe("API Service", () => {
 				}),
 			);
 
-			localStorage.setItem("access_token", "invalid-token");
+			tokenStore.setTokens({
+				access_token: "invalid-token",
+				refresh_token: "test-refresh-token",
+			});
 
 			// Make multiple concurrent requests
 			const [response1, response2] = await Promise.all([

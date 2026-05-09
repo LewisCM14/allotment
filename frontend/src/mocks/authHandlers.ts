@@ -86,37 +86,34 @@ export const authHandlers = [
 	}),
 
 	// Mock password reset action endpoint
-	http.post(
-		buildUrl("/auth/password-resets/:token"),
-		async ({ params, request }) => {
-			const body = (await request.json()) as IPasswordResetAction;
-			const token = params.token;
+	http.post(buildUrl("/auth/password-resets/confirm"), async ({ request }) => {
+		const body = (await request.json()) as IPasswordResetAction;
+		const token = body.token;
 
-			if (token === "invalid-token") {
-				return jsonError("Invalid or expired reset token", 401);
-			}
+		if (token === "invalid-token") {
+			return jsonError("Invalid or expired reset token", 401);
+		}
 
-			if (token === "expired-token") {
-				return jsonError(
-					JSON.stringify([
-						{ msg: "Reset token has expired", type: "token_expired_error" },
-					]),
-					400,
-				);
-			}
+		if (token === "expired-token") {
+			return jsonError(
+				JSON.stringify([
+					{ msg: "Reset token has expired", type: "token_expired_error" },
+				]),
+				400,
+			);
+		}
 
-			if (token === "valid-token" && body.new_password === "weak") {
-				return jsonError("Password must be at least 8 characters long", 400);
-			}
+		if (token === "valid-token" && body.new_password === "weak") {
+			return jsonError("Password must be at least 8 characters long", 400);
+		}
 
-			if (token === "valid-reset-token" || token === "valid-token") {
-				return jsonOk({ message: "Password reset successfully" });
-			}
+		if (token === "valid-reset-token" || token === "valid-token") {
+			return jsonOk({ message: "Password reset successfully" });
+		}
 
-			return jsonError("Token not handled for reset", 400);
-		},
-	),
-	http.options(buildUrl("/auth/password-resets/:token"), () => {
+		return jsonError("Token not handled for reset", 400);
+	}),
+	http.options(buildUrl("/auth/password-resets/confirm"), () => {
 		return new HttpResponse(null, { status: 204 });
 	}),
 ];

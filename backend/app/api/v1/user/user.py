@@ -4,8 +4,7 @@ User Profile Endpoints
 """
 
 import structlog
-from fastapi import APIRouter, Depends, Query, status
-from pydantic import EmailStr
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.core.auth_utils import get_current_user
@@ -72,37 +71,28 @@ async def request_verification_email(
     response_model=VerificationStatusResponse,
     status_code=status.HTTP_200_OK,
     summary="Check email verification status",
-    description="Returns the current email verification status for a user",
+    description="Returns the current authenticated user's email verification status",
 )
 async def check_verification_status(
-    user_email: EmailStr = Query(...),
-    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> VerificationStatusResponse:
     """
-    Check if a user's email is verified.
+    Check if the authenticated user's email is verified.
 
     Args:
-        user_email: The user's email address
-        db: Database session
+        current_user: The authenticated user (from Bearer token)
 
     Returns:
         VerificationStatusResponse: Contains verification status
     """
-    log_context = {
-        "email": user_email,
-        "request_id": request_id_ctx_var.get(),
-        "operation": "check_verification_status",
-    }
-    logger.debug("Checking email verification status", **log_context)
-    normalized_email = str(user_email).strip().lower()
-
-    async with UserUnitOfWork(db) as uow:
-        verification_status = await uow.get_verification_status_service(
-            normalized_email
-        )
-
-    logger.info("Verification status checked", **log_context)
-    return verification_status
+    logger.debug(
+        "Checking email verification status",
+        request_id=request_id_ctx_var.get(),
+        operation="check_verification_status",
+    )
+    return VerificationStatusResponse(
+        is_email_verified=current_user.is_email_verified,
+    )
 
 
 @router.get(

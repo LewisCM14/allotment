@@ -1,5 +1,6 @@
 import { API_URL, API_VERSION } from "@/services/apiConfig";
 import { errorMonitor } from "@/services/errorMonitoring";
+import { tokenStore } from "@/services/tokenStore";
 import type { ITokenPair } from "@/store/auth/AuthContext";
 import axios, {
 	type AxiosError,
@@ -200,7 +201,7 @@ const handleRequestCancellation = (config: AxiosRequestConfig) => {
 };
 
 const addAuthToken = (config: AxiosRequestConfig) => {
-	const token = localStorage.getItem("access_token");
+	const token = tokenStore.getAccessToken();
 	if (token) {
 		config.headers ??= {};
 		config.headers.Authorization = `Bearer ${token}`;
@@ -277,7 +278,7 @@ export interface IRefreshRequest {
 }
 
 const refreshAccessToken = async (): Promise<string | null> => {
-	const refreshToken = localStorage.getItem("refresh_token");
+	const refreshToken = tokenStore.getRefreshToken();
 	if (!refreshToken) return null;
 
 	try {
@@ -286,14 +287,12 @@ const refreshAccessToken = async (): Promise<string | null> => {
 			refresh_token: refreshToken,
 		});
 
-		localStorage.setItem("access_token", response.data.access_token);
-		localStorage.setItem("refresh_token", response.data.refresh_token);
+		tokenStore.setTokens(response.data);
 
 		return response.data.access_token;
 	} catch (error) {
 		// Clear tokens on refresh failure and log the error
-		localStorage.removeItem("access_token");
-		localStorage.removeItem("refresh_token");
+		tokenStore.clearTokens();
 
 		errorMonitor.captureException(error, { context: "token_refresh_failed" });
 

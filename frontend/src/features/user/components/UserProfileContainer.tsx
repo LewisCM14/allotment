@@ -45,7 +45,7 @@ export default function UserProfileContainer() {
 		data: verificationData,
 		isLoading: isCheckingStatus,
 		error: verificationError,
-	} = useEmailVerificationStatus(user?.user_email ?? profileData?.user_email);
+	} = useEmailVerificationStatus();
 
 	const updateProfileMutation = useUpdateUserProfile();
 	const requestVerificationMutation = useRequestEmailVerification();
@@ -232,7 +232,7 @@ export default function UserProfileContainer() {
 
 		try {
 			setError("");
-			await refreshStatusMutation.mutateAsync(email);
+			await refreshStatusMutation.mutateAsync();
 		} catch (err: unknown) {
 			const errorMessage = formatError(err);
 			setError(errorMessage);

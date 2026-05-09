@@ -1,6 +1,7 @@
 import type { IUserData } from "@/features/auth/services/AuthService";
 import api from "@/services/api";
 import { API_VERSION } from "@/services/apiConfig";
+import { tokenStore } from "@/services/tokenStore";
 import {
 	type ReactNode,
 	useCallback,
@@ -11,11 +12,7 @@ import {
 import { errorMonitor } from "@/services/errorMonitoring";
 import { lazyToast } from "@/utils/lazyToast";
 import { AuthContext, type ITokenPair, type IUser } from "./AuthContext";
-import {
-	clearAuthFromIndexedDB,
-	loadAuthFromIndexedDB,
-	saveAuthToIndexedDB,
-} from "./authDB";
+import { clearAuthFromIndexedDB } from "./authDB";
 
 interface IAuthProvider {
 	readonly children: ReactNode;
@@ -31,15 +28,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 	const [hasLoggedOut, setHasLoggedOut] = useState(false);
 
 	useEffect(() => {
-		const loadAuthFromLocalStorage = () => {
-			const accessToken = localStorage.getItem("access_token");
-			const refreshToken = localStorage.getItem("refresh_token");
-			if (!accessToken || !refreshToken) return false;
-
-			setAccessToken(accessToken);
-			setRefreshToken(refreshToken);
-			setIsAuthenticated(true);
-
+		const hydrateProfileFromLocalStorage = () => {
 			const firstName = localStorage.getItem("first_name");
 			if (firstName) {
 				setFirstName(firstName);
@@ -55,31 +44,26 @@ export function AuthProvider({ children }: IAuthProvider) {
 					});
 				}
 			}
-			return true;
-		};
-
-		const loadAuthFromDbAndSync = async () => {
-			const dbAuth = await loadAuthFromIndexedDB();
-			if (!dbAuth.access_token || !dbAuth.refresh_token) return;
-
-			setAccessToken(dbAuth.access_token);
-			setRefreshToken(dbAuth.refresh_token);
-			setIsAuthenticated(dbAuth.isAuthenticated);
-			if (dbAuth.firstName) {
-				setFirstName(dbAuth.firstName);
-			}
-
-			localStorage.setItem("access_token", dbAuth.access_token);
-			localStorage.setItem("refresh_token", dbAuth.refresh_token);
-			if (dbAuth.firstName) {
-				localStorage.setItem("first_name", dbAuth.firstName);
-			}
 		};
 
 		const loadAuthState = async () => {
-			const loadedFromLocal = loadAuthFromLocalStorage();
-			if (!loadedFromLocal) {
-				await loadAuthFromDbAndSync();
+			localStorage.removeItem("access_token");
+			localStorage.removeItem("refresh_token");
+
+			try {
+				await clearAuthFromIndexedDB();
+			} catch (error) {
+				errorMonitor.captureException(error, {
+					context: "clear_legacy_auth_state",
+				});
+			}
+
+			const tokens = tokenStore.getTokens();
+			if (tokens) {
+				setAccessToken(tokens.access_token);
+				setRefreshToken(tokens.refresh_token);
+				setIsAuthenticated(true);
+				hydrateProfileFromLocalStorage();
 			}
 
 			if (import.meta.env.DEV && import.meta.env.VITE_FORCE_AUTH === "true") {
@@ -89,7 +73,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 			setIsLoading(false);
 		};
 
-		loadAuthState();
+		void loadAuthState();
 	}, []);
 
 	useEffect(() => {
@@ -104,13 +88,11 @@ export function AuthProvider({ children }: IAuthProvider) {
 			userFirstName?: string,
 			userData?: IUserData,
 		) => {
+			tokenStore.setTokens(tokenPair);
 			setAccessToken(tokenPair.access_token);
 			setRefreshToken(tokenPair.refresh_token);
 			setIsAuthenticated(true);
 			setHasLoggedOut(false);
-
-			localStorage.setItem("access_token", tokenPair.access_token);
-			localStorage.setItem("refresh_token", tokenPair.refresh_token);
 
 			if (userFirstName) {
 				setFirstName(userFirstName);
@@ -132,20 +114,9 @@ export function AuthProvider({ children }: IAuthProvider) {
 					);
 				}
 
-				await saveAuthToIndexedDB({
-					...tokenPair,
-					firstName: userFirstName,
-					isAuthenticated: true,
-				});
-
 				lazyToast.success(`Welcome, ${userFirstName}!`, {
 					description: "You've successfully logged in",
 					duration: 3000,
-				});
-			} else {
-				await saveAuthToIndexedDB({
-					...tokenPair,
-					isAuthenticated: true,
 				});
 			}
 		},
@@ -162,6 +133,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 			});
 		}
 
+		tokenStore.clearTokens();
 		setAccessToken(null);
 		setRefreshToken(null);
 		setFirstName(null);
@@ -190,17 +162,9 @@ export function AuthProvider({ children }: IAuthProvider) {
 				{ refresh_token: refreshToken },
 			);
 
+			tokenStore.setTokens(response.data);
 			setAccessToken(response.data.access_token);
 			setRefreshToken(response.data.refresh_token);
-
-			localStorage.setItem("access_token", response.data.access_token);
-			localStorage.setItem("refresh_token", response.data.refresh_token);
-
-			await saveAuthToIndexedDB({
-				...response.data,
-				firstName,
-				isAuthenticated: true,
-			});
 
 			return true;
 		} catch (error: unknown) {
@@ -221,7 +185,7 @@ export function AuthProvider({ children }: IAuthProvider) {
 			logout();
 			return false;
 		}
-	}, [refreshToken, firstName, logout]);
+	}, [refreshToken, logout]);
 
 	const authContextValue = useMemo(
 		() => ({

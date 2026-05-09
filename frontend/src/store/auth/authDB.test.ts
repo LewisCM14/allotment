@@ -54,8 +54,6 @@ describe("authDB", () => {
 	describe("saveAuthToIndexedDB", () => {
 		it("saves auth state to IndexedDB successfully", async () => {
 			const authState = {
-				access_token: "test-access",
-				refresh_token: "test-refresh",
 				isAuthenticated: true,
 				firstName: "Test User",
 			};
@@ -69,8 +67,6 @@ describe("authDB", () => {
 
 		it("handles errors when saving to IndexedDB", async () => {
 			const authState = {
-				access_token: "test-access",
-				refresh_token: "test-refresh",
 				isAuthenticated: true,
 			};
 
@@ -86,8 +82,6 @@ describe("authDB", () => {
 	describe("loadAuthFromIndexedDB", () => {
 		it("loads auth state from IndexedDB successfully", async () => {
 			const storedAuth = {
-				access_token: "stored-access",
-				refresh_token: "stored-refresh",
 				isAuthenticated: true,
 				firstName: "Stored User",
 			};
@@ -106,8 +100,6 @@ describe("authDB", () => {
 			const result = await loadAuthFromIndexedDB();
 
 			expect(result).toEqual({
-				access_token: "",
-				refresh_token: "",
 				isAuthenticated: false,
 			});
 		});
@@ -123,8 +115,6 @@ describe("authDB", () => {
 				error,
 			);
 			expect(result).toEqual({
-				access_token: "",
-				refresh_token: "",
 				isAuthenticated: false,
 			});
 		});

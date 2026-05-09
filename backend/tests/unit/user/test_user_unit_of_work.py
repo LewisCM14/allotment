@@ -360,7 +360,7 @@ class TestUserUnitOfWork:
             async with uow:
                 pass
 
-        mock_db.rollback.assert_not_called()  # rollback not called in this case
+        mock_db.rollback.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_context_manager_exception_with_no_value(self, mock_db):
@@ -564,14 +564,14 @@ class TestUserUnitOfWork:
     async def test_send_verification_email_service_user_not_found(
         self, user_unit_of_work
     ):
-        """Test verification email sending when user not found."""
+        """Test verification email sending when user not found — must silently no-op."""
         email = "nonexistent@example.com"
 
         with patch.object(
             user_unit_of_work.user_repo, "get_user_by_email", return_value=None
         ) as mock_get:
-            with pytest.raises(UserNotFoundError):
-                await user_unit_of_work.send_verification_email_service(email)
+            # Should not raise; anti-enumeration requires silent return
+            await user_unit_of_work.send_verification_email_service(email)
 
         mock_get.assert_called_once_with(email)
 
@@ -590,7 +590,6 @@ class TestUserUnitOfWork:
 
         assert isinstance(result, VerificationStatusResponse)
         assert result.is_email_verified is True
-        assert result.user_id == str(sample_user.user_id)
         mock_get.assert_called_once_with(email)
 
     @pytest.mark.asyncio

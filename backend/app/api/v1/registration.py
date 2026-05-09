@@ -5,7 +5,7 @@ Registration Endpoints
 
 import structlog
 from authlib.jose import jwt
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -33,6 +33,7 @@ from app.api.middleware.logging_middleware import (
 from app.api.models import User
 from app.api.schemas import TokenResponse
 from app.api.schemas.user.user_schema import (
+    EmailVerificationConfirm,
     MessageResponse,
     UserCreate,
 )
@@ -90,23 +91,21 @@ async def create_user(
             if result.scalar_one_or_none():
                 raise EmailAlreadyRegisteredError()
 
-        # Create user
-        with log_timing("create_user_account", request_id=log_context["request_id"]):
-            async with UserUnitOfWork(db) as uow:
-                new_user = await uow.create_user(user)
-
-        # --- Fail-safe: Ensure user_feed_day exists for all feeds ---
-        if new_user and new_user.user_id:
+        with log_timing("load_feed_day_defaults", request_id=log_context["request_id"]):
             async with GrowGuideUnitOfWork(db) as grow_guide_uow:
                 feeds = await grow_guide_uow.get_all_feeds()
                 days = await grow_guide_uow.get_all_days()
-            # Default to Sunday (day_number 7) for new users
-            default_day = next(
-                (d for d in days if d.day_number == 7), days[0] if days else None
-            )
+
+        # Default to Sunday (day_number 7) for new users
+        default_day = next(
+            (d for d in days if d.day_number == 7), days[0] if days else None
+        )
+
+        # Create user and feed-day preferences atomically in a single UoW commit.
+        with log_timing("create_user_account", request_id=log_context["request_id"]):
             async with UserUnitOfWork(db) as uow:
-                await uow.ensure_user_feed_days(
-                    str(new_user.user_id), feeds, default_day
+                new_user = await uow.create_user_with_feed_days(
+                    user, feeds, default_day
                 )
 
     except BaseApplicationError:
@@ -170,29 +169,32 @@ async def create_user(
 
 
 @router.post(
-    "/email-verifications/{token}",
+    "/email-verifications/confirm",
     tags=["Registration"],
     response_model=MessageResponse,
     status_code=status.HTTP_200_OK,
-    summary="Verify email using token from path",
-    description="Verifies the user's email using the provided token in the URL path. This is a POST request as it changes server state.",
+    summary="Verify email using token from request body",
+    description="Verifies the user's email using the provided token in the request body. This is a POST request as it changes server state.",
 )
+@limiter.limit("10/minute")
 async def verify_email_token(
-    token: str,
-    from_reset: bool = Query(False, alias="fromReset"),
+    verification_data: EmailVerificationConfirm,
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> MessageResponse:
     """
     Verify the user's email using the token.
 
     Args:
-        token: The JWT token from the verification link
-        from_reset: Whether this verification is part of password reset flow
+        verification_data: Contains the JWT token and optional from_reset flag
+        request: The incoming request
         db: Database session
 
     Returns:
         MessageResponse: Success message
     """
+    token = verification_data.token
+    from_reset = verification_data.from_reset
     log_context = {
         "request_id": request_id_ctx_var.get(),
         "operation": "verify_email",

@@ -211,17 +211,11 @@ class VerificationStatusResponse(SecureBaseModel):
         description=EMAIL_VERIFIED_DESC,
         examples=[True, False],
     )
-    user_id: str = Field(
-        ...,
-        description=USER_ID_DESC,
-        examples=[USER_ID_EXAMPLE],
-    )
 
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
                 "is_email_verified": True,
-                "user_id": USER_ID_EXAMPLE,
             }
         }
     )
@@ -310,6 +304,30 @@ class PasswordResetAction(SecureBaseModel):
             "example": {
                 "token": JWT_EXAMPLE,
                 "new_password": NEW_PASSWORD_EXAMPLE,
+            }
+        }
+    )
+
+
+class EmailVerificationConfirm(SecureBaseModel):
+    """Schema for email verification where token is submitted in the request body."""
+
+    token: str = Field(
+        ...,
+        description="JWT email verification token",
+        examples=[JWT_EXAMPLE],
+    )
+    from_reset: bool = Field(
+        default=False,
+        description="Whether this verification is part of a password reset flow",
+        examples=[False, True],
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "token": JWT_EXAMPLE,
+                "from_reset": False,
             }
         }
     )

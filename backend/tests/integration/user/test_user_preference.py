@@ -12,7 +12,7 @@ from app.api.schemas.user.user_preference_schema import (
     FeedRead,
     UserPreferencesRead,
 )
-from tests.conftest import mock_email_service
+from tests.test_helpers import mock_email_service
 
 PREFIX = settings.API_PREFIX
 

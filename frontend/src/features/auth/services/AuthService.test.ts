@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { buildUrl } from "../../../mocks/buildUrl";
 import { server } from "../../../mocks/server";
 import api from "../../../services/api";
+import { tokenStore } from "../../../services/tokenStore";
 import {
 	loginUser,
 	refreshAccessToken,
@@ -17,6 +18,7 @@ describe("AuthService", () => {
 			writable: true,
 		});
 		localStorage.clear();
+		tokenStore.clearTokens();
 		vi.restoreAllMocks();
 	});
 
@@ -63,8 +65,8 @@ describe("AuthService", () => {
 					is_email_verified: true,
 				},
 			});
-			expect(localStorage.getItem("access_token")).toBe("mock-access-token");
-			expect(localStorage.getItem("refresh_token")).toBe("mock-refresh-token");
+			expect(tokenStore.getAccessToken()).toBe("mock-access-token");
+			expect(tokenStore.getRefreshToken()).toBe("mock-refresh-token");
 		});
 
 		it("should throw an error with invalid credentials", async () => {
@@ -174,7 +176,10 @@ describe("AuthService", () => {
 
 	describe("refreshAccessToken", () => {
 		beforeEach(() => {
-			localStorage.setItem("refresh_token", "existing-refresh-token");
+			tokenStore.setTokens({
+				access_token: "existing-access-token",
+				refresh_token: "existing-refresh-token",
+			});
 		});
 
 		it("should refresh tokens successfully", async () => {
@@ -201,8 +206,8 @@ describe("AuthService", () => {
 				user_id: "user-123",
 				is_email_verified: true,
 			});
-			expect(localStorage.getItem("access_token")).toBe("new-access-token");
-			expect(localStorage.getItem("refresh_token")).toBe("new-refresh-token");
+			expect(tokenStore.getAccessToken()).toBe("new-access-token");
+			expect(tokenStore.getRefreshToken()).toBe("new-refresh-token");
 		});
 
 		it("should handle invalid refresh token", async () => {
@@ -218,12 +223,12 @@ describe("AuthService", () => {
 			await expect(refreshAccessToken()).rejects.toThrow(
 				"Invalid email or password. Please try again.",
 			);
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
+			expect(tokenStore.getAccessToken()).toBeNull();
+			expect(tokenStore.getRefreshToken()).toBeNull();
 		});
 
 		it("should handle missing refresh token", async () => {
-			localStorage.removeItem("refresh_token");
+			tokenStore.clearTokens();
 
 			await expect(refreshAccessToken()).rejects.toThrow(
 				"Failed to refresh authentication token",
@@ -241,8 +246,8 @@ describe("AuthService", () => {
 			postSpy.mockRejectedValueOnce(networkError);
 
 			await expect(refreshAccessToken()).rejects.toThrow(/Network error/i);
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
+			expect(tokenStore.getAccessToken()).toBeNull();
+			expect(tokenStore.getRefreshToken()).toBeNull();
 
 			postSpy.mockRestore();
 		});
@@ -255,8 +260,8 @@ describe("AuthService", () => {
 			);
 
 			await expect(refreshAccessToken()).rejects.toThrow("Server error");
-			expect(localStorage.getItem("access_token")).toBeNull();
-			expect(localStorage.getItem("refresh_token")).toBeNull();
+			expect(tokenStore.getAccessToken()).toBeNull();
+			expect(tokenStore.getRefreshToken()).toBeNull();
 		});
 	});
 
@@ -340,10 +345,13 @@ describe("AuthService", () => {
 
 			server.use(
 				http.post(
-					buildUrl("/auth/password-resets/valid-reset-token"),
+					buildUrl("/auth/password-resets/confirm"),
 					async ({ request }) => {
 						const body = await request.json();
-						expect(body).toEqual({ new_password: "newPassword123!" });
+						expect(body).toEqual({
+							token: "valid-reset-token",
+							new_password: "newPassword123!",
+						});
 						return HttpResponse.json(mockResponse);
 					},
 				),
@@ -358,7 +366,7 @@ describe("AuthService", () => {
 
 		it("should handle invalid token errors", async () => {
 			server.use(
-				http.post(buildUrl("/auth/password-resets/invalid-token"), () => {
+				http.post(buildUrl("/auth/password-resets/confirm"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [
@@ -385,7 +393,7 @@ describe("AuthService", () => {
 
 		it("should handle token expiry errors", async () => {
 			server.use(
-				http.post(buildUrl("/auth/password-resets/expired-token"), () => {
+				http.post(buildUrl("/auth/password-resets/confirm"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [
@@ -412,7 +420,7 @@ describe("AuthService", () => {
 
 		it("should handle password validation errors", async () => {
 			server.use(
-				http.post(buildUrl("/auth/password-resets/valid-token"), () => {
+				http.post(buildUrl("/auth/password-resets/confirm"), () => {
 					return new HttpResponse(
 						JSON.stringify({
 							detail: [

@@ -56,6 +56,20 @@ class TestAuthUtilsCoverage:
         )
         assert not auth_utils.verify_password("pw", "hash")
 
+    def test_new_password_hashes_use_argon2id(self):
+        hashed = auth_utils.hash_password("TestPass1!")
+        assert hashed.startswith("$argon2id$")
+
+    def test_argon2id_hash_verified_by_verify_password(self):
+        password = "TestPass1!"
+        hashed = auth_utils.hash_password(password)
+        assert auth_utils.verify_password(password, hashed)
+
+    def test_bcrypt_hash_still_verified_during_migration(self):
+        password = "OldPass1!"
+        bcrypt_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        assert auth_utils.verify_password(password, bcrypt_hash)
+
     def test_decode_token_success(self, monkeypatch):
         monkeypatch.setattr(auth_utils.settings, "PUBLIC_KEY", "pub")
         monkeypatch.setattr(auth_utils.jwt, "decode", lambda t, k: {"sub": "u"})
@@ -122,6 +136,22 @@ class TestAuthUtilsCoverage:
         assert result is None
 
     @pytest.mark.asyncio
+    async def test_authenticate_user_rehashes_legacy_bcrypt_hash(self, mocker):
+        db = MagicMock()
+        user = MagicMock()
+        user.user_password_hash = bcrypt.hashpw(b"OldPass1!", bcrypt.gensalt()).decode()
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: user)
+        )
+        db.commit = mocker.AsyncMock()
+        db.refresh = mocker.AsyncMock()
+
+        result = await auth_utils.authenticate_user(db, "test@example.com", "OldPass1!")
+
+        assert result == user
+        assert user.user_password_hash.startswith("$argon2id$")
+
+    @pytest.mark.asyncio
     async def test_authenticate_user_exception(self, mocker):
         db = MagicMock()
         db.execute = mocker.AsyncMock(side_effect=Exception("fail"))
@@ -156,6 +186,71 @@ class TestAuthUtilsCoverage:
                 authorization="Bearer tok", db=MagicMock()
             )
         assert e.value.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_rejects_refresh_token(self, mocker):
+        mocker.patch(
+            "app.api.core.auth_utils.decode_token",
+            return_value={"sub": "u", "type": "refresh"},
+        )
+        validate_user_exists = mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists",
+            return_value=MagicMock(),
+        )
+
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(
+                authorization="Bearer tok", db=MagicMock()
+            )
+
+        assert e.value.status_code == 401
+        assert e.value.detail == "Invalid token type"
+        validate_user_exists.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_rejects_reset_token(self, mocker):
+        mocker.patch(
+            "app.api.core.auth_utils.decode_token",
+            return_value={"sub": "u", "type": "reset"},
+        )
+        validate_user_exists = mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists",
+            return_value=MagicMock(),
+        )
+
+        with pytest.raises(HTTPException) as e:
+            await auth_utils.get_current_user(
+                authorization="Bearer tok", db=MagicMock()
+            )
+
+        assert e.value.status_code == 401
+        assert e.value.detail == "Invalid token type"
+        validate_user_exists.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_get_current_user_accepts_access_token(self, mocker):
+        db = MagicMock()
+        mock_user = MagicMock()
+        mocker.patch(
+            "app.api.core.auth_utils.decode_token",
+            return_value={"sub": "u", "type": "access"},
+        )
+        validate_user_exists = mocker.patch(
+            "app.api.core.auth_utils.validate_user_exists",
+            return_value=mock_user,
+        )
+
+        result = await auth_utils.get_current_user(
+            authorization="Bearer tok",
+            db=db,
+        )
+
+        assert result is mock_user
+        validate_user_exists.assert_called_once_with(
+            db_session=db,
+            user_model=auth_utils.User,
+            user_id="u",
+        )
 
     @pytest.mark.asyncio
     async def test_get_current_user_user_not_found(self, mocker):

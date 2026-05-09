@@ -13,6 +13,7 @@ dependencies = [
     "psutil", 
     "asyncpg",
     "psycopg2-binary",
+    "argon2-cffi",
     "bcrypt",
     "email-validator",
     "structlog",

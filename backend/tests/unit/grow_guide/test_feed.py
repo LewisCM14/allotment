@@ -4,7 +4,7 @@ import pytest
 from fastapi import Request
 
 from app.api.v1.grow_guide.feed import get_feeds
-from tests.conftest import TestingSessionLocal
+from tests.testing_db import TestingSessionLocal
 
 
 def _assert_feed_objects(feeds):
