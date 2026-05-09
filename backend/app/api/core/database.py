@@ -27,7 +27,16 @@ from app.api.middleware.logging_middleware import (
 settings.SLOW_QUERY_THRESHOLD = getattr(settings, "SLOW_QUERY_THRESHOLD", 1.0)
 
 logger = structlog.get_logger()
-logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
+
+def _get_sqlalchemy_engine_log_level() -> int:
+    configured_level = getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO)
+    if configured_level <= logging.DEBUG:
+        return logging.INFO
+    return logging.WARNING
+
+
+logging.getLogger("sqlalchemy.engine").setLevel(_get_sqlalchemy_engine_log_level())
 
 
 logger.info(

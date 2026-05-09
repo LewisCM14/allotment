@@ -201,7 +201,7 @@ describe("AuthProvider", () => {
 		);
 	});
 
-	it("ignores persisted tokens in localStorage", async () => {
+	it("hydrates persisted tokens from localStorage", async () => {
 		getItemMock.mockImplementation((key) => {
 			switch (key) {
 				case "access_token":
@@ -228,15 +228,16 @@ describe("AuthProvider", () => {
 		);
 
 		await waitFor(() => {
-			expect(screen.getByTestId("access-token").textContent).toBe("null");
-			expect(screen.getByTestId("refresh-token").textContent).toBe("null");
-			expect(screen.getByTestId("authenticated").textContent).toBe("false");
-			expect(screen.getByTestId("first-name").textContent).toBe("null");
-			expect(screen.getByTestId("user-id").textContent).toBe("null");
+			expect(screen.getByTestId("access-token").textContent).toBe(
+				"stored-access-token",
+			);
+			expect(screen.getByTestId("refresh-token").textContent).toBe(
+				"stored-refresh-token",
+			);
+			expect(screen.getByTestId("authenticated").textContent).toBe("true");
+			expect(screen.getByTestId("first-name").textContent).toBe("Stored User");
+			expect(screen.getByTestId("user-id").textContent).toBe("stored-user-123");
 		});
-
-		expect(removeItemMock).toHaveBeenCalledWith("access_token");
-		expect(removeItemMock).toHaveBeenCalledWith("refresh_token");
 	});
 
 	it("clears legacy IndexedDB auth state on startup", async () => {
@@ -284,11 +285,8 @@ describe("AuthProvider", () => {
 			expect(screen.getByTestId("first-name").textContent).toBe("Test User");
 		});
 
-		expect(setItemMock).not.toHaveBeenCalledWith("access_token", "test-access");
-		expect(setItemMock).not.toHaveBeenCalledWith(
-			"refresh_token",
-			"test-refresh",
-		);
+		expect(setItemMock).toHaveBeenCalledWith("access_token", "test-access");
+		expect(setItemMock).toHaveBeenCalledWith("refresh_token", "test-refresh");
 		expect(setItemMock).toHaveBeenCalledWith("first_name", "Test User");
 		expect(saveAuthToIndexedDBMock).not.toHaveBeenCalled();
 	});
@@ -425,7 +423,7 @@ describe("AuthProvider", () => {
 		});
 
 		server.use(
-			http.post("*/user/auth/refresh", () => {
+			http.post("*/auth/token/refresh", () => {
 				return HttpResponse.json({
 					access_token: "new-access",
 					refresh_token: "new-refresh",
@@ -452,12 +450,8 @@ describe("AuthProvider", () => {
 			);
 		});
 
-		expect(setItemMock).not.toHaveBeenCalledWith("access_token", "new-access");
-		expect(setItemMock).not.toHaveBeenCalledWith(
-			"refresh_token",
-			"new-refresh",
-		);
-		expect(saveAuthToIndexedDBMock).not.toHaveBeenCalled();
+		expect(setItemMock).toHaveBeenCalledWith("access_token", "new-access");
+		expect(setItemMock).toHaveBeenCalledWith("refresh_token", "new-refresh");
 	});
 
 	it("refreshAccessToken returns false when no refresh token exists", async () => {
@@ -494,7 +488,7 @@ describe("AuthProvider", () => {
 		});
 
 		server.use(
-			http.post("*/user/auth/refresh", () => {
+			http.post("*/auth/token/refresh", () => {
 				return HttpResponse.json({ detail: "Token expired" }, { status: 401 });
 			}),
 		);
@@ -532,7 +526,7 @@ describe("AuthProvider", () => {
 		});
 
 		server.use(
-			http.post("*/user/auth/refresh", () => {
+			http.post("*/auth/token/refresh", () => {
 				return HttpResponse.json({ detail: "Forbidden" }, { status: 403 });
 			}),
 		);
@@ -572,7 +566,7 @@ describe("AuthProvider", () => {
 		});
 
 		server.use(
-			http.post("*/user/auth/refresh", () => {
+			http.post("*/auth/token/refresh", () => {
 				return HttpResponse.json({ detail: "Bad request" }, { status: 400 });
 			}),
 		);

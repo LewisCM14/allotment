@@ -187,3 +187,21 @@ def test_configure_logging_idempotent(tmp_path, monkeypatch):
     )
 
     assert count_after == count_before
+
+
+def test_configure_logging_reapplies_level_with_existing_handlers(monkeypatch):
+    root_logger = logging.getLogger()
+    original_handlers = list(root_logger.handlers)
+    original_level = root_logger.level
+
+    try:
+        root_logger.handlers = [logging.StreamHandler()]
+        root_logger.setLevel(logging.DEBUG)
+        monkeypatch.setattr(settings, "LOG_LEVEL", "INFO")
+
+        core_logging.configure_logging()
+
+        assert root_logger.level == logging.INFO
+    finally:
+        root_logger.handlers = original_handlers
+        root_logger.setLevel(original_level)

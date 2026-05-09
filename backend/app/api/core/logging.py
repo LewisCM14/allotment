@@ -183,13 +183,15 @@ def _build_processors() -> List[ProcessorType]:
 def configure_logging() -> None:
     """Configures structured logging for FastAPI with async file logging."""
     handlers = _build_handlers()
+    configured_level = getattr(logging, settings.LOG_LEVEL.upper())
     logging.basicConfig(
         format="%(message)s",
-        level=getattr(logging, settings.LOG_LEVEL.upper()),
+        level=configured_level,
         handlers=handlers,
     )
     root_logger = logging.getLogger()
     _attach_non_duplicate_handlers(root_logger, handlers)
+    root_logger.setLevel(configured_level)
     processors = _build_processors()
     structlog.configure(
         processors=processors,

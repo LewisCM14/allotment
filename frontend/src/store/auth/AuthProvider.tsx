@@ -1,6 +1,5 @@
 import type { IUserData } from "@/features/auth/services/AuthService";
 import api from "@/services/api";
-import { API_VERSION } from "@/services/apiConfig";
 import { tokenStore } from "@/services/tokenStore";
 import {
 	type ReactNode,
@@ -47,9 +46,6 @@ export function AuthProvider({ children }: IAuthProvider) {
 		};
 
 		const loadAuthState = async () => {
-			localStorage.removeItem("access_token");
-			localStorage.removeItem("refresh_token");
-
 			try {
 				await clearAuthFromIndexedDB();
 			} catch (error) {
@@ -157,10 +153,9 @@ export function AuthProvider({ children }: IAuthProvider) {
 				return false;
 			}
 
-			const response = await api.post<ITokenPair>(
-				`${API_VERSION}/user/auth/refresh`,
-				{ refresh_token: refreshToken },
-			);
+			const response = await api.post<ITokenPair>("/auth/token/refresh", {
+				refresh_token: refreshToken,
+			});
 
 			tokenStore.setTokens(response.data);
 			setAccessToken(response.data.access_token);

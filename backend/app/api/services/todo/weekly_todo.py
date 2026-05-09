@@ -48,6 +48,8 @@ class WeeklyTodoUnitOfWork:
         self.week_repo = WeekRepository(db)
         self.day_repo = DayRepository(db)
         self.request_id = request_id_ctx_var.get()
+        self._week_number_cache: Dict[uuid.UUID, Optional[int]] = {}
+        self._frequency_cache: Dict[uuid.UUID, Optional[Frequency]] = {}
 
     async def __aenter__(self) -> "WeeklyTodoUnitOfWork":
         logger.debug(
@@ -135,6 +137,7 @@ class WeeklyTodoUnitOfWork:
 
             # Get user's active varieties with all necessary relationships
             active_varieties = await self._get_user_active_varieties(parsed_user_id)
+            self._prime_feed_frequency_cache(active_varieties)
 
             if not active_varieties:
                 logger.info("No active varieties for user", **log_context)
@@ -348,6 +351,40 @@ class WeeklyTodoUnitOfWork:
             "family_name": variety.family.family_name if variety.family else "",
         }
 
+    def _prime_feed_frequency_cache(self, active_varieties: List[Variety]) -> None:
+        """Seed feed frequency cache from already-loaded variety relationships."""
+        for variety in active_varieties:
+            if not variety.feed_frequency_id:
+                continue
+
+            frequency = getattr(variety, "feed_frequency", None)
+            if isinstance(frequency, Frequency):
+                self._frequency_cache[variety.feed_frequency_id] = frequency
+
+    async def _get_week_number_cached(self, week_id: uuid.UUID) -> Optional[int]:
+        """Return a cached week number, fetching it once per request when needed."""
+        if week_id in self._week_number_cache:
+            return self._week_number_cache[week_id]
+
+        stmt = select(Week.week_number).where(Week.week_id == week_id)
+        result = await self.db.execute(stmt)
+        week_number = result.scalar_one_or_none()
+        self._week_number_cache[week_id] = week_number
+        return week_number
+
+    async def _get_frequency_cached(
+        self, frequency_id: uuid.UUID
+    ) -> Optional[Frequency]:
+        """Return a cached feed frequency, fetching it once per request when needed."""
+        if frequency_id in self._frequency_cache:
+            return self._frequency_cache[frequency_id]
+
+        stmt = select(Frequency).where(Frequency.frequency_id == frequency_id)
+        result = await self.db.execute(stmt)
+        frequency = result.scalar_one_or_none()
+        self._frequency_cache[frequency_id] = frequency
+        return frequency
+
     async def _build_feed_tasks_for_day(
         self,
         active_varieties: List[Variety],
@@ -529,10 +566,7 @@ class WeeklyTodoUnitOfWork:
             Frequency determines HOW OFTEN to feed within the period.
         """
         with log_timing("db_check_feeding_period", request_id=self.request_id):
-            # Get numeric start week
-            stmt = select(Week.week_number).where(Week.week_id == feed_week_start_id)
-            result = await self.db.execute(stmt)
-            start_week_number = result.scalar_one_or_none()
+            start_week_number = await self._get_week_number_cached(feed_week_start_id)
             if start_week_number is None:
                 return False
 
@@ -541,18 +575,11 @@ class WeeklyTodoUnitOfWork:
             # Fetch harvest end week if needed for lifecycle window
             harvest_end_week: Optional[int] = None
             if lifecycle in (LifecycleType.ANNUAL, LifecycleType.SHORT_LIVED_PERENNIAL):
-                harvest_stmt = select(Week.week_number).where(
-                    Week.week_id == harvest_week_end_id
+                harvest_end_week = await self._get_week_number_cached(
+                    harvest_week_end_id
                 )
-                harvest_result = await self.db.execute(harvest_stmt)
-                harvest_end_week = harvest_result.scalar_one_or_none()
 
-            # Get frequency
-            freq_stmt = select(Frequency).where(
-                Frequency.frequency_id == feed_frequency_id
-            )
-            freq_result = await self.db.execute(freq_stmt)
-            frequency = freq_result.scalar_one_or_none()
+            frequency = await self._get_frequency_cached(feed_frequency_id)
             if frequency is None:
                 return False
 
@@ -610,7 +637,9 @@ class WeeklyTodoUnitOfWork:
                 Week.week_id.in_(week_ids)
             )
             result = await self.db.execute(stmt)
-            return {row[0]: row[1] for row in result.all()}
+            mapping = {row[0]: row[1] for row in result.all()}
+            self._week_number_cache.update(mapping)
+            return mapping
 
     def _is_week_in_range_by_number(
         self,
