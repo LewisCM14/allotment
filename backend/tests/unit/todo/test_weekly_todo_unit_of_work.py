@@ -551,6 +551,7 @@ class TestWeeklyTodoUnitOfWork:
         mapping = await uow._get_week_id_to_number_map([v])
         for k, n in pairs:
             assert mapping[k] == n
+            assert uow._week_number_cache[k] == n
 
     @pytest.mark.asyncio
     async def test_build_water_tasks_fallback_fetch(self, uow):
@@ -748,3 +749,44 @@ async def test_is_week_in_feeding_period_edge_cases():
         )
         is False
     )
+
+
+@pytest.mark.asyncio
+async def test_is_week_in_feeding_period_reuses_cached_reference_data():
+    """Repeated checks for the same IDs should only hit the database once per reference row."""
+    from types import SimpleNamespace
+
+    from sqlalchemy.ext.asyncio import AsyncSession
+
+    def scalar_result(value):
+        r = MagicMock()
+        r.scalar_one_or_none.return_value = value
+        return r
+
+    start_id = uuid.uuid4()
+    frequency_id = uuid.uuid4()
+    harvest_id = uuid.uuid4()
+    weekly_freq = SimpleNamespace(frequency_days_per_year=52)
+
+    db = AsyncMock(spec=AsyncSession)
+    db.execute.side_effect = [
+        scalar_result(10),
+        scalar_result(30),
+        scalar_result(weekly_freq),
+    ]
+
+    uow = WeeklyTodoUnitOfWork(db)
+
+    assert (
+        await uow._is_week_in_feeding_period(
+            12, start_id, frequency_id, harvest_id, "annual"
+        )
+        is True
+    )
+    assert (
+        await uow._is_week_in_feeding_period(
+            13, start_id, frequency_id, harvest_id, "annual"
+        )
+        is True
+    )
+    assert db.execute.await_count == 3
