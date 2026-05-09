@@ -383,6 +383,32 @@ class TestWebhookVerification:
                     await verify_resend_signature(mock_request)
                 assert exc.value.status_code == 401
 
+    async def test_webhook_parse_error_does_not_leak_exception(
+        self, client: AsyncClient
+    ):
+        """Malformed webhook payloads should return a generic validation error."""
+        with (
+            patch("app.main.Webhook.verify", return_value=None),
+            patch("app.main.settings.RESEND_WEBHOOK_SECRET") as mock_secret,
+        ):
+            mock_secret.get_secret_value.return_value = "whsec_test"
+
+            response = await client.post(
+                "/webhooks/inbound-email",
+                content=b'{"invalid": "json structure"}',
+                headers={
+                    "svix-id": "msg_123",
+                    "svix-timestamp": "1234567890",
+                    "svix-signature": "v1,fakesig",
+                    "content-type": "application/json",
+                },
+            )
+
+        assert response.status_code == 400
+        error_detail = response.json()["detail"][0]
+        assert error_detail["msg"] == "Invalid webhook payload"
+        assert "Invalid payload:" not in error_detail["msg"]
+
 
 @pytest.mark.asyncio
 class TestHandleInboundEmail:

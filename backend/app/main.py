@@ -195,7 +195,12 @@ async def verify_resend_signature(request: Request) -> InboundEmailPayload:
     try:
         payload = InboundEmailPayload.model_validate_json(raw_body)
     except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Invalid payload: {exc}") from exc
+        logger.warning(
+            "Inbound email payload validation failed",
+            error=sanitize_error_message(str(exc)),
+            error_type=type(exc).__name__,
+        )
+        raise HTTPException(status_code=400, detail="Invalid webhook payload") from exc
     return payload
 
 

@@ -56,6 +56,20 @@ class TestAuthUtilsCoverage:
         )
         assert not auth_utils.verify_password("pw", "hash")
 
+    def test_new_password_hashes_use_argon2id(self):
+        hashed = auth_utils.hash_password("TestPass1!")
+        assert hashed.startswith("$argon2id$")
+
+    def test_argon2id_hash_verified_by_verify_password(self):
+        password = "TestPass1!"
+        hashed = auth_utils.hash_password(password)
+        assert auth_utils.verify_password(password, hashed)
+
+    def test_bcrypt_hash_still_verified_during_migration(self):
+        password = "OldPass1!"
+        bcrypt_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+        assert auth_utils.verify_password(password, bcrypt_hash)
+
     def test_decode_token_success(self, monkeypatch):
         monkeypatch.setattr(auth_utils.settings, "PUBLIC_KEY", "pub")
         monkeypatch.setattr(auth_utils.jwt, "decode", lambda t, k: {"sub": "u"})
@@ -120,6 +134,22 @@ class TestAuthUtilsCoverage:
         mocker.patch("app.api.core.auth_utils.verify_password", return_value=False)
         result = await auth_utils.authenticate_user(db, "e", "pw")
         assert result is None
+
+    @pytest.mark.asyncio
+    async def test_authenticate_user_rehashes_legacy_bcrypt_hash(self, mocker):
+        db = MagicMock()
+        user = MagicMock()
+        user.user_password_hash = bcrypt.hashpw(b"OldPass1!", bcrypt.gensalt()).decode()
+        db.execute = mocker.AsyncMock(
+            return_value=types.SimpleNamespace(scalar_one_or_none=lambda: user)
+        )
+        db.commit = mocker.AsyncMock()
+        db.refresh = mocker.AsyncMock()
+
+        result = await auth_utils.authenticate_user(db, "test@example.com", "OldPass1!")
+
+        assert result == user
+        assert user.user_password_hash.startswith("$argon2id$")
 
     @pytest.mark.asyncio
     async def test_authenticate_user_exception(self, mocker):

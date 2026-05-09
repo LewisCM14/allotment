@@ -134,10 +134,28 @@ def test_logging_middleware_redacts_token_in_email_verification_url() -> None:
     assert "[REDACTED]" in redacted
 
 
+def test_logging_middleware_redacts_jwt_like_segment_in_any_url_path() -> None:
+    from app.api.middleware.logging_middleware import redact_url_tokens
+
+    token = "eyJhbGciOiJSUzI1NiJ9.payload.sig"
+    url = f"http://api.example.com/api/v1/audit/{token}/events"
+    redacted = redact_url_tokens(url)
+    assert token not in redacted
+    assert "[REDACTED]" in redacted
+
+
 def test_logging_middleware_does_not_redact_normal_url() -> None:
     from app.api.middleware.logging_middleware import redact_url_tokens
 
     url = "http://api.example.com/api/v1/users/profile"
+    assert redact_url_tokens(url) == url
+
+
+def test_logging_middleware_does_not_redact_non_jwt_like_dotted_segment() -> None:
+    from app.api.middleware.logging_middleware import redact_url_tokens
+
+    dotted_segment = f"{'a' * 1024}.{'b' * 1024}."
+    url = f"http://api.example.com/api/v1/users/{dotted_segment}"
     assert redact_url_tokens(url) == url
 
 

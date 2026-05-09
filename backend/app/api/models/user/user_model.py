@@ -10,7 +10,6 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
-import bcrypt
 import structlog
 from sqlalchemy import (
     Boolean,
@@ -100,9 +99,9 @@ class User(Base):
         }
 
         try:
-            self.user_password_hash = bcrypt.hashpw(
-                password.encode("utf-8"), bcrypt.gensalt()
-            ).decode("utf-8")
+            from app.api.core.auth_utils import hash_password
+
+            self.user_password_hash = hash_password(password)
             logger.debug("Password hashed successfully", **log_context)
         except Exception as e:
             sanitized_error = sanitize_error_message(str(e))
@@ -122,9 +121,9 @@ class User(Base):
         }
 
         try:
-            result = bcrypt.checkpw(
-                password.encode("utf-8"), self.user_password_hash.encode("utf-8")
-            )
+            from app.api.core.auth_utils import verify_password
+
+            result = verify_password(password, self.user_password_hash)
             logger.debug("Password verification performed", **log_context)
             return result
         except Exception as e:

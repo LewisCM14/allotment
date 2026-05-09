@@ -11,6 +11,13 @@ from typing import Any, Literal, Optional, cast
 
 import bcrypt
 import structlog
+from argon2 import PasswordHasher
+from argon2.exceptions import (
+    InvalidHashError,
+    VerificationError,
+    VerifyMismatchError,
+)
+from argon2.low_level import Type
 from authlib.jose import JoseError, jwt
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy import func, select
@@ -24,6 +31,7 @@ from app.api.middleware.logging_middleware import sanitize_error_message
 from app.api.models import User
 
 logger = structlog.get_logger()
+password_hasher = PasswordHasher(type=Type.ID)
 
 TokenType = Literal["access", "refresh", "reset", "email_verification", "verification"]
 
@@ -99,8 +107,23 @@ def create_token(
         raise
 
 
+def hash_password(password: str) -> str:
+    """Hash passwords with Argon2id for all new and rotated credentials."""
+    return password_hasher.hash(password)
+
+
+def _is_argon2_hash(hashed_password: str) -> bool:
+    return hashed_password.startswith("$argon2")
+
+
+def _needs_password_rehash(hashed_password: str) -> bool:
+    return _is_argon2_hash(hashed_password) and password_hasher.check_needs_rehash(
+        hashed_password
+    )
+
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password using bcrypt.
+    """Verify password using Argon2id or legacy bcrypt during migration.
 
     Args:
         plain_password: The password to verify
@@ -110,9 +133,14 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         bool: True if password matches, False otherwise
     """
     try:
+        if _is_argon2_hash(hashed_password):
+            return password_hasher.verify(hashed_password, plain_password)
+
         return bcrypt.checkpw(
             plain_password.encode("utf-8"), hashed_password.encode("utf-8")
         )
+    except (VerifyMismatchError, InvalidHashError, VerificationError):
+        return False
     except Exception:
         logger.error("Password verification error")
         return False
@@ -152,6 +180,11 @@ async def authenticate_user(
             return None
 
         if verify_password(password, user.user_password_hash):
+            if not _is_argon2_hash(user.user_password_hash) or _needs_password_rehash(
+                user.user_password_hash
+            ):
+                user.user_password_hash = hash_password(password)
+
             # Update last_active_date on successful login
             user.last_active_date = datetime.now(UTC)
             await db.commit()

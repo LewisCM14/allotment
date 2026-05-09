@@ -1,8 +1,7 @@
 import { openDB } from "idb";
-import type { ITokenPair } from "./AuthContext";
 import { errorMonitor } from "@/services/errorMonitoring";
 
-interface IAuthState extends ITokenPair {
+interface IAuthState {
 	isAuthenticated: boolean;
 	firstName?: string | null;
 }
@@ -24,14 +23,12 @@ export async function loadAuthFromIndexedDB(): Promise<IAuthState> {
 		const authState = await db.get("auth", "authState");
 		return (
 			authState ?? {
-				access_token: "",
-				refresh_token: "",
 				isAuthenticated: false,
 			}
 		);
 	} catch (error) {
 		errorMonitor.captureException(error, { context: "loadAuthFromIndexedDB" });
-		return { access_token: "", refresh_token: "", isAuthenticated: false };
+		return { isAuthenticated: false };
 	}
 }
 

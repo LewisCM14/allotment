@@ -2,18 +2,15 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install build dependencies and UV securely (uses HTTPS)
+COPY --from=ghcr.io/astral-sh/uv:0.7.2 /uv /uvx /bin/
+
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     gcc \
     libpq-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    \
-    # The following curl command uses HTTPS and is considered safe for installing UV.
-    && curl -LsSf https://astral.sh/uv/install.sh | sh
-
-ENV PATH="/root/.local/bin:$PATH"
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements files
 COPY pyproject.toml uv.lock ./
