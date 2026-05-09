@@ -28,7 +28,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "fastapi[standard]", 
-    "pytest",
+    "python-multipart>=0.0.27",
+    "pytest>=9.0.3",
     "pytest-xdist",
     "pytest-cov",
     "coverage[toml]",
