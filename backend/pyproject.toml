@@ -9,7 +9,7 @@ dependencies = [
     "SQLAlchemy", 
     "pydantic", 
     "pydantic-settings", 
-    "Authlib", 
+    "Authlib>=1.7.1", 
     "psutil", 
     "asyncpg",
     "psycopg2-binary",
