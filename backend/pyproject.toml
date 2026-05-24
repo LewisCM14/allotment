@@ -16,6 +16,7 @@ dependencies = [
     "argon2-cffi",
     "bcrypt",
     "email-validator",
+    "idna>=3.15",
     "structlog",
     "slowapi",
     "opentelemetry-api",
