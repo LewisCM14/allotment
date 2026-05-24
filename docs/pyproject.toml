@@ -2,4 +2,10 @@
 name = "allotment_docs"
 version = "0"
 requires-python = "==3.13.*"
-dependencies = ["mkdocs", "mkdocs-material", "mkdocs-glightbox" ]
+dependencies = [
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-glightbox",
+    "pymdown-extensions>=10.21.3",
+    "idna>=3.15",
+]
