@@ -40,9 +40,6 @@ async def test_check_verification_status_does_not_expose_user_id(client, mocker)
     import uuid
     from unittest.mock import MagicMock
 
-    from app.api.core.database import get_db
-    from app.main import app
-
     mock_user = MagicMock()
     mock_user.is_email_verified = True
     mock_user.user_id = uuid.uuid4()
