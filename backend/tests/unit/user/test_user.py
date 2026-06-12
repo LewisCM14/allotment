@@ -3,7 +3,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.middleware.exception_handler import BaseApplicationError, UserNotFoundError
+from app.api.middleware.exception_handler import BaseApplicationError
 from app.api.schemas.user.user_schema import (
     EmailRequest,
     MessageResponse,

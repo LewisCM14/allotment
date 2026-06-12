@@ -1,4 +1,3 @@
-import pytest
 
 from app.api.schemas.user.user_schema import (
     EmailRequest,
