@@ -65,7 +65,6 @@
     "@vitest/coverage-v8": "^4.0.16",
     "@vitest/ui": "^4.0.16",
     "@welldone-software/why-did-you-render": "^10.0.1",
-    "baseline-browser-mapping": "^2.8.31",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "globals": "^17.0.0",
