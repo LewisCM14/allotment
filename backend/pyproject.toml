@@ -8,7 +8,7 @@ dependencies = [
     "httpx",
     "SQLAlchemy", 
     "pydantic", 
-    "pydantic-settings", 
+    "pydantic-settings>=2.14.2", 
     "Authlib>=1.7.1", 
     "psutil", 
     "asyncpg",
