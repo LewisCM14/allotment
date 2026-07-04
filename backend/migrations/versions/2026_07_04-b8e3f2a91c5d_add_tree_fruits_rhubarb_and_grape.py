@@ -381,8 +381,7 @@ def upgrade() -> None:
             "symptom_id": symptom_name_to_id[row["symptom"]],
         }
         for row in disease_symptom_data
-        if row["disease"] in disease_name_to_id
-        and row["symptom"] in symptom_name_to_id
+        if row["disease"] in disease_name_to_id and row["symptom"] in symptom_name_to_id
     ]
     if disease_symptom_rows:
         op.bulk_insert(
