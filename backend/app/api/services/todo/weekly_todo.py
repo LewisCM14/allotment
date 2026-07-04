@@ -280,7 +280,9 @@ class WeeklyTodoUnitOfWork:
             ):
                 tasks["compost_tasks"].append(variety_info)
 
-        sort_key = lambda v: (v["family_name"].lower(), v["variety_name"].lower())
+        def sort_key(v: Dict[str, Any]) -> tuple[str, str]:
+            return (v["family_name"].lower(), v["variety_name"].lower())
+
         for task_list in tasks.values():
             task_list.sort(key=sort_key)
 
@@ -323,7 +325,10 @@ class WeeklyTodoUnitOfWork:
             water_tasks = await self._build_water_tasks_for_day(
                 active_varieties, day.day_id, week_number, week_id_to_number
             )
-            sort_key = lambda v: (v["family_name"].lower(), v["variety_name"].lower())
+
+            def sort_key(v: Dict[str, Any]) -> tuple[str, str]:
+                return (v["family_name"].lower(), v["variety_name"].lower())
+
             water_tasks.sort(key=sort_key)
             day_info["water_tasks"] = water_tasks
 
@@ -433,7 +438,9 @@ class WeeklyTodoUnitOfWork:
             group = ensure_group(fid, feed_name)
             group["varieties"].append(self._create_variety_info(variety))
 
-        sort_key = lambda v: (v["family_name"].lower(), v["variety_name"].lower())
+        def sort_key(v: Dict[str, Any]) -> tuple[str, str]:
+            return (v["family_name"].lower(), v["variety_name"].lower())
+
         for group in feed_groups.values():
             group["varieties"].sort(key=sort_key)
 
