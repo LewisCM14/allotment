@@ -6,6 +6,6 @@ dependencies = [
     "mkdocs",
     "mkdocs-material",
     "mkdocs-glightbox",
-    "pymdown-extensions>=10.21.3",
+    "pymdown-extensions>=11.0.1",
     "idna>=3.15",
 ]
