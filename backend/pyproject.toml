@@ -17,6 +17,7 @@ dependencies = [
     "argon2-cffi",
     "bcrypt",
     "email-validator",
+    "anyio>=4.14.2",
     "idna>=3.15",
     "structlog",
     "slowapi",
