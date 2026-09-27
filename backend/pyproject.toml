@@ -6,7 +6,7 @@ dependencies = [
     "fastapi",
     "resend",
     "httpx",
-    "SQLAlchemy", 
+    "SQLAlchemy[asyncio]", 
     "pydantic", 
     "pydantic-settings>=2.14.2", 
     "Authlib>=1.7.1", 
