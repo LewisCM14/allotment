@@ -91,6 +91,7 @@
     "sourcemap-codec": "npm:@jridgewell/sourcemap-codec@latest",
     "flatted": ">=3.4.2",
     "picomatch": ">=4.0.4",
-    "@babel/core": "7.29.6"
+    "@babel/core": "7.29.6",
+    "source-map-js": ">=1.2.2"
   }
 }
