@@ -3,7 +3,7 @@ import { z } from "zod";
 export const setNewPasswordSchema = z
 	.object({
 		password: z
-			.string()
+			.string({ error: "Password is required" })
 			.min(8, "Password must be at least 8 characters long")
 			.max(30, "Password cannot exceed 30 characters")
 			.refine(
@@ -18,7 +18,9 @@ export const setNewPasswordSchema = z
 				(password) => /[!"#$%&'()*+,-./:;<=>?@[\\\]^_`{|}~]/.test(password),
 				"Password must contain at least one special character",
 			),
-		password_confirm: z.string().min(1, "Please confirm your password"),
+		password_confirm: z
+			.string({ error: "Please confirm your password" })
+			.min(1, "Please confirm your password"),
 	})
 	.refine((data) => data.password === data.password_confirm, {
 		message: "Passwords do not match",

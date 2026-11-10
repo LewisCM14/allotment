@@ -1,5 +1,4 @@
 import { useAuth } from "@/store/auth/AuthContext";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +7,21 @@ import {
 	userProfileSchema,
 	type UserProfileFormData,
 } from "../forms/UserProfileSchema";
+
+const userProfileResolver = (values: unknown) => {
+	const result = userProfileSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
 import { formatError } from "@/utils/errorUtils";
 import { errorMonitor } from "@/services/errorMonitoring";
 import {
@@ -31,8 +45,9 @@ export default function UserProfileContainer() {
 		reset,
 		formState: { errors },
 	} = useForm<UserProfileFormData>({
-		resolver: zodResolver(userProfileSchema),
+		resolver: userProfileResolver,
 		mode: "onBlur",
+		reValidateMode: "onBlur",
 		defaultValues: {
 			user_first_name: "",
 			user_country_code: "",
@@ -53,7 +68,11 @@ export default function UserProfileContainer() {
 
 	const [error, setError] = useState<string>("");
 	const [isEditing, setIsEditing] = useState(false);
-	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+	const [isOffline, setIsOffline] = useState(() =>
+		typeof navigator === "undefined" || navigator.onLine === undefined
+			? false
+			: !navigator.onLine,
+	);
 	const [localVerificationStatus, setLocalVerificationStatus] = useState(
 		user?.isEmailVerified ??
 			localStorage.getItem("is_email_verified") === "true",

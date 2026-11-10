@@ -1,4 +1,3 @@
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -26,6 +25,21 @@ import {
 	type GrowGuideFormData,
 	growGuideFormSchema,
 } from "./GrowGuideFormSchema";
+
+const growGuideFormResolver = (values: unknown) => {
+	const result = growGuideFormSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
 
 // Centralized field metadata to control labels & required marker
 const FIELD_META: Record<string, { label: string; required?: boolean }> = {
@@ -129,7 +143,9 @@ export const GrowGuideForm = ({
 		reset,
 		setValue,
 	} = useForm<GrowGuideFormData>({
-		resolver: zodResolver(growGuideFormSchema),
+		resolver: growGuideFormResolver,
+		mode: "onBlur",
+		reValidateMode: "onBlur",
 		defaultValues: (() => {
 			const initialDefaults: GrowGuideFormData = {
 				variety_name: "",

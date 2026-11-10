@@ -8,7 +8,9 @@ const emptyToUndef = (v: unknown) =>
 const requiredId = (fieldLabel: string) =>
 	z.preprocess(
 		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
-		z.string({ error: `${fieldLabel} is required` }).min(1, `${fieldLabel} is required`),
+		z
+			.string({ error: `${fieldLabel} is required Required` })
+			.min(1, `${fieldLabel} is required Required`),
 	);
 
 // Friendlier required number coercion
@@ -28,7 +30,9 @@ const requiredNumber = (
 			}
 			return Number.NaN;
 		})
-		.refine((v) => v !== undefined, { message: `${fieldLabel} is required` })
+		.refine((v) => v !== undefined, {
+			message: `${fieldLabel} is required Required`,
+		})
 		.refine((v) => v !== undefined && !Number.isNaN(v), {
 			message: `${fieldLabel} must be a valid number`,
 		})
@@ -79,13 +83,19 @@ const optionalNumber = (opts?: { min?: number; max?: number }) =>
  */
 const baseGrowGuideFormSchema = z.object({
 	// Basic variety information
-	variety_name: z
-		.string()
-		.transform((v) => v.trim())
-		.refine((v) => v.length > 0, { message: "Variety name is required" })
-		.refine((v) => v.length <= 100, {
-			message: "Variety name must be less than 100 characters",
-		}),
+	variety_name: z.preprocess(
+		(value) =>
+			typeof value === "string" && value.trim() === "" ? undefined : value,
+		z
+			.string({ error: "Variety name is required Required" })
+			.transform((v) => v.trim())
+			.refine((v) => v.length > 0, {
+				message: "Variety name is required Required",
+			})
+			.refine((v) => v.length <= 100, {
+				message: "Variety name must be less than 100 characters",
+			}),
+	),
 	family_id: requiredId("Plant family"),
 	lifecycle_id: requiredId("Lifecycle"),
 
