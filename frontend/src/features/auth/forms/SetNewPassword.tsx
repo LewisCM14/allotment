@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,6 +20,21 @@ import {
 	setNewPasswordSchema,
 } from "./SetNewPasswordSchema";
 import { resetPassword } from "../services/AuthService";
+
+const setNewPasswordResolver = (values: unknown) => {
+	const result = setNewPasswordSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
 
 export default function SetNewPassword() {
 	const [searchParams] = useSearchParams();
@@ -35,12 +49,17 @@ export default function SetNewPassword() {
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<SetNewPasswordFormData>({
-		resolver: zodResolver(setNewPasswordSchema),
-		mode: "onBlur",
+		resolver: setNewPasswordResolver,
+		mode: "onSubmit",
+		reValidateMode: "onSubmit",
 	});
 
 	const [error, setError] = useState<string>("");
-	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+	const [isOffline, setIsOffline] = useState(() =>
+		typeof navigator === "undefined" || navigator.onLine === undefined
+			? false
+			: !navigator.onLine,
+	);
 
 	useEffect(() => {
 		const handleOnline = () => setIsOffline(false);

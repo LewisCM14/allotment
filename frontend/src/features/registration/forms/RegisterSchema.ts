@@ -3,12 +3,12 @@ import { z } from "zod";
 export const registerSchema = z
 	.object({
 		email: z
-			.string()
+			.string({ error: "Email is required" })
 			.trim()
 			.email("Invalid email")
 			.transform((s) => s.toLowerCase()),
 		password: z
-			.string()
+			.string({ error: "Password is required" })
 			.min(8, "Password must be at least 8 characters long")
 			.max(30, "Password cannot exceed 30 characters")
 			.refine(
@@ -23,9 +23,11 @@ export const registerSchema = z
 				(password) => /[!"#$%&'()*+,-./:;<=>?@[\\\]^_`{|}~]/.test(password),
 				"Password must contain at least one special character",
 			),
-		password_confirm: z.string().min(1, "Please confirm your password"),
+		password_confirm: z
+			.string({ error: "Please confirm your password" })
+			.min(1, "Please confirm your password"),
 		first_name: z
-			.string()
+			.string({ error: "First name is required" })
 			.min(2, "First name must be at least 2 characters")
 			.max(50, "First name cannot exceed 50 characters")
 			.refine(
@@ -33,7 +35,7 @@ export const registerSchema = z
 				"First name can only contain letters, spaces, and hyphens",
 			),
 		country_code: z
-			.string()
+			.string({ error: "Country code is required" })
 			.length(2, "Country code must be exactly 2 characters")
 			.transform((val) => val.toUpperCase()),
 	})

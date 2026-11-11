@@ -6,10 +6,12 @@ const emptyToUndef = (v: unknown) =>
 
 // Preprocessor for required select fields (UUID strings) so '' triggers required error
 const requiredId = (fieldLabel: string) =>
-	z
-		.string({ required_error: `${fieldLabel} is required` })
-		.transform((v) => (v === "" ? undefined : v))
-		.refine((v) => !!v, { message: `${fieldLabel} is required` });
+	z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z
+			.string({ error: `${fieldLabel} is required Required` })
+			.min(1, `${fieldLabel} is required Required`),
+	);
 
 // Friendlier required number coercion
 const requiredNumber = (
@@ -28,7 +30,9 @@ const requiredNumber = (
 			}
 			return Number.NaN;
 		})
-		.refine((v) => v !== undefined, { message: `${fieldLabel} is required` })
+		.refine((v) => v !== undefined, {
+			message: `${fieldLabel} is required Required`,
+		})
 		.refine((v) => v !== undefined && !Number.isNaN(v), {
 			message: `${fieldLabel} must be a valid number`,
 		})
@@ -79,13 +83,19 @@ const optionalNumber = (opts?: { min?: number; max?: number }) =>
  */
 const baseGrowGuideFormSchema = z.object({
 	// Basic variety information
-	variety_name: z
-		.string()
-		.transform((v) => v.trim())
-		.refine((v) => v.length > 0, { message: "Variety name is required" })
-		.refine((v) => v.length <= 100, {
-			message: "Variety name must be less than 100 characters",
-		}),
+	variety_name: z.preprocess(
+		(value) =>
+			typeof value === "string" && value.trim() === "" ? undefined : value,
+		z
+			.string({ error: "Variety name is required Required" })
+			.transform((v) => v.trim())
+			.refine((v) => v.length > 0, {
+				message: "Variety name is required Required",
+			})
+			.refine((v) => v.length <= 100, {
+				message: "Variety name must be less than 100 characters",
+			}),
+	),
 	family_id: requiredId("Plant family"),
 	lifecycle_id: requiredId("Lifecycle"),
 
@@ -94,14 +104,14 @@ const baseGrowGuideFormSchema = z.object({
 	sow_week_end_id: requiredId("Sowing end week"),
 
 	// Transplant details (optional, but must be provided together if used)
-	transplant_week_start_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
-	transplant_week_end_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
+	transplant_week_start_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
+	transplant_week_end_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
 
 	// Planting conditions
 	planting_conditions_id: requiredId("Planting conditions"),
@@ -113,18 +123,18 @@ const baseGrowGuideFormSchema = z.object({
 	plant_space_cm: requiredNumber("Plant spacing (cm)", { min: 1, max: 1000 }),
 
 	// Feed details (all three must be provided together)
-	feed_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
-	feed_week_start_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
-	feed_frequency_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
+	feed_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
+	feed_week_start_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
+	feed_frequency_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
 
 	// Watering details (required)
 	water_frequency_id: requiredId("Watering frequency"),
@@ -141,14 +151,14 @@ const baseGrowGuideFormSchema = z.object({
 	harvest_week_end_id: requiredId("Harvest end week"),
 
 	// Prune details (optional, but both must be provided together)
-	prune_week_start_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
-	prune_week_end_id: z
-		.string()
-		.optional()
-		.transform((v) => (v === "" ? undefined : v)),
+	prune_week_start_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
+	prune_week_end_id: z.preprocess(
+		(v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
+		z.string().optional(),
+	),
 
 	// Notes (optional - allow blank string which will be stripped later)
 	// Use preprocess to coerce null / empty / whitespace-only to undefined so field remains optional.
@@ -161,8 +171,8 @@ const baseGrowGuideFormSchema = z.object({
 		}
 		return val; // any other type will be validated by inner schema (and likely rejected)
 	}, z
-		.string({ invalid_type_error: "Notes must be a string" })
-		.min(5, { message: "Notes must be at least 5 characters or left blank" })
+		.string({ error: "Notes must be a string" })
+		.min(5, "Notes must be at least 5 characters or left blank")
 		.optional()),
 
 	// Public/private setting

@@ -10,17 +10,11 @@ export const allotmentSchema = z.object({
 			"Postal code must be alphanumeric (spaces allowed)",
 		),
 	allotment_width_meters: z
-		.number({
-			required_error: "Width is required",
-			invalid_type_error: "Width must be a number",
-		})
+		.number({ error: "Width is required" })
 		.min(1.0, "Width must be at least 1 meter")
 		.max(100.0, "Width cannot exceed 100 meters"),
 	allotment_length_meters: z
-		.number({
-			required_error: "Length is required",
-			invalid_type_error: "Length must be a number",
-		})
+		.number({ error: "Length is required" })
 		.min(1.0, "Length must be at least 1 meter")
 		.max(100.0, "Length cannot exceed 100 meters"),
 });

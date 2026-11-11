@@ -12,7 +12,6 @@ import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
 import { useAuth } from "@/store/auth/AuthContext";
 import { prefetchPostLoginRoutes } from "@/utils/routePrefetch";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -21,19 +20,39 @@ import type { LoginFormData } from "./LoginSchema";
 import { loginSchema } from "./LoginSchema";
 import { loginUser } from "../services/AuthService";
 
+const loginResolver = (values: unknown) => {
+	const result = loginSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
+
 function LoginForm() {
 	const {
 		register,
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<LoginFormData>({
-		resolver: zodResolver(loginSchema),
-		mode: "onBlur",
+		resolver: loginResolver,
+		mode: "onSubmit",
+		reValidateMode: "onSubmit",
 	});
 	const { login } = useAuth();
 	const [error, setError] = useState<string>("");
 	const navigate = useNavigate();
-	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+	const [isOffline, setIsOffline] = useState(() =>
+		typeof navigator === "undefined" || navigator.onLine === undefined
+			? false
+			: !navigator.onLine,
+	);
 
 	useEffect(() => {
 		const handleOnline = () => setIsOffline(false);

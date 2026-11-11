@@ -10,12 +10,26 @@ import {
 } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Label } from "@/components/ui/Label";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router-dom";
 import { type ResetFormData, resetSchema } from "./ResetPasswordSchema";
 import { requestPasswordReset } from "../services/AuthService";
+
+const resetPasswordResolver = (values: unknown) => {
+	const result = resetSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
 
 export default function ResetPassword() {
 	const {
@@ -23,13 +37,18 @@ export default function ResetPassword() {
 		handleSubmit,
 		formState: { errors, isSubmitting },
 	} = useForm<ResetFormData>({
-		resolver: zodResolver(resetSchema),
-		mode: "onBlur",
+		resolver: resetPasswordResolver,
+		mode: "onSubmit",
+		reValidateMode: "onSubmit",
 	});
 
 	const [error, setError] = useState<string>("");
 	const [success, setSuccess] = useState<string>("");
-	const [isOffline, setIsOffline] = useState(!navigator.onLine);
+	const [isOffline, setIsOffline] = useState(() =>
+		typeof navigator === "undefined" || navigator.onLine === undefined
+			? false
+			: !navigator.onLine,
+	);
 
 	useEffect(() => {
 		const handleOnline = () => setIsOffline(false);

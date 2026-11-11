@@ -1,5 +1,4 @@
 import { useAuth } from "@/store/auth/AuthContext";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useCallback, useEffect, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -9,6 +8,21 @@ import {
 } from "../forms/AllotmentSchema";
 import { NoAllotmentFoundError } from "../services/AllotmentService";
 import { formatError } from "@/utils/errorUtils";
+
+const allotmentResolver = (values: unknown) => {
+	const result = allotmentSchema.safeParse(values);
+	if (result.success) {
+		return { values: result.data, errors: {} };
+	}
+
+	const errors: Record<string, { type: string; message: string }> = {};
+	for (const issue of result.error.issues) {
+		const fieldName = String(issue.path[0] ?? "");
+		if (!fieldName || fieldName in errors) continue;
+		errors[fieldName] = { type: issue.code, message: issue.message };
+	}
+	return { values: {}, errors };
+};
 import {
 	useUserAllotment,
 	useCreateUserAllotment,
@@ -25,8 +39,9 @@ export default function UserAllotmentContainer() {
 		reset,
 		formState: { errors },
 	} = useForm<AllotmentFormData>({
-		resolver: zodResolver(allotmentSchema),
-		mode: "onBlur",
+		resolver: allotmentResolver,
+		mode: "onSubmit",
+		reValidateMode: "onSubmit",
 		defaultValues: {
 			allotment_postal_zip_code: "",
 			allotment_width_meters: undefined,
